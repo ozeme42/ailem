@@ -3,12 +3,12 @@
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Test as TestType, QuickTestQuestion, PracticeExam } from "@/lib/data";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, ArrowRight, Play, Pause, Check, X, MinusCircle, LayoutGrid, BookOpen, ChevronRight, Home, Loader2, Sparkles, Trophy, ChevronLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, ArrowRight, Play, Pause, Check, LayoutGrid, BookOpen, ChevronRight, Home, Loader2, Trophy, ChevronLeft, Flag } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -21,27 +21,27 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/components/auth-provider";
 import { useForm } from "react-hook-form";
-import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-// --- DESIGN SYSTEM ---
-const glassColors = {
-    PAGE_BG: "bg-slate-50", 
-    HEADER_BG: "bg-white/80 backdrop-blur-xl border-b border-slate-200",
-    CARD_BG: "bg-white border border-slate-200 shadow-sm", 
-    ICON_BOX: "bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5 rounded-xl shadow-lg text-white",
-    BUTTON_GLASS: "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-sm",
-    OPTION_BUTTON: "flex items-center justify-center w-12 h-12 rounded-xl border border-slate-200 bg-white cursor-pointer transition-all duration-200 font-bold text-lg text-slate-600 hover:bg-slate-50 hover:border-indigo-400 hover:text-indigo-600 peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white peer-data-[state=checked]:border-indigo-600 peer-data-[state=checked]:shadow-lg peer-data-[state=checked]:scale-110",
-    INPUT_BG: "bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500",
+// --- TASARIM SİSTEMİ (Premium Eğitim Arayüzü) ---
+const themeStyles = {
+    PAGE_BG: "bg-[#F8FAFC]", // Çok hafif gri/mavi arka plan (Slate 50)
+    HEADER_BG: "bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-50",
+    CARD_BG: "bg-white border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2rem]", 
+    OPTION_LIST_BUTTON: "flex items-center space-x-4 p-4 sm:p-5 rounded-2xl border-2 transition-all cursor-pointer group",
+    OPTION_LIST_SELECTED: "bg-indigo-50/50 border-indigo-600 shadow-sm",
+    OPTION_LIST_UNSELECTED: "bg-white border-slate-100 hover:border-indigo-300 hover:bg-slate-50",
+    // Optik form için dairesel/kare seçenek
+    OPTICAL_BUTTON: "flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-slate-200 bg-white cursor-pointer transition-all duration-200 font-bold text-base sm:text-lg text-slate-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white peer-data-[state=checked]:border-indigo-600 peer-data-[state=checked]:shadow-md peer-data-[state=checked]:scale-110",
+    INPUT_BG: "bg-slate-50 border-2 border-slate-100 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all",
 };
 
 type McqAnswers = { [key: string]: string | null };
 type TextAnswers = { [key: string]: string };
 type EvaluationStatus = "correct" | "incorrect" | "unevaluated" | "empty";
-type ManualEvaluation = { [key: string]: EvaluationStatus };
 
 function formatTime(seconds: number) {
   if (seconds < 0) seconds = 0;
@@ -50,6 +50,7 @@ function formatTime(seconds: number) {
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 }
 
+// Şık Zamanlayıcı Hapı
 function Timer({ durationMinutes, onTimeUp }: { durationMinutes: number; onTimeUp: () => void }) {
   const [timeLeft, setTimeLeft] = React.useState(durationMinutes * 60);
   const [isRunning, setIsRunning] = React.useState(true);
@@ -63,14 +64,19 @@ function Timer({ durationMinutes, onTimeUp }: { durationMinutes: number; onTimeU
     return () => clearInterval(timerId);
   }, [timeLeft, onTimeUp, isRunning]);
 
+  const isLowTime = timeLeft < 300; // Son 5 dakika
+
   return (
-    <div className="flex items-center gap-3 bg-indigo-50 p-2 pl-4 pr-2 rounded-xl border border-indigo-100 shadow-sm">
-        <div className="flex items-center gap-2 font-mono text-xl font-bold text-indigo-700">
-            <Clock className="h-5 w-5 text-indigo-600" />
+    <div className={cn("flex items-center gap-3 p-1.5 pl-4 pr-1.5 rounded-full border shadow-sm transition-colors", 
+        isLowTime ? "bg-rose-50 border-rose-200" : "bg-indigo-50 border-indigo-100")}>
+        <div className={cn("flex items-center gap-2 font-mono text-[17px] font-bold tracking-tight", 
+            isLowTime ? "text-rose-600" : "text-indigo-700")}>
+            <Clock className={cn("h-4 w-4", isLowTime ? "text-rose-500 animate-pulse" : "text-indigo-500")} />
             <span>{formatTime(timeLeft)}</span>
         </div>
-        <button type="button" onClick={() => setIsRunning(!isRunning)} className="p-1 rounded hover:bg-indigo-100 transition-colors">
-            {isRunning ? <Pause className="h-4 w-4 text-indigo-600" /> : <Play className="h-4 w-4 text-indigo-600" />}
+        <button type="button" onClick={() => setIsRunning(!isRunning)} className={cn("p-1.5 rounded-full transition-colors", 
+            isLowTime ? "hover:bg-rose-100 bg-rose-200/50" : "hover:bg-indigo-100 bg-indigo-200/50")}>
+            {isRunning ? <Pause className={cn("h-4 w-4", isLowTime ? "text-rose-700" : "text-indigo-700")} /> : <Play className={cn("h-4 w-4", isLowTime ? "text-rose-700" : "text-indigo-700")} />}
         </button>
     </div>
   );
@@ -91,19 +97,22 @@ const QuestionPalette = ({
     practiceExam?: PracticeExam | null;
     submittedSubjects?: string[];
 }) => {
+    // Soru Gezgini Haritası
     if (practiceExam && practiceExam.subjects) {
         let currentOffset = 0;
         return (
-            <div className="space-y-4 p-4">
+            <div className="space-y-6 p-5">
                 {practiceExam.subjects.map(subject => {
                     const rangeStart = currentOffset;
                     currentOffset += subject.questionCount;
                     const isSubjectSubmitted = submittedSubjects.includes(subject.id);
                     
                     return (
-                        <div key={subject.id} className="space-y-2">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">{subject.name}</p>
-                            <div className="grid grid-cols-5 gap-2">
+                        <div key={subject.id} className="space-y-3">
+                            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-slate-300" /> {subject.name}
+                            </h4>
+                            <div className="grid grid-cols-5 gap-2.5">
                                 {Array.from({ length: subject.questionCount }).map((_, i) => {
                                     const actualIndex = rangeStart + i;
                                     const answered = isAnswered(actualIndex) || isSubjectSubmitted;
@@ -114,9 +123,10 @@ const QuestionPalette = ({
                                             key={actualIndex}
                                             variant={active ? "default" : answered ? "secondary" : "outline"}
                                             className={cn(
-                                                "h-8 w-8 p-0 font-bold rounded-lg text-xs transition-all",
-                                                active && "bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300 ring-offset-1",
-                                                answered && !active && "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200"
+                                                "h-10 w-10 p-0 font-bold rounded-xl text-[13px] transition-all duration-200 border-2",
+                                                active && "bg-indigo-600 text-white border-indigo-600 shadow-md scale-110 z-10",
+                                                answered && !active && "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300",
+                                                !answered && !active && "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
                                             )}
                                             onClick={() => onNavigate(actualIndex)}
                                         >
@@ -133,7 +143,7 @@ const QuestionPalette = ({
     }
 
     return (
-        <div className="grid grid-cols-5 gap-2 p-4">
+        <div className="grid grid-cols-5 gap-3 p-5">
             {Array.from({ length: total }).map((_, i) => {
                 const answered = isAnswered(i);
                 const active = currentIndex === i;
@@ -143,9 +153,10 @@ const QuestionPalette = ({
                         key={i}
                         variant={active ? "default" : answered ? "secondary" : "outline"}
                         className={cn(
-                            "h-10 w-10 p-0 font-bold rounded-lg text-xs transition-all",
-                            active && "bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300 ring-offset-1",
-                            answered && !active && "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200"
+                            "h-11 w-11 p-0 font-bold rounded-xl text-[14px] transition-all duration-200 border-2",
+                            active && "bg-indigo-600 text-white border-indigo-600 shadow-md scale-110 z-10",
+                            answered && !active && "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
+                            !answered && !active && "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50"
                         )}
                         onClick={() => onNavigate(i)}
                     >
@@ -271,7 +282,6 @@ export default function OpticalFormPage() {
 
     const handleMcqAnswerChange = (questionNumber: string, value: string) => {
         setMcqAnswers(prev => ({ ...prev, [questionNumber]: value }));
-        // Auto partial save to avoid data loss
         setTimeout(() => handleSavePartial(), 500);
     };
 
@@ -286,14 +296,30 @@ export default function OpticalFormPage() {
         return test?.openEnded ? !!textAnswers[qNumStr] : !!mcqAnswers[qNumStr];
     };
 
-    if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="w-16 h-16 animate-spin text-indigo-600 mr-4" /><p className="text-slate-500 font-medium animate-pulse">Test Yükleniyor...</p></div>;
-    if (!test) return <div className="flex flex-col items-center justify-center h-screen bg-slate-50"><h1 className="text-3xl font-black mb-2">Test Bulunamadı</h1><Link href="/education"><Button size="lg" className={glassColors.BUTTON_GLASS}>Geri Dön</Button></Link></div>;
+    if (isLoading) return (
+        <div className="flex flex-col h-screen items-center justify-center bg-slate-50 space-y-6">
+            <div className="relative">
+                <div className="absolute inset-0 bg-indigo-500/20 blur-xl rounded-full animate-pulse" />
+                <Loader2 className="w-16 h-16 animate-spin text-indigo-600 relative z-10" />
+            </div>
+            <p className="text-slate-500 font-bold tracking-widest uppercase animate-pulse">Sınav Hazırlanıyor</p>
+        </div>
+    );
+    
+    if (!test) return <div className="flex flex-col items-center justify-center h-screen bg-slate-50"><h1 className="text-3xl font-black mb-2 text-slate-800">Test Bulunamadı</h1><Link href="/education"><Button size="lg" className="rounded-xl font-bold bg-indigo-600 text-white">Eğitim Paneline Dön</Button></Link></div>;
 
-    // --- SONUÇ EKRANI ---
+    const totalQuestions = test.sourceType === 'json' ? test.jsonQuestions!.length : test.questionCount;
+    const answeredCount = Object.keys(mcqAnswers).length + Object.keys(textAnswers).length;
+    const progressPercentage = (answeredCount / totalQuestions) * 100;
+    const options = ['A', 'B', 'C', 'D', 'E'];
+    const testDurationMinutes = test.durationMinutes || totalQuestions * 1.5;
+    const isSingleQuestionView = test.sourceType === 'json' || test.sourceType === 'bank' || test.sourceType === 'mistake' || test.sourceType === 'quick';
+
+    // --- SONUÇ EKRANI (PREMIUM GÖRÜNÜM) ---
     if (test.status === 'Sonuçlandı' || test.status === 'Tekrar Çözülüyor') {
         const studentAnswers = test.studentAnswers || {};
         const answerKey = test.sourceType === 'json' ? test.jsonQuestions!.reduce((acc, q, i) => ({ ...acc, [(i+1).toString()]: q.answer }), {}) : test.answerKey || {};
-        const questionCount = test.sourceType === 'json' ? test.jsonQuestions!.length : test.questionCount;
+        
         let currentOffset = 0;
         const subjectsWithRanges = practiceExam?.subjects.map(s => {
             const range = { start: currentOffset + 1, end: currentOffset + s.questionCount };
@@ -302,42 +328,81 @@ export default function OpticalFormPage() {
         }) || [];
 
         return (
-            <div className={cn("min-h-screen text-slate-900 font-sans relative overflow-hidden flex flex-col p-4 sm:p-8", glassColors.PAGE_BG)}>
-                <div className="max-w-4xl mx-auto w-full space-y-8 relative z-10 pb-20">
-                    <header className="flex justify-between items-center">
-                        <Button variant="ghost" onClick={() => router.push('/education')} className="text-slate-500 hover:text-slate-900"><ArrowLeft className="mr-2 h-5 w-5" /> Çıkış</Button>
-                        <Badge variant="outline" className="text-emerald-700 border-emerald-200 bg-emerald-50 px-3 py-1 font-bold">Tamamlandı</Badge>
+            <div className={cn("min-h-[100dvh] font-sans relative overflow-x-hidden flex flex-col bg-slate-50/50")}>
+                {/* Sonuç Ekranı Arka Plan Dekoru */}
+                <div className="absolute top-0 left-0 right-0 h-[50vh] bg-gradient-to-b from-emerald-500/10 to-transparent pointer-events-none" />
+                <div className="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-emerald-400/20 blur-[100px] rounded-full pointer-events-none" />
+
+                <div className="max-w-4xl mx-auto w-full space-y-8 relative z-10 p-4 sm:p-8 pb-20">
+                    <header className="flex justify-between items-center mb-4">
+                        <Button variant="ghost" onClick={() => router.push('/education')} className="text-slate-600 hover:text-slate-900 bg-white shadow-sm rounded-full px-5 font-bold h-12">
+                            <ArrowLeft className="mr-2 h-5 w-5" /> Çıkış Yap
+                        </Button>
+                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 px-4 py-1.5 text-sm font-black uppercase tracking-wider rounded-full shadow-sm">Tamamlandı</Badge>
                     </header>
-                    <Card className="flex flex-col items-center justify-center py-10 border-emerald-200 bg-emerald-50/50 backdrop-blur-md">
-                        <p className="text-sm text-emerald-700 font-bold tracking-widest uppercase mb-2">Toplam Puan</p>
-                        <div className="text-8xl font-black text-emerald-700 tracking-tighter">{(test.score || 0).toFixed(0)}</div>
-                        <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
-                            <Badge className="bg-emerald-600 text-white border-0 text-lg px-4 py-1">{test.correctAnswers} Doğru</Badge>
-                            <Badge className="bg-rose-600 text-white border-0 text-lg px-4 py-1">{test.incorrectAnswers} Yanlış</Badge>
-                            <Badge className="bg-slate-500 text-white border-0 text-lg px-4 py-1">{test.emptyAnswers} Boş</Badge>
+
+                    {/* Skorbord */}
+                    <div className="flex flex-col items-center justify-center py-12 bg-white rounded-[3rem] shadow-[0_20px_60px_-15px_rgba(16,185,129,0.2)] border border-emerald-100 relative overflow-hidden">
+                        <Trophy className="absolute top-10 left-10 w-32 h-32 text-emerald-500/5 rotate-[-15deg]" />
+                        <Flag className="absolute bottom-10 right-10 w-32 h-32 text-emerald-500/5 rotate-[15deg]" />
+                        
+                        <p className="text-sm text-emerald-600/80 font-black tracking-widest uppercase mb-4 relative z-10">Başarı Puanı</p>
+                        <div className="text-8xl sm:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-br from-emerald-500 to-teal-600 tracking-tighter drop-shadow-sm leading-none mb-6 relative z-10">
+                            {(test.score || 0).toFixed(0)}
                         </div>
-                    </Card>
-                    <Card className={glassColors.CARD_BG}>
-                        <CardHeader><CardTitle>Cevap Anahtarı</CardTitle></CardHeader>
-                        <CardContent className="space-y-6">
+                        
+                        <div className="flex flex-wrap items-center justify-center gap-4 mt-2 relative z-10">
+                            <div className="flex flex-col items-center justify-center bg-emerald-50 border border-emerald-100 rounded-2xl px-6 py-3 min-w-[120px]">
+                                <span className="text-3xl font-black text-emerald-600">{test.correctAnswers}</span>
+                                <span className="text-[11px] font-bold text-emerald-600/70 uppercase tracking-wider">Doğru</span>
+                            </div>
+                            <div className="flex flex-col items-center justify-center bg-rose-50 border border-rose-100 rounded-2xl px-6 py-3 min-w-[120px]">
+                                <span className="text-3xl font-black text-rose-600">{test.incorrectAnswers}</span>
+                                <span className="text-[11px] font-bold text-rose-600/70 uppercase tracking-wider">Yanlış</span>
+                            </div>
+                            <div className="flex flex-col items-center justify-center bg-slate-100 border border-slate-200 rounded-2xl px-6 py-3 min-w-[120px]">
+                                <span className="text-3xl font-black text-slate-500">{test.emptyAnswers}</span>
+                                <span className="text-[11px] font-bold text-slate-500/70 uppercase tracking-wider">Boş</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Cevap Anahtarı */}
+                    <div className="bg-white rounded-[2rem] shadow-sm border border-slate-200/60 p-6 sm:p-8">
+                        <div className="flex items-center gap-3 mb-8 border-b border-slate-100 pb-4">
+                            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl"><LayoutGrid className="w-5 h-5" /></div>
+                            <h2 className="text-2xl font-black text-slate-800">Cevap Anahtarı İncelemesi</h2>
+                        </div>
+                        
+                        <div className="space-y-10">
                             {practiceExam ? (
                                 subjectsWithRanges.map(subject => (
-                                    <div key={subject.id} className="space-y-3">
-                                        <h3 className="font-bold text-slate-700 px-2 flex items-center gap-2"><div className="w-1.5 h-4 bg-indigo-500 rounded-full" />{subject.name}</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                    <div key={subject.id} className="space-y-4">
+                                        <h3 className="font-black text-slate-700 text-lg flex items-center gap-2">
+                                            <div className="w-2 h-5 bg-indigo-500 rounded-full" /> {subject.name}
+                                        </h3>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                                             {Array.from({ length: subject.questionCount }).map((_, i) => {
                                                 const qNum = subject.range.start + i;
                                                 const qNumStr = qNum.toString();
                                                 const studentAns = studentAnswers[qNumStr];
                                                 const correctAns = answerKey[qNumStr];
                                                 const evalStatus = studentAns === correctAns ? 'correct' : (studentAns ? 'incorrect' : 'empty');
-                                                let statusColor = evalStatus === 'correct' ? "border-emerald-200 bg-emerald-50" : (evalStatus === 'incorrect' ? "border-rose-200 bg-rose-50" : "border-slate-100 bg-slate-50");
+                                                
                                                 return (
-                                                    <div key={qNumStr} className={cn("p-3 border rounded-xl flex justify-between items-center", statusColor)}>
-                                                        <span className="font-bold text-slate-400 w-8">{i + 1}</span>
-                                                        <div className="flex gap-2">
-                                                            <span className={cn("font-bold", evalStatus === 'incorrect' ? 'text-rose-600' : 'text-slate-800')}>{studentAns || '-'}</span>
-                                                            {evalStatus === 'incorrect' && <span className="font-bold text-emerald-600">{correctAns}</span>}
+                                                    <div key={qNumStr} className={cn("p-3.5 border-2 rounded-2xl flex justify-between items-center transition-colors", 
+                                                        evalStatus === 'correct' ? "border-emerald-100 bg-emerald-50/50" : 
+                                                        evalStatus === 'incorrect' ? "border-rose-100 bg-rose-50/50" : "border-slate-100 bg-slate-50"
+                                                    )}>
+                                                        <span className="font-bold text-slate-400 text-sm w-6">{qNum}</span>
+                                                        <div className="flex items-center gap-2.5">
+                                                            <span className={cn("font-black text-lg", evalStatus === 'incorrect' ? 'text-rose-500' : 'text-slate-800')}>{studentAns || '-'}</span>
+                                                            {evalStatus === 'incorrect' && (
+                                                                <>
+                                                                    <ArrowRight className="w-3 h-3 text-slate-300" />
+                                                                    <span className="font-black text-lg text-emerald-500">{correctAns}</span>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 )
@@ -346,66 +411,74 @@ export default function OpticalFormPage() {
                                     </div>
                                 ))
                             ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {Array.from({ length: questionCount }).map((_, index) => {
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                                    {Array.from({ length: totalQuestions }).map((_, index) => {
                                         const qNumStr = (index + 1).toString();
                                         const studentAns = studentAnswers[qNumStr];
                                         const correctAns = answerKey[qNumStr];
                                         const evalStatus = studentAns === correctAns ? 'correct' : (studentAns ? 'incorrect' : 'empty');
-                                        let statusColor = evalStatus === 'correct' ? "border-emerald-200 bg-emerald-50" : (evalStatus === 'incorrect' ? "border-rose-200 bg-rose-50" : "border-slate-100 bg-slate-50");
+                                        
                                         return (
-                                            <div key={qNumStr} className={cn("p-3 border rounded-xl flex justify-between items-center", statusColor)}>
-                                                <span className="font-bold text-slate-400 w-8">{qNumStr}</span>
-                                                <div className="flex gap-3">
-                                                    <span className={cn("font-bold", evalStatus === 'incorrect' ? 'text-rose-600' : 'text-slate-800')}>{studentAns || '-'}</span>
-                                                    {evalStatus === 'incorrect' && <span className="font-bold text-emerald-600">{correctAns}</span>}
+                                            <div key={qNumStr} className={cn("p-3.5 border-2 rounded-2xl flex justify-between items-center transition-colors", 
+                                                evalStatus === 'correct' ? "border-emerald-100 bg-emerald-50/50" : 
+                                                evalStatus === 'incorrect' ? "border-rose-100 bg-rose-50/50" : "border-slate-100 bg-slate-50"
+                                            )}>
+                                                <span className="font-bold text-slate-400 text-sm w-6">{qNumStr}</span>
+                                                <div className="flex items-center gap-2.5">
+                                                    <span className={cn("font-black text-lg", evalStatus === 'incorrect' ? 'text-rose-500' : 'text-slate-800')}>{studentAns || '-'}</span>
+                                                    {evalStatus === 'incorrect' && (
+                                                        <>
+                                                            <ArrowRight className="w-3 h-3 text-slate-300" />
+                                                            <span className="font-black text-lg text-emerald-500">{correctAns}</span>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         )
                                     })}
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
-                    <div className="flex justify-center"><Button size="lg" className="bg-white text-slate-900 border border-slate-200 px-8 py-6 text-lg font-bold" onClick={() => router.push('/education')}><Home className="mr-3 h-6 w-6 text-indigo-600" />Eğitim Sayfası</Button></div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex justify-center mt-10">
+                        <Button size="lg" className="bg-slate-900 hover:bg-slate-800 text-white rounded-2xl px-10 h-16 text-lg font-bold shadow-xl shadow-slate-900/20" onClick={() => router.push('/education')}>
+                            <Home className="mr-3 h-6 w-6" /> Ana Sayfaya Dön
+                        </Button>
+                    </div>
                 </div>
             </div>
         );
     }
 
-    const totalQuestions = test.sourceType === 'json' ? test.jsonQuestions!.length : test.questionCount;
-    const isSingleQuestionView = test.sourceType === 'json' || test.sourceType === 'bank' || test.sourceType === 'mistake' || test.sourceType === 'quick';
-    
-    // --- NAVIGASYON ---
-    const handleNext = () => {
-        if (currentQuestionIndex < totalQuestions - 1) {
-            setCurrentQuestionIndex(prev => prev + 1);
-        }
-    }
-
-    const handlePrev = () => {
-        if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev - 1);
-        }
-    }
-
-    const options = ['A', 'B', 'C', 'D', 'E'];
-    const testDurationMinutes = test.durationMinutes || totalQuestions * 1.5;
-
+    // --- SINAV EKRANI ---
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(() => handleSubmit(false))}>
-                <div className={cn("min-h-screen text-slate-900 font-sans flex flex-col p-4 sm:p-8", glassColors.PAGE_BG)}>
-                    <header className="max-w-4xl mx-auto w-full mb-8 flex justify-between items-center">
-                        <Button type="button" variant="ghost" onClick={() => router.push('/education')} className="text-slate-500 hover:text-slate-900"><ArrowLeft className="mr-2 h-5 w-5" /> Çıkış</Button>
-                        <div className="text-center hidden sm:block">
-                            <h1 className="text-xl font-bold text-slate-900">{test.title}</h1>
-                            <p className="text-sm text-slate-500">{test.subject}</p>
+                <div className={cn("min-h-[100dvh] text-slate-900 font-sans flex flex-col", themeStyles.PAGE_BG)}>
+                    
+                    {/* ÜST BİLGİ VE İLERLEME ÇUBUĞU (Mobil Uyumlu Sticky) */}
+                    <div className={themeStyles.HEADER_BG}>
+                        {/* İlerleme Çubuğu */}
+                        <div className="h-1.5 w-full bg-slate-100">
+                            <div className="h-full bg-indigo-500 transition-all duration-500 ease-out" style={{ width: `${progressPercentage}%` }} />
                         </div>
-                        <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
-                    </header>
+                        
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
+                            <Button type="button" variant="ghost" onClick={() => router.push('/education')} className="text-slate-500 hover:text-slate-900 rounded-full font-bold px-3">
+                                <ArrowLeft className="mr-2 h-5 w-5" /> <span className="hidden sm:inline">Çıkış</span>
+                            </Button>
+                            
+                            <div className="flex flex-col items-center justify-center absolute left-1/2 -translate-x-1/2 w-1/2 sm:w-auto">
+                                <h1 className="text-sm sm:text-base font-black text-slate-800 truncate w-full text-center">{test.title}</h1>
+                                <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest truncate">{test.subject}</p>
+                            </div>
+                            
+                            <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
+                        </div>
+                    </div>
 
-                    <main className="flex-1 max-w-4xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 pb-32">
+                    <main className="flex-1 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 p-4 sm:p-6 pb-32">
                         
                         {/* SOL KOLON: SORU ALANI */}
                         <div className="lg:col-span-8 space-y-6">
@@ -413,25 +486,23 @@ export default function OpticalFormPage() {
                                 {isSingleQuestionView ? (
                                     <motion.div 
                                         key={currentQuestionIndex}
-                                        initial={{ opacity: 0, x: 20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -20 }}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
                                         transition={{ duration: 0.2 }}
                                     >
                                         {test.sourceType === 'json' && test.jsonQuestions ? (
                                             /* JSON TEK SORU */
-                                            <Card className="overflow-hidden bg-white border border-slate-200 shadow-lg rounded-3xl">
-                                                <CardHeader className="bg-slate-50/50 border-b p-6">
-                                                    <div className="flex gap-4">
-                                                        <Badge className="h-10 w-10 rounded-full flex items-center justify-center p-0 text-lg font-black bg-indigo-600 shrink-0">
-                                                            {currentQuestionIndex + 1}
-                                                        </Badge>
-                                                        <p className="text-xl font-bold text-slate-800 leading-tight pt-1">
-                                                            {test.jsonQuestions[currentQuestionIndex].text}
-                                                        </p>
+                                            <div className={themeStyles.CARD_BG}>
+                                                <div className="p-6 sm:p-8 border-b border-slate-100 flex gap-5">
+                                                    <div className="h-12 w-12 rounded-2xl flex items-center justify-center text-xl font-black bg-indigo-50 text-indigo-600 shrink-0 border border-indigo-100 shadow-sm">
+                                                        {currentQuestionIndex + 1}
                                                     </div>
-                                                </CardHeader>
-                                                <CardContent className="p-6">
+                                                    <p className="text-lg sm:text-xl font-bold text-slate-800 leading-relaxed pt-1.5">
+                                                        {test.jsonQuestions[currentQuestionIndex].text}
+                                                    </p>
+                                                </div>
+                                                <div className="p-6 sm:p-8 bg-slate-50/30 rounded-b-[2rem]">
                                                     <RadioGroup 
                                                         value={mcqAnswers[(currentQuestionIndex + 1).toString()] || ""} 
                                                         onValueChange={(v) => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), v)}
@@ -444,124 +515,128 @@ export default function OpticalFormPage() {
                                                                 <div 
                                                                     key={optIdx} 
                                                                     onClick={() => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), opt)}
-                                                                    className={cn(
-                                                                        "flex items-center space-x-3 p-5 rounded-2xl border-2 transition-all cursor-pointer",
-                                                                        isSelected 
-                                                                            ? "bg-indigo-50 border-indigo-600 shadow-sm" 
-                                                                            : "bg-white border-slate-100 hover:border-indigo-200 hover:bg-slate-50"
-                                                                    )}
+                                                                    className={cn(themeStyles.OPTION_LIST_BUTTON, isSelected ? themeStyles.OPTION_LIST_SELECTED : themeStyles.OPTION_LIST_UNSELECTED)}
                                                                 >
                                                                     <RadioGroupItem value={opt} id={`q${currentQuestionIndex}-${optIdx}`} className="sr-only" />
                                                                     <div className={cn(
-                                                                        "w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold text-base shrink-0",
-                                                                        isSelected ? "bg-indigo-600 border-indigo-600 text-white" : "border-slate-200 text-slate-400"
+                                                                        "w-10 h-10 rounded-xl border-2 flex items-center justify-center font-black text-[15px] shrink-0 transition-colors",
+                                                                        isSelected ? "bg-indigo-600 border-indigo-600 text-white" : "bg-slate-100 border-slate-200 text-slate-500"
                                                                     )}>
                                                                         {letter}
                                                                     </div>
-                                                                    <Label htmlFor={`q${currentQuestionIndex}-${optIdx}`} className="flex-1 cursor-pointer text-lg font-medium text-slate-700">
+                                                                    <Label htmlFor={`q${currentQuestionIndex}-${optIdx}`} className="flex-1 cursor-pointer text-base sm:text-[17px] font-semibold text-slate-700 leading-snug">
                                                                         {opt}
                                                                     </Label>
                                                                 </div>
                                                             );
                                                         })}
                                                     </RadioGroup>
-                                                </CardContent>
-                                            </Card>
+                                                </div>
+                                            </div>
                                         ) : (
-                                            /* BANKA / MISTAKE TEK SORU */
-                                            <Card className="overflow-hidden bg-white border border-slate-200 shadow-lg rounded-3xl">
-                                                <CardHeader className="bg-slate-50/50 border-b p-4 flex flex-row items-center justify-between">
-                                                    <Badge className="h-10 w-10 rounded-full flex items-center justify-center p-0 text-lg font-black bg-indigo-600 shrink-0">
+                                            /* BANKA / MISTAKE (GÖRSELLİ) TEK SORU */
+                                            <div className={themeStyles.CARD_BG}>
+                                                <div className="p-4 border-b border-slate-100 flex flex-row items-center justify-between bg-slate-50/50 rounded-t-[2rem]">
+                                                    <div className="h-10 w-10 rounded-xl flex items-center justify-center text-base font-black bg-indigo-100 text-indigo-700 border border-indigo-200">
                                                         {currentQuestionIndex + 1}
-                                                    </Badge>
-                                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Soru Görseli</span>
-                                                </CardHeader>
-                                                <CardContent className="p-0">
-                                                    <div className="relative w-full aspect-video bg-slate-50">
+                                                    </div>
+                                                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest bg-white px-3 py-1 rounded-full border shadow-sm">Görsel Soru</span>
+                                                </div>
+                                                <div className="relative w-full aspect-auto min-h-[300px] sm:min-h-[400px] bg-slate-100/50 p-4 sm:p-8 flex items-center justify-center">
+                                                    <div className="relative w-full h-full max-h-[600px] rounded-2xl overflow-hidden shadow-sm border border-slate-200/50 bg-white">
                                                         <Image 
                                                             src={test.questions![currentQuestionIndex].imageUrl} 
                                                             alt={`Soru ${currentQuestionIndex + 1}`} 
                                                             fill 
-                                                            className="object-contain p-4"
-                                                            data-ai-hint="exam question"
+                                                            className="object-contain p-2"
                                                         />
                                                     </div>
-                                                    <div className="p-8 border-t bg-white">
-                                                        <p className="text-sm font-bold text-slate-500 mb-6 uppercase tracking-wider">Cevabınız:</p>
-                                                        {test.openEnded ? (
-                                                            <Textarea 
-                                                                placeholder="Cevabınızı buraya yazın..." 
-                                                                value={textAnswers[(currentQuestionIndex + 1).toString()] || ""} 
-                                                                onChange={(e) => handleTextAnswerChange(currentQuestionIndex + 1, e.target.value)} 
-                                                                className={cn("min-h-[150px] rounded-2xl text-lg", glassColors.INPUT_BG)}
-                                                            />
-                                                        ) : (
-                                                            <RadioGroup 
-                                                                value={mcqAnswers[(currentQuestionIndex + 1).toString()] || ""} 
-                                                                onValueChange={(v) => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), v)}
-                                                                className="flex flex-wrap gap-4"
-                                                            >
-                                                                {options.slice(0, 5).map(opt => (
-                                                                    <div key={opt} className="flex items-center">
-                                                                        <RadioGroupItem value={opt} id={`opt-${opt}`} className="peer sr-only" />
-                                                                        <Label htmlFor={`opt-${opt}`} className={cn(glassColors.OPTION_BUTTON, "w-14 h-14 text-xl")}>{opt}</Label>
-                                                                    </div>
-                                                                ))}
-                                                            </RadioGroup>
-                                                        )}
+                                                </div>
+                                                
+                                                {/* Cevaplama Alanı (Bottom) */}
+                                                <div className="p-6 sm:p-8 border-t border-slate-100 bg-white rounded-b-[2rem]">
+                                                    <div className="flex items-center gap-3 mb-6">
+                                                        <div className="w-1 h-5 bg-indigo-500 rounded-full" />
+                                                        <p className="text-[15px] font-bold text-slate-700">Cevabınızı İşaretleyin</p>
                                                     </div>
-                                                </CardContent>
-                                            </Card>
+                                                    
+                                                    {test.openEnded ? (
+                                                        <Textarea 
+                                                            placeholder="Çözüm veya cevabınızı buraya detaylıca yazabilirsiniz..." 
+                                                            value={textAnswers[(currentQuestionIndex + 1).toString()] || ""} 
+                                                            onChange={(e) => handleTextAnswerChange(currentQuestionIndex + 1, e.target.value)} 
+                                                            className={cn("min-h-[160px] rounded-2xl text-[17px] p-5 shadow-inner", themeStyles.INPUT_BG)}
+                                                        />
+                                                    ) : (
+                                                        <RadioGroup 
+                                                            value={mcqAnswers[(currentQuestionIndex + 1).toString()] || ""} 
+                                                            onValueChange={(v) => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), v)}
+                                                            className="flex flex-wrap justify-center sm:justify-start gap-4 sm:gap-6"
+                                                        >
+                                                            {options.slice(0, 5).map(opt => (
+                                                                <div key={opt} className="flex items-center">
+                                                                    <RadioGroupItem value={opt} id={`opt-${opt}`} className="peer sr-only" />
+                                                                    <Label htmlFor={`opt-${opt}`} className={themeStyles.OPTICAL_BUTTON}>
+                                                                        {opt}
+                                                                    </Label>
+                                                                </div>
+                                                            ))}
+                                                        </RadioGroup>
+                                                    )}
+                                                </div>
+                                            </div>
                                         )}
 
-                                        {/* Navigasyon Butonları */}
+                                        {/* Alt Navigasyon Barı */}
                                         <div className="flex justify-between items-center mt-8 gap-4">
                                             <Button 
                                                 type="button" 
                                                 variant="outline" 
-                                                size="lg"
                                                 onClick={handlePrev} 
                                                 disabled={currentQuestionIndex === 0}
-                                                className="h-14 rounded-2xl px-8 font-bold border-slate-200"
+                                                className="h-14 rounded-2xl px-6 sm:px-8 font-bold text-slate-600 border-2 border-slate-200 hover:bg-slate-100 hover:text-slate-900 transition-all text-base"
                                             >
-                                                <ChevronLeft className="mr-2 h-6 w-6" /> Önceki
+                                                <ChevronLeft className="mr-2 h-5 w-5" /> <span className="hidden sm:inline">Önceki</span>
                                             </Button>
 
                                             {currentQuestionIndex === totalQuestions - 1 ? (
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
-                                                        <Button type="button" size="lg" className="h-14 rounded-2xl px-8 font-bold bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20">
-                                                            Sınavı Bitir <CheckCircle className="ml-2 h-6 w-6" />
+                                                        <Button type="button" className="h-14 rounded-2xl px-8 font-bold text-white bg-slate-900 hover:bg-slate-800 shadow-xl shadow-slate-900/20 text-base transition-transform active:scale-95 flex-1 sm:flex-none">
+                                                            Sınavı Bitir <CheckCircle className="ml-2 h-5 w-5 text-emerald-400" />
                                                         </Button>
                                                     </AlertDialogTrigger>
-                                                    <AlertDialogContent className="bg-white border-slate-200 rounded-3xl shadow-2xl">
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle className="text-2xl font-black">Emin misiniz?</AlertDialogTitle>
-                                                            <AlertDialogDescription className="text-slate-500 text-base">Cevaplarını kaydedip sınavı bitirmek üzeresin.</AlertDialogDescription>
+                                                    <AlertDialogContent className="bg-white border-slate-200 rounded-[2rem] shadow-2xl p-8">
+                                                        <AlertDialogHeader className="mb-6">
+                                                            <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-4 mx-auto">
+                                                                <Flag className="w-8 h-8" />
+                                                            </div>
+                                                            <AlertDialogTitle className="text-2xl font-black text-center text-slate-800">Sınavı Tamamla</AlertDialogTitle>
+                                                            <AlertDialogDescription className="text-center text-base text-slate-500 font-medium">
+                                                                Cevaplarınızı kaydedip genel sonucunuzu görmek için onaylayın.
+                                                            </AlertDialogDescription>
                                                         </AlertDialogHeader>
-                                                        <AlertDialogFooter className="mt-6">
-                                                            <AlertDialogCancel className="bg-slate-100 border-slate-200 rounded-xl h-12 font-bold">Vazgeç</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 font-bold">Evet, Bitir</AlertDialogAction>
+                                                        <AlertDialogFooter className="flex-row gap-3 sm:space-x-0 w-full">
+                                                            <AlertDialogCancel className="flex-1 m-0 h-14 rounded-xl border-2 border-slate-200 font-bold text-slate-600 hover:bg-slate-50 text-[15px]">Kontrol Et</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleSubmit(false)} className="flex-1 m-0 h-14 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg shadow-indigo-600/20 text-[15px]">Evet, Bitir</AlertDialogAction>
                                                         </AlertDialogFooter>
                                                     </AlertDialogContent>
                                                 </AlertDialog>
                                             ) : (
                                                 <Button 
                                                     type="button" 
-                                                    size="lg"
                                                     onClick={handleNext} 
-                                                    className="h-14 rounded-2xl px-8 font-bold bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/20"
+                                                    className="h-14 rounded-2xl px-6 sm:px-8 font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all text-base flex-1 sm:flex-none"
                                                 >
-                                                    Sonraki <ChevronRight className="ml-2 h-6 w-6" />
+                                                    Sonraki <ChevronRight className="ml-2 h-5 w-5" />
                                                 </Button>
                                             )}
                                         </div>
                                     </motion.div>
                                 ) : (
-                                    /* DENEME SINAVI (TOPLU AKORDİYON GÖRÜNÜMÜ) */
-                                    <Accordion type="multiple" className="w-full space-y-4">
+                                    /* DENEME SINAVI (MODÜLER OPTİK FORM GÖRÜNÜMÜ) */
+                                    <Accordion type="multiple" defaultValue={practiceExam?.subjects.map(s => s.id)} className="w-full space-y-6">
                                         {practiceExam?.subjects.map(subject => {
-                                            // Subject range mapping (legacy but kept for Deneme structure)
                                             let currentOffset = 0;
                                             const sub = practiceExam.subjects.find(s => s.id === subject.id)!;
                                             const idx = practiceExam.subjects.indexOf(sub);
@@ -571,32 +646,33 @@ export default function OpticalFormPage() {
                                             const isSubjectSubmitted = submittedSubjectIds.includes(subject.id);
                                             const subjectAnswers = Array.from({ length: subject.questionCount }).map((_, i) => mcqAnswers[(range.start + i).toString()]);
                                             const answeredCount = subjectAnswers.filter(Boolean).length;
-                                            const correctCount = isSubjectSubmitted ? subjectAnswers.filter((ans, i) => ans === (test.answerKey || {})[(range.start + i).toString()]).length : 0;
-                                            const incorrectCount = isSubjectSubmitted ? subjectAnswers.filter((ans, i) => ans && ans !== (test.answerKey || {})[(range.start + i).toString()]).length : 0;
 
                                             return (
-                                                <AccordionItem key={subject.id} value={subject.id} className="border rounded-2xl bg-white overflow-hidden shadow-sm">
-                                                    <AccordionTrigger className="bg-slate-50 hover:bg-slate-100 px-6 py-4 no-underline hover:no-underline">
+                                                <AccordionItem key={subject.id} value={subject.id} className="border-0 rounded-[2rem] bg-white shadow-[0_4px_20px_rgb(0,0,0,0.03)] overflow-hidden">
+                                                    <AccordionTrigger className="bg-slate-50/50 hover:bg-slate-50 px-6 py-5 no-underline hover:no-underline border-b border-slate-100">
                                                         <div className="flex items-center justify-between w-full pr-4">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="bg-indigo-600 p-2 rounded-lg text-white"><BookOpen className="w-4 h-4" /></div>
-                                                                <h3 className="font-bold text-slate-800 text-lg">{subject.name}</h3>
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-sm border border-indigo-100">
+                                                                    <BookOpen className="w-5 h-5" />
+                                                                </div>
+                                                                <div className="text-left">
+                                                                    <h3 className="font-black text-slate-800 text-[17px] leading-tight">{subject.name}</h3>
+                                                                    <p className="text-[12px] font-bold text-slate-400 mt-0.5 uppercase tracking-wider">{subject.questionCount} Soru</p>
+                                                                </div>
                                                             </div>
-                                                            <div className="flex items-center gap-2">
+                                                            <div className="flex items-center">
                                                                 {isSubjectSubmitted ? (
-                                                                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
-                                                                        {correctCount}D - {incorrectCount}Y
-                                                                    </Badge>
+                                                                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 px-3 py-1 font-bold">Kaydedildi</Badge>
                                                                 ) : (
-                                                                    <Badge variant="secondary" className="bg-white border-slate-200 text-slate-500 font-bold px-3 py-1 shadow-sm">
-                                                                        {answeredCount}/{subject.questionCount} Soru
+                                                                    <Badge variant="outline" className="bg-white border-slate-200 text-indigo-600 font-bold px-3 py-1">
+                                                                        {answeredCount}/{subject.questionCount} Çözüldü
                                                                     </Badge>
                                                                 )}
                                                             </div>
                                                         </div>
                                                     </AccordionTrigger>
-                                                    <AccordionContent className="p-0 border-t">
-                                                        <div className="divide-y divide-slate-100 bg-white">
+                                                    <AccordionContent className="p-0">
+                                                        <div className="divide-y divide-slate-100/80 bg-white">
                                                             {Array.from({ length: subject.questionCount }).map((_, i) => {
                                                                 const qNum = range.start + i;
                                                                 const qNumStr = qNum.toString();
@@ -604,26 +680,41 @@ export default function OpticalFormPage() {
                                                                 const correctAns = (test.answerKey || {})[qNumStr];
                                                                 
                                                                 return (
-                                                                    <div key={qNum} className="flex items-center p-3 sm:p-4 hover:bg-slate-50 transition-colors">
-                                                                        <div className="w-12 text-center font-bold text-slate-400 text-lg">{i + 1}</div>
+                                                                    <div key={qNum} className="flex flex-col sm:flex-row items-start sm:items-center p-4 sm:p-6 hover:bg-slate-50/50 transition-colors gap-4">
+                                                                        <div className="flex items-center gap-4 w-full sm:w-auto shrink-0">
+                                                                            <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-black flex items-center justify-center text-[15px]">
+                                                                                {i + 1}
+                                                                            </div>
+                                                                            <div className="h-px bg-slate-200 flex-1 sm:hidden" />
+                                                                        </div>
                                                                         
                                                                         {isSubjectSubmitted ? (
-                                                                            <div className="flex-1 flex gap-4 ml-4">
-                                                                                <span className={cn("font-bold text-lg", studentAns === correctAns ? "text-emerald-600" : "text-rose-600")}>
-                                                                                    {studentAns || "Boş"}
-                                                                                </span>
-                                                                                {studentAns !== correctAns && <span className="text-emerald-600 font-bold text-lg">Doğru: {correctAns}</span>}
+                                                                            <div className="flex-1 flex gap-6 sm:ml-6 items-center">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Senin Cevabın:</span>
+                                                                                    <span className={cn("font-black text-xl w-8 h-8 rounded-lg flex items-center justify-center border", studentAns === correctAns ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-rose-50 text-rose-600 border-rose-200")}>
+                                                                                        {studentAns || "-"}
+                                                                                    </span>
+                                                                                </div>
+                                                                                {studentAns !== correctAns && (
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Doğru:</span>
+                                                                                        <span className="font-black text-xl w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-50 border border-emerald-200 text-emerald-600">
+                                                                                            {correctAns}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                         ) : (
                                                                             <RadioGroup 
                                                                                 value={studentAns || ""} 
                                                                                 onValueChange={(v) => handleMcqAnswerChange(qNumStr, v)}
-                                                                                className="flex-1 flex justify-center sm:justify-start gap-2.5 sm:gap-6 ml-4"
+                                                                                className="flex-1 flex justify-center sm:justify-start gap-3 sm:gap-5 w-full sm:ml-6"
                                                                             >
-                                                                                {options.slice(0,4).map(option => (
+                                                                                {options.slice(0,5).map(option => (
                                                                                     <div key={option}>
                                                                                         <RadioGroupItem value={option} id={`q${qNum}-${option}`} className="peer sr-only" />
-                                                                                        <Label htmlFor={`q${qNum}-${option}`} className={glassColors.OPTION_BUTTON}>{option}</Label>
+                                                                                        <Label htmlFor={`q${qNum}-${option}`} className={themeStyles.OPTICAL_BUTTON}>{option}</Label>
                                                                                     </div>
                                                                                 ))}
                                                                             </RadioGroup>
@@ -633,9 +724,9 @@ export default function OpticalFormPage() {
                                                             })}
                                                         </div>
                                                         {!isSubjectSubmitted && (
-                                                            <div className="p-6 bg-slate-50 border-t flex justify-center">
-                                                                <Button type="button" className="bg-indigo-600 text-white font-bold px-8 rounded-xl h-11" onClick={() => handleSubjectFinish(subject.id)}>
-                                                                    Dersi Bitir ve Sonuçları Gör
+                                                            <div className="p-6 bg-slate-50/80 border-t border-slate-100 flex justify-end">
+                                                                <Button type="button" className="bg-white border-2 border-indigo-100 text-indigo-600 hover:bg-indigo-50 font-bold px-8 rounded-xl h-12 shadow-sm" onClick={() => handleSubjectFinish(subject.id)}>
+                                                                    Bölümü Kaydet
                                                                 </Button>
                                                             </div>
                                                         )}
@@ -643,21 +734,27 @@ export default function OpticalFormPage() {
                                                 </AccordionItem>
                                             )
                                         })}
-                                        <div className="pt-6">
+                                        
+                                        <div className="pt-8">
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button type="button" size="lg" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-14 shadow-2xl rounded-2xl text-lg transition-transform active:scale-95">
-                                                        Tüm Testi Bitir ve Genel Sonucu Gör <Check className="ml-3 h-6 w-6" />
+                                                    <Button type="button" className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black h-16 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] rounded-2xl text-[17px] transition-transform active:scale-[0.98]">
+                                                        Tüm Sınavı Bitir ve Genel Sonucu Gör <ArrowRight className="ml-3 h-5 w-5" />
                                                     </Button>
                                                 </AlertDialogTrigger>
-                                                <AlertDialogContent className="bg-white border-slate-200 rounded-3xl shadow-2xl">
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle className="text-2xl font-black">Sınavı Bitir?</AlertDialogTitle>
-                                                        <AlertDialogDescription className="text-slate-500 text-base">Genel sonucunuz hesaplanacaktır.</AlertDialogDescription>
+                                                <AlertDialogContent className="bg-white border-slate-200 rounded-[2rem] shadow-2xl p-8">
+                                                    <AlertDialogHeader className="mb-6">
+                                                        <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-4 mx-auto">
+                                                            <CheckCircle className="w-8 h-8" />
+                                                        </div>
+                                                        <AlertDialogTitle className="text-2xl font-black text-center text-slate-800">Sınavı Tamamla</AlertDialogTitle>
+                                                        <AlertDialogDescription className="text-center text-base text-slate-500 font-medium">
+                                                            Tüm bölümler için cevaplarınız hesaplanacak ve sonuç ekranına yönlendirileceksiniz.
+                                                        </AlertDialogDescription>
                                                     </AlertDialogHeader>
-                                                    <AlertDialogFooter className="mt-6">
-                                                        <AlertDialogCancel className="bg-slate-100 border-slate-200 rounded-xl h-12 font-bold">İptal</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 font-bold">Bitir</AlertDialogAction>
+                                                    <AlertDialogFooter className="flex-row gap-3 sm:space-x-0 w-full">
+                                                        <AlertDialogCancel className="flex-1 m-0 h-14 rounded-xl border-2 border-slate-200 font-bold text-slate-600 hover:bg-slate-50 text-[15px]">İptal</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleSubmit(false)} className="flex-1 m-0 h-14 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-600/20 text-[15px]">Bitir ve Gör</AlertDialogAction>
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
                                             </AlertDialog>
@@ -668,17 +765,17 @@ export default function OpticalFormPage() {
                         </div>
 
                         {/* SAĞ KOLON: SORU GEZGİNİ (DESKTOP) */}
-                        <div className="hidden lg:block lg:col-span-4">
-                            <div className={cn("sticky top-28 rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-xl")}>
-                                <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center">
-                                    <h3 className="font-black text-slate-800 flex items-center gap-2">
-                                        <LayoutGrid className="w-4 h-4 text-indigo-600" /> Soru Gezgini
+                        <div className="hidden lg:block lg:col-span-4 relative">
+                            <div className={cn("sticky top-28 rounded-[2rem] overflow-hidden bg-white shadow-xl shadow-slate-200/50 border border-slate-100")}>
+                                <div className="p-6 border-b border-slate-100 bg-white flex justify-between items-center">
+                                    <h3 className="font-black text-slate-800 text-[17px] flex items-center gap-2">
+                                        <LayoutGrid className="w-5 h-5 text-indigo-500" /> Soru Gezgini
                                     </h3>
-                                    <Badge variant="secondary" className="bg-white border-slate-200 text-indigo-600 font-bold">
-                                        {Object.keys(mcqAnswers).length + Object.keys(textAnswers).length}/{totalQuestions}
-                                    </Badge>
+                                    <div className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full font-bold text-sm">
+                                        {answeredCount} / {totalQuestions}
+                                    </div>
                                 </div>
-                                <ScrollArea className="h-[500px]">
+                                <ScrollArea className="h-[calc(100vh-280px)] min-h-[400px] bg-slate-50/30">
                                     <QuestionPalette 
                                         total={totalQuestions} 
                                         currentIndex={currentQuestionIndex} 
@@ -693,19 +790,24 @@ export default function OpticalFormPage() {
                     </main>
                     
                     {/* MOBİL: SORU GEZGİNİ BUTONU VE SHEET */}
-                    <div className="lg:hidden fixed bottom-24 left-6 z-50">
+                    <div className="lg:hidden fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-6 z-50">
                         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                             <SheetTrigger asChild>
-                                <Button size="icon" className="h-14 w-14 rounded-full bg-indigo-600 text-white shadow-2xl border-2 border-white ring-4 ring-indigo-500/20 active:scale-95 transition-all">
+                                <Button size="icon" className="h-16 w-16 rounded-full bg-indigo-600 text-white shadow-[0_8px_30px_rgb(79,70,229,0.4)] border-[3px] border-white active:scale-95 transition-transform flex flex-col gap-0.5 items-center justify-center p-0">
                                     <LayoutGrid className="w-6 h-6" />
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent side="bottom" className="rounded-t-[2.5rem] bg-white p-6 h-[70vh]">
-                                <SheetHeader className="mb-4">
-                                    <SheetTitle className="flex items-center justify-center gap-3 font-black text-xl">Soru Gezgini</SheetTitle>
+                            <SheetContent side="bottom" className="rounded-t-[2.5rem] bg-white p-0 h-[80vh] border-0 shadow-2xl flex flex-col">
+                                <SheetHeader className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-row items-center justify-between">
+                                    <SheetTitle className="font-black text-xl flex items-center gap-2 m-0 text-slate-800">
+                                        <LayoutGrid className="w-5 h-5 text-indigo-600" /> Soru Haritası
+                                    </SheetTitle>
+                                    <div className="bg-white border border-slate-200 text-indigo-600 px-3 py-1 rounded-full font-bold text-[13px] shadow-sm">
+                                        {answeredCount} / {totalQuestions} Çözüldü
+                                    </div>
                                 </SheetHeader>
-                                <ScrollArea className="h-full">
-                                    <div className="pb-24">
+                                <ScrollArea className="flex-1 p-2 bg-white">
+                                    <div className="pb-8">
                                         <QuestionPalette 
                                             total={totalQuestions} 
                                             currentIndex={currentQuestionIndex} 

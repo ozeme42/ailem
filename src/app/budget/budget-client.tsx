@@ -490,7 +490,8 @@ export function BudgetClient() {
             </div>
 
             {/* --- FLOAT ACTION BUTTON (FAB) --- */}
-            <div className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-6 z-50">
+            {/* MOBİL ALT MENÜNÜN (h-16) ÜZERİNDE KALMASI İÇİN bottom DEĞERİ ARTIRILDI */}
+            <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-6 z-50">
                 <Button 
                     className="rounded-full w-14 h-14 bg-[#007AFF] hover:bg-[#007AFF]/90 text-white shadow-[0_4px_14px_0_rgba(0,122,255,0.39)] transition-transform active:scale-95"
                     onClick={() => { setEditingTransaction(null); setIsTransactionFormOpen(true); }}

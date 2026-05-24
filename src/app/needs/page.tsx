@@ -524,7 +524,7 @@ export default function NeedsPage() {
                 </div>
             )}
         </div>
-        <div className="fixed bottom-6 right-6 z-10">
+        <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-6 z-10">
             <Button className="rounded-full w-16 h-16 shadow-lg bg-orange-500 hover:bg-orange-600" size="icon" onClick={() => { setEditingList(null); setListDialogOpen(true); }}>
                 <Plus className="h-8 w-8"/>
             </Button>

@@ -253,7 +253,6 @@ export default function LibraryPage() {
     if (!selectedMember) return { weeklyChartData: [], monthlyPageData: [], weekLabel: "" };
   
     const memberSessions = readingSessions.filter(s => s.memberId === selectedMember.id);
-    // GÜNCELLEME: `today` artık referans tarihini kullanıyor.
     const today = chartReferenceDate; 
   
     // Weekly Stats
@@ -309,7 +308,7 @@ export default function LibraryPage() {
     const weekLabel = `${format(weekStart, 'd MMM', { locale: tr })} - ${format(weekEnd, 'd MMM', { locale: tr })}`;
 
     return { weeklyChartData, monthlyPageData, weekLabel };
-  }, [readingSessions, selectedMember, chartReferenceDate]); // chartReferenceDate dependency eklendi
+  }, [readingSessions, selectedMember, chartReferenceDate]);
 
   const monthlyGoalProgress = React.useMemo(() => {
     if (!readingGoals?.monthly || !selectedMember) return { pages: 0, books: 0, pagesRead: 0, booksRead: 0 };
@@ -580,7 +579,7 @@ export default function LibraryPage() {
                             <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-4">
                                 <BookCheck className="w-5 h-5 text-emerald-500" /> Bitirdiklerim
                             </h2>
-                            <div className="flex overflow-x-auto gap-4 pb-2 scrollbar-hide -mx-2 px-2">
+                            <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide -mx-2 px-2">
                                 {finishedBooks.map(book => <FinishedBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
                             </div>
                         </div>
@@ -715,23 +714,37 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onOpen
 
 function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
     const [isOpen, setIsOpen] = React.useState(false);
+    const finishedDate = book.finishedAt ? format(parseISO(book.finishedAt), 'd MMM yyyy', { locale: tr }) : '';
+
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                 <div className="group/book relative w-28 shrink-0 cursor-pointer transition-transform hover:-translate-y-2 duration-300">
-                    <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover aspect-[2/3] rounded-lg shadow-sm" data-ai-hint="book cover" />
-                    
-                    {/* Overlay */}
-                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent rounded-lg opacity-0 group-hover/book:opacity-100 transition-opacity flex flex-col justify-end p-2">
-                        <div className="text-center">
-                             <div className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mb-1 shadow-sm">Tamamlandı</div>
-                             <p className="text-[10px] text-white/90">{book.finishedAt ? format(parseISO(book.finishedAt), 'dd.MM.yy') : ''}</p>
+                <div className="group/book relative w-28 shrink-0 cursor-pointer transition-transform hover:-translate-y-1 duration-300 flex flex-col gap-1.5">
+                    {/* Kapak ve Yeşil Tik */}
+                    <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden shadow-sm border border-slate-100">
+                        <Image src={book.image} alt={book.title} width={150} height={225} className="w-full h-full object-cover" data-ai-hint="book cover" />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/book:opacity-100 transition-opacity" />
+                        <div className="absolute top-1.5 right-1.5 bg-emerald-500 rounded-full p-1 shadow-sm">
+                            <Check className="w-3 h-3 text-white stroke-[3]" />
                         </div>
+                    </div>
+                    {/* Başlık ve Tarih (Kartın Altında) */}
+                    <div className="px-1 text-center">
+                        <p className="font-bold text-xs leading-tight line-clamp-1 text-slate-800 group-hover/book:text-emerald-600 transition-colors" title={book.title}>{book.title}</p>
+                        {finishedDate && (
+                            <p className="text-[10px] text-slate-500 flex items-center justify-center gap-1 mt-0.5 font-medium">
+                                <CalendarIcon className="w-3 h-3 text-slate-400" /> {finishedDate}
+                            </p>
+                        )}
                     </div>
                 </div>
             </DialogTrigger>
             <DialogContent className="sm:max-w-xs bg-white border-slate-200 text-slate-900 rounded-3xl shadow-xl">
                  <DialogHeader>
+                    <div className="mx-auto bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1 rounded-full w-fit mb-2 flex items-center gap-1.5">
+                        <Check className="w-3 h-3" />
+                        Tamamlanma: {finishedDate}
+                    </div>
                     <DialogTitle className="text-center text-lg text-slate-800">{book.title}</DialogTitle>
                     <DialogDescription className="text-center text-slate-500">{book.author}</DialogDescription>
                 </DialogHeader>
