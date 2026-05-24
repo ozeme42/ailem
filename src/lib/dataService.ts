@@ -417,7 +417,7 @@ export const deleteTag = async (tagType: TagType, tagToDelete: string, itemType:
 
     // 1. Get all tags and filter out the one to delete
     const tagsDocRef = doc(db, 'familyManagement', familyId);
-    const tagsDoc = await getGetDoc(tagsDocRef);
+    const tagsDoc = await getDoc(tagsDocRef);
     const allTags: string[] = tagsDoc.exists() ? (tagsDoc.data()[tagType] || []) : [];
     const newTags = allTags.filter(tag => !tag.startsWith(tagToDelete));
     await setDoc(tagsDocRef, { [tagType]: newTags }, { merge: true });
@@ -550,14 +550,15 @@ export const upsertCalorieLog = async (logData: Omit<CalorieLog, 'familyId'>) =>
 
 // Shopping Lists
 export const onShoppingListsUpdate = (callback: (lists: ShoppingList[]) => void) => onFamilyDataUpdate<ShoppingList>('shoppingLists', callback);
+
 export const addShoppingList = async (name: string, icon: string, colorId?: string) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
 
-    // Calculate initial order (append to end)
-    const q = query(collection(db, 'shoppingLists'), where("familyId", "==", familyId), orderBy("order", "desc"), limit(1));
+    // Safer calculation for order (Prototype friendly - avoid index requirement)
+    const q = query(collection(db, 'shoppingLists'), where("familyId", "==", familyId));
     const snap = await getDocs(q);
-    const maxOrder = snap.empty ? 0 : (snap.docs[0].data().order || 0);
+    const maxOrder = snap.docs.reduce((max, d) => Math.max(max, d.data().order || 0), 0);
 
     return addDoc(collection(db, 'shoppingLists'), { 
         name, 
@@ -570,7 +571,12 @@ export const addShoppingList = async (name: string, icon: string, colorId?: stri
         order: maxOrder + 1
     });
 };
-export const updateShoppingList = (id: string, data: Partial<Omit<ShoppingList, 'id' | 'familyId'>>) => updateDoc(doc(db, 'shoppingLists', id), data);
+
+export const updateShoppingList = (id: string, data: Partial<Omit<ShoppingList, 'id' | 'familyId'>>) => {
+    const cleanedData = removeUndefined(data);
+    return updateDoc(doc(db, 'shoppingLists', id), cleanedData);
+};
+
 export const deleteShoppingList = (id: string) => deleteDoc(doc(db, 'shoppingLists', id));
 
 export const addShoppingListItemToList = async (listId: string, itemData: { name: string; category?: string; quantity?: string; }) => {

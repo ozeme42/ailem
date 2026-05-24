@@ -106,10 +106,12 @@ const CreateListDialog = ({ isOpen, onOpenChange, onCreate, initialData }: {
     });
     
     useEffect(() => {
-        if(initialData) {
-            form.reset({ name: initialData.name, icon: initialData.icon, colorId: initialData.colorId || 'ocean' });
-        } else {
-            form.reset({ name: '', icon: 'ShoppingCart', colorId: 'ocean' });
+        if(isOpen) {
+            if(initialData) {
+                form.reset({ name: initialData.name, icon: initialData.icon, colorId: initialData.colorId || 'ocean' });
+            } else {
+                form.reset({ name: '', icon: 'ShoppingCart', colorId: 'ocean' });
+            }
         }
     }, [initialData, form, isOpen]);
 
@@ -243,7 +245,7 @@ const ListCard = ({ list, onClick, onEdit, onDelete, onMove, isFirst, isLast }: 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 active:scale-95" onClick={(e) => e.stopPropagation()}>
-                            <MoreVertical className="h-5 w-5" />
+                            <MoreVertical className="h-5 p-0 w-5" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl shadow-xl w-48 p-1">
@@ -356,15 +358,16 @@ export default function ShoppingPage() {
     try {
         if (editingList) {
             await updateShoppingList(editingList.id, { name: data.name, icon: data.icon, colorId: data.colorId }); 
-            toast({ title: "Liste Güncellendi", className: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-200 border-none" });
+            toast({ title: "Liste Güncellendi" });
         } else {
             await addShoppingList(data.name, data.icon, data.colorId);
-            toast({ title: "Harika! Yeni listeniz hazır 🚀", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200 border-none" });
+            toast({ title: "Harika! Yeni listeniz hazır 🚀" });
         }
         setListDialogOpen(false);
         setEditingList(null);
-    } catch(e) {
-        toast({ title: "Hata", description: "Bir sorun oluştu.", variant: 'destructive'});
+    } catch(e: any) {
+        console.error("List process error:", e);
+        toast({ title: "Hata", description: "Liste kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.", variant: 'destructive'});
     }
   };
   
@@ -383,7 +386,7 @@ export default function ShoppingPage() {
                 for (const item of aiResult.items) {
                     await addShoppingListItemToList(selectedList.id, item);
                 }
-                toast({ title: "✨ AI Sihri!", description: `${aiResult.items.length} ürün listelendi.`, className: "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/50 dark:text-fuchsia-200 border-none" });
+                toast({ title: "✨ Ürünler Eklendi", description: `${aiResult.items.length} ürün listelendi.` });
             } else {
                  await addShoppingListItemToList(selectedList.id, { name: itemToAdd.trim(), category: 'Diğer' });
             }
