@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { 
     ArrowLeft, BookOpen, ScrollText, ChevronRight, 
-    Search, Filter, BookText, Sparkles, X, Maximize2
+    Search, Filter, BookText, Sparkles, X, Maximize2, Minimize2
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { onSummariesUpdate } from "@/lib/dataService";
@@ -35,6 +35,7 @@ export function SummariesViewerClient() {
     const [searchTerm, setSearchTerm] = React.useState("");
     const [selectedSubject, setSelectedSubject] = React.useState<string>("Tümü");
     const [viewingSummary, setViewingSummary] = React.useState<Summary | null>(null);
+    const [isFullScreen, setIsFullScreen] = React.useState(false);
 
     React.useEffect(() => {
         if (!familyId) return;
@@ -58,6 +59,27 @@ export function SummariesViewerClient() {
             return matchesSearch && matchesSubject;
         });
     }, [summaries, searchTerm, selectedSubject]);
+
+    // Handle full screen logic
+    const toggleFullScreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().then(() => {
+                setIsFullScreen(true);
+            });
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+                setIsFullScreen(false);
+            }
+        }
+    };
+
+    // Auto-detect fullscreen changes (e.g. Escape key)
+    React.useEffect(() => {
+        const handleFsChange = () => setIsFullScreen(!!document.fullscreenElement);
+        document.addEventListener('fullscreenchange', handleFsChange);
+        return () => document.removeEventListener('fullscreenchange', handleFsChange);
+    }, []);
 
     return (
         <div className={cn("min-h-screen font-sans pb-20 flex flex-col", themeColors.PAGE_BG)}>
@@ -155,31 +177,65 @@ export function SummariesViewerClient() {
                 </div>
             </main>
 
-            {/* Content Modal */}
+            {/* Content Modal - Full Screen Style */}
             <Dialog open={!!viewingSummary} onOpenChange={(open) => !open && setViewingSummary(null)}>
-                <DialogContent className="max-w-4xl h-[90vh] md:h-[85vh] flex flex-col p-0 overflow-hidden rounded-t-[2.5rem] md:rounded-[2.5rem] border-none shadow-2xl bg-white dark:bg-slate-950 mt-auto">
-                    <DialogHeader className="p-6 pb-4 border-b bg-white/50 dark:bg-slate-950/50 backdrop-blur-xl sticky top-0 z-10 shrink-0">
-                        <div className="flex items-center gap-3 mb-2">
-                             <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 border-none">{viewingSummary?.subject}</Badge>
-                             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{viewingSummary?.topic}</span>
+                <DialogContent className={cn(
+                    "flex flex-col p-0 overflow-hidden border-none shadow-2xl bg-white dark:bg-slate-950 transition-all duration-300",
+                    isFullScreen 
+                        ? "fixed inset-0 w-screen h-screen max-w-none rounded-none z-[100]" 
+                        : "max-w-4xl h-[95vh] md:h-[90vh] rounded-t-[2.5rem] md:rounded-[2.5rem] mt-auto md:mt-0"
+                )}>
+                    <DialogHeader className="p-6 pb-4 border-b bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl sticky top-0 z-10 shrink-0 flex flex-row items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-1">
+                                 <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 border-none px-2 py-0 h-5 text-[10px]">{viewingSummary?.subject}</Badge>
+                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">{viewingSummary?.topic}</span>
+                            </div>
+                            <DialogTitle className="text-xl md:text-2xl font-black tracking-tight text-slate-900 dark:text-white truncate">
+                                {viewingSummary?.title}
+                            </DialogTitle>
                         </div>
-                        <DialogTitle className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-white">{viewingSummary?.title}</DialogTitle>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={toggleFullScreen}
+                                className="h-10 w-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+                            >
+                                {isFullScreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => setViewingSummary(null)}
+                                className="h-10 w-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+                            >
+                                <X className="h-5 w-5" />
+                            </Button>
+                        </div>
                     </DialogHeader>
                     
-                    <ScrollArea className="flex-1 bg-white dark:bg-slate-950 p-6 md:p-10">
+                    <ScrollArea className="flex-1 bg-white dark:bg-slate-950 p-6 md:p-12">
                         <div 
                             className="prose prose-slate dark:prose-invert max-w-none 
                                 prose-headings:font-black prose-headings:tracking-tight
                                 prose-p:leading-relaxed prose-p:text-slate-700 dark:prose-p:text-slate-300
                                 prose-strong:text-slate-900 dark:prose-strong:text-white
-                                prose-img:rounded-3xl prose-img:shadow-xl" 
+                                prose-img:rounded-3xl prose-img:shadow-xl
+                                prose-table:border prose-table:rounded-xl overflow-x-auto" 
                             dangerouslySetInnerHTML={{ __html: viewingSummary?.content || "" }} 
                         />
-                        <div className="h-20" /> {/* Bottom spacing */}
+                        <div className="h-24" /> {/* Bottom spacing */}
                     </ScrollArea>
 
-                    <DialogFooter className="p-4 border-t bg-slate-50 dark:bg-slate-900/50 shrink-0">
-                        <Button onClick={() => setViewingSummary(null)} className="w-full h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold">Kapat</Button>
+                    <DialogFooter className="p-4 border-t bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+                        <Button 
+                            onClick={() => setViewingSummary(null)} 
+                            className="w-full h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold shadow-lg active:scale-95 transition-transform"
+                        >
+                            Okumayı Bitir ve Kapat
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
