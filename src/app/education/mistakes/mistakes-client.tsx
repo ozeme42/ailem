@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -77,6 +78,7 @@ export function MistakesClient() {
         if (!familyId || !selectedStudent) return;
 
         const unsubTests = onTestsUpdate((all) => {
+            // Sadece seçili öğrencinin sonuçlanmış testlerini al
             setTests(all.filter(t => t.studentId === selectedStudent.id && t.status === 'Sonuçlandı'));
             setLoading(false);
         });
@@ -100,45 +102,76 @@ export function MistakesClient() {
         );
 
         filteredTestsBySource.forEach(test => {
-            const studentAnswers = test.studentAnswers || {};
-            const answerKey = test.answerKey || {};
-            
-            // Get source-specific info
+            const subjectName = getCategoryName(test);
             let topicName = "Genel";
+            
+            // Konu adını bulma mantığı
             if (test.topicId) {
-                const foundTopic = trackedBooks.flatMap(b => b.subjects.flatMap(s => s.topics)).find(t => t.id === test.topicId);
+                const allTopics = trackedBooks.flatMap(b => b.subjects.flatMap(s => s.topics));
+                const foundTopic = allTopics.find(t => t.id === test.topicId);
                 if (foundTopic) topicName = foundTopic.name;
             } else if ((test as any).topic) {
                 topicName = (test as any).topic;
             }
 
-            const subjectName = getCategoryName(test);
+            // DURUM 1: Çoktan Seçmeli (MCQ) Mantığı (studentAnswers & answerKey)
+            if (!test.openEnded) {
+                const studentAnswers = test.studentAnswers || {};
+                const answerKey = test.answerKey || {};
 
-            // Compare answers and detect empties
-            Object.entries(answerKey).forEach(([qNum, cAns]) => {
-                const sAns = studentAnswers[qNum];
-                const isWrong = sAns && sAns !== cAns;
-                const isEmpty = !sAns;
-
-                if (isWrong || isEmpty) {
-                    list.push({
-                        id: `${test.id}_${qNum}`,
-                        questionNumber: qNum,
-                        studentAnswer: sAns || null,
-                        correctAnswer: cAns,
-                        testTitle: test.title,
-                        testId: test.id,
-                        date: test.assignedDate,
-                        subject: subjectName,
-                        topic: topicName,
-                        sourceType: test.sourceType,
-                        isEmpty: !!isEmpty
+                // Eğer JSON testi ise ve answerKey yoksa jsonQuestions'dan türet
+                let effectiveAnswerKey = { ...answerKey };
+                if (test.sourceType === 'json' && Object.keys(effectiveAnswerKey).length === 0 && test.jsonQuestions) {
+                    test.jsonQuestions.forEach((q, idx) => {
+                        effectiveAnswerKey[(idx + 1).toString()] = q.answer;
                     });
                 }
-            });
+
+                Object.entries(effectiveAnswerKey).forEach(([qNum, cAns]) => {
+                    const sAns = studentAnswers[qNum];
+                    const isWrong = sAns && sAns !== cAns;
+                    const isEmpty = !sAns;
+
+                    if (isWrong || isEmpty) {
+                        list.push({
+                            id: `${test.id}_${qNum}`,
+                            questionNumber: qNum,
+                            studentAnswer: sAns || null,
+                            correctAnswer: cAns,
+                            testTitle: test.title,
+                            testId: test.id,
+                            date: test.assignedDate,
+                            subject: subjectName,
+                            topic: topicName,
+                            sourceType: test.sourceType,
+                            isEmpty: !!isEmpty
+                        });
+                    }
+                });
+            } 
+            // DURUM 2: Açık Uçlu (Evaluated) Mantığı (studentTextAnswersEvaluation)
+            else if (test.studentTextAnswersEvaluation) {
+                Object.entries(test.studentTextAnswersEvaluation).forEach(([qNum, status]) => {
+                    if (status === 'incorrect' || status === 'empty') {
+                        list.push({
+                            id: `${test.id}_${qNum}`,
+                            questionNumber: qNum,
+                            studentAnswer: test.studentTextAnswers?.[qNum] || null,
+                            correctAnswer: test.answerKey?.[qNum] || "Bilinmiyor",
+                            testTitle: test.title,
+                            testId: test.id,
+                            date: test.assignedDate,
+                            subject: subjectName,
+                            topic: topicName,
+                            sourceType: test.sourceType,
+                            isEmpty: status === 'empty'
+                        });
+                    }
+                });
+            }
         });
 
-        // Search Filter
+        // Arama filtresi ve Tarih sıralaması
         return list.filter(m => 
             m.testTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
             m.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -146,7 +179,7 @@ export function MistakesClient() {
         ).sort((a,b) => b.date.localeCompare(a.date));
     }, [tests, trackedBooks, searchTerm]);
 
-    // Grouping for Hiearchy: Subject > Topic
+    // Gruplandırma: Ders > Konu
     const hiearchy = React.useMemo(() => {
         const map: Record<string, Record<string, MistakeDetail[]>> = {};
         
@@ -287,7 +320,7 @@ export function MistakesClient() {
                                                                     <div className="flex flex-col items-center gap-1 flex-1">
                                                                         <span className="text-[9px] font-black text-slate-400 uppercase">Doğru Cevap</span>
                                                                         <div className="w-10 h-10 rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center text-emerald-600 font-black text-lg">
-                                                                            {mistake.correctAnswer}
+                                                                            {mistake.correctAnswer?.length > 1 ? "..." : (mistake.correctAnswer || "?")}
                                                                         </div>
                                                                     </div>
                                                                     <div className="flex-shrink-0 ml-2">
@@ -327,3 +360,4 @@ export function MistakesClient() {
         </div>
     );
 }
+
