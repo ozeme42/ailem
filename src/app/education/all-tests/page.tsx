@@ -312,7 +312,7 @@ function TestsListOrGrid({ tests, viewMode, familyMembers, onDelete, onReassign,
                                     <td className="p-4 text-right pr-6">
                                         <div className="flex items-center justify-end gap-1">
                                             {test.status === 'Değerlendirme Bekliyor' ? (
-                                                <Link href={`/education/${test.id}`}>
+                                                <Link href={`/education/${test.id}?mode=evaluate`}>
                                                     <Button size="sm" className="h-8 px-3 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20">
                                                         <CheckSquare className="w-3.5 h-3.5 mr-1.5"/> Değerlendir
                                                     </Button>
@@ -361,7 +361,7 @@ function TestCard({ test, student, onDelete, onReassign }: any) {
             </CardContent>
             <CardFooter className="p-4 pt-0">
                 {isPendingEvaluation ? (
-                    <Link href={`/education/${test.id}`} className="w-full">
+                    <Link href={`/education/${test.id}?mode=evaluate`} className="w-full">
                         <Button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold h-10 rounded-xl shadow-lg shadow-blue-600/20">Değerlendir</Button>
                     </Link>
                 ) : (
@@ -425,7 +425,7 @@ function ReassignTestDialog({ test, isOpen, onOpenChange, familyMembers }: { tes
                 <DialogHeader><DialogTitle className="flex items-center gap-2"><Repeat className="w-5 h-5 text-indigo-400" /> Ödevi Tekrar Ata</DialogTitle><DialogDescription className="text-slate-400">"{test.title}" ödevini yeni bir görev olarak tanımlayın.</DialogDescription></DialogHeader>
                 <div className="space-y-6 py-4">
                     <div className="space-y-2"><Label className="text-xs font-bold text-slate-500 uppercase">Öğrenci</Label><Select value={selectedStudentId} onValueChange={setSelectedStudentId}><SelectTrigger className="bg-slate-950 border-slate-800 h-11"><SelectValue placeholder="Seçin" /></SelectTrigger><SelectContent className="bg-slate-900 border-slate-800 text-slate-100">{students.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label className="text-xs font-bold text-slate-500 uppercase">Bitiş Tarihi</Label><Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-start bg-slate-950 border-slate-800 h-11"><Calendar className="mr-2 h-4 w-4" />{format(dueDate, "d MMMM yyyy", { locale: tr })}</Button></PopoverTrigger><PopoverContent className="w-auto p-0 bg-slate-900 border-slate-800" align="start"><CalendarPicker mode="single" selected={dueDate} onSelect={d => d && setDueDate(d)} initialFocus className="bg-slate-900 text-slate-100" /></PopoverContent></Popover></div>
+                    <div className="space-y-2"><Label className="text-xs font-bold text-slate-500 uppercase">Bitiş Tarihi</Label><Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-start bg-slate-950 border-slate-800 h-11"><CalendarLucide className="mr-2 h-4 w-4" />{format(dueDate, "d MMMM yyyy", { locale: tr })}</Button></PopoverTrigger><PopoverContent className="w-auto p-0 bg-slate-900 border-slate-800" align="start"><CalendarPicker mode="single" selected={dueDate} onSelect={d => d && setDueDate(d)} initialFocus className="bg-slate-900 text-slate-100" /></PopoverContent></Popover></div>
                 </div>
                 <DialogFooter><Button variant="ghost" onClick={() => onOpenChange(false)} className="text-slate-400">İptal</Button><Button onClick={handleReassignSubmit} disabled={loading} className="bg-indigo-600 text-white font-bold h-11 rounded-xl px-8">{loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}Atamayı Tamamla</Button></DialogFooter>
             </DialogContent>

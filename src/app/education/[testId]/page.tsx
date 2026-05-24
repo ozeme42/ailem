@@ -1,14 +1,15 @@
+
 "use client";
 
 import * as React from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Test as TestType, QuickTestQuestion, PracticeExam, EvaluationStatus } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, ArrowRight, Play, Pause, Check, X, MinusCircle, LayoutGrid, BookOpen, ChevronRight, Home, Loader2, Sparkles, Trophy, ChevronLeft, CheckCircle2, XCircle, Eye } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, FileQuestion, ArrowRight, Play, Pause, Check, X, MinusCircle, LayoutGrid, BookOpen, ChevronRight, Home, Loader2, Sparkles, Trophy, ChevronLeft, CheckCircle2, XCircle, Eye, Send } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -164,9 +165,12 @@ const QuestionPalette = ({
 export default function OpticalFormPage() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
     const { user } = useAuth();
+    
     const testId = params.testId as string;
+    const isEvaluateMode = searchParams.get('mode') === 'evaluate';
 
     const [test, setTest] = React.useState<TestType | null>(null);
     const [practiceExam, setPracticeExam] = React.useState<PracticeExam | null>(null);
@@ -178,8 +182,6 @@ export default function OpticalFormPage() {
     const [submittedSubjectIds, setSubmittedSubjectIds] = React.useState<string[]>([]);
     const [isSheetOpen, setIsSheetOpen] = React.useState(false);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
-    
-    // Soru inceleme modali için state
     const [viewingQuestionIndex, setViewingQuestionIndex] = React.useState<number | null>(null);
     
     const isInitializedRef = React.useRef(false);
@@ -366,92 +368,116 @@ export default function OpticalFormPage() {
 
     // --- EVALUATION MODE (For Teachers/Parents) ---
     if (test.status === 'Değerlendirme Bekliyor') {
-        const questionCount = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
-        const totalEvaluated = Object.keys(manualEvaluation).length;
+        // Evaluate Mode via URL Param
+        if (isEvaluateMode) {
+            const questionCount = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
+            const totalEvaluated = Object.keys(manualEvaluation).length;
 
-        return (
-            <div className={cn("min-h-screen text-slate-900 font-sans p-4 sm:p-8", glassColors.PAGE_BG)}>
-                <div className="max-w-4xl mx-auto w-full space-y-8">
-                    <header className="flex justify-between items-center">
-                         <Button variant="ghost" onClick={() => router.push('/education/all-tests')} className="text-slate-500 hover:text-slate-900"><ArrowLeft className="mr-2 h-5 w-5" /> Çıkış</Button>
-                         <Badge className="bg-blue-600 text-white border-0 font-bold uppercase tracking-widest px-4 py-1">Değerlendirme Modu</Badge>
-                    </header>
+            return (
+                <div className={cn("min-h-screen text-slate-900 font-sans p-4 sm:p-8", glassColors.PAGE_BG)}>
+                    <div className="max-w-4xl mx-auto w-full space-y-8">
+                        <header className="flex justify-between items-center">
+                            <Button variant="ghost" onClick={() => router.push('/education/all-tests')} className="text-slate-500 hover:text-slate-900"><ArrowLeft className="mr-2 h-5 w-5" /> Çıkış</Button>
+                            <Badge className="bg-blue-600 text-white border-0 font-bold uppercase tracking-widest px-4 py-1">Değerlendirme Modu</Badge>
+                        </header>
 
-                    <div className="space-y-6">
-                        {Array.from({ length: questionCount }).map((_, i) => {
-                            const qNum = i + 1;
-                            const studentAns = textAnswers[qNum.toString()] || mcqAnswers[qNum.toString()];
-                            const status = manualEvaluation[qNum.toString()];
+                        <div className="space-y-6">
+                            {Array.from({ length: questionCount }).map((_, i) => {
+                                const qNum = i + 1;
+                                const studentAns = textAnswers[qNum.toString()] || mcqAnswers[qNum.toString()];
+                                const status = manualEvaluation[qNum.toString()];
 
-                            return (
-                                <Card key={qNum} className={cn("rounded-3xl border transition-all", status === 'correct' ? 'border-emerald-200 bg-emerald-50/30' : status === 'incorrect' ? 'border-rose-200 bg-rose-50/30' : status === 'empty' ? 'border-slate-300 bg-slate-100/50' : 'border-slate-200 bg-white')}>
-                                    <CardHeader className="pb-2 border-b flex flex-row justify-between items-center bg-slate-50/50 rounded-t-3xl">
-                                        <Badge className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center p-0 text-sm font-bold">{qNum}</Badge>
-                                        <div className="flex gap-2">
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
-                                                onClick={() => handleEvaluate(qNum, 'correct')}
-                                                className={cn("h-9 rounded-xl gap-2", status === 'correct' ? "bg-emerald-600 text-white border-emerald-600" : "bg-white border-slate-200 text-slate-500")}
-                                            >
-                                                <CheckCircle2 className="w-4 h-4" /> Doğru
-                                            </Button>
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
-                                                onClick={() => handleEvaluate(qNum, 'incorrect')}
-                                                className={cn("h-9 rounded-xl gap-2", status === 'incorrect' ? "bg-rose-600 text-white border-rose-600" : "bg-white border-slate-200 text-slate-500")}
-                                            >
-                                                <XCircle className="w-4 h-4" /> Yanlış
-                                            </Button>
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
-                                                onClick={() => handleEvaluate(qNum, 'empty')}
-                                                className={cn("h-9 rounded-xl gap-2", status === 'empty' ? "bg-slate-600 text-white border-slate-600" : "bg-white border-slate-200 text-slate-500")}
-                                            >
-                                                <MinusCircle className="w-4 h-4" /> Boş
-                                            </Button>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="p-6">
-                                        <div className="space-y-4">
-                                            {test.jsonQuestions && test.jsonQuestions[i] && (
-                                                <p className="text-lg font-bold text-slate-700">{test.jsonQuestions[i].text}</p>
-                                            )}
-                                            {test.questions && test.questions[i] && (
-                                                <div className="relative aspect-video bg-slate-100 rounded-xl overflow-hidden mb-4 border border-slate-200">
-                                                    <Image src={test.questions[i].imageUrl} alt="Soru" fill className="object-contain p-4" />
-                                                </div>
-                                            )}
-                                            <div className="p-4 bg-white border border-slate-200 rounded-2xl">
-                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Öğrenci Cevabı:</p>
-                                                <p className="text-lg font-medium text-slate-700 leading-relaxed italic">{studentAns || "— Cevap verilmedi —"}</p>
+                                return (
+                                    <Card key={qNum} className={cn("rounded-3xl border transition-all", status === 'correct' ? 'border-emerald-200 bg-emerald-50/30' : status === 'incorrect' ? 'border-rose-200 bg-rose-50/30' : status === 'empty' ? 'border-slate-300 bg-slate-100/50' : 'border-slate-200 bg-white')}>
+                                        <CardHeader className="pb-2 border-b flex flex-row justify-between items-center bg-slate-50/50 rounded-t-3xl">
+                                            <Badge className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center p-0 text-sm font-bold">{qNum}</Badge>
+                                            <div className="flex gap-2">
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="sm" 
+                                                    onClick={() => handleEvaluate(qNum, 'correct')}
+                                                    className={cn("h-9 rounded-xl gap-2", status === 'correct' ? "bg-emerald-600 text-white border-emerald-600" : "bg-white border-slate-200 text-slate-500")}
+                                                >
+                                                    <CheckCircle2 className="w-4 h-4" /> Doğru
+                                                </Button>
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="sm" 
+                                                    onClick={() => handleEvaluate(qNum, 'incorrect')}
+                                                    className={cn("h-9 rounded-xl gap-2", status === 'incorrect' ? "bg-rose-600 text-white border-rose-600" : "bg-white border-slate-200 text-slate-500")}
+                                                >
+                                                    <XCircle className="w-4 h-4" /> Yanlış
+                                                </Button>
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="sm" 
+                                                    onClick={() => handleEvaluate(qNum, 'empty')}
+                                                    className={cn("h-9 rounded-xl gap-2", status === 'empty' ? "bg-slate-600 text-white border-slate-600" : "bg-white border-slate-200 text-slate-500")}
+                                                >
+                                                    <MinusCircle className="w-4 h-4" /> Boş
+                                                </Button>
                                             </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )
-                        })}
-                    </div>
+                                        </CardHeader>
+                                        <CardContent className="p-6">
+                                            <div className="space-y-4">
+                                                {test.jsonQuestions && test.jsonQuestions[i] && (
+                                                    <p className="text-lg font-bold text-slate-700">{test.jsonQuestions[i].text}</p>
+                                                )}
+                                                {test.questions && test.questions[i] && (
+                                                    <div className="relative aspect-video bg-slate-100 rounded-xl overflow-hidden mb-4 border border-slate-200">
+                                                        <Image src={test.questions[i].imageUrl} alt="Soru" fill className="object-contain p-4" />
+                                                    </div>
+                                                )}
+                                                <div className="p-4 bg-white border border-slate-200 rounded-2xl">
+                                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Öğrenci Cevabı:</p>
+                                                    <p className="text-lg font-medium text-slate-700 leading-relaxed italic">{studentAns || "— Cevap verilmedi —"}</p>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )
+                            })}
+                        </div>
 
-                    <div className="sticky bottom-8 left-0 right-0 max-w-4xl mx-auto px-4 sm:px-0">
-                         <Button 
-                            size="lg" 
-                            disabled={totalEvaluated < questionCount || isSubmitting}
-                            onClick={handleSubmitEvaluation}
-                            className="w-full h-16 rounded-[2rem] bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-black shadow-2xl shadow-indigo-500/40"
-                         >
-                            {isSubmitting ? <Loader2 className="animate-spin mr-2"/> : <Check className="mr-2 h-6 w-6"/>}
-                            Değerlendirmeyi Bitir ve Yayınla
-                         </Button>
-                         {totalEvaluated < questionCount && (
-                             <p className="text-center text-xs text-rose-500 font-bold mt-2 bg-white/50 backdrop-blur-sm py-1 rounded-full">{questionCount - totalEvaluated} soru daha değerlendirilmeli.</p>
-                         )}
+                        <div className="sticky bottom-8 left-0 right-0 max-w-4xl mx-auto px-4 sm:px-0">
+                            <Button 
+                                size="lg" 
+                                disabled={totalEvaluated < questionCount || isSubmitting}
+                                onClick={handleSubmitEvaluation}
+                                className="w-full h-16 rounded-[2rem] bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-black shadow-2xl shadow-indigo-500/40"
+                            >
+                                {isSubmitting ? <Loader2 className="animate-spin mr-2"/> : <Check className="mr-2 h-6 w-6"/>}
+                                Değerlendirmeyi Bitir ve Yayınla
+                            </Button>
+                            {totalEvaluated < questionCount && (
+                                <p className="text-center text-xs text-rose-500 font-bold mt-2 bg-white/50 backdrop-blur-sm py-1 rounded-full">{questionCount - totalEvaluated} soru daha değerlendirilmeli.</p>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
-        )
+            )
+        } else {
+            // Student finished view
+            return (
+                <div className={cn("min-h-screen flex items-center justify-center p-4", glassColors.PAGE_BG)}>
+                    <Card className="max-w-md w-full rounded-[2.5rem] p-8 text-center space-y-6 shadow-2xl border-none bg-white">
+                        <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center mx-auto text-indigo-600">
+                            <Send className="w-10 h-10" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-black text-slate-900">Ödev Gönderildi!</h2>
+                            <p className="text-slate-500 mt-2">Cevapların başarıyla kaydedildi. Öğretmenin/ebeveynin değerlendirmesi için beklemeye alındı.</p>
+                        </div>
+                        <Badge className="bg-amber-100 text-amber-700 border-none font-bold px-4 py-1">Değerlendirme Bekliyor</Badge>
+                        <div className="pt-4">
+                            <Button onClick={() => router.push('/education')} className="w-full h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold">
+                                Eğitim Sayfasına Dön
+                            </Button>
+                        </div>
+                    </Card>
+                </div>
+            )
+        }
     }
 
     // --- RESULTS SCREEN (Finalized) ---
@@ -1009,3 +1035,4 @@ export default function OpticalFormPage() {
         </Form>
     );
 }
+
