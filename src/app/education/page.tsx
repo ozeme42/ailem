@@ -441,7 +441,7 @@ export default function EducationPage() {
 
                         <Link href={`/education/${test.id}`} className="block w-full">
                           <button className="w-full py-2.5 rounded-xl font-bold text-sm text-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20">
-                            Detaylar
+                            Başla
                           </button>
                         </Link>
                       </div>
