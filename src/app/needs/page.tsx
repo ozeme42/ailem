@@ -1,11 +1,9 @@
-
-
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, PlusCircle, Repeat, Loader2, MoreVertical } from "lucide-react";
+import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, PlusCircle, Repeat, Loader2, MoreVertical, ChevronRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -165,23 +163,23 @@ const ListCard = ({ list, colorClass, onClick, onEdit, onDelete }: {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-                         <DropdownMenuItem onClick={onEdit}>
+                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
                             <Edit className="mr-2 h-4 w-4"/> Düzenle
                         </DropdownMenuItem>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                <DropdownMenuItem onSelect={e => e.preventDefault()} onClick={(e) => e.stopPropagation()} className="text-destructive focus:text-destructive">
                                     <Trash2 className="mr-2 h-4 w-4"/> Sil
                                 </DropdownMenuItem>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                                 <AlertDialogHeader>
                                     <AlertDialogTitleComponent>"{list.name}" listesini sil?</AlertDialogTitleComponent>
                                     <AlertDialogDescription>Bu işlem geri alınamaz. Liste ve içindeki tüm öğeler kalıcı olarak silinecektir.</AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                    <AlertDialogCancel>İptal</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => onDelete(list.id)}>Sil</AlertDialogAction>
+                                    <AlertDialogCancel onClick={(e) => e.stopPropagation()}>İptal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={(e) => { e.stopPropagation(); onDelete(list.id); }}>Sil</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
@@ -442,7 +440,7 @@ export default function NeedsPage() {
                                                       <>
                                                       <Separator orientation="vertical" className="h-6 mx-1" />
                                                       <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => moveItemToBought(selectedList!.id, item.id)}>
-                                                        <Archive className="h-4 w-4" />
+                                                        <Check className="h-4 w-4" />
                                                       </Button>
                                                       <Separator orientation="vertical" className="h-6 mx-1" />
                                                       </>
@@ -478,11 +476,11 @@ export default function NeedsPage() {
                                         <div className="divide-y divide-sky-200 dark:divide-sky-800">
                                             {items.map((item) => (
                                                 <div key={item.id} className="flex items-center gap-4 py-3 group">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => moveItemToPending(selectedList!.id, item.id)} title="Tekrar ekle">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => moveItemToPendingList(selectedList.id, item)} title="Tekrar ekle">
                                                         <Repeat className="h-4 w-4"/>
                                                     </Button>
                                                     <p className="font-semibold flex-grow line-through text-muted-foreground">{item.name}</p>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList!.id, item.id, true)} title="Kalıcı olarak sil">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100" onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, true)} title="Kalıcı olarak sil">
                                                         <Trash2 className="h-4 w-4"/>
                                                     </Button>
                                                 </div>

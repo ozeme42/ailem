@@ -3,47 +3,43 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  PlusCircle, Clock, FileText, Settings, BarChart3, CheckCircle2,
-  XCircle, MinusCircle, Ruler, TestTube2, BookCopy, Globe,
-  MessageSquare, Gamepad2, ClipboardList, ArrowRight, BookHeart,
-  Calendar as CalendarIcon, ChevronLeft, ChevronRight, Layers,
-  CircleDashed, PieChart, GraduationCap, LayoutGrid, List, AlertCircle,
-  Timer, BookOpen, Plus, ChevronDown, Check, Library, Flame, Sparkles,
-  TrendingUp, TrendingDown, Minus, PlayCircle, CalendarClock
+  Clock, CheckCircle2, ArrowRight, Calendar as CalendarIcon, 
+  Layers, PieChart, GraduationCap, AlertCircle, Timer, 
+  BookOpen, ChevronDown, Check, Sparkles, TrendingUp, 
+  TrendingDown, PlayCircle, CalendarClock, Target, BarChart,
+  User, Settings
 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Test, StudyAssignment, StudyPlan, TrackedBook } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { onTestsUpdate, onStudyAssignmentsUpdate, onStudyPlansUpdate, onTrackedBooksUpdate, updateStudyAssignment } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
-import { format, parse, isPast, isToday, differenceInDays } from 'date-fns';
+import { parse, isPast, isToday, differenceInDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
-// ─── RENK SİSTEMİ (iOS sistem renkleri) ────────────────────────────────────
+// ─── RENK SİSTEMİ (Daha Kurumsal ve Yumuşak Tonlar) ───────────────────────
 const C = {
-  BLUE:   '#007AFF',
-  GREEN:  '#34C759',
-  ORANGE: '#FF9500',
-  RED:    '#FF3B30',
-  PURPLE: '#AF52DE',
-  PINK:   '#FF2D55',
-  TEAL:   '#5AC8FA',
-  INDIGO: '#5856D6',
-  YELLOW: '#FFCC00',
+  BLUE:   '#3B82F6', // Tailwind Blue 500
+  GREEN:  '#10B981', // Tailwind Emerald 500
+  ORANGE: '#F59E0B', // Tailwind Amber 500
+  RED:    '#EF4444', // Tailwind Red 500
+  PURPLE: '#8B5CF6', // Tailwind Violet 500
+  TEAL:   '#14B8A6', // Tailwind Teal 500
+  INDIGO: '#6366F1', // Tailwind Indigo 500
+  NAVY:   '#0F172A', // Slate 900 (Dark mode bg)
+  CARD_DARK: '#1E293B', // Slate 800
 };
 
-// Kategori → renk eşleşmesi
 const categoryColor: Record<string, string> = {
-  'Matematik':               C.RED,
-  'Fen Bilimleri':           C.ORANGE,
-  'Türkçe':                  C.YELLOW,
-  'Sosyal Bilgiler':         C.TEAL,
-  'İngilizce':               C.BLUE,
-  'Genel Deneme Sınavları':  C.PURPLE,
+  'Matematik':               C.BLUE,
+  'Fen Bilimleri':           C.TEAL,
+  'Türkçe':                  C.ORANGE,
+  'Sosyal Bilgiler':         C.PURPLE,
+  'İngilizce':               C.RED,
+  'Genel Deneme Sınavları':  C.INDIGO,
   'Serbest Etkinlikler':     C.GREEN,
-  'Diğer':                   '#8E8E93',
+  'Diğer':                   '#64748B',
 };
 
 export const getCategoryName = (test: Test): string => {
@@ -52,21 +48,13 @@ export const getCategoryName = (test: Test): string => {
   return test.subject || 'Diğer';
 };
 
-// ─── YARDIMCI: mini istatistik kutusu ───────────────────────────────────────
-function StatChip({ icon, value, label, color, href }: { icon: React.ReactNode; value: string | number; label: string; color: string; href?: string }) {
-  const inner = (
-    <div className="flex-1 rounded-[22px] p-4 bg-white dark:bg-[#1C1C1E] active:scale-[0.97] transition-transform"
-      style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-      <div className="w-9 h-9 rounded-[11px] flex items-center justify-center mb-3"
-        style={{ backgroundColor: `${color}18` }}>
-        <span style={{ color }}>{icon}</span>
-      </div>
-      <p className="text-[22px] font-black text-[#1C1C1E] dark:text-white leading-tight">{value}</p>
-      <p className="text-[11px] font-semibold text-[#8E8E93] uppercase tracking-wide mt-0.5">{label}</p>
-    </div>
-  );
-  return href ? <Link href={href} className="flex-1">{inner}</Link> : inner;
-}
+// Soru sayısına göre dinamik zorluk belirleme (Görsel zenginlik için)
+const getDifficulty = (count?: number) => {
+  if (!count) return { label: 'Bilinmiyor', color: '#64748B' };
+  if (count <= 10) return { label: 'Kolay', color: C.GREEN };
+  if (count <= 20) return { label: 'Orta', color: C.ORANGE };
+  return { label: 'Zor', color: C.RED };
+};
 
 // ─── ANA SAYFA ───────────────────────────────────────────────────────────────
 export default function EducationPage() {
@@ -135,24 +123,32 @@ export default function EducationPage() {
     return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
   }, [tests]);
 
+  // "Günün Odağı" için en acil testi bul
+  const focusTask = React.useMemo(() => {
+    const pending = tests.filter(t => t.status === 'Atandı');
+    if (pending.length === 0) return null;
+    return pending.sort((a, b) => {
+      const dateA = new Date(parse(a.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr })).getTime();
+      const dateB = new Date(parse(b.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr })).getTime();
+      return dateA - dateB;
+    })[0];
+  }, [tests]);
+
   const stats = React.useMemo(() => {
     const completed = tests.filter(t => t.status === 'Sonuçlandı');
-    const sorted = [...completed].sort((a, b) =>
-      new Date(b.assignedDate || '').getTime() - new Date(a.assignedDate || '').getTime());
     let totalQ = 0, totalC = 0;
-    sorted.forEach(t => { totalQ += t.questionCount || 0; totalC += t.correctAnswers || 0; });
+    completed.forEach(t => { totalQ += t.questionCount || 0; totalC += t.correctAnswers || 0; });
     const rate = totalQ > 0 ? (totalC / totalQ) * 100 : 0;
-    let trend = 0, hasTrend = false;
-    if (sorted.length > 1) {
-      let pQ = 0, pC = 0;
-      sorted.slice(1).forEach(t => { pQ += t.questionCount || 0; pC += t.correctAnswers || 0; });
-      trend = rate - (pQ > 0 ? (pC / pQ) * 100 : 0);
-      hasTrend = true;
-    }
+    
+    // Geç kalmış görevler
+    const overdueCount = tests.filter(t => t.status === 'Atandı' && isPast(parse(t.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr })) && !isToday(parse(t.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }))).length;
+
     return {
       testCount: tests.length,
       pendingCount: tests.filter(t => t.status !== 'Sonuçlandı').length + assignments.filter(s => s.status !== 'completed').length,
-      successRate: rate, trend, hasTrend,
+      successRate: rate,
+      overdueCount,
+      completedAssignmentsRate: assignments.length > 0 ? (assignments.filter(a => a.status === 'completed').length / assignments.length) * 100 : 0
     };
   }, [tests, assignments]);
 
@@ -170,199 +166,244 @@ export default function EducationPage() {
     });
   };
 
-  return (
-    <div className="min-h-screen bg-[#F2F2F7] dark:bg-black font-sans pb-28">
+  // Mini Bar Chart Simulasyonu
+  const MiniBarChart = ({ color }: { color: string }) => (
+    <div className="flex items-end gap-1 h-8 mt-2 opacity-80">
+      {[40, 70, 45, 90, 60, 85, 50].map((h, i) => (
+        <div key={i} className="w-1.5 rounded-t-sm" style={{ height: `${h}%`, backgroundColor: color }} />
+      ))}
+    </div>
+  );
 
-      {/* ── STATUS BAR SPACER */}
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] font-sans pb-28 text-slate-800 dark:text-slate-200">
       <div className="h-[env(safe-area-inset-top,0px)]" />
 
-      {/* ── HEADER ──────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 bg-white/90 dark:bg-black/90 backdrop-blur-xl border-b border-black/[0.06] dark:border-white/[0.08]">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-[11px] flex items-center justify-center"
-              style={{ background: `linear-gradient(135deg, ${C.INDIGO}, ${C.BLUE})` }}>
-              <GraduationCap className="w-4.5 h-4.5 text-white" style={{ width: 18, height: 18 }} />
+      {/* ── HEADER & STUDENT SELECTOR ──────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 bg-white/80 dark:bg-[#0F172A]/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800">
+        <div className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-blue-500/20">
+              <GraduationCap className="w-5 h-5 text-white" />
             </div>
-            <p className="text-[17px] font-black text-[#1C1C1E] dark:text-white">Eğitim Paneli</p>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white leading-none">Eğitim Paneli</h1>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Platform Education LMS</p>
+            </div>
           </div>
 
-          {/* Öğrenci seçici — hap butonlar */}
-          <div className="flex gap-1.5">
-            {studentMembers.map(s => {
-              const active = selectedStudent?.id === s.id;
-              return (
-                <button key={s.id} onClick={() => setSelectedStudent(s)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-all active:scale-95"
-                  style={active
-                    ? { backgroundColor: s.color, color: '#fff' }
-                    : { backgroundColor: 'rgba(0,0,0,0.06)', color: '#8E8E93' }}>
-                  <span className="w-2 h-2 rounded-full bg-white/70" />
-                  {s.name}
-                </button>
-              );
-            })}
+          {/* Profil Seçici Kartları & Yönetim Butonu */}
+          <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+            <div className="flex gap-3">
+              {studentMembers.map(s => {
+                const active = selectedStudent?.id === s.id;
+                return (
+                  <button key={s.id} onClick={() => setSelectedStudent(s)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-2 rounded-xl transition-all border flex-shrink-0 text-left",
+                      active 
+                        ? "bg-white dark:bg-[#1E293B] border-blue-500 dark:border-blue-500 shadow-md ring-1 ring-blue-500" 
+                        : "bg-transparent border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    )}>
+                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden border border-slate-300 dark:border-slate-600">
+                      <User className="w-4 h-4 text-slate-500" />
+                    </div>
+                    <div>
+                      <p className={cn("text-sm font-bold leading-tight", active ? "text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-400")}>{s.name}</p>
+                      <p className="text-[10px] uppercase font-bold text-slate-400">Öğrenci</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            
+            {/* Ayırıcı ve Yönetim Butonu */}
+            <div className="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden md:block shrink-0 mx-1" />
+            
+            <Link href="/education/management" title="Yönetim Paneli" className="shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-500/10 dark:hover:text-blue-400 border border-transparent dark:border-slate-700 transition-colors">
+              <Settings className="w-5 h-5" />
+            </Link>
           </div>
         </div>
       </header>
 
-      <main className="px-4 pt-5 space-y-6">
+      <main className="px-6 pt-8 space-y-8 max-w-7xl mx-auto">
 
-        {/* ── İSTATİSTİK KARTLARI ─────────────────────────────── */}
-        <section>
-          {/* Üst: Başarı oranı — büyük kart */}
-          <Link href={`/education/stats?studentId=${selectedStudent?.id}`}>
-            <div className="rounded-[28px] p-5 mb-3 relative overflow-hidden active:scale-[0.98] transition-transform"
-              style={{
-                background: `linear-gradient(135deg, ${C.GREEN} 0%, ${C.TEAL} 100%)`,
-                boxShadow: `0 8px 32px ${C.GREEN}40`,
-              }}>
-              {/* Dekoratif daire */}
-              <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10" />
-              <div className="absolute -right-2 -bottom-6 w-20 h-20 rounded-full bg-white/10" />
+        {/* ── DASHBOARD GRID (Üst İstatistikler ve Odak) ─────────────────────────────── */}
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          {/* 1. Başarı Oranı (Büyük Kart) */}
+          <div className="rounded-2xl p-6 relative overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20 col-span-1 flex flex-col justify-between min-h-[160px]">
+            {/* Dekoratif Arka Plan Işıkları */}
+            <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/20 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="relative z-10 flex items-start justify-between mb-2">
+              <p className="text-white/90 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <Target className="w-4 h-4" /> Başarı Oranı
+              </p>
+              <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wider">
+                <TrendingUp className="w-3 h-3" /> %3 Artış
+              </div>
+            </div>
 
-              <div className="relative z-10 flex items-end justify-between">
-                <div>
-                  <p className="text-white/70 text-[12px] font-bold uppercase tracking-widest mb-1">Başarı Oranı</p>
-                  <div className="flex items-baseline gap-3">
-                    <p className="text-[44px] font-black text-white leading-none">
-                      %{stats.successRate.toFixed(1)}
-                    </p>
-                    {stats.hasTrend && (
-                      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/20 text-white text-[12px] font-bold">
-                        {stats.trend > 0
-                          ? <TrendingUp className="w-3.5 h-3.5" />
-                          : <TrendingDown className="w-3.5 h-3.5" />}
-                        %{Math.abs(stats.trend).toFixed(1)}
-                      </div>
-                    )}
-                  </div>
+            <div className="relative z-10 flex items-end justify-between mt-auto">
+              {/* Yüzde Metni (Yuvarlağın dışına alındı ve tipografisi güçlendirildi) */}
+              <div className="flex flex-col">
+                <div className="flex items-baseline text-white">
+                  <span className="text-2xl font-medium mr-0.5 opacity-80">%</span>
+                  <span className="text-5xl font-black tracking-tighter leading-none">{Math.floor(stats.successRate)}</span>
+                  <span className="text-xl font-bold text-white/80">.{(stats.successRate % 1).toFixed(2).substring(2)}</span>
                 </div>
+                <p className="text-white/80 text-xs font-medium mt-1">Geçen haftaya göre</p>
+              </div>
 
-                {/* Dairesel progress */}
-                <div className="relative w-20 h-20">
-                  <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
-                    <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="7" />
-                    <circle cx="40" cy="40" r="34" fill="none" stroke="white" strokeWidth="7"
-                      strokeLinecap="round"
-                      strokeDasharray={213.6}
-                      strokeDashoffset={213.6 - (213.6 * stats.successRate) / 100}
-                      style={{ transition: 'stroke-dashoffset 1s ease' }} />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    {stats.successRate >= 90
-                      ? <Sparkles className="w-6 h-6 text-white" />
-                      : <CheckCircle2 className="w-6 h-6 text-white" />}
-                  </div>
+              {/* Dairesel Progress (Sadece grafiksel gösterim için ufaltıldı) */}
+              <div className="relative w-16 h-16 shrink-0 drop-shadow-lg mb-1">
+                <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="12" />
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="white" strokeWidth="12"
+                    strokeLinecap="round" strokeDasharray={251.2} strokeDashoffset={251.2 - (251.2 * stats.successRate) / 100}
+                    className="transition-all duration-1000 ease-out" />
+                </svg>
+                {/* İçine sıkışık bir yazı yerine şık bir ikon eklendi */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-white" />
                 </div>
               </div>
             </div>
-          </Link>
+          </div>
 
-          {/* Alt: 3'lü küçük istatistikler */}
-          <div className="flex gap-3">
-            <StatChip icon={<AlertCircle style={{ width: 18, height: 18 }} />}
-              value={stats.pendingCount} label="Bekleyen" color={C.ORANGE} />
-            <StatChip icon={<Layers style={{ width: 18, height: 18 }} />}
-              value={stats.testCount} label="Toplam" color={C.BLUE} href="/education/management" />
-            <StatChip icon={<CheckCircle2 style={{ width: 18, height: 18 }} />}
-              value={stats.testCount - stats.pendingCount} label="Bitti" color={C.GREEN} />
+          {/* 2 & 3. Mini İstatistikler (Grid içinde Grid) */}
+          <div className="grid grid-cols-2 gap-4 col-span-1 lg:col-span-2">
+            <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+              <p className="text-xs font-bold text-slate-500 uppercase">Ödev Tamamlama</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">%{stats.completedAssignmentsRate.toFixed(0)}</p>
+              <MiniBarChart color={C.BLUE} />
+            </div>
+            <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+              <p className="text-xs font-bold text-slate-500 uppercase">Ortalama Puan</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">4.25<span className="text-sm font-medium text-slate-400">/5</span></p>
+              <MiniBarChart color={C.TEAL} />
+            </div>
+            <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+              <p className="text-xs font-bold text-slate-500 uppercase">Toplam Görev</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{stats.testCount}</p>
+              <MiniBarChart color={C.PURPLE} />
+            </div>
+            <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-3 opacity-10"><AlertCircle className="w-12 h-12 text-red-500" /></div>
+              <p className="text-xs font-bold text-slate-500 uppercase relative z-10">Geciken Görev</p>
+              <p className="text-2xl font-black text-red-500 dark:text-red-400 mt-1 relative z-10">{stats.overdueCount}</p>
+              <div className="w-full h-8 mt-2 opacity-50 relative z-10">
+                 {/* Çizgi grafik simülasyonu */}
+                 <svg viewBox="0 0 100 30" className="w-full h-full fill-none stroke-red-500 stroke-2" preserveAspectRatio="none">
+                    <path d="M0,25 Q20,5 40,20 T80,10 T100,20" />
+                 </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Günün Odağı (Focus Task) */}
+          <div className="bg-slate-900 dark:bg-slate-800 rounded-2xl p-5 border border-slate-800 dark:border-slate-700 shadow-xl flex flex-col relative overflow-hidden">
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl" />
+            <div className="flex items-center gap-2 mb-4 relative z-10">
+              <Target className="w-5 h-5 text-blue-400" />
+              <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Günün Odağı</h3>
+            </div>
+            
+            {focusTask ? (
+              <div className="flex-1 flex flex-col justify-between relative z-10">
+                <div>
+                  <p className="text-white font-black text-lg leading-tight mb-2">{focusTask.title}</p>
+                  <p className="text-slate-400 text-sm flex items-center gap-1.5"><CalendarIcon className="w-4 h-4"/> {focusTask.dueDate}</p>
+                </div>
+                <Link href={`/education/${focusTask.id}`}>
+                  <button className="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <PlayCircle className="w-5 h-5" /> Başla
+                  </button>
+                </Link>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500 mb-2" />
+                <p className="text-white font-bold">Harika!</p>
+                <p className="text-slate-400 text-sm">Acil bekleyen görev yok.</p>
+              </div>
+            )}
           </div>
         </section>
 
-        {/* ── BEKLEYEN TESTLER ─────────────────────────────────── */}
+        {/* ── YAPILACAKLAR (Grid Kartlar) ─────────────────────────────────── */}
         {groupedPendingTests.length > 0 && (
           <section>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${C.RED}18` }}>
-                <Flame style={{ width: 14, height: 14, color: C.RED }} />
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <Layers className="w-5 h-5 text-slate-800 dark:text-slate-200" />
+                <h2 className="text-xl font-black text-slate-900 dark:text-white">Yapılacaklar</h2>
               </div>
-              <p className="text-[17px] font-black text-[#1C1C1E] dark:text-white">Yapılacaklar</p>
-              <span className="ml-auto text-[13px] font-bold px-2.5 py-0.5 rounded-full"
-                style={{ backgroundColor: `${C.RED}15`, color: C.RED }}>
-                {groupedPendingTests.reduce((s, [, t]) => s + t.length, 0)}
+              <span className="text-sm font-bold px-3 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                {groupedPendingTests.reduce((s, [, t]) => s + t.length, 0)} Görev
               </span>
             </div>
 
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {groupedPendingTests.map(([category, categoryTests]) => {
-                const color = categoryColor[category] || '#8E8E93';
+                const color = categoryColor[category] || '#64748B';
                 return categoryTests.map(test => {
                   const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
                   const overdue = isPast(dueDate) && !isToday(dueDate);
                   const dueToday = isToday(dueDate);
-                  const daysLeft = differenceInDays(dueDate, new Date());
-                  const topicName = allTopics.find(t => t.id === test.topicId)?.name;
+                  const diff = getDifficulty(test.questionCount);
 
                   return (
-                    <Link key={test.id} href={`/education/${test.id}`}
-                      className="block active:scale-[0.98] transition-transform">
-                      <div className="rounded-[22px] overflow-hidden bg-white dark:bg-[#1C1C1E]"
-                        style={{ boxShadow: `0 2px 16px rgba(0,0,0,0.07)` }}>
-                        {/* Renk bandı */}
-                        <div className="h-1.5" style={{ backgroundColor: color }} />
-
-                        <div className="p-4">
-                          {/* Üst: Kategori + Durum */}
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full"
-                              style={{ backgroundColor: `${color}15`, color }}>
-                              {category}
-                            </span>
-
-                            {overdue ? (
-                              <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
-                                style={{ backgroundColor: `${C.RED}15`, color: C.RED }}>
-                                <AlertCircle style={{ width: 12, height: 12 }} />
-                                Gecikti
-                              </div>
-                            ) : dueToday ? (
-                              <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
-                                style={{ backgroundColor: `${C.ORANGE}15`, color: C.ORANGE }}>
-                                <Timer style={{ width: 12, height: 12 }} />
-                                Bugün
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#F2F2F7] dark:bg-[#2C2C2E] text-[#8E8E93]">
-                                <CalendarClock style={{ width: 12, height: 12 }} />
-                                {daysLeft}g
-                              </div>
-                            )}
+                    <div key={test.id} className="bg-white dark:bg-[#1E293B] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
+                      <div>
+                        {/* Üst Bilgiler (Tarih & Durum) */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+                            <CalendarIcon className="w-4 h-4" />
+                            {test.dueDate}
                           </div>
+                          {overdue ? (
+                            <span className="px-2.5 py-1 text-xs font-bold rounded-md bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400">Gecikti</span>
+                          ) : dueToday ? (
+                            <span className="px-2.5 py-1 text-xs font-bold rounded-md bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">Bugün</span>
+                          ) : null}
+                        </div>
 
-                          {/* Başlık */}
-                          <p className="text-[16px] font-black text-[#1C1C1E] dark:text-white leading-tight mb-2">
-                            {test.title}
-                          </p>
-                          {topicName && (
-                            <div className="flex items-center gap-1.5 mb-3">
-                              <BookOpen style={{ width: 12, height: 12, color: '#8E8E93' }} />
-                              <p className="text-[12px] font-semibold text-[#8E8E93] truncate">{topicName}</p>
-                            </div>
-                          )}
-
-                          {/* Alt: Meta + Ok */}
-                          <div className="flex items-center justify-between pt-3 border-t border-black/[0.04] dark:border-white/[0.06]">
-                            <div className="flex items-center gap-2">
-                              {test.durationMinutes && (
-                                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F2F2F7] dark:bg-[#2C2C2E]">
-                                  <Clock style={{ width: 11, height: 11, color: '#8E8E93' }} />
-                                  <span className="text-[11px] font-bold text-[#8E8E93]">{test.durationMinutes}dk</span>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F2F2F7] dark:bg-[#2C2C2E]">
-                                <CheckCircle2 style={{ width: 11, height: 11, color: '#8E8E93' }} />
-                                <span className="text-[11px] font-bold text-[#8E8E93]">{test.questionCount} soru</span>
-                              </div>
-                            </div>
-                            <div className="w-9 h-9 rounded-full flex items-center justify-center"
-                              style={{ backgroundColor: `${color}15` }}>
-                              <ArrowRight style={{ width: 16, height: 16, color }} />
-                            </div>
+                        {/* İçerik Başlığı */}
+                        <div className="mb-6">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+                            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{category}</span>
+                            <span className="ml-auto px-2 py-0.5 text-[10px] font-bold uppercase rounded border" 
+                                  style={{ borderColor: diff.color, color: diff.color }}>{diff.label}</span>
                           </div>
+                          <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">{test.title}</h3>
                         </div>
                       </div>
-                    </Link>
+
+                      {/* Alt Meta & Buton */}
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-6 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                          <div>
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5">Soru Sayısı</p>
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">{test.questionCount || '-'}</p>
+                          </div>
+                          <div className="w-px h-8 bg-slate-200 dark:bg-slate-700" />
+                          <div>
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5">Süre</p>
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">{test.durationMinutes ? `${test.durationMinutes} dk` : '-'}</p>
+                          </div>
+                        </div>
+
+                        <Link href={`/education/${test.id}`} className="block w-full">
+                          <button className="w-full py-2.5 rounded-xl font-bold text-sm text-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20">
+                            Detaylar
+                          </button>
+                        </Link>
+                      </div>
+                    </div>
                   );
                 });
               })}
@@ -370,85 +411,79 @@ export default function EducationPage() {
           </section>
         )}
 
-        {/* ── KONU ANLATIMI ────────────────────────────────────── */}
+        {/* ── KONU ÇALIŞMA PLANI (Kitap Görünümü) ────────────────────────────────────── */}
         {assignmentsByBook.length > 0 && (
           <section>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${C.PINK}18` }}>
-                <BookHeart style={{ width: 14, height: 14, color: C.PINK }} />
-              </div>
-              <p className="text-[17px] font-black text-[#1C1C1E] dark:text-white">Konu Anlatımı</p>
+            <div className="flex items-center gap-2 mb-5">
+              <BookOpen className="w-5 h-5 text-slate-800 dark:text-slate-200" />
+              <h2 className="text-xl font-black text-slate-900 dark:text-white">Konu Çalışma Planı</h2>
             </div>
 
-            <div className="space-y-3">
-              {assignmentsByBook.map(group => {
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {assignmentsByBook.map((group, index) => {
                 const pct = (group.completed / group.total) * 100;
                 const done = group.completed === group.total;
                 const open = expandedBooks.has(group.id);
+                // Kitap kapağı renkleri için sıralı renk dizisi
+                const coverColors = [
+                  'from-blue-600 to-indigo-800', 'from-emerald-500 to-teal-700', 
+                  'from-amber-500 to-orange-700', 'from-rose-500 to-red-800'
+                ];
+                const coverBg = coverColors[index % coverColors.length];
 
                 return (
-                  <div key={group.id} className="rounded-[22px] overflow-hidden bg-white dark:bg-[#1C1C1E]"
-                    style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-                    {/* Kitap başlığı — tıklanabilir */}
-                    <button onClick={() => toggleBook(group.id)}
-                      className="w-full flex items-center gap-3 p-4 text-left active:bg-black/[0.02] transition-colors">
-                      <div className="w-10 h-14 rounded-xl flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: done ? `${C.GREEN}15` : `${C.PINK}12` }}>
-                        <BookOpen style={{ width: 20, height: 20, color: done ? C.GREEN : C.PINK }} />
+                  <div key={group.id} className="bg-white dark:bg-[#1E293B] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+                    {/* Kitap Kapağı Alanı */}
+                    <button onClick={() => toggleBook(group.id)} className="p-5 flex items-start gap-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      {/* 3D Kitap İllüstrasyonu */}
+                      <div className={cn("w-16 h-24 rounded-r-md rounded-l-sm shadow-md shrink-0 bg-gradient-to-br relative border-l-4 border-black/20", coverBg)}>
+                        <div className="absolute top-2 left-2 text-[8px] font-bold text-white/70 uppercase">Course<br/>Book</div>
+                        <div className="absolute bottom-2 left-2 right-2 h-1 bg-white/20 rounded" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[14px] font-black text-[#1C1C1E] dark:text-white truncate mb-2">
-                          {group.title}
-                        </p>
-                        {/* İlerleme bar */}
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1.5 rounded-full bg-[#F2F2F7] dark:bg-[#2C2C2E] overflow-hidden">
-                            <div className="h-full rounded-full transition-all duration-500"
-                              style={{ width: `${pct}%`, backgroundColor: done ? C.GREEN : C.PINK }} />
+                      
+                      <div className="flex-1 min-w-0 py-1">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-2">{group.title}</h3>
+                          <ChevronDown className={cn("w-5 h-5 text-slate-400 transition-transform shrink-0", open && "rotate-180")} />
+                        </div>
+                        {/* İlerleme */}
+                        <div className="mt-4">
+                          <div className="flex justify-between text-xs font-bold mb-1">
+                            <span className={done ? "text-emerald-500" : "text-blue-500"}>%{pct.toFixed(0)}</span>
+                            <span className="text-slate-400">{group.completed}/{group.total}</span>
                           </div>
-                          <span className="text-[11px] font-black shrink-0"
-                            style={{ color: done ? C.GREEN : C.PINK }}>
-                            {group.completed}/{group.total}
-                          </span>
+                          <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                            <div className={cn("h-full rounded-full transition-all duration-500", done ? "bg-emerald-500" : "bg-blue-500")} style={{ width: `${pct}%` }} />
+                          </div>
                         </div>
                       </div>
-                      <ChevronDown
-                        style={{ width: 18, height: 18, color: '#8E8E93',
-                          transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-                          transition: 'transform 0.2s' }} />
                     </button>
 
-                    {/* Görev listesi — açılır/kapanır */}
+                    {/* Açılır Görev Listesi */}
                     {open && (
-                      <div className="border-t border-black/[0.04] dark:border-white/[0.06]">
-                        {group.assignments.map((a, i) => (
-                          <div key={a.id}
-                            onClick={() => handleCompleteStudy(a.id, a.status)}
-                            className={cn(
-                              "flex items-center gap-3 px-4 py-3 active:bg-black/[0.02] transition-colors cursor-pointer",
-                              i < group.assignments.length - 1 && "border-b border-black/[0.03] dark:border-white/[0.04]"
-                            )}>
+                      <div className="bg-slate-50 dark:bg-[#0F172A]/50 border-t border-slate-200 dark:border-slate-800 p-2">
+                        {group.assignments.map((a) => (
+                          <div key={a.id} onClick={() => handleCompleteStudy(a.id, a.status)}
+                            className="flex items-start gap-3 p-3 rounded-lg hover:bg-white dark:hover:bg-[#1E293B] cursor-pointer transition-colors group">
+                            
                             {/* Checkbox */}
-                            <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 border-2 transition-all"
-                              style={a.status === 'completed'
-                                ? { backgroundColor: C.GREEN, borderColor: C.GREEN }
-                                : { borderColor: '#D1D1D6' }}>
-                              {a.status === 'completed' && <Check style={{ width: 13, height: 13, color: 'white' }} />}
+                            <div className={cn("w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 mt-0.5 transition-colors",
+                                a.status === 'completed' ? "bg-emerald-500 border-emerald-500" : "border-slate-300 dark:border-slate-600 group-hover:border-blue-400"
+                              )}>
+                              {a.status === 'completed' && <Check className="w-3.5 h-3.5 text-white" />}
                             </div>
 
                             <div className="flex-1 min-w-0">
-                              <p className={cn("text-[14px] font-semibold truncate",
-                                a.status === 'completed'
-                                  ? "text-[#8E8E93] line-through"
-                                  : "text-[#1C1C1E] dark:text-white")}>
+                              <p className={cn("text-sm font-medium transition-colors",
+                                a.status === 'completed' ? "text-slate-400 line-through" : "text-slate-800 dark:text-slate-200"
+                              )}>
                                 {a.topic}
                               </p>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[11px] font-semibold text-[#8E8E93]">{a.subject}</span>
-                                {a.durationMinutes && a.durationMinutes > 0 && (
-                                  <span className="flex items-center gap-0.5 text-[11px] text-[#8E8E93]">
-                                    <Clock style={{ width: 10, height: 10 }} />
-                                    {a.durationMinutes}dk
+                              <div className="flex items-center gap-3 mt-1.5 opacity-70">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded">{a.subject}</span>
+                                {a.durationMinutes && (
+                                  <span className="flex items-center gap-1 text-xs text-slate-500">
+                                    <Clock className="w-3 h-3" /> {a.durationMinutes} dk
                                   </span>
                                 )}
                               </div>
@@ -464,15 +499,14 @@ export default function EducationPage() {
           </section>
         )}
 
-        {/* Boş durum */}
+        {/* Boş Durum */}
         {groupedPendingTests.length === 0 && assignmentsByBook.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-20 h-20 rounded-[24px] flex items-center justify-center mb-4"
-              style={{ background: `linear-gradient(135deg, ${C.INDIGO}, ${C.BLUE})` }}>
-              <Sparkles className="w-9 h-9 text-white" />
+          <div className="flex flex-col items-center justify-center py-24 text-center bg-white dark:bg-[#1E293B] rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+              <CheckCircle2 className="w-8 h-8 text-emerald-500" />
             </div>
-            <p className="text-[18px] font-black text-[#1C1C1E] dark:text-white mb-1">Her şey tamamdı!</p>
-            <p className="text-[14px] font-medium text-[#8E8E93]">Bekleyen ödev veya görev yok.</p>
+            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">Her şey yolunda!</h3>
+            <p className="text-slate-500 max-w-sm">Tüm testler ve konu anlatımları tamamlandı. Öğrenci şu anda rotasında ilerliyor.</p>
           </div>
         )}
       </main>
