@@ -7,7 +7,7 @@ import {
     ArrowLeft, AlertCircle, ChevronRight, BookOpen, 
     Layers, Search, Filter, HelpCircle, GraduationCap,
     Library, FileText, CheckCircle2, XCircle, BarChart3,
-    ChevronDown, BookCopy, ListTree
+    ChevronDown, BookCopy, ListTree, TrendingUp, TrendingDown, MinusCircle
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { onTestsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
@@ -23,6 +23,8 @@ import { getCategoryName } from "@/app/education/page";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { parse, isPast, isToday } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 // --- DESIGN SYSTEM ---
 const themeColors = {
@@ -63,7 +65,7 @@ export function MistakesClient() {
 
     // Initial student selection
     React.useEffect(() => {
-        if (familyMembers.length > 0 && !selectedMember) {
+        if (familyMembers.length > 0 && !selectedStudent) {
             const initial = studentIdParam 
                 ? familyMembers.find(m => m.id === studentIdParam) 
                 : familyMembers.find(m => m.role.includes('Çocuk')) || familyMembers[0];
@@ -113,11 +115,10 @@ export function MistakesClient() {
             const subjectName = getCategoryName(test);
 
             // Compare answers and detect empties
-            // We iterate based on the answerKey to ensure we catch questions that might be missing from studentAnswers
             Object.entries(answerKey).forEach(([qNum, cAns]) => {
                 const sAns = studentAnswers[qNum];
                 const isWrong = sAns && sAns !== cAns;
-                const isEmpty = !sAns; // null, undefined or empty string
+                const isEmpty = !sAns;
 
                 if (isWrong || isEmpty) {
                     list.push({
