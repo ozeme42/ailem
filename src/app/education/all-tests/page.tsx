@@ -7,7 +7,8 @@ import {
     Trash2, ClipboardList, BookCopy, Ruler, TestTube2, Globe, 
     MessageSquare, Gamepad2, FileText, Calendar, Clock, ChevronRight, 
     LayoutGrid, List, Filter, BookOpen, PenTool, ArrowUpDown, 
-    ChevronLeft, BarChart3, GraduationCap, Repeat, Send, Calendar as CalendarIcon, User
+    ChevronLeft, BarChart3, GraduationCap, Repeat, Send, Calendar as CalendarIcon, User,
+    MoreVertical, Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -24,16 +25,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { format, isToday, isPast, differenceInDays, parse, addDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
-import { Test, FamilyMember, TrackedBook } from "@/lib/data";
+import { Test, FamilyMember, TrackedBook, QuickTestQuestion, BankQuestion } from "@/lib/data";
 import { onTestsUpdate, deleteTest, onTrackedBooksUpdate, addTest } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { getCategoryName } from "@/app/education/page";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { collection, getDocs, query, orderBy, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 // --- DESIGN SYSTEM: Modern Premium LMS Dark Theme ---
 const themeColors = {
@@ -659,7 +663,7 @@ function TestsListOrGrid({
                                                     <DropdownMenuSeparator className="bg-slate-800" />
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
-                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg cursor-pointer flex items-center">
+                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 hover:text-rose-300 hover:bg-rose-50/10 rounded-lg cursor-pointer flex items-center">
                                                                 <Trash2 className="w-4 h-4 mr-2" /> Sil
                                                             </DropdownMenuItem>
                                                         </AlertDialogTrigger>
@@ -669,7 +673,7 @@ function TestsListOrGrid({
                                                                 <AlertDialogDescription className="text-slate-400">"{test.title}" ödevini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription>
                                                             </AlertDialogHeader>
                                                             <AlertDialogFooter>
-                                                                <AlertDialogCancel className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200">İptal</AlertDialogCancel>
+                                                                <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
                                                                 <AlertDialogAction onClick={() => onDelete(test.id)} className="bg-rose-600 hover:bg-rose-700 text-white border-none">Evet, Sil</AlertDialogAction>
                                                             </AlertDialogFooter>
                                                         </AlertDialogContent>
@@ -831,7 +835,7 @@ function TestCard({ test, student, onDelete, onReassign }: { test: Test, student
                             <DropdownMenuSeparator className="bg-slate-800" />
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg cursor-pointer flex items-center">
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 hover:text-rose-300 hover:bg-rose-50/10 rounded-lg cursor-pointer flex items-center">
                                         <Trash2 className="w-4 h-4 mr-2" /> Sil
                                     </DropdownMenuItem>
                                 </AlertDialogTrigger>
@@ -890,12 +894,8 @@ function ReassignTestDialog({ test, isOpen, onOpenChange, familyMembers }: { tes
                 topicId: test.topicId,
             };
 
-            // If it's a bank/mistake/quick test with a questions subcollection, we need those questions
-            // For now, let's assume we copy the question references if they exist on the test object
-            // (Note: addTest implementation handles subcollection if questionsForSubcollection is passed)
-            
             // Fetch questions from the source test if they are not in the object
-            let questionsToCopy: QuickTestQuestion[] = test.questions || [];
+            let questionsToCopy: (BankQuestion | QuickTestQuestion)[] = test.questions || [];
             if ((test.sourceType === 'bank' || test.sourceType === 'mistake' || test.sourceType === 'quick') && questionsToCopy.length === 0) {
                 const questionsColRef = collection(db, 'tests', test.id, 'questions');
                 const questionsSnap = await getDocs(query(questionsColRef, orderBy("questionNumber")));
