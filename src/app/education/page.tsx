@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -39,6 +40,7 @@ const categoryColor: Record<string, string> = {
   'İngilizce':               C.RED,
   'Genel Deneme Sınavları':  C.INDIGO,
   'Serbest Etkinlikler':     C.GREEN,
+  'Yanlışlarım':             C.RED,
   'Diğer':                   '#64748B',
 };
 
@@ -330,16 +332,16 @@ export default function EducationPage() {
         </section>
 
         {/* --- ÖZETLER VE DİĞER MODÜLLER --- */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link href="/education/summaries" className="group">
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between">
+                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
                             <ScrollText className="w-8 h-8" />
                         </div>
                         <div>
                             <h3 className="text-xl font-black">Ders Özetleri</h3>
-                            <p className="text-emerald-100 text-sm font-medium">Hızlı konu tekrarları için özetler</p>
+                            <p className="text-emerald-100 text-sm font-medium">Hızlı konu tekrarları</p>
                         </div>
                     </div>
                     <ChevronRight className="w-6 h-6 opacity-50 group-hover:translate-x-1 transition-transform" />
@@ -347,14 +349,29 @@ export default function EducationPage() {
             </Link>
             
             <Link href="/education/study" className="group">
-                <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between">
+                <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
                             <BookOpen className="w-8 h-8" />
                         </div>
                         <div>
                             <h3 className="text-xl font-black">Konu Çalışma</h3>
-                            <p className="text-indigo-100 text-sm font-medium">Atanan konuları incele ve çalış</p>
+                            <p className="text-indigo-100 text-sm font-medium">Atanan konuları incele</p>
+                        </div>
+                    </div>
+                    <ChevronRight className="w-6 h-6 opacity-50 group-hover:translate-x-1 transition-transform" />
+                </div>
+            </Link>
+
+            <Link href="/education/mistakes" className="group">
+                <div className="bg-gradient-to-br from-rose-500 to-pink-600 p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                            <AlertCircle className="w-8 h-8" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black">Yanlışlarım</h3>
+                            <p className="text-rose-100 text-sm font-medium">Hataları incele ve öğren</p>
                         </div>
                     </div>
                     <ChevronRight className="w-6 h-6 opacity-50 group-hover:translate-x-1 transition-transform" />
