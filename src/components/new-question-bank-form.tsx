@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -20,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Badge } from "./ui/badge";
+import { DialogFooter } from "./ui/dialog";
 
 // --- SCHEMAS ---
 const formSchema = z.object({
@@ -128,7 +128,7 @@ export function NewQuestionBankForm({
     let canProceed = false;
     if (currentStep === 'image') canProceed = !!watchedImage;
     else if (currentStep === 'category') canProceed = !!watchedSubject && !!watchedTopic;
-    else if (currentStep === 'details') canProceed = true; // MCQ validation handled inside
+    else if (currentStep === 'details') canProceed = true;
 
     if (canProceed || stepIndex === 2) {
         const nextStep = steps[stepIndex + 1];
@@ -331,7 +331,7 @@ export function NewQuestionBankForm({
                                 ) : (
                                     <div className="bg-slate-50 dark:bg-slate-900 rounded-3xl p-6 flex flex-col items-center justify-center border border-dashed border-slate-200 dark:border-slate-800 space-y-4">
                                         <div className="w-16 h-16 rounded-2xl bg-indigo-600/10 flex items-center justify-center text-indigo-600">
-                                            <CheckSquare className="w-8 h-8" />
+                                            <CheckCircle2 className="w-8 h-8" />
                                         </div>
                                         <p className="text-sm text-center text-slate-500 font-medium">Açık uçlu sorular için ekstra işlem gerekmez. Onay adımına geçebilirsiniz.</p>
                                     </div>
@@ -402,4 +402,3 @@ export function NewQuestionBankForm({
     </div>
   );
 }
-
