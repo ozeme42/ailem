@@ -6,7 +6,7 @@ import {
   PlusCircle, ArrowLeft, BookCopy, ClipboardList,
   Settings, CheckCircle2, CircleDashed, PieChart,
   FileText, BookMarked, Library, Ruler, TestTube2, Globe,
-  MessageSquare, Gamepad2, FileJson, Layers, BookHeart, AlertTriangle, Lock, KeyRound, ChevronRight
+  MessageSquare, Gamepad2, FileJson, Layers, BookHeart, AlertTriangle, Lock, KeyRound, ChevronRight, BookOpen
 } from "lucide-react";
 import { Test } from "@/lib/data";
 import { onTestsUpdate } from "@/lib/dataService";
@@ -68,7 +68,7 @@ function KpiCard({ label, value, theme, icon, href }: { label: string; value: st
 function ToolCard({ href, icon: Icon, label, theme }: { href: string; icon: any; label: string; theme: ThemeColors }) {
   return (
     <Link href={href} className="block active:scale-95 transition-transform">
-      <div className="rounded-[1.5rem] flex flex-col items-center justify-center py-5 px-2 gap-3 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md">
+      <div className="rounded-[1.5rem] flex flex-col items-center justify-center py-5 px-2 gap-3 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md h-full min-h-[110px]">
         <div className={cn("w-12 h-12 rounded-[1rem] flex items-center justify-center", theme.softBg, theme.text)}>
           <Icon className="w-6 h-6" />
         </div>
@@ -190,7 +190,7 @@ export default function EducationManagementPage() {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white tracking-tight">Yönetim</p>
+            <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white tracking-tight">Yönetim Paneli</p>
           </div>
 
           <Link href="/education/management/questions">
@@ -203,7 +203,7 @@ export default function EducationManagementPage() {
         </div>
       </header>
 
-      <main className="px-3 md:px-6 pt-5 space-y-6 md:max-w-4xl md:mx-auto">
+      <main className="px-3 md:px-6 pt-5 space-y-6 md:max-w-5xl md:mx-auto">
 
         {/* KPI KARTLARI */}
         <section className="grid grid-cols-3 gap-3 md:gap-4">
@@ -218,13 +218,14 @@ export default function EducationManagementPage() {
              <div className="w-6 h-6 rounded-md flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                 <Settings className="w-3.5 h-3.5" />
              </div>
-             <p className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Araçlar</p>
+             <p className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Tanımlamalar ve Araçlar</p>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 md:gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3 md:gap-4">
             <ToolCard href="/education/all-tests"                   icon={Library}      label="Ödevler"       theme={toolTheme.indigo} />
             <ToolCard href="/education/management/questions"        icon={PlusCircle}   label="Soru Bankası"  theme={toolTheme.emerald}  />
             <ToolCard href="/education/management/practice-exams"   icon={ClipboardList}label="Denemeler"     theme={toolTheme.orange} />
             <ToolCard href="/education/books"                       icon={BookMarked}   label="Kitap Takibi"  theme={toolTheme.blue}   />
+            <ToolCard href="/education/management/subjects"         icon={BookOpen}     label="Ders & Konu"   theme={toolTheme.purple} />
             <ToolCard href="/education/management/study-plans"      icon={BookHeart}    label="Yol Haritaları"theme={toolTheme.pink}   />
             <ToolCard href="/education/management/json-tests"       icon={FileJson}     label="Yazılılar"     theme={toolTheme.purple} />
           </div>
