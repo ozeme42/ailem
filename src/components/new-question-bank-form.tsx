@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -7,7 +8,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2, UploadCloud, ChevronRight, ChevronLeft, Check, LayoutGrid, BookOpen, Layers, Type, Trash2, Plus, Minus, Image as ImageIcon } from "lucide-react";
+import { Loader2, UploadCloud, ChevronRight, ChevronLeft, Check, LayoutGrid, Type, Trash2, Plus, Minus, Image as ImageIcon, X } from "lucide-react";
 import { BankQuestion } from "@/lib/data";
 import { useAuth } from "./auth-provider";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Badge } from "./ui/badge";
 import { DialogFooter } from "./ui/dialog";
+import { ScrollArea } from "./ui/scroll-area";
 
 // --- SCHEMAS ---
 const formSchema = z.object({
@@ -59,6 +61,10 @@ export function NewQuestionBankForm({
   const [currentStep, setCurrentStep] = React.useState<Step>('image');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [optionKeys, setOptionKeys] = React.useState(['A', 'B', 'C', 'D']);
+  
+  // Multiple image handling
+  const [imageQueue, setImageQueue] = React.useState<string[]>([]);
+  const [currentIndex, setCurrentIndex] = React.useState(0);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -72,17 +78,19 @@ export function NewQuestionBankForm({
     }
   });
 
-  const { watch, trigger, setValue } = form;
+  const { watch, setValue } = form;
   const watchedType = watch("type");
   const watchedImage = watch("imageDataUri");
   const watchedSubject = watch("subject");
   const watchedTopic = watch("topic");
 
+  // Load initial data for editing mode
   React.useEffect(() => {
     if (initialData) {
         const type = initialData.type || defaultType;
         const opts = initialData.options || { 'A': '', 'B': '', 'C': '', 'D': '' };
         setOptionKeys(Object.keys(opts));
+        setImageQueue([initialData.imageUrl]);
         form.reset({
             subject: initialData.subject,
             topic: initialData.topic,
@@ -96,17 +104,70 @@ export function NewQuestionBankForm({
     }
   }, [initialData, form, defaultType]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setValue('originalFilename', file.name);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setValue('imageDataUri', reader.result as string, { shouldValidate: true });
-        goToNextStep();
-      };
-      reader.readAsDataURL(file);
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const newImages: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const dataUri = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(file);
+        });
+        newImages.push(dataUri);
     }
+
+    setImageQueue(prev => [...prev, ...newImages]);
+    
+    // Auto start first image if not already started
+    if (imageQueue.length === 0 && newImages.length > 0) {
+        setValue('imageDataUri', newImages[0], { shouldValidate: true });
+        setCurrentIndex(0);
+        setCurrentStep('category');
+    }
+  };
+
+  const removeImageFromQueue = (idx: number) => {
+    const newQueue = imageQueue.filter((_, i) => i !== idx);
+    setImageQueue(newQueue);
+    if (currentIndex === idx) {
+        if (newQueue.length > 0) {
+            const nextIdx = Math.min(idx, newQueue.length - 1);
+            setCurrentIndex(nextIdx);
+            setValue('imageDataUri', newQueue[nextIdx]);
+        } else {
+            setValue('imageDataUri', '');
+        }
+    } else if (currentIndex > idx) {
+        setCurrentIndex(currentIndex - 1);
+    }
+  };
+
+  const steps: Step[] = ['image', 'category', 'details', 'confirm'];
+  const stepIndex = steps.indexOf(currentStep);
+
+  const goToNextStep = () => {
+    let canProceed = false;
+    if (currentStep === 'image') canProceed = imageQueue.length > 0;
+    else if (currentStep === 'category') canProceed = !!watchedSubject && !!watchedTopic;
+    else if (currentStep === 'details') canProceed = true;
+
+    if (canProceed || stepIndex === 2) {
+        if (currentStep === 'image') {
+            setValue('imageDataUri', imageQueue[currentIndex]);
+        }
+        const nextStep = steps[stepIndex + 1];
+        if (nextStep) setCurrentStep(nextStep);
+    } else {
+        toast({ title: "Eksik Bilgi", description: "Lütfen bu adımı tamamlayın.", variant: "destructive" });
+    }
+  };
+
+  const goToPrevStep = () => {
+    const prevStep = steps[stepIndex - 1];
+    if (prevStep) setCurrentStep(prevStep);
   };
 
   const handleOptionCountChange = (newCount: number) => {
@@ -121,35 +182,13 @@ export function NewQuestionBankForm({
       setOptionKeys(currentKeys);
   };
 
-  const steps: Step[] = ['image', 'category', 'details', 'confirm'];
-  const stepIndex = steps.indexOf(currentStep);
-
-  const goToNextStep = async () => {
-    let canProceed = false;
-    if (currentStep === 'image') canProceed = !!watchedImage;
-    else if (currentStep === 'category') canProceed = !!watchedSubject && !!watchedTopic;
-    else if (currentStep === 'details') canProceed = true;
-
-    if (canProceed || stepIndex === 2) {
-        const nextStep = steps[stepIndex + 1];
-        if (nextStep) setCurrentStep(nextStep);
-    } else {
-        toast({ title: "Eksik Bilgi", description: "Lütfen bu adımı tamamlayın.", variant: "destructive" });
-    }
-  };
-
-  const goToPrevStep = () => {
-    const prevStep = steps[stepIndex - 1];
-    if (prevStep) setCurrentStep(prevStep);
-  };
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) return;
     setLoading(true);
     try {
-      let finalImageUrl = initialData?.imageUrl || "";
+      let finalImageUrl = values.imageDataUri;
       if (values.imageDataUri.startsWith('data:image')) {
-          const destinationPath = `bank-questions/${user.uid}-${Date.now()}.jpg`;
+          const destinationPath = `bank-questions/${user.uid}-${Date.now()}-${currentIndex}.jpg`;
           const migrationResult = await migrateImage({ imageDataUri: values.imageDataUri, destinationPath });
           if (!migrationResult.success || !migrationResult.newUrl) throw new Error("Görsel yüklenemedi.");
           finalImageUrl = migrationResult.newUrl;
@@ -166,11 +205,27 @@ export function NewQuestionBankForm({
         correctAnswer: values.type === 'mcq' ? values.correctAnswer : undefined,
       };
 
-      if (initialData) await updateBankQuestion(initialData.id, questionData);
-      else await addBankQuestion(questionData as any);
-
-      toast({ title: "Başarılı ✨", description: "Soru bankaya kaydedildi." });
-      onQuestionProcessed();
+      if (initialData) {
+          await updateBankQuestion(initialData.id, questionData);
+          toast({ title: "Güncellendi ✨" });
+          onQuestionProcessed();
+      } else {
+          await addBankQuestion(questionData as any);
+          
+          // Check if there are more images in the queue
+          if (currentIndex < imageQueue.length - 1) {
+              const nextIdx = currentIndex + 1;
+              setCurrentIndex(nextIdx);
+              setValue('imageDataUri', imageQueue[nextIdx]);
+              // Reset some fields but KEEP subject/topic for convenience
+              setValue('originalFilename', '');
+              setCurrentStep('category');
+              toast({ title: "Kaydedildi, Sıradaki Soruya Geçildi" });
+          } else {
+              toast({ title: "Tamamlandı ✨", description: "Tüm sorular kaydedildi." });
+              onQuestionProcessed();
+          }
+      }
     } catch (error: any) {
       toast({ title: "Hata", description: error.message, variant: "destructive" });
     } finally {
@@ -187,10 +242,11 @@ export function NewQuestionBankForm({
   return (
     <div className="flex flex-col h-full bg-white dark:bg-slate-950">
         {/* Progress Header */}
-        <div className="px-6 pt-2 pb-6">
+        <div className="px-6 pt-4 pb-6">
             <div className="flex justify-between items-center mb-4">
                 {steps.map((s, i) => (
-                    <div key={s} className="flex flex-col items-center gap-2 flex-1">
+                    <div key={s} className="flex flex-col items-center gap-2 flex-1 relative">
+                        {i > 0 && <div className={cn("absolute right-1/2 top-4 w-full h-[1px] -z-10", i <= stepIndex ? "bg-indigo-600" : "bg-slate-100 dark:bg-slate-900")} />}
                         <div className={cn(
                             "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-500",
                             i <= stepIndex ? "bg-indigo-600 text-white shadow-lg" : "bg-slate-100 text-slate-400 dark:bg-slate-900"
@@ -203,13 +259,14 @@ export function NewQuestionBankForm({
                     </div>
                 ))}
             </div>
-            <div className="h-1 w-full bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden">
-                <motion.div 
-                    className="h-full bg-indigo-600"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }}
-                />
-            </div>
+            
+            {imageQueue.length > 1 && (
+                <div className="flex items-center justify-center mb-2">
+                    <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border-none font-bold">
+                        Soru {currentIndex + 1} / {imageQueue.length}
+                    </Badge>
+                </div>
+            )}
         </div>
 
         <Form {...form}>
@@ -219,31 +276,44 @@ export function NewQuestionBankForm({
                         {currentStep === 'image' && (
                             <motion.div key="image" custom={1} variants={variants} initial="enter" animate="center" exit="exit" className="space-y-6">
                                 <div className="text-center space-y-2">
-                                    <h3 className="text-xl font-black tracking-tight">Soru Görseli</h3>
-                                    <p className="text-sm text-slate-500">Sorunun fotoğrafını çekin veya galeriden yükleyin.</p>
+                                    <h3 className="text-xl font-black tracking-tight">Soru Görselleri</h3>
+                                    <p className="text-sm text-slate-500">Bir veya birden fazla soru fotoğrafı yükleyebilirsiniz.</p>
                                 </div>
-                                <div 
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className={cn(
-                                        "aspect-video w-full rounded-3xl border-4 border-dashed transition-all flex flex-col items-center justify-center cursor-pointer group",
-                                        watchedImage ? "border-indigo-500/50 bg-indigo-50/10" : "border-slate-200 dark:border-slate-800 hover:border-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-900"
-                                    )}
-                                >
-                                    <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
-                                    {watchedImage ? (
-                                        <div className="relative w-full h-full p-4">
-                                            <Image src={watchedImage} alt="Soru" fill className="object-contain rounded-xl" />
-                                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl transition-opacity">
-                                                <Button type="button" variant="secondary" className="rounded-full">Değiştir</Button>
-                                            </div>
-                                        </div>
-                                    ) : (
+                                
+                                <div className="space-y-4">
+                                    <div 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className={cn(
+                                            "aspect-video w-full rounded-3xl border-4 border-dashed transition-all flex flex-col items-center justify-center cursor-pointer group",
+                                            imageQueue.length > 0 ? "border-indigo-500/50 bg-indigo-50/10" : "border-slate-200 dark:border-slate-800 hover:border-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-900"
+                                        )}
+                                    >
+                                        <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} multiple />
                                         <div className="flex flex-col items-center gap-3">
                                             <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
                                                 <UploadCloud className="w-8 h-8" />
                                             </div>
-                                            <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">Görsel Seç</p>
+                                            <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">Görsel(ler) Seç</p>
                                         </div>
+                                    </div>
+
+                                    {imageQueue.length > 0 && (
+                                        <ScrollArea className="h-40 w-full border rounded-2xl p-4 bg-slate-50 dark:bg-slate-900">
+                                            <div className="grid grid-cols-4 gap-3">
+                                                {imageQueue.map((uri, idx) => (
+                                                    <div key={idx} className={cn("relative aspect-square rounded-lg overflow-hidden border-2", currentIndex === idx ? "border-indigo-500" : "border-transparent")}>
+                                                        <Image src={uri} alt="Queue" fill className="object-cover" />
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={(e) => { e.stopPropagation(); removeImageFromQueue(idx); }}
+                                                            className="absolute top-0.5 right-0.5 bg-rose-500 text-white rounded-full p-0.5 shadow-md"
+                                                        >
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </ScrollArea>
                                     )}
                                 </div>
                             </motion.div>
@@ -253,7 +323,7 @@ export function NewQuestionBankForm({
                             <motion.div key="category" custom={1} variants={variants} initial="enter" animate="center" exit="exit" className="space-y-6">
                                 <div className="text-center space-y-2">
                                     <h3 className="text-xl font-black tracking-tight">Kategori & Tip</h3>
-                                    <p className="text-sm text-slate-500">Sorunun hangi derse ait olduğunu belirleyin.</p>
+                                    <p className="text-sm text-slate-500">Bu soru hangi ders ve konuya ait?</p>
                                 </div>
                                 <div className="space-y-4">
                                     <FormField control={form.control} name="type" render={({field}) => (
@@ -293,8 +363,8 @@ export function NewQuestionBankForm({
                         {currentStep === 'details' && (
                             <motion.div key="details" custom={1} variants={variants} initial="enter" animate="center" exit="exit" className="space-y-6">
                                 <div className="text-center space-y-2">
-                                    <h3 className="text-xl font-black tracking-tight">{watchedType === 'mcq' ? 'Seçenekler' : 'Soru Notu'}</h3>
-                                    <p className="text-sm text-slate-500">{watchedType === 'mcq' ? 'Doğru cevabı işaretlemeyi unutmayın.' : 'Soru hakkında eklemek istediğiniz not.'}</p>
+                                    <h3 className="text-xl font-black tracking-tight">{watchedType === 'mcq' ? 'Seçenekler' : 'Detaylar'}</h3>
+                                    <p className="text-sm text-slate-500">Doğru cevabı işaretleyin.</p>
                                 </div>
                                 {watchedType === 'mcq' ? (
                                     <div className="space-y-6">
@@ -319,7 +389,7 @@ export function NewQuestionBankForm({
                                                                 control={form.control}
                                                                 name={`options.${key}`}
                                                                 render={({ field: optionField }) => (
-                                                                    <Input {...optionField} placeholder={`${key} seçeneği (opsiyonel)...`} className="bg-transparent border-none shadow-none h-8 px-0 focus-visible:ring-0" />
+                                                                    <Input {...optionField} placeholder={`${key} seçeneği (isteğe bağlı)...`} className="bg-transparent border-none shadow-none h-8 px-0 focus-visible:ring-0" />
                                                                 )}
                                                             />
                                                         </div>
@@ -333,7 +403,7 @@ export function NewQuestionBankForm({
                                         <div className="w-16 h-16 rounded-2xl bg-indigo-600/10 flex items-center justify-center text-indigo-600">
                                             <CheckCircle2 className="w-8 h-8" />
                                         </div>
-                                        <p className="text-sm text-center text-slate-500 font-medium">Açık uçlu sorular için ekstra işlem gerekmez. Onay adımına geçebilirsiniz.</p>
+                                        <p className="text-sm text-center text-slate-500 font-medium">Açık uçlu soru olarak kaydedilecek.</p>
                                     </div>
                                 )}
                             </motion.div>
@@ -389,7 +459,7 @@ export function NewQuestionBankForm({
                     {currentStep === 'confirm' ? (
                         <Button type="submit" className="h-12 rounded-2xl px-8 font-bold flex-[2] bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20" disabled={loading}>
                             {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Check className="w-5 h-5 mr-2" />}
-                            {initialData ? 'Güncelle' : 'Bankaya Kaydet'}
+                            {currentIndex < imageQueue.length - 1 ? 'Kaydet ve Sıradakine Geç' : (initialData ? 'Güncelle' : 'Bankaya Kaydet')}
                         </Button>
                     ) : (
                         <Button type="button" className="h-12 rounded-2xl px-8 font-bold flex-[2] bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20" onClick={goToNextStep}>
