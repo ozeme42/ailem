@@ -4,8 +4,8 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { 
-    ArrowLeft, BookOpen, ScrollText, ChevronRight, 
-    Search, Filter, BookText, Sparkles, X, Maximize2, Minimize2 
+    ArrowLeft, ScrollText, ChevronRight, 
+    Search, X, Maximize2, Minimize2, Sparkles, BookOpen, BookText
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { onSummariesUpdate } from "@/lib/dataService";
@@ -36,6 +36,28 @@ export function SummariesViewerClient() {
     const [selectedSubject, setSelectedSubject] = React.useState<string>("Tümü");
     const [viewingSummary, setViewingSummary] = React.useState<Summary | null>(null);
     const [isFullScreen, setIsFullScreen] = React.useState(false);
+
+    // HTML İçeriğindeki sekmeleri desteklemek için global showTab fonksiyonu
+    React.useEffect(() => {
+        (window as any).showTab = (tabId: string, button: HTMLElement) => {
+            const container = button.closest('.tab-container') || button.parentElement?.parentElement;
+            if (!container) return;
+            
+            container.querySelectorAll('.tab-content').forEach((el: any) => {
+                el.style.display = 'none';
+            });
+            
+            const target = container.querySelector(`#${tabId}`) as HTMLElement;
+            if (target) target.style.display = 'block';
+            
+            container.querySelectorAll('.tab-button').forEach((el: any) => {
+                el.classList.remove('active', 'bg-indigo-600', 'text-white');
+                el.classList.add('bg-slate-100', 'text-slate-600');
+            });
+            button.classList.add('active', 'bg-indigo-600', 'text-white');
+            button.classList.remove('bg-slate-100', 'text-slate-600');
+        };
+    }, []);
 
     React.useEffect(() => {
         if (!familyId) return;
@@ -84,7 +106,7 @@ export function SummariesViewerClient() {
             <header className={themeColors.HEADER_BG}>
                 <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400">
+                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400" onClick={() => router.back()}>
                             <ArrowLeft className="h-6 w-6" />
                         </Button>
                         <div className={themeColors.ICON_BOX}>

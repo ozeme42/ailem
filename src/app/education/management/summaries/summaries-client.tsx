@@ -1,11 +1,11 @@
+
 "use client";
 
 import * as React from "react";
 import Link from "next/link";
 import { 
     ArrowLeft, Plus, Search, Trash2, Edit, X, 
-    ScrollText, BookOpen, ChevronRight, FileText, LayoutGrid,
-    Loader2, AlertCircle, Eye
+    ScrollText, BookOpen, Eye, Loader2
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { 
@@ -27,7 +27,7 @@ import {
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, 
     AlertDialogTitle, AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Combobox } from "@/components/ui/combobox";
 
@@ -59,6 +59,19 @@ export function SummariesManagementClient() {
     const [formSubject, setFormSubject] = React.useState("");
     const [formTopic, setFormTopic] = React.useState("");
     const [formContent, setFormContent] = React.useState("");
+
+    // Preview sekmeleri için global fonksiyon
+    React.useEffect(() => {
+        (window as any).showTab = (tabId: string, button: HTMLElement) => {
+            const container = button.closest('.tab-container') || button.parentElement?.parentElement;
+            if (!container) return;
+            container.querySelectorAll('.tab-content').forEach((el: any) => el.style.display = 'none');
+            const target = container.querySelector(`#${tabId}`) as HTMLElement;
+            if (target) target.style.display = 'block';
+            container.querySelectorAll('.tab-button').forEach((el: any) => el.classList.remove('active', 'bg-indigo-600', 'text-white'));
+            button.classList.add('active', 'bg-indigo-600', 'text-white');
+        };
+    }, []);
 
     React.useEffect(() => {
         if (!familyId) return;
@@ -209,13 +222,6 @@ export function SummariesManagementClient() {
                             </CardFooter>
                         </Card>
                     ))}
-
-                    {filteredSummaries.length === 0 && !loading && (
-                        <div className="col-span-full py-20 text-center">
-                            <ScrollText className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-                            <p className="text-slate-500 font-medium">Henüz özet bulunamadı.</p>
-                        </div>
-                    )}
                 </div>
             </main>
 

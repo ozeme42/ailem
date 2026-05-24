@@ -86,8 +86,6 @@ export default function AllTestsPage() {
     const [tests, setTests] = React.useState<Test[]>([]);
     const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
     const [selectedStudents, setSelectedStudents] = React.useState<string[]>([]);
-    const [masterSubjects, setMasterSubjects] = React.useState<string[]>([]);
-    const [masterTopics, setMasterTopics] = React.useState<string[]>([]);
     const [activeTab, setActiveTab] = React.useState<'all'|'pending'|'completed'>('all');
     const [activeTestType, setActiveTestType] = React.useState<TestTypeFilter>('all');
     const [selectedSubCategory, setSelectedSubCategory] = React.useState<string>('all');
@@ -106,10 +104,8 @@ export default function AllTestsPage() {
     React.useEffect(() => {
         const unsubTests = onTestsUpdate(setTests, false, 'assignedDate', 'desc');
         const unsubBooks = onTrackedBooksUpdate(setTrackedBooks);
-        const unsubSubjects = onSubjectsUpdate(setMasterSubjects);
-        const unsubTopics = onTopicsUpdate(setMasterTopics);
         return () => {
-            unsubTests(); unsubBooks(); unsubSubjects(); unsubTopics();
+            unsubTests(); unsubBooks();
         };
     }, []);
     
@@ -380,6 +376,10 @@ function ReassignTestDialog({ test, isOpen, onOpenChange, familyMembers }: { tes
                 const questionsSnap = await getDocs(query(questionsColRef, orderBy("questionNumber")));
                 questionsToCopy = questionsSnap.docs.map(d => d.data());
             }
+            // JSON sorularını da kopyala
+            if (test.sourceType === 'json' && test.jsonQuestions) {
+                newTestData.jsonQuestions = [...test.jsonQuestions];
+            }
             await addTest(newTestData, questionsToCopy);
             toast({ title: "✅ Ödev Tekrar Atandı" });
             onOpenChange(false);
@@ -392,10 +392,11 @@ function ReassignTestDialog({ test, isOpen, onOpenChange, familyMembers }: { tes
                 <DialogHeader><DialogTitle className="flex items-center gap-2"><Repeat className="w-5 h-5 text-indigo-400" /> Ödevi Tekrar Ata</DialogTitle><DialogDescription className="text-slate-400">"{test.title}" ödevini yeni bir görev olarak tanımlayın.</DialogDescription></DialogHeader>
                 <div className="space-y-6 py-4">
                     <div className="space-y-2"><Label className="text-xs font-bold text-slate-500 uppercase">Öğrenci</Label><Select value={selectedStudentId} onValueChange={setSelectedStudentId}><SelectTrigger className="bg-slate-950 border-slate-800 h-11"><SelectValue placeholder="Seçin" /></SelectTrigger><SelectContent className="bg-slate-900 border-slate-800 text-slate-100">{students.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label className="text-xs font-bold text-slate-500 uppercase">Bitiş Tarihi</Label><Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-start bg-slate-950 border-slate-800 h-11"><CalendarLucide className="mr-2 h-4 w-4" />{format(dueDate, "d MMMM yyyy", { locale: tr })}</Button></PopoverTrigger><PopoverContent className="w-auto p-0 bg-slate-900 border-slate-800" align="start"><CalendarPicker mode="single" selected={dueDate} onSelect={d => d && setDueDate(d)} initialFocus className="bg-slate-900 text-slate-100" /></PopoverContent></Popover></div>
+                    <div className="space-y-2"><Label className="text-xs font-bold text-slate-500 uppercase">Bitiş Tarihi</Label><Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-start bg-slate-950 border-slate-800 h-11"><Calendar className="mr-2 h-4 w-4" />{format(dueDate, "d MMMM yyyy", { locale: tr })}</Button></PopoverTrigger><PopoverContent className="w-auto p-0 bg-slate-900 border-slate-800" align="start"><CalendarPicker mode="single" selected={dueDate} onSelect={d => d && setDueDate(d)} initialFocus className="bg-slate-900 text-slate-100" /></PopoverContent></Popover></div>
                 </div>
                 <DialogFooter><Button variant="ghost" onClick={() => onOpenChange(false)} className="text-slate-400">İptal</Button><Button onClick={handleReassignSubmit} disabled={loading} className="bg-indigo-600 text-white font-bold h-11 rounded-xl px-8">{loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}Atamayı Tamamla</Button></DialogFooter>
             </DialogContent>
         </Dialog>
     );
 }
+
