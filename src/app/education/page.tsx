@@ -48,14 +48,6 @@ export const getCategoryName = (test: Test): string => {
   return test.subject || 'Diğer';
 };
 
-// Soru sayısına göre dinamik zorluk belirleme (Görsel zenginlik için)
-const getDifficulty = (count?: number) => {
-  if (!count) return { label: 'Bilinmiyor', color: '#64748B' };
-  if (count <= 10) return { label: 'Kolay', color: C.GREEN };
-  if (count <= 20) return { label: 'Orta', color: C.ORANGE };
-  return { label: 'Zor', color: C.RED };
-};
-
 // ─── ANA SAYFA ───────────────────────────────────────────────────────────────
 export default function EducationPage() {
   const { toast } = useToast();
@@ -91,11 +83,6 @@ export default function EducationPage() {
   const assignments = React.useMemo(() =>
     !selectedStudent ? [] : studyAssignments.filter(s => s.studentId === selectedStudent.id),
     [selectedStudent, studyAssignments]);
-
-  const allTopics = React.useMemo(() =>
-    trackedBooks.flatMap(b => (b.subjects || []).flatMap(s =>
-      (s.topics || []).map(t => ({ ...t, subjectName: s.name })))),
-    [trackedBooks]);
 
   const assignmentsByBook = React.useMemo(() => {
     const grouped: Record<string, { title: string; assignments: StudyAssignment[]; total: number; completed: number }> = {};
@@ -395,7 +382,7 @@ export default function EducationPage() {
                   const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
                   const overdue = isPast(dueDate) && !isToday(dueDate);
                   const dueToday = isToday(dueDate);
-                  const diff = getDifficulty(test.questionCount);
+                  const daysDiff = differenceInDays(dueDate, new Date());
 
                   return (
                     <div key={test.id} className="bg-white dark:bg-[#1E293B] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
@@ -418,8 +405,11 @@ export default function EducationPage() {
                           <div className="flex items-center gap-2 mb-2">
                             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
                             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{category}</span>
-                            <span className="ml-auto px-2 py-0.5 text-[10px] font-bold uppercase rounded border" 
-                                  style={{ borderColor: diff.color, color: diff.color }}>{diff.label}</span>
+                            {!overdue && !dueToday && (
+                                <span className="ml-auto text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                                    {daysDiff + 1} gün kaldı
+                                </span>
+                            )}
                           </div>
                           <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">{test.title}</h3>
                         </div>
