@@ -6,7 +6,7 @@ import Link from "next/link";
 import { 
     ArrowLeft, Plus, Search, Trash2, Edit, X, 
     ScrollText, Eye, Loader2, ChevronRight, ChevronLeft, Check, 
-    BookOpen, Layers, Type, Code, Save
+    BookOpen, Layers, Type, Code, Save, BookCopy, PlusCircle
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { 
@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Combobox } from "@/components/ui/combobox";
 import { motion, AnimatePresence } from "framer-motion";
 
 // --- DESIGN SYSTEM ---
@@ -41,6 +40,10 @@ const themeColors = {
     INPUT_BG: "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:border-indigo-500 transition-all",
     WIZARD_STEP_ACTIVE: "bg-indigo-600 text-white shadow-lg",
     WIZARD_STEP_INACTIVE: "bg-slate-100 dark:bg-slate-800 text-slate-400",
+    SELECTION_CARD: "relative flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer text-center gap-2 h-24",
+    CARD_ACTIVE: "border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 shadow-md",
+    CARD_INACTIVE: "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-200 dark:hover:border-indigo-800",
+    ADD_CARD: "border-dashed border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:bg-indigo-50/50 transition-all"
 };
 
 type WizardStep = 'subject' | 'topic' | 'content';
@@ -66,6 +69,11 @@ export function SummariesManagementClient() {
     const [formTopic, setFormTopic] = React.useState("");
     const [formContent, setFormContent] = React.useState("");
 
+    // Inline add states
+    const [isAddingNewSubject, setIsAddingNewSubject] = React.useState(false);
+    const [isAddingNewTopic, setIsAddingNewTopic] = React.useState(false);
+    const [newItemName, setNewItemName] = React.useState("");
+
     React.useEffect(() => {
         if (!familyId) return;
         const unsubS = onSummariesUpdate(setSummaries);
@@ -76,52 +84,60 @@ export function SummariesManagementClient() {
     }, [familyId]);
 
     const handleOpenForm = (summary: Summary | null) => {
+        setIsAddingNewSubject(false);
+        setIsAddingNewTopic(false);
+        setNewItemName("");
+        
         if (summary) {
             setEditingSummary(summary);
             setFormTitle(summary.title);
             setFormSubject(summary.subject);
             setFormTopic(summary.topic);
             setFormContent(summary.content);
-            setCurrentStep('content'); // Edit modunda doğrudan içeriğe gitsin
+            setCurrentStep('content');
         } else {
             setEditingSummary(null);
             setFormTitle("");
             setFormSubject("");
             setFormTopic("");
             setFormContent("");
-            setCurrentStep('subject'); // Yeni eklemede ilk adımdan başlasın
+            setCurrentStep('subject');
         }
         setIsFormOpen(true);
     };
 
-    const handleSubjectCreate = async (name: string) => {
-        if (!allSubjects.includes(name)) {
-            const newList = [...allSubjects, name];
-            await updateSubjects(newList);
-            toast({ title: "Yeni Ders Eklendi", description: name });
+    const handleQuickAdd = async (type: 'subject' | 'topic') => {
+        if (!newItemName.trim()) return;
+        const name = newItemName.trim();
+        
+        if (type === 'subject') {
+            if (!allSubjects.includes(name)) {
+                await updateSubjects([...allSubjects, name]);
+                toast({ title: "Der Eklendi" });
+            }
+            setFormSubject(name);
+            setIsAddingNewSubject(false);
+        } else {
+            if (!allTopics.includes(name)) {
+                await updateTopics([...allTopics, name]);
+                toast({ title: "Konu Eklendi" });
+            }
+            setFormTopic(name);
+            setIsAddingNewTopic(false);
         }
-        setFormSubject(name);
-    };
-
-    const handleTopicCreate = async (name: string) => {
-        if (!allTopics.includes(name)) {
-            const newList = [...allTopics, name];
-            await updateTopics(newList);
-            toast({ title: "Yeni Konu Eklendi", description: name });
-        }
-        setFormTopic(name);
+        setNewItemName("");
     };
 
     const handleNextStep = () => {
         if (currentStep === 'subject') {
             if (!formSubject) {
-                toast({ title: "Ders Seçin", description: "Lütfen devam etmek için bir ders seçin.", variant: "destructive" });
+                toast({ title: "Ders Seçin", description: "Lütfen bir ders belirleyin.", variant: "destructive" });
                 return;
             }
             setCurrentStep('topic');
         } else if (currentStep === 'topic') {
             if (!formTopic) {
-                toast({ title: "Konu Seçin", description: "Lütfen devam etmek için bir konu seçin.", variant: "destructive" });
+                toast({ title: "Konu Seçin", description: "Lütfen bir konu belirleyin.", variant: "destructive" });
                 return;
             }
             setCurrentStep('content');
@@ -135,7 +151,7 @@ export function SummariesManagementClient() {
 
     const handleSave = async () => {
         if (!formTitle.trim() || !formContent.trim()) {
-            toast({ title: "Eksik Bilgi", description: "Lütfen başlık ve içeriği doldurun.", variant: "destructive" });
+            toast({ title: "Eksik Bilgi", description: "Başlık ve içeriği doldurun.", variant: "destructive" });
             return;
         }
 
@@ -156,7 +172,7 @@ export function SummariesManagementClient() {
             }
             setIsFormOpen(false);
         } catch (e) {
-            toast({ title: "Hata", description: "Kaydedilirken bir sorun oluştu.", variant: "destructive" });
+            toast({ title: "Hata", variant: "destructive" });
         }
     };
 
@@ -176,9 +192,9 @@ export function SummariesManagementClient() {
     );
 
     const stepInfo = {
-        subject: { title: "Ders Seçimi", desc: "Bu özet hangi derse ait?", icon: BookOpen },
-        topic: { title: "Konu Seçimi", desc: "Özetin konusunu belirleyin.", icon: Layers },
-        content: { title: "İçerik ve Detaylar", desc: "Özet başlığını ve HTML içeriğini girin.", icon: ScrollText }
+        subject: { title: "Ders Seçimi", desc: "Hangi ders için özet ekliyorsunuz?", icon: BookOpen },
+        topic: { title: "Konu Seçimi", desc: "Özetin konusu nedir?", icon: Layers },
+        content: { title: "İçerik Detayları", desc: "Başlık ve notlarınızı girin.", icon: ScrollText }
     };
 
     const currentStepIndex = ['subject', 'topic', 'content'].indexOf(currentStep);
@@ -245,7 +261,7 @@ export function SummariesManagementClient() {
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel className="dark:bg-slate-800 dark:text-white">Vazgeç</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDelete(summary.id)} className="bg-rose-600">Sil</AlertDialogAction>
+                                                    <AlertDialogAction onClick={() => handleDelete(summary.id)} className="bg-rose-600 text-white">Sil</AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
@@ -260,7 +276,7 @@ export function SummariesManagementClient() {
                                 </div>
                             </CardContent>
                             <CardFooter className="pt-0">
-                                <Button variant="secondary" className="w-full rounded-xl" onClick={() => { setEditingSummary(summary); setFormContent(summary.content); setIsPreviewOpen(true); }}>
+                                <Button variant="secondary" className="w-full rounded-xl h-10 font-bold" onClick={() => { setFormContent(summary.content); setEditingSummary(summary); setIsPreviewOpen(true); }}>
                                     <Eye className="w-4 h-4 mr-2" /> İçeriği Gör
                                 </Button>
                             </CardFooter>
@@ -269,13 +285,13 @@ export function SummariesManagementClient() {
                 </div>
             </main>
 
-            {/* ADIM ADIM FORM DIALOG */}
+            {/* ADIM ADIM ÖZET SİHİRBAZI */}
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent className="max-w-3xl h-[90vh] md:h-[80vh] flex flex-col p-0 overflow-hidden rounded-3xl dark:bg-slate-950 dark:border-slate-800 bg-white">
+                <DialogContent className="max-w-2xl h-[90vh] md:h-[80vh] flex flex-col p-0 overflow-hidden rounded-3xl dark:bg-slate-950 dark:border-slate-800 bg-white">
                     <DialogHeader className="p-6 border-b dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
                         <div className="flex items-center justify-between mb-4">
-                            <DialogTitle className="flex items-center gap-2">
-                                {React.createElement(stepInfo[currentStep].icon, { className: "w-5 h-5 text-indigo-500" })}
+                            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+                                {React.createElement(stepInfo[currentStep].icon, { className: "w-6 h-6 text-indigo-500" })}
                                 {editingSummary ? "Özeti Düzenle" : "Yeni Özet Sihirbazı"}
                             </DialogTitle>
                             <div className="flex items-center gap-2">
@@ -283,112 +299,184 @@ export function SummariesManagementClient() {
                                     <div 
                                         key={i} 
                                         className={cn(
-                                            "w-2 h-2 rounded-full transition-all duration-300", 
-                                            i === currentStepIndex ? "w-6 bg-indigo-600" : "bg-slate-200 dark:bg-slate-800"
+                                            "h-1.5 rounded-full transition-all duration-300", 
+                                            i === currentStepIndex ? "w-8 bg-indigo-600" : "w-4 bg-slate-200 dark:bg-slate-800"
                                         )} 
                                     />
                                 ))}
                             </div>
                         </div>
-                        <DialogDescription className="text-sm">{stepInfo[currentStep].desc}</DialogDescription>
+                        <DialogDescription className="text-sm font-medium">{stepInfo[currentStep].desc}</DialogDescription>
                     </DialogHeader>
 
                     <div className="flex-1 overflow-hidden relative">
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={currentStep}
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                className="h-full flex flex-col p-6 space-y-6"
+                                initial={{ opacity: 0, scale: 0.98 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 1.02 }}
+                                transition={{ duration: 0.2 }}
+                                className="h-full flex flex-col"
                             >
-                                {currentStep === 'subject' && (
-                                    <div className="space-y-4 max-w-md mx-auto w-full pt-10">
-                                        <label className="text-xs font-bold uppercase text-slate-500 tracking-widest pl-1">1. Adım: Ders Belirleyin</label>
-                                        <Combobox 
-                                            options={allSubjects.map(s => ({label:s, value:s}))} 
-                                            value={formSubject} 
-                                            onChange={setFormSubject} 
-                                            onCreate={handleSubjectCreate}
-                                            placeholder="Ders seçin veya yeni yazın..." 
-                                            createText="Ders olarak ekle:"
-                                        />
-                                        <p className="text-[11px] text-slate-400 italic">Örn: Matematik, Fen Bilimleri...</p>
-                                    </div>
-                                )}
-
-                                {currentStep === 'topic' && (
-                                    <div className="space-y-4 max-w-md mx-auto w-full pt-10">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Badge variant="secondary" className="bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border-none">{formSubject}</Badge>
-                                            <span className="text-slate-300">/</span>
-                                        </div>
-                                        <label className="text-xs font-bold uppercase text-slate-500 tracking-widest pl-1">2. Adım: Konu Belirleyin</label>
-                                        <Combobox 
-                                            options={allTopics.map(t => ({label:t, value:t}))} 
-                                            value={formTopic} 
-                                            onChange={setFormTopic} 
-                                            onCreate={handleTopicCreate}
-                                            placeholder="Konu seçin veya yeni yazın..." 
-                                            createText="Konu olarak ekle:"
-                                        />
-                                        <p className="text-[11px] text-slate-400 italic">Örn: Üslü Sayılar, Fotosentez...</p>
-                                    </div>
-                                )}
-
-                                {currentStep === 'content' && (
-                                    <ScrollArea className="flex-1 -mx-2 px-2">
-                                        <div className="space-y-6 pb-10">
-                                            <div className="grid grid-cols-2 gap-3 mb-2">
-                                                 <Badge variant="outline" className="w-fit justify-start bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border-emerald-200">Ders: {formSubject}</Badge>
-                                                 <Badge variant="outline" className="w-fit justify-start bg-blue-50 dark:bg-blue-950/20 text-blue-600 border-blue-200">Konu: {formTopic}</Badge>
+                                <ScrollArea className="flex-1">
+                                    <div className="p-6">
+                                        {currentStep === 'subject' && (
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                {allSubjects.map((s) => {
+                                                    const isActive = formSubject === s;
+                                                    return (
+                                                        <div 
+                                                            key={s} 
+                                                            onClick={() => setFormSubject(s)}
+                                                            className={cn(
+                                                                themeColors.SELECTION_CARD,
+                                                                isActive ? themeColors.CARD_ACTIVE : themeColors.CARD_INACTIVE
+                                                            )}
+                                                        >
+                                                            {isActive && <div className="absolute top-2 right-2 bg-indigo-600 text-white rounded-full p-0.5"><Check className="w-3 h-3" /></div>}
+                                                            <BookOpen className={cn("w-5 h-5", isActive ? "text-indigo-600" : "text-slate-400")} />
+                                                            <span className="text-xs font-bold truncate w-full px-1">{s}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                                
+                                                {isAddingNewSubject ? (
+                                                    <div className={cn(themeColors.SELECTION_CARD, "border-indigo-300 bg-indigo-50/20")}>
+                                                        <Input 
+                                                            autoFocus
+                                                            placeholder="Ders adı..." 
+                                                            className="h-8 text-[11px] font-bold text-center bg-white" 
+                                                            value={newItemName}
+                                                            onChange={(e) => setNewItemName(e.target.value)}
+                                                            onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd('subject')}
+                                                        />
+                                                        <div className="flex gap-1 w-full">
+                                                            <Button size="sm" className="h-6 flex-1 text-[10px] bg-indigo-600" onClick={() => handleQuickAdd('subject')}>Ekle</Button>
+                                                            <Button size="sm" variant="ghost" className="h-6 flex-1 text-[10px]" onClick={() => {setIsAddingNewSubject(false); setNewItemName("");}}>İptal</Button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div 
+                                                        onClick={() => setIsAddingNewSubject(true)}
+                                                        className={cn(themeColors.SELECTION_CARD, themeColors.ADD_CARD)}
+                                                    >
+                                                        <PlusCircle className="w-5 h-5 text-slate-400" />
+                                                        <span className="text-[10px] font-bold text-slate-500 uppercase">Yeni Ders</span>
+                                                    </div>
+                                                )}
                                             </div>
-                                            
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase text-slate-500 flex items-center gap-2"><Type className="w-3 h-3"/> Özet Başlığı</label>
-                                                <Input value={formTitle} onChange={e => setFormTitle(e.target.value)} placeholder="Örn: Newton Yasaları Detaylı Anlatım" className={cn("h-12 rounded-xl text-lg font-bold", themeColors.INPUT_BG)} />
-                                            </div>
+                                        )}
 
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between items-center">
-                                                    <label className="text-xs font-bold uppercase text-slate-500 flex items-center gap-2"><Code className="w-3 h-3"/> HTML İçerik</label>
-                                                    <Button variant="ghost" size="sm" className="h-7 text-[11px] text-indigo-600" onClick={() => setIsPreviewOpen(true)}><Eye className="w-3 h-3 mr-1"/> Önizleme</Button>
+                                        {currentStep === 'topic' && (
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                {allTopics.map((t) => {
+                                                    const isActive = formTopic === t;
+                                                    return (
+                                                        <div 
+                                                            key={t} 
+                                                            onClick={() => setFormTopic(t)}
+                                                            className={cn(
+                                                                themeColors.SELECTION_CARD,
+                                                                isActive ? themeColors.CARD_ACTIVE : themeColors.CARD_INACTIVE
+                                                            )}
+                                                        >
+                                                            {isActive && <div className="absolute top-2 right-2 bg-indigo-600 text-white rounded-full p-0.5"><Check className="w-3 h-3" /></div>}
+                                                            <Layers className={cn("w-5 h-5", isActive ? "text-indigo-600" : "text-slate-400")} />
+                                                            <span className="text-xs font-bold truncate w-full px-1">{t}</span>
+                                                        </div>
+                                                    );
+                                                })}
+
+                                                {isAddingNewTopic ? (
+                                                    <div className={cn(themeColors.SELECTION_CARD, "border-indigo-300 bg-indigo-50/20")}>
+                                                        <Input 
+                                                            autoFocus
+                                                            placeholder="Konu adı..." 
+                                                            className="h-8 text-[11px] font-bold text-center bg-white" 
+                                                            value={newItemName}
+                                                            onChange={(e) => setNewItemName(e.target.value)}
+                                                            onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd('topic')}
+                                                        />
+                                                        <div className="flex gap-1 w-full">
+                                                            <Button size="sm" className="h-6 flex-1 text-[10px] bg-indigo-600" onClick={() => handleQuickAdd('topic')}>Ekle</Button>
+                                                            <Button size="sm" variant="ghost" className="h-6 flex-1 text-[10px]" onClick={() => {setIsAddingNewTopic(false); setNewItemName("");}}>İptal</Button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div 
+                                                        onClick={() => setIsAddingNewTopic(true)}
+                                                        className={cn(themeColors.SELECTION_CARD, themeColors.ADD_CARD)}
+                                                    >
+                                                        <PlusCircle className="w-5 h-5 text-slate-400" />
+                                                        <span className="text-[10px] font-bold text-slate-500 uppercase">Yeni Konu</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {currentStep === 'content' && (
+                                            <div className="space-y-6">
+                                                <div className="flex gap-2">
+                                                     <Badge className="bg-indigo-600/10 text-indigo-600 border-indigo-200">Ders: {formSubject}</Badge>
+                                                     <Badge className="bg-emerald-600/10 text-emerald-600 border-emerald-200">Konu: {formTopic}</Badge>
                                                 </div>
-                                                <Textarea 
-                                                    value={formContent} 
-                                                    onChange={e => setFormContent(e.target.value)} 
-                                                    placeholder="HTML kodlarını buraya yapıştırın..." 
-                                                    className={cn("min-h-[300px] font-mono text-xs rounded-2xl p-4 leading-relaxed", themeColors.INPUT_BG)} 
-                                                />
+                                                
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Özet Başlığı</label>
+                                                    <Input 
+                                                        value={formTitle} 
+                                                        onChange={e => setFormTitle(e.target.value)} 
+                                                        placeholder="Örn: 1. Dereceden Denklemler Özet" 
+                                                        className={cn("h-12 rounded-xl text-base font-bold", themeColors.INPUT_BG)} 
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between items-center px-1">
+                                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">İçerik (HTML)</label>
+                                                        <Button variant="ghost" size="sm" className="h-7 text-[10px] text-indigo-600 font-bold" onClick={() => setIsPreviewOpen(true)}><Eye className="w-3 h-3 mr-1"/> Önizleme</Button>
+                                                    </div>
+                                                    <Textarea 
+                                                        value={formContent} 
+                                                        onChange={e => setFormContent(e.target.value)} 
+                                                        placeholder="Ders notlarını buraya yapıştırın veya yazın..." 
+                                                        className={cn("min-h-[250px] font-mono text-xs rounded-2xl p-4 leading-relaxed", themeColors.INPUT_BG)} 
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
-                                    </ScrollArea>
-                                )}
+                                        )}
+                                    </div>
+                                </ScrollArea>
                             </motion.div>
                         </AnimatePresence>
                     </div>
 
                     <DialogFooter className="p-6 border-t dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex-row gap-3">
-                        {currentStepIndex > 0 && (
-                            <Button variant="ghost" onClick={handlePrevStep} className="flex-1 h-12 rounded-xl font-bold">
+                        {currentStepIndex > 0 ? (
+                            <Button variant="ghost" onClick={handlePrevStep} className="flex-1 h-12 rounded-2xl font-bold">
                                 <ChevronLeft className="w-4 h-4 mr-1" /> Geri
+                            </Button>
+                        ) : (
+                            <Button variant="ghost" onClick={() => setIsFormOpen(false)} className="flex-1 h-12 rounded-2xl font-bold">
+                                İptal
                             </Button>
                         )}
                         
                         {currentStep === 'content' ? (
-                            <Button onClick={handleSave} className="flex-[2] h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-500/20">
-                                <Save className="w-4 h-4 mr-2" /> {editingSummary ? "Güncelle" : "Özeti Kaydet"}
+                            <Button onClick={handleSave} className="flex-[2] h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-500/20 text-white">
+                                <Save className="w-4 h-4 mr-2" /> {editingSummary ? "Güncelle" : "Özeti Tamamla"}
                             </Button>
                         ) : (
-                            <Button onClick={handleNextStep} className="flex-[2] h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-500/20">
-                                İleri <ChevronRight className="w-4 h-4 ml-1" />
+                            <Button onClick={handleNextStep} disabled={(currentStep === 'subject' && !formSubject) || (currentStep === 'topic' && !formTopic)} className="flex-[2] h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-500/20 text-white">
+                                Devam Et <ChevronRight className="w-4 h-4 ml-1" />
                             </Button>
                         )}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* Preview Dialog (Ayrı Modal) */}
+            {/* Önizleme Dialog */}
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
                 <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden rounded-3xl dark:bg-slate-900 dark:border-slate-800">
                     <DialogHeader className="p-6 border-b dark:border-slate-800 flex flex-row items-center justify-between">
@@ -398,7 +486,7 @@ export function SummariesManagementClient() {
                         <div className="prose max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: formContent }} />
                     </ScrollArea>
                     <DialogFooter className="p-4 border-t dark:border-slate-800">
-                        <Button onClick={() => setIsPreviewOpen(false)} className="dark:bg-slate-800 dark:text-white rounded-xl px-8">Kapat</Button>
+                        <Button onClick={() => setIsPreviewOpen(false)} className="bg-slate-900 text-white dark:bg-slate-800 rounded-xl px-8 h-10 font-bold">Kapat</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
