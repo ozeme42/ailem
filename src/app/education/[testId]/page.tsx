@@ -176,6 +176,10 @@ export default function OpticalFormPage() {
     const [submittedSubjectIds, setSubmittedSubjectIds] = React.useState<string[]>([]);
     const [isSheetOpen, setIsSheetOpen] = React.useState(false);
     
+    // Ref to ensure we only load data from DB once to avoid "stuck" state
+    const isInitializedRef = React.useRef(false);
+    const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
     const form = useForm();
 
     const fetchQuestions = React.useCallback(async (id: string) => {
@@ -185,43 +189,45 @@ export default function OpticalFormPage() {
         return questionsSnap.docs.map(d => d.data() as QuickTestQuestion);
     }, []);
 
-    // --- VERİ ÇEKME VE İLK DURUM ---
+    // --- DATA LOADING & INITIALIZATION ---
     React.useEffect(() => {
         if (!testId) return;
         const testDocRef = doc(db, 'tests', testId);
+        
         const unsubTest = onSnapshot(testDocRef, async (docSnap) => {
             if (docSnap.exists()) {
                 const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
+                
+                // Fetch sub-questions if needed
                 if ((currentTest.sourceType === 'quick' || currentTest.sourceType === 'bank' || currentTest.sourceType === 'mistake') && (!currentTest.questions || currentTest.questions.length === 0)) {
                   currentTest.questions = await fetchQuestions(testId);
                 }
+                
+                // Fetch practice exam template if needed
                 if (currentTest.sourceType === 'exam' && currentTest.sourceId) {
                     const examDoc = await getDoc(doc(db, 'practiceExams', currentTest.sourceId));
                     if (examDoc.exists()) setPracticeExam({ id: examDoc.id, ...examDoc.data() } as PracticeExam);
                 }
+                
                 setTest(currentTest);
                 
-                // Sadece mcqAnswers boşken veya ilk yüklemede eşitle.
-                // Aksi takdirde kullanıcının seçimini (local state) veritabanı yanıtı gelene kadar korumak gerekir.
-                setMcqAnswers(prev => {
-                    const dbAnswers = currentTest.studentAnswers || {};
-                    // Eğer yerel state'de henüz hiç veri yoksa (ilk yükleme) db'yi al
-                    if (Object.keys(prev).length === 0) return dbAnswers;
-                    return prev;
-                });
-                setTextAnswers(prev => {
-                    const dbAnswers = currentTest.studentTextAnswers || {};
-                    if (Object.keys(prev).length === 0) return dbAnswers;
-                    return prev;
-                });
+                // Initialize local state from DB only ONCE per session/testId
+                if (!isInitializedRef.current) {
+                    setMcqAnswers(currentTest.studentAnswers || {});
+                    setTextAnswers(currentTest.studentTextAnswers || {});
+                    isInitializedRef.current = true;
+                }
 
-            } else setTest(null);
+            } else {
+                setTest(null);
+            }
             setIsLoading(false);
         });
+        
         return () => unsubTest();
     }, [testId, fetchQuestions]);
 
-    // --- OTOMATİK ARA KAYIT (DEBOUNCED) ---
+    // --- AUTO-SAVE (DEBOUNCED) ---
     const handleSavePartial = React.useCallback(async (latestMcq: McqAnswers, latestText: TextAnswers) => {
         if (!test) return;
         try {
@@ -234,8 +240,6 @@ export default function OpticalFormPage() {
         }
     }, [test]);
 
-    const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-
     const debouncedSave = (newMcq: McqAnswers, newText: TextAnswers) => {
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = setTimeout(() => {
@@ -244,8 +248,10 @@ export default function OpticalFormPage() {
     };
 
     const handleMcqAnswerChange = (questionNumber: string, value: string) => {
+        // Update local state immediately for snappy UI
         const updated = { ...mcqAnswers, [questionNumber]: value };
         setMcqAnswers(updated);
+        // Push to database with debounce
         debouncedSave(updated, textAnswers);
     };
 
@@ -256,7 +262,7 @@ export default function OpticalFormPage() {
         debouncedSave(mcqAnswers, updated);
     };
 
-    // --- BİTİRME VE TESLİM ---
+    // --- FINAL SUBMISSION ---
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
         if (!test || !user) return;
         const isMcqTest = !test.openEnded;
@@ -318,7 +324,7 @@ export default function OpticalFormPage() {
     if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="w-16 h-16 animate-spin text-indigo-600 mr-4" /><p className="text-slate-500 font-medium animate-pulse">Test Yükleniyor...</p></div>;
     if (!test) return <div className="flex flex-col items-center justify-center h-screen bg-slate-50"><h1 className="text-3xl font-black mb-2">Test Bulunamadı</h1><Link href="/education"><Button size="lg" className={glassColors.BUTTON_GLASS}>Geri Dön</Button></Link></div>;
 
-    // --- SONUÇ EKRANI ---
+    // --- RESULTS SCREEN ---
     if (test.status === 'Sonuçlandı' || test.status === 'Tekrar Çözülüyor') {
         const studentAnswers = test.studentAnswers || {};
         const answerKey = test.sourceType === 'json' ? test.jsonQuestions!.reduce((acc, q, i) => ({ ...acc, [(i+1).toString()]: q.answer }), {}) : test.answerKey || {};
@@ -405,7 +411,7 @@ export default function OpticalFormPage() {
     const totalQuestions = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
     const isSingleQuestionView = test.sourceType === 'json' || test.sourceType === 'bank' || test.sourceType === 'mistake' || test.sourceType === 'quick';
     
-    // --- NAVIGASYON ---
+    // --- NAVIGATION ---
     const handleNext = () => {
         if (currentQuestionIndex < totalQuestions - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
@@ -436,7 +442,7 @@ export default function OpticalFormPage() {
 
                     <main className="flex-1 max-w-4xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 pb-32">
                         
-                        {/* SOL KOLON: SORU ALANI */}
+                        {/* LEFT COLUMN: QUESTION AREA */}
                         <div className="lg:col-span-8 space-y-6">
                             <AnimatePresence mode="wait">
                                 {isSingleQuestionView ? (
@@ -448,7 +454,7 @@ export default function OpticalFormPage() {
                                         transition={{ duration: 0.2 }}
                                     >
                                         {test.sourceType === 'json' && test.jsonQuestions ? (
-                                            /* JSON TEK SORU */
+                                            /* JSON SINGLE QUESTION */
                                             <Card className="overflow-hidden bg-white border border-slate-200 shadow-lg rounded-3xl">
                                                 <CardHeader className="bg-slate-50/50 border-b p-6">
                                                     <div className="flex gap-4">
@@ -469,26 +475,29 @@ export default function OpticalFormPage() {
                                                         {test.jsonQuestions[currentQuestionIndex].options.map((opt, optIdx) => {
                                                             const letter = String.fromCharCode(65 + optIdx);
                                                             const isSelected = mcqAnswers[(currentQuestionIndex + 1).toString()] === opt;
+                                                            const itemId = `q${currentQuestionIndex}-${optIdx}`;
                                                             return (
                                                                 <div 
                                                                     key={optIdx} 
                                                                     className={cn(
-                                                                        "flex items-center space-x-3 p-5 rounded-2xl border-2 transition-all cursor-pointer",
+                                                                        "relative flex items-center space-x-3 p-5 rounded-2xl border-2 transition-all cursor-pointer",
                                                                         isSelected 
                                                                             ? "bg-indigo-50 border-indigo-600 shadow-sm" 
                                                                             : "bg-white border-slate-100 hover:border-indigo-200 hover:bg-slate-50"
                                                                     )}
-                                                                    onClick={() => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), opt)}
                                                                 >
-                                                                    <RadioGroupItem value={opt} id={`q${currentQuestionIndex}-${optIdx}`} className="sr-only" />
-                                                                    <div className={cn(
-                                                                        "w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold text-base shrink-0",
-                                                                        isSelected ? "bg-indigo-600 border-indigo-600 text-white" : "border-slate-200 text-slate-400"
-                                                                    )}>
-                                                                        {letter}
-                                                                    </div>
-                                                                    <Label htmlFor={`q${currentQuestionIndex}-${optIdx}`} className="flex-1 cursor-pointer text-lg font-medium text-slate-700">
-                                                                        {opt}
+                                                                    <RadioGroupItem value={opt} id={itemId} className="peer sr-only" />
+                                                                    <Label 
+                                                                        htmlFor={itemId} 
+                                                                        className="flex flex-1 items-center gap-4 cursor-pointer"
+                                                                    >
+                                                                        <div className={cn(
+                                                                            "w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold text-base shrink-0",
+                                                                            isSelected ? "bg-indigo-600 border-indigo-600 text-white" : "border-slate-200 text-slate-400"
+                                                                        )}>
+                                                                            {letter}
+                                                                        </div>
+                                                                        <span className="text-lg font-medium text-slate-700">{opt}</span>
                                                                     </Label>
                                                                 </div>
                                                             );
@@ -497,7 +506,7 @@ export default function OpticalFormPage() {
                                                 </CardContent>
                                             </Card>
                                         ) : (
-                                            /* BANKA / MISTAKE TEK SORU */
+                                            /* BANK / MISTAKE SINGLE QUESTION */
                                             <Card className="overflow-hidden bg-white border border-slate-200 shadow-lg rounded-3xl">
                                                 <CardHeader className="bg-slate-50/50 border-b p-4 flex flex-row items-center justify-between">
                                                     <Badge className="h-10 w-10 rounded-full flex items-center justify-center p-0 text-lg font-black bg-indigo-600 shrink-0">
@@ -545,7 +554,7 @@ export default function OpticalFormPage() {
                                             </Card>
                                         )}
 
-                                        {/* Navigasyon Butonları */}
+                                        {/* Navigation Buttons */}
                                         <div className="flex justify-between items-center mt-8 gap-4">
                                             <Button 
                                                 type="button" 
@@ -589,10 +598,10 @@ export default function OpticalFormPage() {
                                         </div>
                                     </motion.div>
                                 ) : (
-                                    /* DENEME SINAVI (TOPLU AKORDİYON GÖRÜNÜMÜ) */
+                                    /* PRACTICE EXAM (ACCORDION VIEW) */
                                     <Accordion type="multiple" className="w-full space-y-4">
                                         {practiceExam?.subjects.map(subject => {
-                                            // Subject range mapping (legacy but kept for Deneme structure)
+                                            // Subject range mapping
                                             let currentOffset = 0;
                                             const sub = practiceExam.subjects.find(s => s.id === subject.id)!;
                                             const idx = practiceExam.subjects.indexOf(sub);
@@ -698,7 +707,7 @@ export default function OpticalFormPage() {
                             </AnimatePresence>
                         </div>
 
-                        {/* SAĞ KOLON: SORU GEZGİNİ (DESKTOP) */}
+                        {/* RIGHT COLUMN: QUESTION PALETTE (DESKTOP) */}
                         <div className="hidden lg:block lg:col-span-4">
                             <div className={cn("sticky top-28 rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-xl")}>
                                 <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center">
@@ -723,7 +732,7 @@ export default function OpticalFormPage() {
                         </div>
                     </main>
                     
-                    {/* MOBİL: SORU GEZGİNİ BUTONU VE SHEET */}
+                    {/* MOBILE: PALETTE BUTTON & SHEET */}
                     <div className="lg:hidden fixed bottom-24 left-6 z-50">
                         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                             <SheetTrigger asChild>
@@ -758,4 +767,3 @@ export default function OpticalFormPage() {
         </Form>
     );
 }
-
