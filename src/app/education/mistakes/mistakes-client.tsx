@@ -10,8 +10,8 @@ import {
     ChevronDown, BookCopy, ListTree
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
-import { onTestsUpdate, onTrackedBooksUpdate, onPracticeExamsUpdate } from "@/lib/dataService";
-import { Test, TrackedBook, PracticeExam, FamilyMember } from "@/lib/data";
+import { onTestsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
+import { Test, TrackedBook, FamilyMember } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,7 @@ type MistakeDetail = {
     topic: string;
     sourceType: string;
     imageUrl?: string;
+    isEmpty: boolean;
 };
 
 export function MistakesClient() {
@@ -62,7 +63,7 @@ export function MistakesClient() {
 
     // Initial student selection
     React.useEffect(() => {
-        if (familyMembers.length > 0 && !selectedStudent) {
+        if (familyMembers.length > 0 && !selectedMember) {
             const initial = studentIdParam 
                 ? familyMembers.find(m => m.id === studentIdParam) 
                 : familyMembers.find(m => m.role.includes('Çocuk')) || familyMembers[0];
@@ -85,7 +86,7 @@ export function MistakesClient() {
         };
     }, [familyId, selectedStudent]);
 
-    // Aggregate Mistakes
+    // Aggregate Mistakes & Empties
     const aggregatedMistakes = React.useMemo(() => {
         const list: MistakeDetail[] = [];
 
@@ -111,14 +112,18 @@ export function MistakesClient() {
 
             const subjectName = getCategoryName(test);
 
-            // Compare answers
-            Object.entries(studentAnswers).forEach(([qNum, sAns]) => {
-                const cAns = answerKey[qNum];
-                if (sAns && cAns && sAns !== cAns) {
+            // Compare answers and detect empties
+            // We iterate based on the answerKey to ensure we catch questions that might be missing from studentAnswers
+            Object.entries(answerKey).forEach(([qNum, cAns]) => {
+                const sAns = studentAnswers[qNum];
+                const isWrong = sAns && sAns !== cAns;
+                const isEmpty = !sAns; // null, undefined or empty string
+
+                if (isWrong || isEmpty) {
                     list.push({
                         id: `${test.id}_${qNum}`,
                         questionNumber: qNum,
-                        studentAnswer: sAns,
+                        studentAnswer: sAns || null,
                         correctAnswer: cAns,
                         testTitle: test.title,
                         testId: test.id,
@@ -126,6 +131,7 @@ export function MistakesClient() {
                         subject: subjectName,
                         topic: topicName,
                         sourceType: test.sourceType,
+                        isEmpty: !!isEmpty
                     });
                 }
             });
@@ -164,8 +170,8 @@ export function MistakesClient() {
                             <AlertCircle className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 leading-none">Yanlışlarım</h1>
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Hata Analiz Merkezi</p>
+                            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 leading-none">Yanlışlarım & Boşlarım</h1>
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Hata ve Eksik Analiz Merkezi</p>
                         </div>
                     </div>
 
@@ -196,10 +202,15 @@ export function MistakesClient() {
                         <div className="flex items-center gap-6">
                             <div className="text-center">
                                 <p className="text-3xl font-black text-rose-500">{aggregatedMistakes.length}</p>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Hata Havuzu</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Toplam Eksik</p>
                             </div>
                             <div className="w-px h-10 bg-slate-200 dark:bg-slate-800" />
                             <div className="text-center">
+                                <p className="text-3xl font-black text-slate-400">{aggregatedMistakes.filter(m => m.isEmpty).length}</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Boş Sorular</p>
+                            </div>
+                            <div className="w-px h-10 bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+                            <div className="text-center hidden sm:block">
                                 <p className="text-sm font-bold text-slate-400 max-w-[120px] leading-tight">Soru Bankası & Yazılılar</p>
                             </div>
                         </div>
@@ -230,7 +241,7 @@ export function MistakesClient() {
                                             <div className="text-left">
                                                 <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 leading-none">{subject}</h3>
                                                 <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-wider">
-                                                    {Object.keys(topics).length} Konuda {Object.values(topics).flat().length} Hata
+                                                    {Object.keys(topics).length} Konuda {Object.values(topics).flat().length} Eksik
                                                 </p>
                                             </div>
                                         </div>
@@ -242,25 +253,33 @@ export function MistakesClient() {
                                                     <div className="flex items-center gap-2 px-2">
                                                         <Layers className="w-4 h-4 text-rose-500" />
                                                         <h4 className="font-black text-sm text-slate-700 dark:text-slate-300 uppercase tracking-widest">{topic}</h4>
-                                                        <Badge variant="secondary" className="ml-auto bg-rose-500/10 text-rose-600 dark:text-rose-400 border-none text-[10px]">{mistakes.length} Yanlış</Badge>
+                                                        <Badge variant="secondary" className="ml-auto bg-rose-500/10 text-rose-600 dark:text-rose-400 border-none text-[10px]">{mistakes.length} Eksik</Badge>
                                                     </div>
                                                     
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                         {mistakes.map(mistake => (
-                                                            <div key={mistake.id} className={themeColors.MISTAKE_CARD}>
+                                                            <div key={mistake.id} className={cn(themeColors.MISTAKE_CARD, mistake.isEmpty && "border-slate-200 dark:border-slate-800")}>
                                                                 <div className="flex justify-between items-start mb-3">
                                                                     <div className="min-w-0 flex-1">
                                                                         <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter truncate">{mistake.testTitle}</p>
                                                                         <p className="text-[10px] text-slate-500 mt-0.5">{mistake.date}</p>
                                                                     </div>
-                                                                    <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800 border-none text-[10px] h-5">Soru {mistake.questionNumber}</Badge>
+                                                                    <div className="flex gap-2">
+                                                                        {mistake.isEmpty && <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800 border-none text-[9px] h-5 text-slate-500 font-bold uppercase">Boş</Badge>}
+                                                                        <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800 border-none text-[10px] h-5">Soru {mistake.questionNumber}</Badge>
+                                                                    </div>
                                                                 </div>
                                                                 
                                                                 <div className="flex items-center gap-4 bg-slate-50 dark:bg-black/20 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
                                                                     <div className="flex flex-col items-center gap-1 flex-1">
-                                                                        <span className="text-[9px] font-black text-slate-400 uppercase">Senin Cevabın</span>
-                                                                        <div className="w-10 h-10 rounded-full bg-rose-500/10 border-2 border-rose-500/30 flex items-center justify-center text-rose-600 font-black text-lg">
-                                                                            {mistake.studentAnswer}
+                                                                        <span className="text-[9px] font-black text-slate-400 uppercase">Cevabın</span>
+                                                                        <div className={cn(
+                                                                            "w-10 h-10 rounded-full border-2 flex items-center justify-center font-black text-lg",
+                                                                            mistake.studentAnswer 
+                                                                                ? "bg-rose-500/10 border-rose-500/30 text-rose-600" 
+                                                                                : "bg-slate-500/10 border-slate-500/30 text-slate-500"
+                                                                        )}>
+                                                                            {mistake.studentAnswer || "—"}
                                                                         </div>
                                                                     </div>
                                                                     <ChevronRight className="w-4 h-4 text-slate-300" />
@@ -293,9 +312,9 @@ export function MistakesClient() {
                             <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <CheckCircle2 className="w-10 h-10 text-emerald-500" />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">Henüz Hata Yok!</h3>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">Henüz Hata veya Boş Yok!</h3>
                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-xs mx-auto">
-                                Soru Bankası ve Yazılı Testlerde yaptığın hatalar burada toplanacak.
+                                Soru Bankası ve Yazılı Testlerde yaptığın hatalar ve boş bıraktığın sorular burada toplanacak.
                             </p>
                             <Button variant="outline" className="mt-8 rounded-full border-slate-200 dark:border-slate-800 font-bold" onClick={() => router.push('/education')}>
                                 Eğitim Sayfasına Dön
