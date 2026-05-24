@@ -1,7 +1,7 @@
 import { db } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteList, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest, StudyPlanSubject, StudyTopic, BudgetCategory, PomodoroProject, PomodoroSession } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, GoalTask, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, NotebookSection, NoteContentBlock, PrayerProgress, Video, ShoppingNoteList, ShoppingNoteItem, Topic, CalorieLog, DailyTracking, TrackableItemType, QuickTestQuestion, Account, Transaction, Budget, BankQuestion, TrackedBook, TrackedBookTest, StudyPlanSubject, StudyTopic, BudgetCategory, PomodoroProject, PomodoroSession, Summary } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth, isFuture, subMonths, addMonths } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { migrateImage } from '@/ai/flows/migrate-image-flow';
@@ -322,9 +322,8 @@ export const updateUserBookStatus = async (familyId: string, memberId: string, b
 export const removeBookFromMemberLibrary = async (familyId: string, memberId: string, bookId: string) => {
     const libraryId = `${familyId}_${memberId}`;
     const libraryRef = doc(db, 'userLibraries', libraryId);
-    const bookRef = doc(db, 'mediaItems', bookId);
-
     const librarySnap = await getDoc(libraryRef);
+
     if (librarySnap.exists()) {
         const library = librarySnap.data() as UserLibrary;
         const bookToRemove = library.books.find(b => b.bookId === bookId);
@@ -2166,3 +2165,13 @@ export const addPomodoroSession = async (data: Omit<PomodoroSession, 'id' | 'fam
 
     await batch.commit();
 }
+
+// Summaries
+export const onSummariesUpdate = (callback: (summaries: Summary[]) => void) => onFamilyDataUpdate<Summary>('summaries', callback, false, 'createdAt', 'desc');
+export const addSummary = async (data: Omit<Summary, 'id' | 'familyId' | 'createdAt'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    return addDoc(collection(db, 'summaries'), { ...data, familyId, createdAt: new Date().toISOString() });
+};
+export const updateSummary = (id: string, data: Partial<Omit<Summary, 'id' | 'familyId' | 'createdAt'>>) => updateDoc(doc(db, 'summaries', id), removeUndefined(data));
+export const deleteSummary = (id: string) => deleteDoc(doc(db, "summaries", id));

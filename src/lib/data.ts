@@ -350,6 +350,16 @@ export interface TrackedBookTest {
     answerKey?: { [key: string]: string };
 }
 
+export interface Summary {
+  id: string;
+  familyId: string;
+  title: string;
+  subject: string;
+  topic: string;
+  content: string; // HTML content
+  createdAt: string; // ISO date string
+}
+
 
 // Static data that doesn't change often can remain here.
 // Data that will be managed by the user is now in Firestore.

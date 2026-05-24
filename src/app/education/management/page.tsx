@@ -6,7 +6,7 @@ import {
   PlusCircle, ArrowLeft, BookCopy, ClipboardList,
   Settings, CheckCircle2, CircleDashed, PieChart,
   FileText, BookMarked, Library, Ruler, TestTube2, Globe,
-  MessageSquare, Gamepad2, FileJson, Layers, BookHeart, AlertTriangle, Lock, KeyRound, ChevronRight, BookOpen
+  MessageSquare, Gamepad2, FileJson, Layers, BookHeart, AlertTriangle, Lock, KeyRound, ChevronRight, BookOpen, ScrollText
 } from "lucide-react";
 import { Test } from "@/lib/data";
 import { onTestsUpdate } from "@/lib/dataService";
@@ -228,6 +228,7 @@ export default function EducationManagementPage() {
             <ToolCard href="/education/management/subjects"         icon={BookOpen}     label="Ders & Konu"   theme={toolTheme.purple} />
             <ToolCard href="/education/management/study-plans"      icon={BookHeart}    label="Yol Haritaları"theme={toolTheme.pink}   />
             <ToolCard href="/education/management/json-tests"       icon={FileJson}     label="Yazılılar"     theme={toolTheme.purple} />
+            <ToolCard href="/education/management/summaries"        icon={ScrollText}   label="Özetler"       theme={toolTheme.emerald} />
           </div>
         </section>
 

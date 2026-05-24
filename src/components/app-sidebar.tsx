@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { 
   Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, 
   ShoppingCart, UtensilsCrossed, Target, User, LogOut, 
-  CheckCircle, Notebook, Youtube, Columns3, Wallet, Timer, PanelLeft 
+  CheckCircle, Notebook, Youtube, Columns3, Wallet, Timer, PanelLeft, ScrollText 
 } from "lucide-react";
 import { 
   Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, 
@@ -79,6 +79,7 @@ export function AppSidebar() {
     { href: "/pomodoro", label: "Pomodoro", icon: Timer },
     { section: "Eğitim & Gelişim" },
     { href: "/education", label: "Eğitim", icon: GraduationCap },
+    { href: "/education/summaries", label: "Özetler", icon: ScrollText },
     { href: "/videos", label: "Video Dersler", icon: Youtube },
     { href: "/notes", label: "Notlar", icon: Notebook },
     { 

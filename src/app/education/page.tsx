@@ -7,7 +7,7 @@ import {
   Layers, PieChart, GraduationCap, AlertCircle, Timer, 
   BookOpen, ChevronDown, Check, Sparkles, TrendingUp, 
   TrendingDown, PlayCircle, CalendarClock, Target, BarChart,
-  User, Settings
+  User, Settings, ScrollText
 } from "lucide-react";
 
 import { Test, StudyAssignment, StudyPlan, TrackedBook } from "@/lib/data";
@@ -331,6 +331,39 @@ export default function EducationPage() {
               </div>
             )}
           </div>
+        </section>
+
+        {/* --- ÖZETLER VE DİĞER MODÜLLER --- */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Link href="/education/summaries" className="group">
+                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                            <ScrollText className="w-8 h-8" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black">Ders Özetleri</h3>
+                            <p className="text-emerald-100 text-sm font-medium">Hızlı konu tekrarları için özetler</p>
+                        </div>
+                    </div>
+                    <ChevronRight className="w-6 h-6 opacity-50 group-hover:translate-x-1 transition-transform" />
+                </div>
+            </Link>
+            
+            <Link href="/education/study" className="group">
+                <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                            <BookOpen className="w-8 h-8" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black">Konu Çalışma</h3>
+                            <p className="text-indigo-100 text-sm font-medium">Atanan konuları incele ve çalış</p>
+                        </div>
+                    </div>
+                    <ChevronRight className="w-6 h-6 opacity-50 group-hover:translate-x-1 transition-transform" />
+                </div>
+            </Link>
         </section>
 
         {/* ── YAPILACAKLAR (Grid Kartlar) ─────────────────────────────────── */}
