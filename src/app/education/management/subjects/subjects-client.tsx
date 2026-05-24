@@ -5,10 +5,13 @@ import Link from "next/link";
 import { 
     ArrowLeft, BookOpen, Plus, Search, Trash2, Edit, Save, X, 
     Layers, BookCopy, ChevronRight, GraduationCap, Check, HelpCircle,
-    Loader2
+    Loader2, Sync, AlertCircle
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
-import { onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics } from "@/lib/dataService";
+import { 
+    onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics, 
+    onTestsUpdate, onBankQuestionsUpdate, onTrackedBooksUpdate 
+} from "@/lib/dataService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getCategoryName } from "@/app/education/page";
 
 // --- DESIGN SYSTEM: Premium Dark Theme ---
 const themeColors = {
@@ -36,8 +40,15 @@ export function SubjectsClient() {
     const { familyId } = useAuth();
     const { toast } = useToast();
     
+    // Master Lists (Controlled by Management)
     const [allSubjects, setAllSubjects] = React.useState<string[]>([]);
     const [allTopics, setAllTopics] = React.useState<string[]>([]);
+    
+    // Data lists for Sync
+    const [tests, setTests] = React.useState<any[]>([]);
+    const [bankQuestions, setBankQuestions] = React.useState<any[]>([]);
+    const [trackedBooks, setTrackedBooks] = React.useState<any[]>([]);
+    
     const [loading, setLoading] = React.useState(true);
     const [searchTerm, setSearchTerm] = React.useState("");
     const [activeTab, setActiveTab] = React.useState<"subjects" | "topics">("subjects");
@@ -46,15 +57,70 @@ export function SubjectsClient() {
     const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
     const [newItemName, setNewItemName] = React.useState("");
 
+    // Load everything
     React.useEffect(() => {
         if (!familyId) return;
         const unsubS = onSubjectsUpdate(setAllSubjects);
-        const unsubT = onTopicsUpdate((topics) => {
-            setAllTopics(topics);
+        const unsubT = onTopicsUpdate(setAllTopics);
+        const unsubTests = onTestsUpdate(setTests);
+        const unsubBank = onBankQuestionsUpdate(setBankQuestions);
+        const unsubBooks = onTrackedBooksUpdate((books) => {
+            setTrackedBooks(books);
             setLoading(false);
         });
-        return () => { unsubS(); unsubT(); };
+        
+        return () => { 
+            unsubS(); unsubT(); unsubTests(); unsubBank(); unsubBooks();
+        };
     }, [familyId]);
+
+    // AUTO-SYNC LOGIC: Detect missing subjects/topics in used data
+    React.useEffect(() => {
+        if (loading || allSubjects.length === 0) return;
+
+        const syncCurriculum = async () => {
+            const usedSubjects = new Set<string>();
+            const usedTopics = new Set<string>();
+
+            // Extract from Tests
+            tests.forEach(t => {
+                usedSubjects.add(getCategoryName(t));
+                if (t._topicName && t._topicName !== 'Genel') usedTopics.add(t._topicName);
+            });
+
+            // Extract from Bank Questions
+            bankQuestions.forEach(q => {
+                usedSubjects.add(q.subject);
+                usedTopics.add(q.topic);
+            });
+
+            // Extract from Tracked Books
+            trackedBooks.forEach(b => {
+                (b.subjects || []).forEach((s: any) => {
+                    usedSubjects.add(s.name);
+                    (s.topics || []).forEach((t: any) => usedTopics.add(t.name));
+                });
+            });
+
+            // Compare with current Master List
+            const missingSubjects = Array.from(usedSubjects).filter(s => s && s !== 'Diğer' && s !== 'Yanlışlarım' && !allSubjects.includes(s));
+            const missingTopics = Array.from(usedTopics).filter(t => t && t !== 'Genel' && !allTopics.includes(t));
+
+            if (missingSubjects.length > 0) {
+                const newList = [...new Set([...allSubjects, ...missingSubjects])];
+                await updateSubjects(newList);
+                toast({ title: "Yeni Dersler Algılandı", description: `${missingSubjects.length} ders müfredata eklendi.` });
+            }
+
+            if (missingTopics.length > 0) {
+                const newList = [...new Set([...allTopics, ...missingTopics])];
+                await updateTopics(newList);
+                toast({ title: "Yeni Konular Algılandı", description: `${missingTopics.length} konu müfredata eklendi.` });
+            }
+        };
+
+        syncCurriculum();
+    }, [tests, bankQuestions, trackedBooks, loading, allSubjects, allTopics, toast]);
 
     const filteredItems = React.useMemo(() => {
         const source = activeTab === "subjects" ? allSubjects : allTopics;
@@ -136,7 +202,7 @@ export function SubjectsClient() {
                         </div>
                         <div>
                             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 leading-none">Müfredat Yönetimi</h1>
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Ders ve konu tanımlarını düzenle</p>
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Sistemdeki tüm ders ve konular</p>
                         </div>
                     </div>
                     <Button onClick={() => setIsAddDialogOpen(true)} className="rounded-xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg shadow-indigo-500/20">
@@ -147,6 +213,18 @@ export function SubjectsClient() {
 
             <main className="flex-1 max-w-5xl mx-auto w-full p-4 md:p-6 space-y-6">
                 
+                {/* Bilgi Kartı */}
+                <div className={cn("p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 flex items-start gap-3")}>
+                    <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                        <p className="text-sm font-bold text-amber-800 dark:text-amber-200">Otomatik Senkronizasyon Aktif</p>
+                        <p className="text-xs text-amber-700/80 dark:text-amber-400/70 mt-1">
+                            Sistem, ödevlerinizde veya soru bankanızda kullandığınız yeni dersleri/konuları otomatik olarak algılar ve bu listeye ekler. 
+                            Buradaki düzenlemeleriniz filtreleme seçeneklerini günceller.
+                        </p>
+                    </div>
+                </div>
+
                 {/* İstatistik ve Arama Kartı */}
                 <div className={cn("rounded-3xl p-4 md:p-6", themeColors.CARD_BG)}>
                     <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
@@ -174,11 +252,11 @@ export function SubjectsClient() {
                 </div>
 
                 {/* Liste Alanı */}
-                <div className={cn("rounded-3xl overflow-hidden", themeColors.CARD_BG)}>
+                <div className={cn("rounded-3xl overflow-hidden mb-20", themeColors.CARD_BG)}>
                     {loading ? (
                         <div className="py-20 flex flex-col items-center justify-center gap-3">
                             <Loader2 className="h-10 w-10 animate-spin text-indigo-500" />
-                            <p className="text-sm font-medium text-slate-500">Yükleniyor...</p>
+                            <p className="text-sm font-medium text-slate-500">Veriler taranıyor...</p>
                         </div>
                     ) : filteredItems.length > 0 ? (
                         <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
@@ -199,7 +277,15 @@ export function SubjectsClient() {
                                         ) : (
                                             <div className="flex flex-col">
                                                 <span className="font-bold text-slate-800 dark:text-slate-100">{item}</span>
-                                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{activeTab === "subjects" ? "Ders" : "Eğitim Konusu"}</span>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{activeTab === "subjects" ? "Ders" : "Konu"}</span>
+                                                    {/* Örnek kullanım göstergesi (Sadece dersler için) */}
+                                                    {activeTab === "subjects" && (
+                                                        <Badge variant="outline" className="h-4 text-[8px] border-slate-200 dark:border-slate-800 text-slate-500 font-normal">
+                                                            {tests.filter(t => getCategoryName(t) === item).length} Ödev
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
                                     </div>

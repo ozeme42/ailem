@@ -30,7 +30,7 @@ import { format, isToday, isPast, differenceInDays, parse, addDays } from 'date-
 import { tr } from 'date-fns/locale';
 
 import { Test, FamilyMember, TrackedBook, QuickTestQuestion, BankQuestion } from "@/lib/data";
-import { onTestsUpdate, deleteTest, onTrackedBooksUpdate, addTest } from "@/lib/dataService";
+import { onTestsUpdate, deleteTest, onTrackedBooksUpdate, addTest, onSubjectsUpdate, onTopicsUpdate } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { getCategoryName } from "@/app/education/page";
 import { cn } from "@/lib/utils";
@@ -86,6 +86,10 @@ export default function AllTestsPage() {
     const [tests, setTests] = React.useState<Test[]>([]);
     const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
     const [selectedStudents, setSelectedStudents] = React.useState<string[]>([]);
+
+    // Müfredat Listeleri (Master Data)
+    const [masterSubjects, setMasterSubjects] = React.useState<string[]>([]);
+    const [masterTopics, setMasterTopics] = React.useState<string[]>([]);
     
     // Filtreler
     const [activeTab, setActiveTab] = React.useState<'all'|'pending'|'completed'>('all');
@@ -109,9 +113,14 @@ export default function AllTestsPage() {
     React.useEffect(() => {
         const unsubTests = onTestsUpdate(setTests, false, 'assignedDate', 'desc');
         const unsubBooks = onTrackedBooksUpdate(setTrackedBooks);
+        const unsubSubjects = onSubjectsUpdate(setMasterSubjects);
+        const unsubTopics = onTopicsUpdate(setMasterTopics);
+
         return () => {
             unsubTests();
             unsubBooks();
+            unsubSubjects();
+            unsubTopics();
         };
     }, []);
     
@@ -144,7 +153,7 @@ export default function AllTestsPage() {
     // Veri İşleme
     const { 
         pendingTests, completedTests, allFilteredTests, 
-        sourceOptions, subjectOptions, topicOptions, totalPages
+        sourceOptions, totalPages
     } = React.useMemo(() => {
         
         const enrichedTests = tests.map(test => {
@@ -168,6 +177,8 @@ export default function AllTestsPage() {
                 const allTopics = trackedBooks.flatMap(b => b.subjects.flatMap(s => s.topics));
                 const foundTopic = allTopics.find(t => t.id === test.topicId);
                 if (foundTopic) topicName = foundTopic.name;
+            } else if ((test as any).topic) {
+                topicName = (test as any).topic;
             }
 
             let sortableDate = new Date();
@@ -202,15 +213,6 @@ export default function AllTestsPage() {
                 .map(t => JSON.stringify({ id: t._sourceId, name: t._sourceName }))
         )).map(s => JSON.parse(s));
 
-        const uniqueSubjects = Array.from(new Set(enrichedTests.map(t => t._subjectName))).sort();
-
-        const uniqueTopics = Array.from(new Set(
-            enrichedTests
-                .filter(t => selectedSubject === 'all' || t._subjectName === selectedSubject)
-                .map(t => t._topicName)
-                .filter(Boolean)
-        )).sort();
-
         const sorted = filtered.sort((a, b) => {
             let valA: any = a[sortKey as keyof typeof a];
             let valB: any = b[sortKey as keyof typeof b];
@@ -233,8 +235,6 @@ export default function AllTestsPage() {
             completedTests: completed,
             allFilteredTests: sorted,
             sourceOptions: uniqueSources,
-            subjectOptions: uniqueSubjects,
-            topicOptions: uniqueTopics,
             totalPages: {
                 all: Math.ceil(sorted.length / ITEMS_PER_PAGE),
                 pending: Math.ceil(pending.length / ITEMS_PER_PAGE),
@@ -392,12 +392,45 @@ export default function AllTestsPage() {
                             </div>
                         </div>
 
-                        {/* Alt Satır: Detaylı Filtreler */}
+                        {/* Alt Satır: Detaylı Filtreler (Centralized from Management) */}
                         <div className="flex flex-wrap items-center gap-3">
                             <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 mr-1">
-                                <Filter className="w-3.5 h-3.5" /> Daralt:
+                                <Filter className="w-3.5 h-3.5" /> Müfredat Filtresi:
                             </div>
 
+                            {/* DERS SEÇİMİ (Master Data) */}
+                            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                                <SelectTrigger className={themeColors.FILTER_SELECT}>
+                                    <div className="flex items-center truncate">
+                                        <span className="text-slate-500 mr-2">Ders:</span>
+                                        <SelectValue placeholder="Tümü" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
+                                    <SelectItem value="all">Tüm Dersler</SelectItem>
+                                    {masterSubjects.sort().map(subject => (
+                                        <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            {/* KONU SEÇİMİ (Master Data) */}
+                            <Select value={selectedTopic} onValueChange={setSelectedTopic}>
+                                <SelectTrigger className={cn(themeColors.FILTER_SELECT)}>
+                                    <div className="flex items-center truncate">
+                                        <span className="text-slate-500 mr-2">Konu:</span>
+                                        <SelectValue placeholder="Tümü" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
+                                    <SelectItem value="all">Tüm Konular</SelectItem>
+                                    {masterTopics.sort().map(topic => (
+                                        <SelectItem key={topic} value={topic}>{topic}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            {/* KAYNAK SEÇİMİ */}
                             {sourceOptions.length > 0 && (
                                 <Select value={selectedSubCategory} onValueChange={setSelectedSubCategory}>
                                     <SelectTrigger className={themeColors.FILTER_SELECT}>
@@ -414,36 +447,6 @@ export default function AllTestsPage() {
                                     </SelectContent>
                                 </Select>
                             )}
-
-                            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                                <SelectTrigger className={themeColors.FILTER_SELECT}>
-                                    <div className="flex items-center truncate">
-                                        <span className="text-slate-500 mr-2">Ders:</span>
-                                        <SelectValue placeholder="Tümü" />
-                                    </div>
-                                </SelectTrigger>
-                                <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
-                                    <SelectItem value="all">Tüm Dersler</SelectItem>
-                                    {subjectOptions.map(subject => (
-                                        <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            <Select value={selectedTopic} onValueChange={setSelectedTopic} disabled={topicOptions.length === 0}>
-                                <SelectTrigger className={cn(themeColors.FILTER_SELECT, topicOptions.length === 0 && "opacity-50 cursor-not-allowed")}>
-                                    <div className="flex items-center truncate">
-                                        <span className="text-slate-500 mr-2">Konu:</span>
-                                        <SelectValue placeholder="Tümü" />
-                                    </div>
-                                </SelectTrigger>
-                                <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
-                                    <SelectItem value="all">Tüm Konular</SelectItem>
-                                    {topicOptions.map(topic => (
-                                        <SelectItem key={topic} value={topic}>{topic}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
                             
                             {(selectedSubCategory !== 'all' || selectedSubject !== 'all' || selectedTopic !== 'all') && (
                                 <Button 
@@ -836,7 +839,7 @@ function TestCard({ test, student, onDelete, onReassign }: { test: Test, student
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 hover:text-rose-300 hover:bg-rose-50/10 rounded-lg cursor-pointer flex items-center">
-                                        <Trash2 className="w-4 h-4 mr-2" /> Sil
+                                        <Trash2 className="mr-2 h-4 w-4" /> Sil
                                     </DropdownMenuItem>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
