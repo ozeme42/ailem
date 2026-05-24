@@ -5,7 +5,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { 
     ArrowLeft, ScrollText, ChevronRight, 
-    X, Maximize2, Minimize2, Sparkles, BookOpen, BookText
+    X, Maximize2, Minimize2, Sparkles, BookOpen, BookText, Search
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { onSummariesUpdate } from "@/lib/dataService";
