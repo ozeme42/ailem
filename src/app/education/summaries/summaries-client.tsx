@@ -1,10 +1,11 @@
+
 "use client";
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { 
     ArrowLeft, BookOpen, ScrollText, ChevronRight, 
-    Search, Filter, BookText, Sparkles, X, Maximize2, Minimize2
+    Search, Filter, BookText, Sparkles, X, Maximize2, Minimize2 
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { onSummariesUpdate } from "@/lib/dataService";
@@ -12,9 +13,8 @@ import { Summary } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 // --- DESIGN SYSTEM ---
@@ -60,7 +60,6 @@ export function SummariesViewerClient() {
         });
     }, [summaries, searchTerm, selectedSubject]);
 
-    // Handle full screen logic
     const toggleFullScreen = () => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen().then(() => {
@@ -74,7 +73,6 @@ export function SummariesViewerClient() {
         }
     };
 
-    // Auto-detect fullscreen changes (e.g. Escape key)
     React.useEffect(() => {
         const handleFsChange = () => setIsFullScreen(!!document.fullscreenElement);
         document.addEventListener('fullscreenchange', handleFsChange);
@@ -83,8 +81,6 @@ export function SummariesViewerClient() {
 
     return (
         <div className={cn("min-h-screen font-sans pb-20 flex flex-col", themeColors.PAGE_BG)}>
-            
-            {/* Header */}
             <header className={themeColors.HEADER_BG}>
                 <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
@@ -100,8 +96,6 @@ export function SummariesViewerClient() {
             </header>
 
             <main className="flex-1 max-w-5xl mx-auto w-full p-4 md:p-6 space-y-6">
-                
-                {/* Search & Subject Chips */}
                 <div className="space-y-4">
                     <div className="relative">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
@@ -113,7 +107,7 @@ export function SummariesViewerClient() {
                         />
                     </div>
 
-                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                         {subjects.map(subject => (
                             <button
                                 key={subject}
@@ -121,8 +115,8 @@ export function SummariesViewerClient() {
                                 className={cn(
                                     "px-5 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border",
                                     selectedSubject === subject 
-                                        ? "bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-500/20" 
-                                        : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-emerald-300"
+                                        ? "bg-emerald-600 text-white border-emerald-500 shadow-md" 
+                                        : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800"
                                 )}
                             >
                                 {subject}
@@ -131,7 +125,6 @@ export function SummariesViewerClient() {
                     </div>
                 </div>
 
-                {/* Summaries Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                     {filteredSummaries.map((summary) => (
                         <div 
@@ -148,17 +141,16 @@ export function SummariesViewerClient() {
                                         <BookText className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                                     </div>
                                 </div>
-                                <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight group-hover:text-emerald-600 transition-colors">
                                     {summary.title}
                                 </h3>
                                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">{summary.topic}</p>
                             </div>
-                            
                             <div className="mt-4 flex items-center justify-between">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                                     <Sparkles className="w-3 h-3" /> Konu Özeti
                                 </span>
-                                <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/30 transition-colors">
+                                <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center">
                                     <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600" />
                                 </div>
                             </div>
@@ -167,17 +159,15 @@ export function SummariesViewerClient() {
 
                     {filteredSummaries.length === 0 && !loading && (
                         <div className="col-span-full py-24 text-center">
-                            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-                                <BookOpen className="w-10 h-10 text-slate-300 dark:text-slate-700" />
+                            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <BookOpen className="w-10 h-10 text-slate-300" />
                             </div>
                             <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">Sonuç Bulunamadı</h3>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Farklı bir konu veya başlık aramayı deneyin.</p>
                         </div>
                     )}
                 </div>
             </main>
 
-            {/* Content Modal - Full Screen Style */}
             <Dialog open={!!viewingSummary} onOpenChange={(open) => !open && setViewingSummary(null)}>
                 <DialogContent className={cn(
                     "flex flex-col p-0 overflow-hidden border-none shadow-2xl bg-white dark:bg-slate-950 transition-all duration-300",
@@ -185,55 +175,36 @@ export function SummariesViewerClient() {
                         ? "fixed inset-0 w-screen h-screen max-w-none rounded-none z-[100]" 
                         : "max-w-4xl h-[95vh] md:h-[90vh] rounded-t-[2.5rem] md:rounded-[2.5rem] mt-auto md:mt-0"
                 )}>
-                    <DialogHeader className="p-6 pb-4 border-b bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl sticky top-0 z-10 shrink-0 flex flex-row items-center justify-between gap-4">
+                    <div className="p-6 pb-4 border-b bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl sticky top-0 z-10 shrink-0 flex flex-row items-center justify-between gap-4">
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-3 mb-1">
-                                 <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 border-none px-2 py-0 h-5 text-[10px]">{viewingSummary?.subject}</Badge>
+                                 <Badge className="bg-emerald-600 text-white border-none px-2 py-0 h-5 text-[10px]">{viewingSummary?.subject}</Badge>
                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">{viewingSummary?.topic}</span>
                             </div>
                             <DialogTitle className="text-xl md:text-2xl font-black tracking-tight text-slate-900 dark:text-white truncate">
                                 {viewingSummary?.title}
                             </DialogTitle>
                         </div>
-
                         <div className="flex items-center gap-2 shrink-0">
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                onClick={toggleFullScreen}
-                                className="h-10 w-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
-                            >
+                            <Button variant="ghost" size="icon" onClick={toggleFullScreen} className="h-10 w-10 rounded-full text-slate-500">
                                 {isFullScreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
                             </Button>
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                onClick={() => setViewingSummary(null)}
-                                className="h-10 w-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
-                            >
+                            <Button variant="ghost" size="icon" onClick={() => setViewingSummary(null)} className="h-10 w-10 rounded-full text-slate-500">
                                 <X className="h-5 w-5" />
                             </Button>
                         </div>
-                    </DialogHeader>
+                    </div>
                     
                     <ScrollArea className="flex-1 bg-white dark:bg-slate-950 p-6 md:p-12">
                         <div 
-                            className="prose prose-slate dark:prose-invert max-w-none 
-                                prose-headings:font-black prose-headings:tracking-tight
-                                prose-p:leading-relaxed prose-p:text-slate-700 dark:prose-p:text-slate-300
-                                prose-strong:text-slate-900 dark:prose-strong:text-white
-                                prose-img:rounded-3xl prose-img:shadow-xl
-                                prose-table:border prose-table:rounded-xl overflow-x-auto" 
+                            className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-black prose-p:leading-relaxed prose-img:rounded-3xl" 
                             dangerouslySetInnerHTML={{ __html: viewingSummary?.content || "" }} 
                         />
-                        <div className="h-24" /> {/* Bottom spacing */}
+                        <div className="h-24" />
                     </ScrollArea>
 
                     <DialogFooter className="p-4 border-t bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
-                        <Button 
-                            onClick={() => setViewingSummary(null)} 
-                            className="w-full h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold shadow-lg active:scale-95 transition-transform"
-                        >
+                        <Button onClick={() => setViewingSummary(null)} className="w-full h-12 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold">
                             Okumayı Bitir ve Kapat
                         </Button>
                     </DialogFooter>

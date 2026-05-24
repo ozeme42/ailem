@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
-// --- DESIGN SYSTEM: Premium Dark Theme ---
+// --- DESIGN SYSTEM ---
 const themeColors = {
     HEADER_BG: "bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-40",
     CARD_BG: "bg-slate-900/40 border border-slate-800 shadow-xl backdrop-blur-md hover:bg-slate-900/60 hover:border-slate-700 transition-all duration-300",
@@ -48,18 +48,14 @@ export function JsonTestsClient() {
     setIsFormOpen(true);
   };
 
-  const handleOpenReassign = (test: Test) => {
-      setReassigningTest(test);
-  };
-
   const handleFormSubmit = async (data: Omit<Test, 'id' | 'familyId'>) => {
     try {
       if (editingTest && !reassigningTest) {
-        // Mevcut olanı güncelle
+        // Update existing
         await updateTest(editingTest.id, data);
         toast({ title: "✅ Yazılı Test Güncellendi" });
       } else {
-        // Yeni oluştur veya Klonla (Tekrar Ata)
+        // Create new or Clone
         await addTest(data);
         toast({ title: reassigningTest ? "✅ Test Yeni Görev Olarak Atandı" : "✅ Yazılı Test Oluşturuldu" });
       }
@@ -86,13 +82,11 @@ export function JsonTestsClient() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative flex flex-col">
-        {/* Arka Plan Efektleri */}
         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
             <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-900/10 rounded-full blur-[120px]" />
             <div className="absolute bottom-[10%] left-[-10%] w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[120px]" />
         </div>
 
-        {/* HEADER */}
         <header className={themeColors.HEADER_BG}>
             <div className="max-w-6xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -106,7 +100,7 @@ export function JsonTestsClient() {
                     </div>
                     <div>
                         <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-100 leading-none">Yazılı Testler</h1>
-                        <p className="text-xs font-medium text-slate-400 mt-1">Metin Tabanlı Test Yönetimi</p>
+                        <p className="text-xs font-medium text-slate-400 mt-1">Yönetim Paneli</p>
                     </div>
                 </div>
                 <Button onClick={() => { setReassigningTest(null); handleOpenForm(null); }} className={cn("rounded-xl h-11 px-5 font-bold", themeColors.BUTTON_PRIMARY)}>
@@ -152,7 +146,7 @@ export function JsonTestsClient() {
                                                         <AlertDialogHeader>
                                                             <AlertDialogTitle>Testi Sil?</AlertDialogTitle>
                                                             <AlertDialogDescription className="text-slate-400">
-                                                                "{test.title}" yazılı testi ve sonuçları kalıcı olarak silinecektir.
+                                                                "{test.title}" yazılı testi kalıcı olarak silinecektir.
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
@@ -183,11 +177,11 @@ export function JsonTestsClient() {
                                     
                                     {student && (
                                         <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/5 rounded-xl">
-                                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-inner" style={{backgroundColor: student.color}}>
+                                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm" style={{backgroundColor: student.color}}>
                                                 {student.name.charAt(0)}
                                             </div>
                                             <div className="min-w-0">
-                                                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest leading-none">Atanan Öğrenci</p>
+                                                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest leading-none">Atanan</p>
                                                 <p className="text-sm font-semibold text-slate-200 truncate mt-1">{student.name}</p>
                                             </div>
                                         </div>
@@ -197,8 +191,7 @@ export function JsonTestsClient() {
                                 <CardFooter className="p-4 pt-0 mt-auto">
                                     <Link href={`/education/${test.id}`} className="w-full">
                                         <Button variant="secondary" className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border-none font-bold h-10 rounded-xl">
-                                            {isCompleted ? <BookOpen className="mr-2 h-4 w-4" /> : <Send className="mr-2 h-4 w-4" />}
-                                            {isCompleted ? 'Sonucu İncele' : 'Testi Çöz'}
+                                            {isCompleted ? 'İncele' : 'Testi Çöz'}
                                         </Button>
                                     </Link>
                                 </CardFooter>
@@ -207,32 +200,26 @@ export function JsonTestsClient() {
                     })}
                 </div>
             ) : (
-                <div className="flex flex-col items-center justify-center py-24 text-center bg-slate-900/30 rounded-3xl border border-dashed border-slate-800 m-auto max-w-2xl w-full animate-in fade-in duration-500">
+                <div className="flex flex-col items-center justify-center py-24 text-center bg-slate-900/30 rounded-3xl border border-dashed border-slate-800 m-auto max-w-2xl w-full">
                     <div className="w-20 h-20 bg-slate-800/80 rounded-full flex items-center justify-center mb-6 shadow-inner">
                         <FileJson className="h-10 w-10 text-slate-500" />
                     </div>
                     <h3 className="text-xl font-bold text-slate-200">Yazılı Test Bulunamadı</h3>
-                    <p className="text-slate-400 mt-2 text-sm max-w-xs mx-auto leading-relaxed">
-                        JSON formatında metin tabanlı sorular ekleyerek yeni bir test oluşturun.
-                    </p>
+                    <p className="text-slate-400 mt-2 text-sm max-w-xs mx-auto">Yeni bir test oluşturarak başlayın.</p>
                     <Button onClick={() => handleOpenForm(null)} className="mt-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold px-8 shadow-lg shadow-indigo-500/20">
                         <PlusCircle className="mr-2 h-5 w-5" /> İlk Testi Oluştur
                     </Button>
                 </div>
             )}
-        </div>
+        </main>
 
-        {/* Yeni/Düzenleme/Tekrar Ata Dialogu */}
         <Dialog open={isFormOpen} onOpenChange={(open) => { if(!open) { setEditingTest(null); setReassigningTest(null); } setIsFormOpen(open); }}>
             <DialogContent className="max-w-2xl h-[90vh] md:h-[85vh] flex flex-col bg-slate-900 border-slate-800 text-slate-100 rounded-2xl md:rounded-3xl p-0 overflow-hidden shadow-2xl">
                 <DialogHeader className="p-6 pb-2 border-b border-white/5 bg-white/5">
                     <DialogTitle className="text-xl font-bold flex items-center gap-2">
                         {reassigningTest ? <Repeat className="w-5 h-5 text-indigo-400" /> : editingTest ? <Edit className="w-5 h-5 text-blue-400" /> : <PlusCircle className="w-5 h-5 text-emerald-400" />}
-                        {reassigningTest ? 'Testi Tekrar Ata (Yeni Görev)' : editingTest ? 'Yazılı Testi Düzenle' : 'Yeni Yazılı Test Oluştur'}
+                        {reassigningTest ? 'Testi Tekrar Ata' : editingTest ? 'Yazılıyı Düzenle' : 'Yeni Yazılı Oluştur'}
                     </DialogTitle>
-                    <DialogDescription className="text-slate-400">
-                        {reassigningTest ? 'Bu testi yeni bir öğrenciye veya farklı tarihe atamak için kopyalıyorsunuz.' : 'Soru metinlerini ve seçenekleri JSON formatında düzenleyebilirsiniz.'}
-                    </DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 overflow-hidden p-6 pt-0">
                     <NewJsonTestForm
@@ -246,4 +233,3 @@ export function JsonTestsClient() {
     </div>
   );
 }
-
