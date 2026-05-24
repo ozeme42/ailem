@@ -86,7 +86,6 @@ export default function NotebookClient() {
                 await updateNoteInSection(notebookId, editingNote.id, notePayload);
                 toast({ title: "Not kaydedildi", className: "bg-slate-900 text-white border-none rounded-2xl" });
             } else {
-                // Ensure we have a section to add the note to
                 const sectionId = details?.notebook?.sections?.[0]?.id || 'default';
                 await addNoteToSection(familyId, notebookId, sectionId, notePayload);
                 toast({ title: "Not oluşturuldu", className: "bg-slate-900 text-white border-none rounded-2xl" });
@@ -115,7 +114,6 @@ export default function NotebookClient() {
     return (
         <div className="flex h-full min-h-[100dvh] flex-col bg-[#F8FAFC] font-sans selection:bg-indigo-200 relative overflow-x-hidden pb-24">
              
-             {/* --- NATIVE APP BAR --- */}
              <div className="px-3 py-2 md:px-6 md:py-4 border-b border-black/5 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 sticky top-0 z-20 flex-shrink-0 flex items-center justify-between">
                 <Button variant="ghost" size="icon" className="text-indigo-600 hover:bg-indigo-50 active:bg-indigo-100 rounded-full active:scale-90 transition-all w-10 h-10" onClick={() => router.push('/notes')}>
                     <ChevronLeft className="w-8 h-8" />
@@ -126,12 +124,9 @@ export default function NotebookClient() {
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{details.notes.length} Not</span>
                 </div>
 
-                <div className="w-10 h-10 flex items-center justify-center">
-                    {/* Placeholder for symmetry */}
-                </div>
+                <div className="w-10 h-10 flex items-center justify-center"></div>
             </div>
 
-            {/* --- NOTES GRID --- */}
             <div className="flex-1 p-3 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full relative z-10">
                 <div className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
                     {details.notes.map(note => (
@@ -156,7 +151,6 @@ export default function NotebookClient() {
                 )}
             </div>
 
-            {/* --- FLOATING ACTION BUTTON (FAB) --- */}
             <div className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-5 md:bottom-8 md:right-8 z-[60]">
                 <Button 
                     className="rounded-full w-14 h-14 md:w-16 md:h-16 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white active:scale-90 transition-transform flex items-center justify-center border border-white/20" 
@@ -167,25 +161,22 @@ export default function NotebookClient() {
                 </Button>
             </div>
             
-            {/* --- FULL SCREEN NATIVE EDITOR MODAL --- */}
             <Dialog open={isFormOpen} onOpenChange={(open) => {if (!open) setEditingNote(null); setIsFormOpen(open);}}>
-                <DialogContent className="w-full h-[100dvh] max-w-none m-0 p-0 border-none flex flex-col z-[70] animate-in slide-in-from-bottom-full duration-300 md:rounded-none bg-transparent">
+                <DialogContent className="w-full h-[100dvh] max-w-none m-0 p-0 border-none flex flex-col z-[70] animate-in slide-in-from-bottom-full duration-300 md:rounded-none bg-transparent [&>button]:hidden">
                     <DialogTitle className="sr-only">Not Düzenleyici</DialogTitle>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleSaveNote)} className={cn("flex flex-col h-full w-full transition-colors duration-500 shadow-2xl", form.watch('color') || noteColors[0].class)}>
                             
-                            {/* Toolbar (App Bar) */}
                             <div className="h-14 px-3 flex items-center justify-between border-b border-black/5 bg-white/20 backdrop-blur-md shrink-0">
                                 <DialogClose asChild>
                                     <Button variant="ghost" className="text-black/60 hover:bg-black/5 font-bold text-[15px] rounded-full px-4 active:scale-95 transition-all">İptal</Button>
                                 </DialogClose>
                                 <span className="font-bold text-black/30 text-[11px] uppercase tracking-[0.2em]">
-                                    {editingNote?.id ? "Düzenleniyor" : "Yeni Not"}
+                                    {editingNote?.id ? "Düzenle" : "Yeni Not"}
                                 </span>
                                 <Button type="submit" variant="ghost" className="text-indigo-600 hover:bg-black/5 font-black text-[15px] rounded-full px-4 active:scale-95 transition-all">Bitti</Button>
                             </div>
 
-                            {/* Editor Area */}
                            <div className="flex-1 overflow-y-auto w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                                 <div className="max-w-3xl mx-auto p-5 md:p-8 flex flex-col min-h-full">
                                      <FormField name="title" control={form.control} render={({ field }) => (
@@ -214,7 +205,6 @@ export default function NotebookClient() {
                                 </div>
                             </div>
 
-                            {/* Color Picker (Sticky Bottom) */}
                             <div className="h-16 px-4 border-t border-black/5 bg-white/20 backdrop-blur-xl flex items-center justify-center shrink-0 overflow-x-auto pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
                                 <FormField name="color" control={form.control} render={({field}) => (
                                     <FormItem>
@@ -247,7 +237,6 @@ export default function NotebookClient() {
     );
 }
 
-// --- STICKY NOTE CARD ---
 function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => void, onDelete: () => void }) {
     const colorClass = note.color || noteColors[0].class;
     const contentText = Array.isArray(note.content) ? (note.content.find(b => b.type === 'text')?.data || '') : '';
@@ -275,11 +264,11 @@ function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => 
                         <DropdownMenuSeparator className="bg-slate-100 my-1" />
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-600 font-bold cursor-pointer focus:bg-rose-50 rounded-xl py-2.5 px-3">
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={(e) => e.stopPropagation()} className="text-rose-600 font-bold cursor-pointer focus:bg-rose-50 rounded-xl py-2.5 px-3">
                                     <Trash2 className="w-4 h-4 mr-2" /> Sil
                                 </DropdownMenuItem>
                             </AlertDialogTrigger>
-                            <AlertDialogContent className="w-[85%] max-w-sm rounded-[2rem] bg-white border-none shadow-2xl p-6">
+                            <AlertDialogContent className="w-[85%] max-w-sm rounded-[2rem] bg-white border-none shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
                                 <AlertDialogHeader>
                                     <AlertDialogTitle className="text-xl font-black text-slate-900">Notu Sil?</AlertDialogTitle>
                                     <AlertDialogDescription className="text-slate-500 font-medium text-sm">
@@ -307,7 +296,6 @@ function StickyNoteCard({ note, onEdit, onDelete }: { note: Note, onEdit: () => 
                 )}>
                     {plainText || "Boş not..."}
                 </p>
-                {/* Fade out bottom text effect to mimic paper cutoff */}
                 <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-[var(--tw-gradient-from)] to-transparent pointer-events-none" />
             </div>
             
