@@ -7,7 +7,7 @@ import {
     Trash2, ClipboardList, BookCopy, Ruler, TestTube2, Globe, 
     MessageSquare, Gamepad2, FileText, Calendar, Clock, ChevronRight, 
     LayoutGrid, List, Filter, BookOpen, PenTool, ArrowUpDown, 
-    ChevronLeft, BarChart3, GraduationCap
+    ChevronLeft, BarChart3, GraduationCap, Repeat, Send, Calendar as CalendarIcon, User
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -20,17 +20,20 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
     DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, 
-    DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
+    DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuItem
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format, isToday, isPast, differenceInDays, parse } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { format, isToday, isPast, differenceInDays, parse, addDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
 import { Test, FamilyMember, TrackedBook } from "@/lib/data";
-import { onTestsUpdate, deleteTest, onTrackedBooksUpdate } from "@/lib/dataService";
+import { onTestsUpdate, deleteTest, onTrackedBooksUpdate, addTest } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 import { getCategoryName } from "@/app/education/page";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 
 // --- DESIGN SYSTEM: Modern Premium LMS Dark Theme ---
 const themeColors = {
@@ -92,6 +95,8 @@ export default function AllTestsPage() {
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('desc');
 
     const [pagination, setPagination] = React.useState<PaginationState>({ all: 1, pending: 1, completed: 1 });
+
+    const [reassignTest, setReassignTest] = React.useState<Test | null>(null);
 
     const studentMembers = React.useMemo(() => 
         familyMembers.filter(m => m.role.includes('Çocuk')), 
@@ -255,6 +260,10 @@ export default function AllTestsPage() {
     const paginatedAll = allFilteredTests.slice((pagination.all - 1) * ITEMS_PER_PAGE, pagination.all * ITEMS_PER_PAGE);
     const paginatedPending = pendingTests.slice((pagination.pending - 1) * ITEMS_PER_PAGE, pagination.pending * ITEMS_PER_PAGE);
     const paginatedCompleted = completedTests.slice((pagination.completed - 1) * ITEMS_PER_PAGE, pagination.completed * ITEMS_PER_PAGE);
+
+    const handleReassign = (test: Test) => {
+        setReassignTest(test);
+    };
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative flex flex-col">
@@ -441,7 +450,7 @@ export default function AllTestsPage() {
                                         setSelectedSubject('all');
                                         setSelectedTopic('all');
                                     }}
-                                    className="h-9 px-3 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-xs ml-auto sm:ml-0 rounded-lg"
+                                    className="h-9 px-3 text-rose-400 hover:text-rose-300 hover:bg-rose-50/10 text-xs ml-auto sm:ml-0 rounded-lg"
                                 >
                                     Filtreyi Temizle
                                 </Button>
@@ -454,7 +463,7 @@ export default function AllTestsPage() {
                         <TabsContent value="all" className="m-0 animate-in fade-in duration-300">
                             <TestsListOrGrid 
                                 tests={paginatedAll} viewMode={viewMode} familyMembers={familyMembers} 
-                                onDelete={handleDeleteTest} sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort}
+                                onDelete={handleDeleteTest} onReassign={handleReassign} sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort}
                             />
                              <PaginationControls currentPage={pagination.all} totalPages={totalPages.all} onPageChange={handlePageChange} />
                         </TabsContent>
@@ -462,7 +471,7 @@ export default function AllTestsPage() {
                         <TabsContent value="pending" className="m-0 animate-in fade-in duration-300">
                             <TestsListOrGrid 
                                 tests={paginatedPending} viewMode={viewMode} familyMembers={familyMembers} 
-                                onDelete={handleDeleteTest} sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort} emptyMessage="Bekleyen ödev bulunamadı. Harika!" 
+                                onDelete={handleDeleteTest} onReassign={handleReassign} sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort} emptyMessage="Bekleyen ödev bulunamadı. Harika!" 
                             />
                              <PaginationControls currentPage={pagination.pending} totalPages={totalPages.pending} onPageChange={handlePageChange} />
                         </TabsContent>
@@ -470,13 +479,20 @@ export default function AllTestsPage() {
                         <TabsContent value="completed" className="m-0 animate-in fade-in duration-300">
                             <TestsListOrGrid 
                                 tests={paginatedCompleted} viewMode={viewMode} familyMembers={familyMembers} 
-                                onDelete={handleDeleteTest} sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort} emptyMessage="Tamamlanmış ödev bulunamadı." 
+                                onDelete={handleDeleteTest} onReassign={handleReassign} sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort} emptyMessage="Tamamlanmış ödev bulunamadı." 
                             />
                             <PaginationControls currentPage={pagination.completed} totalPages={totalPages.completed} onPageChange={handlePageChange} />
                         </TabsContent>
                     </div>
                 </Tabs>
             </main>
+
+            <ReassignTestDialog 
+                test={reassignTest} 
+                isOpen={!!reassignTest} 
+                onOpenChange={(open) => !open && setReassignTest(null)}
+                familyMembers={familyMembers}
+            />
         </div>
     );
 }
@@ -501,9 +517,9 @@ function PaginationControls({ currentPage, totalPages, onPageChange }: { current
 }
 
 function TestsListOrGrid({ 
-    tests, viewMode, familyMembers, onDelete, emptyMessage, sortKey, sortDirection, onSort 
+    tests, viewMode, familyMembers, onDelete, onReassign, emptyMessage, sortKey, sortDirection, onSort 
 }: { 
-    tests: Test[], viewMode: ViewMode, familyMembers: FamilyMember[], onDelete: (id: string) => void, emptyMessage?: string, sortKey?: SortKey, sortDirection?: 'asc' | 'desc', onSort?: (key: SortKey) => void
+    tests: Test[], viewMode: ViewMode, familyMembers: FamilyMember[], onDelete: (id: string) => void, onReassign: (test: Test) => void, emptyMessage?: string, sortKey?: SortKey, sortDirection?: 'asc' | 'desc', onSort?: (key: SortKey) => void
 }) {
     if (tests.length === 0) {
         return <EmptyState message={emptyMessage} />;
@@ -514,7 +530,7 @@ function TestsListOrGrid({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {tests.map(test => {
                     const student = familyMembers.find(m => m.id === test.studentId);
-                    return <TestCard key={test.id} test={test} student={student} onDelete={onDelete} />;
+                    return <TestCard key={test.id} test={test} student={student} onDelete={onDelete} onReassign={onReassign} />;
                 })}
             </div>
         );
@@ -628,27 +644,36 @@ function TestsListOrGrid({
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg">
                                                         <span className="sr-only">Menü</span>
-                                                        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4"><path d="M3.625 7.5C3.625 8.12132 3.12132 8.625 2.5 8.625C1.87868 8.625 1.375 8.12132 1.375 7.5C1.375 6.87868 1.87868 6.375 2.5 6.375C3.12132 6.375 3.625 6.87868 3.625 7.5ZM8.625 7.5C8.625 8.12132 8.12132 8.625 7.5 8.625C6.87868 8.625 6.375 8.12132 6.375 7.5C6.375 6.87868 6.87868 6.375 7.5 6.375C8.12132 6.375 8.625 6.87868 8.625 7.5ZM13.625 7.5C13.625 8.12132 13.12132 8.625 12.5 8.625C11.87868 8.625 11.375 8.12132 11.375 7.5C11.375 6.87868 11.87868 6.375 12.5 6.375C13.12132 6.375 13.625 6.87868 13.625 7.5Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path></svg>
+                                                        <MoreVertical className="w-4 h-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="w-40 bg-slate-900 border-slate-800 rounded-xl p-1">
+                                                    <DropdownMenuItem onClick={() => onReassign(test)} className="text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg cursor-pointer flex items-center">
+                                                        <Repeat className="w-4 h-4 mr-2" /> Tekrar Ata
+                                                    </DropdownMenuItem>
                                                     <Link href={`/education/management/questions?edit=${test.id}`}>
-                                                        <DropdownMenuCheckboxItem className="text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg cursor-pointer flex items-center">
+                                                        <DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg cursor-pointer flex items-center">
                                                             <Edit className="w-4 h-4 mr-2" /> Düzenle
-                                                        </DropdownMenuCheckboxItem>
+                                                        </DropdownMenuItem>
                                                     </Link>
                                                     <DropdownMenuSeparator className="bg-slate-800" />
-                                                    <DropdownMenuCheckboxItem 
-                                                        className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg cursor-pointer flex items-center"
-                                                        onSelect={(e) => {
-                                                            e.preventDefault(); // Menünün kapanmasını engelle, alert açılsın
-                                                            if(window.confirm(`"${test.title}" ödevini silmek istediğinize emin misiniz?`)) {
-                                                                onDelete(test.id);
-                                                            }
-                                                        }}
-                                                    >
-                                                        <Trash2 className="w-4 h-4 mr-2" /> Sil
-                                                    </DropdownMenuCheckboxItem>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg cursor-pointer flex items-center">
+                                                                <Trash2 className="w-4 h-4 mr-2" /> Sil
+                                                            </DropdownMenuItem>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Ödevi Sil</AlertDialogTitle>
+                                                                <AlertDialogDescription className="text-slate-400">"{test.title}" ödevini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200">İptal</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => onDelete(test.id)} className="bg-rose-600 hover:bg-rose-700 text-white border-none">Evet, Sil</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
@@ -677,7 +702,7 @@ function EmptyState({ message = "Bu kriterlere uygun ödev bulunamadı." }: { me
     );
 }
 
-function TestCard({ test, student, onDelete }: { test: Test, student?: FamilyMember, onDelete: (id: string) => void }) {
+function TestCard({ test, student, onDelete, onReassign }: { test: Test, student?: FamilyMember, onDelete: (id: string) => void, onReassign: (test: Test) => void }) {
     const isCompleted = test.status === 'Sonuçlandı';
     const isPendingGrade = test.status === 'Değerlendirme Bekliyor';
     const categoryName = getCategoryName(test);
@@ -788,32 +813,164 @@ function TestCard({ test, student, onDelete }: { test: Test, student?: FamilyMem
                 </div>
 
                 <div className="flex gap-1 shrink-0">
-                    <Link href={`/education/management/questions?edit=${test.id}`}>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg">
-                            <Edit className="w-4 h-4" />
-                        </Button>
-                    </Link>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                             <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg">
-                                <Trash2 className="w-4 h-4" />
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg">
+                                <MoreVertical className="w-4 h-4" />
                             </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
-                            <AlertDialogHeader>
-                                <AlertDialogTitle className="text-xl">Ödevi Sil</AlertDialogTitle>
-                                <AlertDialogDescription className="text-slate-400">
-                                    <span className="text-white font-semibold">{test.title}</span> başlıklı ödevi kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter className="mt-4">
-                                <AlertDialogCancel className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200">İptal</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => onDelete(test.id)} className="bg-rose-600 hover:bg-rose-700 text-white border-none">Evet, Sil</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-100 rounded-xl p-1">
+                            <DropdownMenuItem onClick={() => onReassign(test)} className="text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg cursor-pointer flex items-center">
+                                <Repeat className="w-4 h-4 mr-2" /> Tekrar Ata
+                            </DropdownMenuItem>
+                            <Link href={`/education/management/questions?edit=${test.id}`}>
+                                <DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg cursor-pointer flex items-center">
+                                    <Edit className="w-4 h-4 mr-2" /> Düzenle
+                                </DropdownMenuItem>
+                            </Link>
+                            <DropdownMenuSeparator className="bg-slate-800" />
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg cursor-pointer flex items-center">
+                                        <Trash2 className="w-4 h-4 mr-2" /> Sil
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Ödevi Sil</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-slate-400">"{test.title}" ödevini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200">İptal</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => onDelete(test.id)} className="bg-rose-600 hover:bg-rose-700 text-white border-none">Evet, Sil</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
         </div>
+    );
+}
+
+function ReassignTestDialog({ test, isOpen, onOpenChange, familyMembers }: { test: Test | null, isOpen: boolean, onOpenChange: (open: boolean) => void, familyMembers: FamilyMember[] }) {
+    const { toast } = useToast();
+    const students = React.useMemo(() => familyMembers.filter(m => m.role.includes('Çocuk')), [familyMembers]);
+    
+    const [selectedStudentId, setSelectedStudentId] = React.useState<string>("");
+    const [dueDate, setDueDate] = React.useState<Date>(addDays(new Date(), 7));
+    const [loading, setLoading] = React.useState(false);
+
+    React.useEffect(() => {
+        if (test) {
+            setSelectedStudentId(test.studentId);
+        }
+    }, [test]);
+
+    const handleReassignSubmit = async () => {
+        if (!test || !selectedStudentId) return;
+        setLoading(true);
+        try {
+            const newTestData: any = {
+                title: test.title,
+                subject: test.subject,
+                studentId: selectedStudentId,
+                questionCount: test.questionCount,
+                assignedDate: format(new Date(), 'dd MMMM yyyy', { locale: tr }),
+                dueDate: format(dueDate, 'dd MMMM yyyy', { locale: tr }),
+                sourceType: test.sourceType,
+                sourceId: test.sourceId,
+                status: 'Atandı',
+                isArchived: false,
+                gradingType: test.gradingType,
+                answerKey: test.answerKey,
+                openEnded: test.openEnded,
+                jsonQuestions: test.jsonQuestions,
+                topicId: test.topicId,
+            };
+
+            // If it's a bank/mistake/quick test with a questions subcollection, we need those questions
+            // For now, let's assume we copy the question references if they exist on the test object
+            // (Note: addTest implementation handles subcollection if questionsForSubcollection is passed)
+            
+            // Fetch questions from the source test if they are not in the object
+            let questionsToCopy: QuickTestQuestion[] = test.questions || [];
+            if ((test.sourceType === 'bank' || test.sourceType === 'mistake' || test.sourceType === 'quick') && questionsToCopy.length === 0) {
+                const questionsColRef = collection(db, 'tests', test.id, 'questions');
+                const questionsSnap = await getDocs(query(questionsColRef, orderBy("questionNumber")));
+                questionsToCopy = questionsSnap.docs.map(d => d.data() as QuickTestQuestion);
+            }
+
+            await addTest(newTestData, questionsToCopy);
+            toast({ title: "✅ Ödev Tekrar Atandı", description: `${test.title} başarıyla yeni görev olarak eklendi.` });
+            onOpenChange(false);
+        } catch (e) {
+            toast({ title: "Hata", description: "Atama sırasında bir hata oluştu.", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!test) return null;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Repeat className="w-5 h-5 text-indigo-400" /> Ödevi Tekrar Ata
+                    </DialogTitle>
+                    <DialogDescription className="text-slate-400">
+                        "{test.title}" ödevini yeni bir görev olarak tanımlayın.
+                    </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-6 py-4">
+                    <div className="space-y-2">
+                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Öğrenci</Label>
+                        <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+                            <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-100 h-11 rounded-xl">
+                                <SelectValue placeholder="Öğrenci seçin" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                                {students.map(s => (
+                                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Bitiş Tarihi</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" className="w-full justify-start text-left bg-slate-950 border-slate-800 text-slate-100 h-11 rounded-xl">
+                                    <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
+                                    {format(dueDate, "d MMMM yyyy", { locale: tr })}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-800" align="start">
+                                <CalendarPicker 
+                                    mode="single" 
+                                    selected={dueDate} 
+                                    onSelect={(d) => d && setDueDate(d)} 
+                                    initialFocus 
+                                    className="bg-slate-900 text-slate-100"
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                </div>
+
+                <DialogFooter className="gap-2">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="text-slate-400 hover:text-white">İptal</Button>
+                    <Button onClick={handleReassignSubmit} disabled={loading} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-11 rounded-xl px-8">
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                        Atamayı Tamamla
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
