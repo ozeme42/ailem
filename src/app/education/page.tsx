@@ -135,20 +135,29 @@ export default function EducationPage() {
   }, [tests]);
 
   const stats = React.useMemo(() => {
-    const completed = tests.filter(t => t.status === 'Sonuçlandı');
+    // Toplam biten ödevler (Testler + Konu Çalışmaları)
+    const completedTests = tests.filter(t => t.status === 'Sonuçlandı');
+    const completedAssignments = assignments.filter(a => a.status === 'completed');
+    
+    // Toplam bitenlerin oranı (Ödev + Çalışma)
+    const totalTasksCount = tests.length + assignments.length;
+    const totalCompletedTasksCount = completedTests.length + completedAssignments.length;
+    const completedRate = totalTasksCount > 0 ? (totalCompletedTasksCount / totalTasksCount) * 100 : 0;
+
+    // Başarı yüzdesi (Sadece çözülen testlerdeki sorulara göre)
     let totalQ = 0, totalC = 0;
-    completed.forEach(t => { totalQ += t.questionCount || 0; totalC += t.correctAnswers || 0; });
-    const rate = totalQ > 0 ? (totalC / totalQ) * 100 : 0;
+    completedTests.forEach(t => { totalQ += t.questionCount || 0; totalC += t.correctAnswers || 0; });
+    const successRate = totalQ > 0 ? (totalC / totalQ) * 100 : 0;
     
     // Geç kalmış görevler
     const overdueCount = tests.filter(t => t.status === 'Atandı' && isPast(parse(t.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr })) && !isToday(parse(t.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }))).length;
 
     return {
       testCount: tests.length,
-      pendingCount: tests.filter(t => t.status !== 'Sonuçlandı').length + assignments.filter(s => s.status !== 'completed').length,
-      successRate: rate,
+      pendingCount: (tests.length - completedTests.length) + (assignments.length - completedAssignments.length),
+      successRate,
       overdueCount,
-      completedAssignmentsRate: assignments.length > 0 ? (assignments.filter(a => a.status === 'completed').length / assignments.length) * 100 : 0
+      completedAssignmentsRate: completedRate // KPI kartında gösterilen ana tamamlama yüzdesi
     };
   }, [tests, assignments]);
 
