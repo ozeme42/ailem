@@ -113,7 +113,7 @@ export function MemberDashboardCard({
     }, []);
     
     // --- Veri Hesaplamaları ---
-    const { habits, pendingTasks, pendingTests, pendingStudies, completedStudies, readingBooks, pendingMemorization, todaysPrayers, earnedFreeTimeMinutes, pendingVideos } = React.useMemo(() => {
+    const { habits, pendingTasks, pendingTests, pendingStudies, readingBooks, pendingMemorization, todaysPrayers, earnedFreeTimeMinutes, pendingVideos } = React.useMemo(() => {
         const memberId = member.id;
         let completedActivityCount = 0;
         const todayKey = format(new Date(), 'yyyy-MM-dd');
@@ -149,10 +149,6 @@ export function MemberDashboardCard({
             .filter(sa => sa.status === 'assigned')
             .map(sa => ({...sa, studyPlanTitle: studyPlans.find(p => p.id === sa.studyPlanId)?.title }));
             
-        const completedStudies = memberStudyAssignments
-            .filter(sa => sa.status === 'completed')
-            .map(sa => ({...sa, studyPlanTitle: studyPlans.find(p => p.id === sa.studyPlanId)?.title }));
-        
         const todaysCompletedStudies = memberStudyAssignments.filter(sa =>
             sa.status === 'completed' &&
             sa.completedAt &&
@@ -200,7 +196,6 @@ export function MemberDashboardCard({
             pendingTasks: otherTasks, 
             pendingTests: memberTests, 
             pendingStudies, 
-            completedStudies, 
             readingBooks: readingBooksData, 
             pendingVideos: memberVideos, 
             pendingMemorization: pendingMemorizationData, 
@@ -282,7 +277,7 @@ export function MemberDashboardCard({
         )
     }
 
-    if (allPendingItems.length === 0 && completedStudies.length === 0) return null;
+    if (allPendingItems.length === 0) return null;
 
     return (
         <Card className="shadow-none border-0 bg-transparent flex flex-col gap-4 md:gap-6 relative z-10 px-0 md:px-2">
@@ -487,7 +482,7 @@ export function MemberDashboardCard({
                     )}
 
                     {/* 6. YAPILACAKLAR */}
-                    {(pendingTests.length > 0 || pendingStudies.length > 0 || pendingTasks.length > 0 || completedStudies.length > 0) && (
+                    {(pendingTests.length > 0 || pendingStudies.length > 0 || pendingTasks.length > 0) && (
                         <div className={cn("rounded-[1.5rem] md:rounded-[2rem] p-4 border", sectionThemes.todo.container)}>
                              <h4 className={cn("font-extrabold text-[10px] md:text-xs uppercase tracking-widest mb-3 md:mb-4 flex items-center gap-1.5 md:gap-2", sectionThemes.todo.title)}>
                                 <ListChecks className={cn("h-3.5 w-3.5 md:h-4 md:w-4", sectionThemes.todo.icon)}/> Yapılacaklar
@@ -541,25 +536,6 @@ export function MemberDashboardCard({
                                               </div>
                                       </div>
                                 ))}
-
-                                {/* Tamamlanan Çalışmalar (Accordion) - Mobilde daha kompakt */}
-                                {completedStudies.length > 0 && (
-                                    <Accordion type="single" collapsible className="w-full border border-indigo-100/50 dark:border-indigo-900/30 rounded-[1rem] bg-indigo-50/30 dark:bg-indigo-950/20 mt-2">
-                                                <AccordionItem value="item-1" className="border-0">
-                                                    <AccordionTrigger className="text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 justify-start gap-2 py-2.5 px-3 no-underline">
-                                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500"/> {completedStudies.length} tamamlanan çalışma
-                                                    </AccordionTrigger>
-                                                    <AccordionContent className="space-y-1.5 px-3 pb-3">
-                                                        {completedStudies.map(study => (
-                                                            <div key={study.id} className="flex items-center gap-2 pl-1">
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
-                                                                <p className="text-[10px] md:text-[11px] font-medium text-slate-400 dark:text-slate-500 line-through truncate">{study.topic}</p>
-                                                            </div>
-                                                        ))}
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                        </Accordion>
-                                )}
                             </div>
                         </div>
                     )}
