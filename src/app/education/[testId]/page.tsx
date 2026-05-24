@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, ArrowRight, Play, Pause, Check, X, MinusCircle, LayoutGrid, BookOpen, ChevronRight, Home, Loader2, Sparkles, Trophy, ChevronLeft, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, FileQuestion, ArrowRight, Play, Pause, Check, X, MinusCircle, LayoutGrid, BookOpen, ChevronRight, Home, Loader2, Sparkles, Trophy, ChevronLeft, CheckCircle2, XCircle, Eye } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +27,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 // --- DESIGN SYSTEM ---
 const glassColors = {
@@ -176,6 +177,9 @@ export default function OpticalFormPage() {
     const [submittedSubjectIds, setSubmittedSubjectIds] = React.useState<string[]>([]);
     const [isSheetOpen, setIsSheetOpen] = React.useState(false);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+    
+    // Soru inceleme modali için state
+    const [viewingQuestionIndex, setViewingQuestionIndex] = React.useState<number | null>(null);
     
     const isInitializedRef = React.useRef(false);
     const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -470,7 +474,12 @@ export default function OpticalFormPage() {
                         </div>
                     </Card>
                     <Card className={glassColors.CARD_BG}>
-                        <CardHeader><CardTitle>Cevap Anahtarı</CardTitle></CardHeader>
+                        <CardHeader>
+                            <CardTitle className="flex items-center justify-between">
+                                <span>Cevap Anahtarı</span>
+                                <span className="text-xs font-medium text-slate-400 font-sans">* Soruyu incelemek için üzerine tıklayın.</span>
+                            </CardTitle>
+                        </CardHeader>
                         <CardContent className="space-y-6">
                             {practiceExam ? (
                                 subjectsWithRanges.map(subject => (
@@ -485,13 +494,18 @@ export default function OpticalFormPage() {
                                                 const evalStatus = studentAns === correctAns ? 'correct' : (studentAns ? 'incorrect' : 'empty');
                                                 let statusColor = evalStatus === 'correct' ? "border-emerald-200 bg-emerald-50" : (evalStatus === 'incorrect' ? "border-rose-200 bg-rose-50" : "border-slate-100 bg-slate-50");
                                                 return (
-                                                    <div key={qNumStr} className={cn("p-3 border rounded-xl flex justify-between items-center", statusColor)}>
+                                                    <button 
+                                                        key={qNumStr} 
+                                                        onClick={() => setViewingQuestionIndex(qNum - 1)}
+                                                        className={cn("p-3 border rounded-xl flex justify-between items-center transition-all hover:scale-[1.03] active:scale-95 group", statusColor)}
+                                                    >
                                                         <span className="font-bold text-slate-400 w-8">{i + 1}</span>
                                                         <div className="flex gap-2">
                                                             <span className={cn("font-bold", evalStatus === 'incorrect' ? 'text-rose-600' : 'text-slate-800')}>{studentAns || '-'}</span>
                                                             {evalStatus === 'incorrect' && <span className="font-bold text-emerald-600">{correctAns}</span>}
+                                                            <Eye className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 ml-1" />
                                                         </div>
-                                                    </div>
+                                                    </button>
                                                 )
                                             })}
                                         </div>
@@ -500,22 +514,27 @@ export default function OpticalFormPage() {
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                 {Array.from({ length: questionCount }).map((_, index) => {
-                                        const qNumStr = (index + 1).toString();
-                                        const studentAns = studentAnswers[qNumStr];
+                                        const qNum = index + 1;
+                                        const qNumStr = qNum.toString();
+                                        const studentAns = studentAnswers[qNumStr] || test.studentTextAnswers?.[qNumStr];
                                         const correctAns = answerKey[qNumStr];
                                         
-                                        // Manual evaluation handling for text answers if finalized
                                         const evalFromStatus = test.studentTextAnswersEvaluation?.[qNumStr] || (studentAns === correctAns ? 'correct' : (studentAns ? 'incorrect' : 'empty'));
                                         
                                         let statusColor = evalFromStatus === 'correct' ? "border-emerald-200 bg-emerald-50" : (evalFromStatus === 'incorrect' ? "border-rose-200 bg-rose-50" : "border-slate-100 bg-slate-50");
                                         return (
-                                            <div key={qNumStr} className={cn("p-3 border rounded-xl flex justify-between items-center", statusColor)}>
+                                            <button 
+                                                key={qNumStr} 
+                                                onClick={() => setViewingQuestionIndex(index)}
+                                                className={cn("p-3 border rounded-xl flex justify-between items-center transition-all hover:scale-[1.03] active:scale-95 group", statusColor)}
+                                            >
                                                 <span className="font-bold text-slate-400 w-8">{qNumStr}</span>
                                                 <div className="flex gap-3">
                                                     <span className={cn("font-bold", evalFromStatus === 'incorrect' ? 'text-rose-600' : 'text-slate-800')}>{studentAns || '-'}</span>
                                                     {evalFromStatus === 'incorrect' && correctAns && <span className="font-bold text-emerald-600">{correctAns}</span>}
+                                                    <Eye className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 ml-1" />
                                                 </div>
-                                            </div>
+                                            </button>
                                         )
                                     })}
                                 </div>
@@ -524,6 +543,100 @@ export default function OpticalFormPage() {
                     </Card>
                     <div className="flex justify-center"><Button size="lg" className="bg-white text-slate-900 border border-slate-200 px-8 py-6 text-lg font-bold" onClick={() => router.push('/education')}><Home className="mr-3 h-6 w-6 text-indigo-600" />Eğitim Sayfası</Button></div>
                 </div>
+
+                {/* Soru İnceleme Modalı */}
+                <Dialog open={viewingQuestionIndex !== null} onOpenChange={(open) => !open && setViewingQuestionIndex(null)}>
+                    <DialogContent className="sm:max-w-2xl bg-white border-slate-200 text-slate-900 rounded-3xl overflow-hidden p-0">
+                        {viewingQuestionIndex !== null && (
+                            <>
+                                <DialogHeader className="p-6 border-b bg-slate-50/50">
+                                    <DialogTitle className="flex items-center gap-3">
+                                        <Badge className="h-10 w-10 rounded-full flex items-center justify-center p-0 text-lg font-black bg-indigo-600">
+                                            {viewingQuestionIndex + 1}
+                                        </Badge>
+                                        Soru İnceleme
+                                    </DialogTitle>
+                                </DialogHeader>
+                                <div className="p-0">
+                                    {test.sourceType === 'json' && test.jsonQuestions ? (
+                                        <div className="p-8 space-y-6">
+                                            <p className="text-xl font-bold text-slate-800 leading-tight">
+                                                {test.jsonQuestions[viewingQuestionIndex].text}
+                                            </p>
+                                            <div className="space-y-3">
+                                                {test.jsonQuestions[viewingQuestionIndex].options.map((opt, idx) => {
+                                                    const letter = String.fromCharCode(65 + idx);
+                                                    const isCorrect = opt === test.jsonQuestions![viewingQuestionIndex!].answer;
+                                                    const studentAns = test.studentAnswers?.[(viewingQuestionIndex! + 1).toString()];
+                                                    const isStudentAns = opt === studentAns;
+                                                    
+                                                    return (
+                                                        <div key={idx} className={cn(
+                                                            "p-4 rounded-xl border-2 flex items-center gap-4",
+                                                            isCorrect ? "bg-emerald-50 border-emerald-500" : isStudentAns ? "bg-rose-50 border-rose-500" : "bg-white border-slate-100"
+                                                        )}>
+                                                            <div className={cn(
+                                                                "w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm",
+                                                                isCorrect ? "bg-emerald-500 border-emerald-500 text-white" : isStudentAns ? "bg-rose-500 border-rose-500 text-white" : "border-slate-200 text-slate-400"
+                                                            )}>
+                                                                {letter}
+                                                            </div>
+                                                            <span className={cn("font-medium", isCorrect ? "text-emerald-700" : isStudentAns ? "text-rose-700" : "text-slate-600")}>
+                                                                {opt}
+                                                            </span>
+                                                            {isCorrect && <CheckCircle2 className="w-5 h-5 text-emerald-500 ml-auto" />}
+                                                            {isStudentAns && !isCorrect && <XCircle className="w-5 h-5 text-rose-500 ml-auto" />}
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col">
+                                            <div className="relative w-full aspect-video bg-slate-50 border-b">
+                                                {test.questions && test.questions[viewingQuestionIndex] && (
+                                                    <Image 
+                                                        src={test.questions[viewingQuestionIndex].imageUrl} 
+                                                        alt={`Soru ${viewingQuestionIndex + 1}`} 
+                                                        fill 
+                                                        className="object-contain p-4"
+                                                    />
+                                                )}
+                                            </div>
+                                            <div className="p-8 bg-white grid grid-cols-2 gap-4">
+                                                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 text-center">
+                                                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Doğru Cevap</p>
+                                                    <p className="text-3xl font-black text-emerald-700">
+                                                        {answerKey[(viewingQuestionIndex + 1).toString()] || '-'}
+                                                    </p>
+                                                </div>
+                                                <div className={cn(
+                                                    "p-4 rounded-2xl border text-center",
+                                                    (studentAnswers[(viewingQuestionIndex + 1).toString()] === answerKey[(viewingQuestionIndex + 1).toString()])
+                                                        ? "bg-emerald-50 border-emerald-100"
+                                                        : "bg-rose-50 border-rose-100"
+                                                )}>
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Senin Cevabın</p>
+                                                    <p className={cn(
+                                                        "text-3xl font-black",
+                                                        (studentAnswers[(viewingQuestionIndex + 1).toString()] === answerKey[(viewingQuestionIndex + 1).toString()])
+                                                            ? "text-emerald-700"
+                                                            : "text-rose-700"
+                                                    )}>
+                                                        {studentAnswers[(viewingQuestionIndex + 1).toString()] || '-'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                <DialogFooter className="p-6 bg-slate-50">
+                                    <Button onClick={() => setViewingQuestionIndex(null)} className="w-full h-12 rounded-xl bg-slate-900 text-white font-bold">Kapat</Button>
+                                </DialogFooter>
+                            </>
+                        )}
+                    </DialogContent>
+                </Dialog>
             </div>
         );
     }
