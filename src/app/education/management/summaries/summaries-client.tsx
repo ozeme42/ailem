@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { 
-    ArrowLeft, Plus, Search, Trash2, Edit, Save, X, 
+    ArrowLeft, Plus, Search, Trash2, Edit, X, 
     ScrollText, BookOpen, ChevronRight, FileText, LayoutGrid,
     Loader2, AlertCircle, Eye
 } from "lucide-react";
@@ -19,6 +19,9 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { 
+    Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle 
+} from "@/components/ui/card";
 import { 
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, 
@@ -180,13 +183,13 @@ export function SummariesManagementClient() {
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             </AlertDialogTrigger>
-                                            <AlertDialogContent>
+                                            <AlertDialogContent className="dark:bg-slate-900 dark:border-slate-800">
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>Özeti Sil?</AlertDialogTitle>
                                                     <AlertDialogDescription>"{summary.title}" özeti kalıcı olarak silinecektir.</AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
-                                                    <AlertDialogCancel>Vazgeç</AlertDialogCancel>
+                                                    <AlertDialogCancel className="dark:bg-slate-800 dark:text-white">Vazgeç</AlertDialogCancel>
                                                     <AlertDialogAction onClick={() => handleDelete(summary.id)} className="bg-rose-600">Sil</AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
@@ -218,8 +221,8 @@ export function SummariesManagementClient() {
 
             {/* Form Dialog */}
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent className="max-w-3xl h-[90vh] flex flex-col p-0 overflow-hidden rounded-3xl">
-                    <DialogHeader className="p-6 border-b">
+                <DialogContent className="max-w-3xl h-[90vh] flex flex-col p-0 overflow-hidden rounded-3xl dark:bg-slate-900 dark:border-slate-800">
+                    <DialogHeader className="p-6 border-b dark:border-slate-800">
                         <DialogTitle>{editingSummary ? "Özeti Düzenle" : "Yeni Özet Ekle"}</DialogTitle>
                     </DialogHeader>
                     <ScrollArea className="flex-1 p-6">
@@ -262,8 +265,8 @@ export function SummariesManagementClient() {
                             </div>
                         </div>
                     </ScrollArea>
-                    <DialogFooter className="p-6 border-t gap-2">
-                        <Button variant="ghost" onClick={() => setIsFormOpen(false)}>Vazgeç</Button>
+                    <DialogFooter className="p-6 border-t dark:border-slate-800 gap-2">
+                        <Button variant="ghost" onClick={() => setIsFormOpen(false)} className="dark:text-white dark:hover:bg-slate-800">Vazgeç</Button>
                         <Button onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-700">Kaydet</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -271,15 +274,15 @@ export function SummariesManagementClient() {
 
             {/* Preview Dialog */}
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-                <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden rounded-3xl">
-                    <DialogHeader className="p-6 border-b flex flex-row items-center justify-between">
+                <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden rounded-3xl dark:bg-slate-900 dark:border-slate-800">
+                    <DialogHeader className="p-6 border-b dark:border-slate-800 flex flex-row items-center justify-between">
                         <DialogTitle>İçerik Önizleme</DialogTitle>
                     </DialogHeader>
                     <ScrollArea className="flex-1 bg-white p-8">
                         <div className="prose max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: formContent }} />
                     </ScrollArea>
-                    <DialogFooter className="p-4 border-t">
-                        <Button onClick={() => setIsPreviewOpen(false)}>Kapat</Button>
+                    <DialogFooter className="p-4 border-t dark:border-slate-800">
+                        <Button onClick={() => setIsPreviewOpen(false)} className="dark:bg-slate-800 dark:text-white">Kapat</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
