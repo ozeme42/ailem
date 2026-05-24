@@ -27,7 +27,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { format, isToday, isPast, differenceInDays, parse, addDays } from 'date-fns';
+import { format, isToday, isPast, differenceInDays, parse, addDays, compareDesc } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
 import { Test, FamilyMember, TrackedBook, QuickTestQuestion, BankQuestion } from "@/lib/data";
@@ -314,7 +314,7 @@ function TestsListOrGrid({ tests, viewMode, familyMembers, onDelete, onReassign,
                                         <div className="flex items-center justify-end gap-1">
                                             <Link href={`/education/${test.id}`}><Button size="sm" className="h-8 px-3 rounded-lg text-xs font-semibold bg-indigo-600 text-white">İncele</Button></Link>
                                             <DropdownMenu>
-                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
+                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-100 w-40"><DropdownMenuItem onClick={() => onReassign(test)}><Repeat className="mr-2 h-4 w-4" /> Tekrar Ata</DropdownMenuItem><AlertDialog><AlertDialogTrigger asChild><DropdownMenuItem onSelect={e => e.preventDefault()} className="text-rose-400"><Trash2 className="mr-2 h-4 w-4" /> Sil</DropdownMenuItem></AlertDialogTrigger><AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100"><AlertDialogHeader><AlertDialogTitle>Ödevi Sil</AlertDialogTitle><AlertDialogDescription>"{test.title}" kalıcı olarak silinecek.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(test.id)} className="bg-rose-600 hover:bg-rose-700 border-none">Evet, Sil</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
@@ -363,28 +363,44 @@ function ReassignTestDialog({ test, isOpen, onOpenChange, familyMembers }: { tes
     const [selectedStudentId, setSelectedStudentId] = React.useState<string>("");
     const [dueDate, setDueDate] = React.useState<Date>(addDays(new Date(), 7));
     const [loading, setLoading] = React.useState(false);
+    
     React.useEffect(() => { if (test) setSelectedStudentId(test.studentId); }, [test]);
+    
     const handleReassignSubmit = async () => {
         if (!test || !selectedStudentId) return;
         setLoading(true);
         try {
-            const newTestData: any = { ...test, studentId: selectedStudentId, assignedDate: format(new Date(), 'dd MMMM yyyy', { locale: tr }), dueDate: format(dueDate, 'dd MMMM yyyy', { locale: tr }), status: 'Atandı', isArchived: false };
+            const newTestData: any = { 
+                ...test, 
+                studentId: selectedStudentId, 
+                assignedDate: format(new Date(), 'dd MMMM yyyy', { locale: tr }), 
+                dueDate: format(dueDate, 'dd MMMM yyyy', { locale: tr }), 
+                status: 'Atandı', 
+                isArchived: false 
+            };
             delete newTestData.id;
-            let questionsToCopy: any[] = test.questions || [];
-            if ((test.sourceType === 'bank' || test.sourceType === 'mistake' || test.sourceType === 'quick') && questionsToCopy.length === 0) {
+            
+            let questionsToCopy: any[] = [];
+            
+            if (test.sourceType === 'json' && test.jsonQuestions) {
+                newTestData.jsonQuestions = [...test.jsonQuestions];
+            } else {
                 const questionsColRef = collection(db, 'tests', test.id, 'questions');
                 const questionsSnap = await getDocs(query(questionsColRef, orderBy("questionNumber")));
                 questionsToCopy = questionsSnap.docs.map(d => d.data());
             }
-            // JSON sorularını da kopyala
-            if (test.sourceType === 'json' && test.jsonQuestions) {
-                newTestData.jsonQuestions = [...test.jsonQuestions];
-            }
+            
             await addTest(newTestData, questionsToCopy);
             toast({ title: "✅ Ödev Tekrar Atandı" });
             onOpenChange(false);
-        } catch (e) { toast({ title: "Hata", variant: "destructive" }); } finally { setLoading(false); }
+        } catch (e) { 
+            console.error(e);
+            toast({ title: "Hata", variant: "destructive" }); 
+        } finally { 
+            setLoading(false); 
+        }
     };
+
     if (!test) return null;
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -399,4 +415,3 @@ function ReassignTestDialog({ test, isOpen, onOpenChange, familyMembers }: { tes
         </Dialog>
     );
 }
-

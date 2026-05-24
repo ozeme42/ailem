@@ -5,7 +5,7 @@ import * as React from "react";
 import Link from "next/link";
 import { 
     ArrowLeft, Plus, Search, Trash2, Edit, X, 
-    ScrollText, BookOpen, Eye, Loader2
+    ScrollText, Eye, Loader2
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { 
@@ -37,7 +37,6 @@ const themeColors = {
     CARD_BG: "bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md transition-all duration-300",
     ICON_BOX: "bg-gradient-to-br from-emerald-500 to-teal-600 p-2.5 rounded-xl shadow-lg shadow-emerald-500/20 text-white",
     INPUT_BG: "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:border-indigo-500 transition-all",
-    TABLE_ROW: "hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors border-b border-slate-100 dark:border-slate-800/50 last:border-0",
 };
 
 export function SummariesManagementClient() {
@@ -60,16 +59,25 @@ export function SummariesManagementClient() {
     const [formTopic, setFormTopic] = React.useState("");
     const [formContent, setFormContent] = React.useState("");
 
-    // Preview sekmeleri için global fonksiyon
+    // Preview sekmeleri için global fonksiyon (defensive)
     React.useEffect(() => {
         (window as any).showTab = (tabId: string, button: HTMLElement) => {
-            const container = button.closest('.tab-container') || button.parentElement?.parentElement;
+            const targetButton = button || (window.event?.currentTarget as HTMLElement) || (window.event?.target as HTMLElement);
+            if (!targetButton || typeof targetButton.closest !== 'function') return;
+
+            const container = targetButton.closest('.tab-container') || targetButton.parentElement?.parentElement;
             if (!container) return;
+
             container.querySelectorAll('.tab-content').forEach((el: any) => el.style.display = 'none');
             const target = container.querySelector(`#${tabId}`) as HTMLElement;
             if (target) target.style.display = 'block';
-            container.querySelectorAll('.tab-button').forEach((el: any) => el.classList.remove('active', 'bg-indigo-600', 'text-white'));
-            button.classList.add('active', 'bg-indigo-600', 'text-white');
+
+            container.querySelectorAll('.tab-button').forEach((el: any) => {
+                el.classList.remove('active', 'bg-indigo-600', 'text-white');
+                el.classList.add('bg-slate-100', 'text-slate-600');
+            });
+            targetButton.classList.add('active', 'bg-indigo-600', 'text-white');
+            targetButton.classList.remove('bg-slate-100', 'text-slate-600');
         };
     }, []);
 

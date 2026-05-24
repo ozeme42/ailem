@@ -5,7 +5,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { 
     ArrowLeft, ScrollText, ChevronRight, 
-    Search, X, Maximize2, Minimize2, Sparkles, BookOpen, BookText
+    X, Maximize2, Minimize2, Sparkles, BookOpen, BookText
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { onSummariesUpdate } from "@/lib/dataService";
@@ -40,7 +40,11 @@ export function SummariesViewerClient() {
     // HTML İçeriğindeki sekmeleri desteklemek için global showTab fonksiyonu
     React.useEffect(() => {
         (window as any).showTab = (tabId: string, button: HTMLElement) => {
-            const container = button.closest('.tab-container') || button.parentElement?.parentElement;
+            // Eğer button parametresi gelmemişse (defensive) event üzerinden bulmaya çalış
+            const targetButton = button || (window.event?.currentTarget as HTMLElement) || (window.event?.target as HTMLElement);
+            if (!targetButton || typeof targetButton.closest !== 'function') return;
+
+            const container = targetButton.closest('.tab-container') || targetButton.parentElement?.parentElement;
             if (!container) return;
             
             container.querySelectorAll('.tab-content').forEach((el: any) => {
@@ -54,8 +58,8 @@ export function SummariesViewerClient() {
                 el.classList.remove('active', 'bg-indigo-600', 'text-white');
                 el.classList.add('bg-slate-100', 'text-slate-600');
             });
-            button.classList.add('active', 'bg-indigo-600', 'text-white');
-            button.classList.remove('bg-slate-100', 'text-slate-600');
+            targetButton.classList.add('active', 'bg-indigo-600', 'text-white');
+            targetButton.classList.remove('bg-slate-100', 'text-slate-600');
         };
     }, []);
 
