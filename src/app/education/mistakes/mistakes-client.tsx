@@ -56,7 +56,6 @@ export function MistakesClient() {
     
     const [tests, setTests] = React.useState<Test[]>([]);
     const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
-    const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [searchTerm, setSearchTerm] = React.useState("");
     const [selectedStudent, setSelectedStudent] = React.useState<FamilyMember | null>(null);
@@ -79,12 +78,10 @@ export function MistakesClient() {
             setLoading(false);
         });
         const unsubBooks = onTrackedBooksUpdate(setTrackedBooks);
-        const unsubExams = onPracticeExamsUpdate(setPracticeExams);
 
         return () => {
             unsubTests();
             unsubBooks();
-            unsubExams();
         };
     }, [familyId, selectedStudent]);
 
@@ -92,7 +89,14 @@ export function MistakesClient() {
     const aggregatedMistakes = React.useMemo(() => {
         const list: MistakeDetail[] = [];
 
-        tests.forEach(test => {
+        // YALNIZCA SORU BANKASI VE YAZILI TESTLERİ FİLTRELE
+        const filteredTestsBySource = tests.filter(t => 
+            t.sourceType === 'bank' || 
+            t.sourceType === 'quick' || 
+            t.sourceType === 'json'
+        );
+
+        filteredTestsBySource.forEach(test => {
             const studentAnswers = test.studentAnswers || {};
             const answerKey = test.answerKey || {};
             
@@ -192,12 +196,11 @@ export function MistakesClient() {
                         <div className="flex items-center gap-6">
                             <div className="text-center">
                                 <p className="text-3xl font-black text-rose-500">{aggregatedMistakes.length}</p>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Toplam Hata</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Hata Havuzu</p>
                             </div>
                             <div className="w-px h-10 bg-slate-200 dark:bg-slate-800" />
                             <div className="text-center">
-                                <p className="text-3xl font-black text-indigo-500">{Object.keys(hiearchy).length}</p>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Zayıf Ders</p>
+                                <p className="text-sm font-bold text-slate-400 max-w-[120px] leading-tight">Soru Bankası & Yazılılar</p>
                             </div>
                         </div>
 
@@ -292,7 +295,7 @@ export function MistakesClient() {
                             </div>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white">Henüz Hata Yok!</h3>
                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-xs mx-auto">
-                                Tebrikler! Tüm ödevlerini başarıyla tamamlamışsın. Hatalar yapmaya başladığında analizler burada toplanacak.
+                                Soru Bankası ve Yazılı Testlerde yaptığın hatalar burada toplanacak.
                             </p>
                             <Button variant="outline" className="mt-8 rounded-full border-slate-200 dark:border-slate-800 font-bold" onClick={() => router.push('/education')}>
                                 Eğitim Sayfasına Dön
