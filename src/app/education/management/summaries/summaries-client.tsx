@@ -11,9 +11,10 @@ import {
 import { useAuth } from "@/components/auth-provider";
 import { 
     onSummariesUpdate, addSummary, updateSummary, deleteSummary,
-    onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics
+    onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics,
+    onTrackedBooksUpdate, onStudyPlansUpdate
 } from "@/lib/dataService";
-import { Summary } from "@/lib/data";
+import { Summary, TrackedBook, StudyPlan } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +56,8 @@ export function SummariesManagementClient() {
     const [summaries, setSummaries] = React.useState<Summary[]>([]);
     const [allSubjects, setAllSubjects] = React.useState<string[]>([]);
     const [allTopics, setAllTopics] = React.useState<string[]>([]);
+    const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
+    const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([]);
     
     const [loading, setLoading] = React.useState(true);
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -79,9 +82,45 @@ export function SummariesManagementClient() {
         const unsubS = onSummariesUpdate(setSummaries);
         const unsubSub = onSubjectsUpdate(setAllSubjects);
         const unsubTop = onTopicsUpdate(setAllTopics);
+        const unsubBooks = onTrackedBooksUpdate(setTrackedBooks);
+        const unsubPlans = onStudyPlansUpdate(setStudyPlans);
         setLoading(false);
-        return () => { unsubS(); unsubSub(); unsubTop(); };
+        return () => { 
+            unsubS(); unsubSub(); unsubTop(); 
+            unsubBooks(); unsubPlans();
+        };
     }, [familyId]);
+
+    // --- RELATIONSHIP LOGIC: Filter topics by selected subject ---
+    const relevantTopics = React.useMemo(() => {
+        if (!formSubject) return [];
+        
+        const topicsSet = new Set<string>();
+        
+        // 1. From Tracked Books
+        trackedBooks.forEach(book => {
+            (book.subjects || []).forEach(s => {
+                if (s.name === formSubject) {
+                    (s.topics || []).forEach(t => topicsSet.add(t.name));
+                }
+            });
+        });
+        
+        // 2. From Study Plans
+        studyPlans.forEach(plan => {
+            (plan.subjects || []).forEach(s => {
+                if (s.name === formSubject) {
+                    (s.topics || []).forEach(t => topicsSet.add(t.name));
+                }
+            });
+        });
+        
+        // 3. From Existing Summaries
+        summaries.filter(s => s.subject === formSubject).forEach(s => topicsSet.add(s.topic));
+
+        // Resulting list from current master list that match these criteria
+        return Array.from(topicsSet).sort((a, b) => a.localeCompare(b, 'tr'));
+    }, [formSubject, trackedBooks, studyPlans, summaries]);
 
     const handleOpenForm = (summary: Summary | null) => {
         setIsAddingNewSubject(false);
@@ -113,7 +152,7 @@ export function SummariesManagementClient() {
         if (type === 'subject') {
             if (!allSubjects.includes(name)) {
                 await updateSubjects([...allSubjects, name]);
-                toast({ title: "Der Eklendi" });
+                toast({ title: "Ders Eklendi" });
             }
             setFormSubject(name);
             setIsAddingNewSubject(false);
@@ -193,11 +232,37 @@ export function SummariesManagementClient() {
 
     const stepInfo = {
         subject: { title: "Ders Seçimi", desc: "Hangi ders için özet ekliyorsunuz?", icon: BookOpen },
-        topic: { title: "Konu Seçimi", desc: "Özetin konusu nedir?", icon: Layers },
+        topic: { title: "Konu Seçimi", desc: `"${formSubject}" dersine ait bir konu seçin.`, icon: Layers },
         content: { title: "İçerik Detayları", desc: "Başlık ve notlarınızı girin.", icon: ScrollText }
     };
 
     const currentStepIndex = ['subject', 'topic', 'content'].indexOf(currentStep);
+
+    // HTML Preview Helper for showTab compatibility
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            (window as any).showTab = (tabId: string, button: HTMLElement) => {
+                if (!button) return;
+                const container = button.closest('.tab-container') || button.parentElement?.parentElement;
+                if (!container) return;
+                
+                container.querySelectorAll('.tab-content').forEach((el: any) => {
+                    el.style.display = 'none';
+                });
+                
+                const target = container.querySelector(`#${tabId}`) as HTMLElement;
+                if (target) target.style.display = 'block';
+                
+                container.querySelectorAll('.tab-button').forEach((btn: any) => {
+                    btn.classList.remove('bg-indigo-600', 'text-white');
+                    btn.classList.add('bg-slate-100', 'text-slate-600');
+                });
+                
+                button.classList.remove('bg-slate-100', 'text-slate-600');
+                button.classList.add('bg-indigo-600', 'text-white');
+            };
+        }
+    }, []);
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans flex flex-col">
@@ -370,7 +435,7 @@ export function SummariesManagementClient() {
 
                                         {currentStep === 'topic' && (
                                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                                {allTopics.map((t) => {
+                                                {relevantTopics.map((t) => {
                                                     const isActive = formTopic === t;
                                                     return (
                                                         <div 
@@ -410,6 +475,13 @@ export function SummariesManagementClient() {
                                                     >
                                                         <PlusCircle className="w-5 h-5 text-slate-400" />
                                                         <span className="text-[10px] font-bold text-slate-500 uppercase">Yeni Konu</span>
+                                                    </div>
+                                                )}
+                                                
+                                                {relevantTopics.length === 0 && !isAddingNewTopic && (
+                                                    <div className="col-span-full py-8 text-center bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+                                                        <p className="text-xs text-slate-500 font-medium">Bu ders için henüz tanımlı bir konu yok.</p>
+                                                        <p className="text-[10px] text-slate-400 mt-1">"Yeni Konu" kartını kullanarak ekleyebilirsiniz.</p>
                                                     </div>
                                                 )}
                                             </div>
