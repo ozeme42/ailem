@@ -160,6 +160,10 @@ export function SummariesManagementClient() {
         setCurrentStep(currentStep === 'subject' ? 'topic' : 'content');
     };
 
+    const handlePrevStep = () => {
+        setCurrentStep(currentStep === 'content' ? 'topic' : 'subject');
+    };
+
     const handleSave = async () => {
         if (!formTitle.trim() || !formContent.trim()) return;
         const summaryData = { title: formTitle, subject: formSubject, topic: formTopic || "Genel", content: formContent };
@@ -219,7 +223,7 @@ export function SummariesManagementClient() {
 
                 {/* HIERARCHICAL ACCORDION VIEW */}
                 {Object.keys(hierarchicalData).length > 0 ? (
-                    <Accordion type="multiple" className="space-y-4" defaultValue={Object.keys(hierarchicalData)}>
+                    <Accordion type="multiple" className="space-y-4">
                         {Object.entries(hierarchicalData).map(([subject, topics]) => (
                             <AccordionItem key={subject} value={subject} className={cn("border-none", themeColors.HIERARCHY_LEVEL_1)}>
                                 <AccordionTrigger className="px-6 py-4 hover:no-underline bg-white dark:bg-slate-900 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 transition-colors">
@@ -325,7 +329,7 @@ export function SummariesManagementClient() {
                                                     const isActive = formSubject === s;
                                                     return (
                                                         <div key={s} onClick={() => setFormSubject(s)} className={cn(themeColors.SELECTION_CARD, isActive ? themeColors.CARD_ACTIVE : themeColors.CARD_INACTIVE)}>
-                                                            {isActive && <div className="absolute top-2 right-2 bg-indigo-600 text-white rounded-full p-0.5"><Check className="w-3 h-3" /></div>}
+                                                            {isActive && <div className="absolute top-2 right-2 bg-indigo-600 text-white rounded-full p-0.5"><Check className="w-3" /></div>}
                                                             <BookOpen className={cn("w-5 h-5", isActive ? "text-indigo-600" : "text-slate-400")} />
                                                             <span className="text-xs font-bold truncate w-full px-1">{s}</span>
                                                         </div>
@@ -354,7 +358,7 @@ export function SummariesManagementClient() {
                                                     const isActive = formTopic === t;
                                                     return (
                                                         <div key={t} onClick={() => setFormTopic(t)} className={cn(themeColors.SELECTION_CARD, isActive ? themeColors.CARD_ACTIVE : themeColors.CARD_INACTIVE)}>
-                                                            {isActive && <div className="absolute top-2 right-2 bg-indigo-600 text-white rounded-full p-0.5"><Check className="w-3 h-3" /></div>}
+                                                            {isActive && <div className="absolute top-2 right-2 bg-indigo-600 text-white rounded-full p-0.5"><Check className="w-3" /></div>}
                                                             <Layers className={cn("w-5 h-5", isActive ? "text-indigo-600" : "text-slate-400")} />
                                                             <span className="text-xs font-bold truncate w-full px-1">{t}</span>
                                                         </div>
@@ -430,3 +434,4 @@ export function SummariesManagementClient() {
         </div>
     );
 }
+
