@@ -8,7 +8,8 @@ import {
     ArrowLeft, AlertCircle, ChevronRight, BookOpen, 
     Layers, Search, Filter, HelpCircle, GraduationCap,
     Library, FileText, CheckCircle2, XCircle, BarChart3,
-    ChevronDown, BookCopy, ListTree, TrendingUp, TrendingDown, MinusCircle
+    ChevronDown, BookCopy, ListTree, TrendingUp, TrendingDown, MinusCircle,
+    Eye, ExternalLink
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { onTestsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
@@ -33,7 +34,7 @@ const themeColors = {
     CARD_BG: "bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md transition-all duration-300",
     ICON_BOX: "bg-gradient-to-br from-rose-500 to-pink-600 p-2.5 rounded-xl shadow-lg shadow-rose-500/20 text-white",
     INPUT_BG: "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:border-indigo-500 transition-all",
-    MISTAKE_CARD: "bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:border-rose-400 dark:hover:border-rose-600 transition-all",
+    MISTAKE_CARD: "bg-slate-50/50 dark:bg-black/20 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 transition-all",
 };
 
 type MistakeDetail = {
@@ -179,17 +180,28 @@ export function MistakesClient() {
         ).sort((a,b) => b.date.localeCompare(a.date));
     }, [tests, trackedBooks, searchTerm]);
 
-    // Gruplandırma: Ders > Konu
+    // Gruplandırma: Ders > Konu > Test
     const hiearchy = React.useMemo(() => {
-        const map: Record<string, Record<string, MistakeDetail[]>> = {};
+        const map: Record<string, Record<string, Record<string, MistakeDetail[]>>> = {};
         
         aggregatedMistakes.forEach(m => {
             if (!map[m.subject]) map[m.subject] = {};
-            if (!map[m.subject][m.topic]) map[m.subject][m.topic] = [];
-            map[m.subject][m.topic].push(m);
+            if (!map[m.subject][m.topic]) map[m.subject][m.topic] = {};
+            if (!map[m.subject][m.topic][m.testTitle]) map[m.subject][m.topic][m.testTitle] = [];
+            map[m.subject][m.topic][m.testTitle].push(m);
         });
 
-        return map;
+        // Sort keys alphabetically
+        return Object.keys(map).sort().reduce((acc, subject) => {
+            acc[subject] = Object.keys(map[subject]).sort().reduce((topicAcc, topic) => {
+                topicAcc[topic] = Object.keys(map[subject][topic]).sort().reduce((testAcc, testTitle) => {
+                    testAcc[testTitle] = map[subject][topic][testTitle];
+                    return testAcc;
+                }, {} as Record<string, MistakeDetail[]>);
+                return topicAcc;
+            }, {} as Record<string, Record<string, MistakeDetail[]>>);
+            return acc;
+        }, {} as Record<string, Record<string, Record<string, MistakeDetail[]>>>);
     }, [aggregatedMistakes]);
 
     return (
@@ -261,7 +273,7 @@ export function MistakesClient() {
                     </div>
                 </div>
 
-                {/* Mistakes Hiearchy */}
+                {/* HIERARCHICAL ACCORDIONS */}
                 <div className="pb-20">
                     {Object.keys(hiearchy).length > 0 ? (
                         <Accordion type="multiple" className="space-y-4">
@@ -275,68 +287,79 @@ export function MistakesClient() {
                                             <div className="text-left">
                                                 <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 leading-none">{subject}</h3>
                                                 <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-wider">
-                                                    {Object.keys(topics).length} Konuda {Object.values(topics).flat().length} Eksik
+                                                    {Object.keys(topics).length} Konuda {Object.values(topics).flat().flat().length} Eksik
                                                 </p>
                                             </div>
                                         </div>
                                     </AccordionTrigger>
-                                    <AccordionContent className="p-4 pt-2">
-                                        <div className="space-y-6">
-                                            {Object.entries(topics).map(([topic, mistakes]) => (
-                                                <div key={topic} className="space-y-3">
-                                                    <div className="flex items-center gap-2 px-2">
-                                                        <Layers className="w-4 h-4 text-rose-500" />
-                                                        <h4 className="font-black text-sm text-slate-700 dark:text-slate-300 uppercase tracking-widest">{topic}</h4>
-                                                        <Badge variant="secondary" className="ml-auto bg-rose-500/10 text-rose-600 dark:text-rose-400 border-none text-[10px]">{mistakes.length} Eksik</Badge>
-                                                    </div>
-                                                    
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                        {mistakes.map(mistake => (
-                                                            <div key={mistake.id} className={cn(themeColors.MISTAKE_CARD, mistake.isEmpty && "border-slate-200 dark:border-slate-800")}>
-                                                                <div className="flex justify-between items-start mb-3">
-                                                                    <div className="min-w-0 flex-1">
-                                                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter truncate">{mistake.testTitle}</p>
-                                                                        <p className="text-[10px] text-slate-500 mt-0.5">{mistake.date}</p>
+                                    <AccordionContent className="p-4 pt-2 bg-slate-50/30 dark:bg-black/20">
+                                        <Accordion type="multiple" className="space-y-2">
+                                            {Object.entries(topics).map(([topic, testsMap]) => (
+                                                <AccordionItem key={topic} value={topic} className="border-none">
+                                                    <AccordionTrigger className="px-4 py-3 bg-white dark:bg-slate-950 rounded-xl hover:no-underline border border-slate-100 dark:border-slate-800">
+                                                        <div className="flex items-center gap-3">
+                                                            <Layers className="w-4 h-4 text-rose-500" />
+                                                            <h4 className="font-bold text-sm text-slate-700 dark:text-slate-300 uppercase tracking-widest">{topic}</h4>
+                                                            <Badge variant="outline" className="ml-2 bg-rose-500/5 text-rose-500 border-rose-500/20 text-[10px] h-5">
+                                                                {Object.values(testsMap).flat().length}
+                                                            </Badge>
+                                                        </div>
+                                                    </AccordionTrigger>
+                                                    <AccordionContent className="p-2 space-y-4">
+                                                        {Object.entries(testsMap).map(([testTitle, mistakes]) => (
+                                                            <div key={testTitle} className="bg-white/50 dark:bg-slate-900/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
+                                                                <div className="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <FileText className="w-4 h-4 text-slate-400" />
+                                                                        <h5 className="font-bold text-sm text-slate-800 dark:text-slate-200">{testTitle}</h5>
                                                                     </div>
-                                                                    <div className="flex gap-2">
-                                                                        {mistake.isEmpty && <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800 border-none text-[9px] h-5 text-slate-500 font-bold uppercase">Boş</Badge>}
-                                                                        <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800 border-none text-[10px] h-5">Soru {mistake.questionNumber}</Badge>
-                                                                    </div>
+                                                                    <Link href={`/education/${mistakes[0].testId}`}>
+                                                                        <Button size="sm" variant="outline" className="h-7 text-[10px] font-bold gap-1.5 rounded-lg border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950">
+                                                                            <Eye className="w-3 h-3" /> Testi İncele
+                                                                        </Button>
+                                                                    </Link>
                                                                 </div>
                                                                 
-                                                                <div className="flex items-center gap-4 bg-slate-50 dark:bg-black/20 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
-                                                                    <div className="flex flex-col items-center gap-1 flex-1">
-                                                                        <span className="text-[9px] font-black text-slate-400 uppercase">Cevabın</span>
-                                                                        <div className={cn(
-                                                                            "w-10 h-10 rounded-full border-2 flex items-center justify-center font-black text-lg",
-                                                                            mistake.studentAnswer 
-                                                                                ? "bg-rose-500/10 border-rose-500/30 text-rose-600" 
-                                                                                : "bg-slate-500/10 border-slate-500/30 text-slate-500"
-                                                                        )}>
-                                                                            {mistake.studentAnswer || "—"}
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                    {mistakes.map(mistake => (
+                                                                        <div key={mistake.id} className={cn(themeColors.MISTAKE_CARD, mistake.isEmpty && "border-slate-200 dark:border-slate-800")}>
+                                                                            <div className="flex justify-between items-center mb-3">
+                                                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{mistake.date}</span>
+                                                                                <div className="flex gap-2">
+                                                                                    {mistake.isEmpty && <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800 border-none text-[9px] h-5 text-slate-500 font-bold uppercase">Boş</Badge>}
+                                                                                    <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800 border-none text-[10px] h-5">Soru {mistake.questionNumber}</Badge>
+                                                                                </div>
+                                                                            </div>
+                                                                            
+                                                                            <div className="flex items-center gap-4 bg-white dark:bg-black/20 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                                                                                <div className="flex flex-col items-center gap-1 flex-1">
+                                                                                    <span className="text-[9px] font-black text-slate-400 uppercase">Senin</span>
+                                                                                    <div className={cn(
+                                                                                        "w-9 h-9 rounded-full border-2 flex items-center justify-center font-black text-base",
+                                                                                        mistake.studentAnswer 
+                                                                                            ? "bg-rose-500/10 border-rose-500/30 text-rose-600" 
+                                                                                            : "bg-slate-500/10 border-slate-500/30 text-slate-500"
+                                                                                    )}>
+                                                                                        {mistake.studentAnswer || "—"}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <ChevronRight className="w-4 h-4 text-slate-300" />
+                                                                                <div className="flex flex-col items-center gap-1 flex-1">
+                                                                                    <span className="text-[9px] font-black text-slate-400 uppercase">Doğru</span>
+                                                                                    <div className="w-9 h-9 rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center text-emerald-600 font-black text-base">
+                                                                                        {mistake.correctAnswer?.length > 1 ? "..." : (mistake.correctAnswer || "?")}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                    <ChevronRight className="w-4 h-4 text-slate-300" />
-                                                                    <div className="flex flex-col items-center gap-1 flex-1">
-                                                                        <span className="text-[9px] font-black text-slate-400 uppercase">Doğru Cevap</span>
-                                                                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center text-emerald-600 font-black text-lg">
-                                                                            {mistake.correctAnswer?.length > 1 ? "..." : (mistake.correctAnswer || "?")}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="flex-shrink-0 ml-2">
-                                                                        <Link href={`/education/${mistake.testId}`}>
-                                                                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
-                                                                                <FileText className="w-5 h-5" />
-                                                                            </Button>
-                                                                        </Link>
-                                                                    </div>
+                                                                    ))}
                                                                 </div>
                                                             </div>
                                                         ))}
-                                                    </div>
-                                                </div>
+                                                    </AccordionContent>
+                                                </AccordionItem>
                                             ))}
-                                        </div>
+                                        </Accordion>
                                     </AccordionContent>
                                 </AccordionItem>
                             ))}
