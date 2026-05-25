@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader } from "./ui/card";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { tr } from "date-fns/locale";
 
 // --- DESIGN SYSTEM ---
 const themeColors = {
@@ -77,6 +78,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    shouldUnregister: false, // KRITIK: Alanlar unmount olsa bile verileri ve kayıtları koru
     defaultValues: initialData ? formatInitialData(initialData) : {
       title: "",
       description: "",
@@ -113,11 +115,22 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
 
   const handleFormError = (errors: any) => {
       console.error("Validation Errors:", errors);
-      toast({
-          title: "Formda Eksikler Var ⚠️",
-          description: "Lütfen tüm ders ve konu adlarını doldurduğunuzdan emin olun.",
-          variant: "destructive"
-      });
+      
+      // Eğer hatalar varsa ancak aktif ekranda görünmüyorsa (başka adımda kalmışsa)
+      if (errors.title || errors.description) {
+          toast({
+              title: "Eksik Bilgi ⚠️",
+              description: "Lütfen 1. adımdaki başlık ve açıklama alanlarını kontrol edin.",
+              variant: "destructive"
+          });
+          setCurrentStep('info');
+      } else {
+          toast({
+              title: "Formda Eksikler Var ⚠️",
+              description: "Lütfen tüm ders ve konu adlarını (en az 2 karakter) doldurduğunuzdan emin olun.",
+              variant: "destructive"
+          });
+      }
   };
 
   const steps: Step[] = ['info', 'curriculum'];
@@ -245,11 +258,11 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
                                                 className={cn("p-4 md:p-5 flex flex-row items-center justify-between gap-3 space-y-0 cursor-pointer transition-colors", isExpanded ? "bg-indigo-50/50 dark:bg-indigo-900/10" : "bg-white dark:bg-slate-900")}
                                                 onClick={() => setExpandedSubjectIndex(isExpanded ? null : subjectIndex)}
                                             >
-                                                <div className="flex items-center gap-3 flex-1">
+                                                <div className="flex items-center gap-3 flex-1" onClick={(e) => e.stopPropagation()}>
                                                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg transition-colors", isExpanded ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "bg-slate-100 dark:bg-slate-800 text-slate-500")}>
                                                         {subjectIndex + 1}
                                                     </div>
-                                                    <div className="flex-1 pr-2" onClick={(e) => e.stopPropagation()}>
+                                                    <div className="flex-1 pr-2">
                                                         <FormField
                                                             control={form.control}
                                                             name={`subjects.${subjectIndex}.name`}
