@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -163,8 +164,8 @@ export function StudyPlansClient() {
             </main>
 
             <Dialog open={isFormOpen} onOpenChange={(open) => { if(!open) setEditingPlan(null); setIsFormOpen(open); }}>
-                <DialogContent className="max-w-3xl h-[95vh] md:h-auto md:max-h-[85vh] bg-white dark:bg-slate-900 border-none rounded-t-[2rem] md:rounded-[2rem] p-0 overflow-hidden shadow-2xl flex flex-col mt-auto md:mt-0">
-                    <div className="flex-1 overflow-hidden p-0">
+                <DialogContent className="max-w-3xl h-[90vh] md:h-[85vh] bg-white dark:bg-slate-900 border-none rounded-t-[2rem] md:rounded-[2rem] p-0 overflow-hidden shadow-2xl flex flex-col mt-auto md:mt-0">
+                    <div className="flex-1 min-h-0 overflow-hidden">
                         <NewStudyPlanForm
                             onSubmit={handleFormSubmit}
                             initialData={editingPlan}

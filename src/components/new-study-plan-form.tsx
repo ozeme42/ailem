@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
 import type { StudyPlan } from "@/lib/data";
-import { Trash2, Layers, BookOpen, Plus, X, ArrowLeft, Check, GripVertical, FileText, PlusCircle } from "lucide-react";
+import { Trash2, Layers, BookOpen, Plus, X, ArrowLeft, Check, FileText, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
@@ -20,10 +20,6 @@ import { Badge } from "@/components/ui/badge";
 const generateSafeId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
 // --- SCHEMAS ---
-const planInfoSchema = z.object({
-  title: z.string().min(3, "Plan adı en az 3 karakter olmalıdır."),
-});
-
 const topicSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(1, "Konu adı boş bırakılamaz"),
@@ -34,6 +30,11 @@ const subjectSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(1, "Ders adı boş bırakılamaz"),
     topics: z.array(topicSchema).min(1, "En az 1 konu eklemelisiniz"),
+});
+
+const planInfoSchema = z.object({
+  title: z.string().min(3, "Plan adı en az 3 karakter olmalıdır."),
+  subjects: z.array(subjectSchema).optional().default([]),
 });
 
 // TYPES
@@ -59,7 +60,10 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
     resolver: zodResolver(planInfoSchema),
     defaultValues: {
       title: initialData?.title || "",
+      subjects: initialData?.subjects ? (initialData.subjects as SubjectType[]) : [],
     },
+    // Don't unregister fields so they stay validated across sub-editors
+    shouldUnregister: false
   });
 
   // Keep subjects in sync if initialData changes after mount
@@ -67,10 +71,9 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
     if (initialData) {
       form.reset({
         title: initialData.title,
+        subjects: (initialData.subjects || []) as SubjectType[],
       });
-      if (initialData.subjects) {
-          setSubjects(initialData.subjects as SubjectType[]);
-      }
+      setSubjects((initialData.subjects || []) as SubjectType[]);
     }
   }, [initialData, form]);
 
@@ -87,7 +90,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
         return;
     }
     onSubmit({
-        ...values,
+        title: values.title,
         subjects: subjects.map(s => ({
             ...s,
             id: s.id || generateSafeId(),
@@ -141,7 +144,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
         
         <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFinalSubmit)} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-                <ScrollArea className="flex-1">
+                <ScrollArea className="flex-1 h-full">
                     <div className="p-6 space-y-8 max-w-2xl mx-auto w-full">
                         
                         {/* Başlık Alanı */}
@@ -259,7 +262,7 @@ function SubjectEditor({ initialData, onSave, onCancel }: { initialData: Subject
                 <div className="w-20" /> {/* Spacer */}
             </div>
 
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 h-full">
                 <Form {...form}>
                     <div className="p-6 space-y-6 max-w-xl mx-auto w-full">
                         <FormField
@@ -326,7 +329,7 @@ function SubjectEditor({ initialData, onSave, onCancel }: { initialData: Subject
             </ScrollArea>
             
             <div className="p-4 md:p-6 border-t dark:border-white/5 bg-slate-50 dark:bg-slate-900 shrink-0">
-                <Button onClick={form.handleSubmit(onSubmit)} type="button" className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-md text-white">
+                <Button onClick={form.handleSubmit(onSave)} type="button" className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-md text-white">
                     Modülü Tamamla <Check className="ml-2 h-4 w-4" />
                 </Button>
             </div>
