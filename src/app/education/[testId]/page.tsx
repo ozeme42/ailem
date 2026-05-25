@@ -464,23 +464,10 @@ export default function OpticalFormPage() {
                                         </div>
                                     </CardHeader>
                                     <CardContent className="p-6 space-y-6">
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                            <div className="space-y-4">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Soru Görseli</p>
-                                                {test.questions && test.questions[i] && (
-                                                    <div className="relative aspect-video bg-white rounded-xl overflow-hidden border border-slate-200 shadow-inner group">
-                                                        <Image src={test.questions[i].imageUrl} alt="Soru" fill className="object-contain p-2" />
-                                                        <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 bg-black/5 opacity-0 group-hover:opacity-100" onClick={() => setViewingQuestionIndex(i)}>
-                                                            <Maximize2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="space-y-4">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Öğrenci Cevabı</p>
-                                                <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-inner min-h-[120px]">
-                                                    <p className="text-lg font-medium text-slate-700 leading-relaxed italic">{studentAns || "— Cevap verilmedi —"}</p>
-                                                </div>
+                                        <div className="space-y-4">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Öğrenci Cevabı</p>
+                                            <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-inner min-h-[120px]">
+                                                <p className="text-lg font-medium text-slate-700 leading-relaxed italic">{studentAns || "— Cevap verilmedi —"}</p>
                                             </div>
                                         </div>
                                         <div className="space-y-3 pt-4 border-t border-slate-100">
@@ -671,7 +658,7 @@ export default function OpticalFormPage() {
                     </header>
 
                     {test.openEnded ? (
-                        /* VERTICAL LIST VIEW FOR OPEN-ENDED TESTS */
+                        /* VERTICAL LIST VIEW FOR OPEN-ENDED TESTS - NO IMAGE SPACE */
                         <main className="flex-1 max-w-4xl mx-auto w-full space-y-8 pb-32 animate-in fade-in duration-500">
                             {Array.from({ length: totalQuestions }).map((_, i) => {
                                 const qNum = i + 1;
@@ -680,34 +667,22 @@ export default function OpticalFormPage() {
                                     <Card key={qNum} className="rounded-[2.5rem] border border-slate-200 bg-white shadow-xl overflow-hidden group">
                                         <CardHeader className="bg-slate-50/50 border-b p-6 flex flex-row items-center gap-4">
                                             <Badge className="h-10 w-10 rounded-2xl flex items-center justify-center p-0 text-base font-black bg-indigo-600 text-white shrink-0 shadow-lg shadow-indigo-500/20">{qNum}</Badge>
-                                            <h4 className="font-bold text-slate-800">Soru İçeriği ve Cevap</h4>
+                                            <h4 className="font-bold text-slate-800">Cevabınızı Girin</h4>
                                         </CardHeader>
-                                        <CardContent className="p-0">
-                                            <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
-                                                 <div className="p-6 bg-slate-50/30 flex flex-col justify-center min-h-[300px]">
-                                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Soru Görseli / Metni</p>
-                                                     {test.jsonQuestions && test.jsonQuestions[i] && (
-                                                         <p className="text-lg font-bold text-slate-800 leading-snug">{test.jsonQuestions[i].text}</p>
-                                                     )}
-                                                     {test.questions && test.questions[i] && (
-                                                        <div className="relative aspect-video w-full bg-white rounded-2xl overflow-hidden border border-slate-200/60 shadow-inner group/img">
-                                                            <Image src={test.questions[i].imageUrl} alt={`Soru ${qNum}`} fill className="object-contain p-4 transition-transform group-hover/img:scale-105" />
-                                                            <button type="button" onClick={() => setViewingQuestionIndex(i)} className="absolute top-2 right-2 p-2 bg-black/5 rounded-lg opacity-0 group-hover/img:opacity-100 transition-opacity">
-                                                                <Maximize2 className="h-4 w-4 text-slate-400"/>
-                                                            </button>
-                                                        </div>
-                                                     )}
-                                                 </div>
-                                                 <div className="p-6 md:p-8 space-y-4">
-                                                     <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Cevabınız</Label>
-                                                     <Textarea 
-                                                        placeholder="Cevabınızı buraya detaylıca yazın..."
-                                                        value={textAnswers[qNumStr] || ""}
-                                                        onChange={(e) => handleTextAnswerChange(qNum, e.target.value)}
-                                                        className="min-h-[200px] rounded-3xl bg-slate-50 border-slate-200 focus:bg-white transition-all text-lg p-6 shadow-inner leading-relaxed"
-                                                     />
-                                                 </div>
-                                            </div>
+                                        <CardContent className="p-6 md:p-8 space-y-4">
+                                             {test.jsonQuestions && test.jsonQuestions[i] && (
+                                                <div className="mb-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 italic text-slate-600">
+                                                    <p className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-1">Soru Metni</p>
+                                                    <p className="text-lg font-bold">{test.jsonQuestions[i].text}</p>
+                                                </div>
+                                             )}
+                                             <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Cevabınız</Label>
+                                             <Textarea 
+                                                placeholder="Cevabınızı buraya detaylıca yazın..."
+                                                value={textAnswers[qNumStr] || ""}
+                                                onChange={(e) => handleTextAnswerChange(qNum, e.target.value)}
+                                                className="min-h-[150px] rounded-3xl bg-slate-50 border-slate-200 focus:bg-white transition-all text-lg p-6 shadow-inner leading-relaxed"
+                                             />
                                         </CardContent>
                                     </Card>
                                 )
