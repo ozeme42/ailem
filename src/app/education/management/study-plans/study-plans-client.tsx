@@ -1,62 +1,50 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { PageHeader } from '@/components/page-header';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, ArrowLeft, BookHeart, FileText, CheckCircle, Plus } from 'lucide-react';
-import { useAuth } from '@/components/auth-provider';
-import { onStudyPlansUpdate, addStudyPlan, updateStudyPlan, deleteStudyPlan, onStudyAssignmentsUpdate } from '@/lib/dataService';
-import type { StudyPlan, StudyAssignment } from '@/lib/data';
-import { useToast } from '@/hooks/use-toast';
-import { NewStudyPlanForm } from '@/components/new-study-plan-form';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Progress } from '@/components/ui/progress';
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Plus, Edit, Trash2, ArrowLeft, BookHeart, FileText, ChevronRight, Layers, Target, BookOpen } from "lucide-react";
+import { useAuth } from "@/components/auth-provider";
+import { onStudyPlansUpdate, addStudyPlan, updateStudyPlan, deleteStudyPlan } from "@/lib/dataService";
+import { StudyPlan } from "@/lib/data";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { NewStudyPlanForm } from "@/components/new-study-plan-form";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
-// --- DESIGN SYSTEM: Glassmorphism ---
-const glassColors = {
-    HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5",
-    CARD_BG: "bg-white/5 border border-white/10 shadow-lg backdrop-blur-md",
-    ICON_BOX: "bg-gradient-to-br p-2.5 rounded-xl shadow-lg",
-    BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/10 shadow-sm",
+// --- DESIGN SYSTEM ---
+const themeColors = {
+    HEADER_BG: "bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800/50 sticky top-0 z-40",
+    CARD_BG: "bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md hover:bg-slate-50 dark:hover:bg-slate-900/60 transition-all duration-300",
+    ICON_BOX: "bg-gradient-to-br from-pink-500 to-rose-600 p-2.5 rounded-xl shadow-lg shadow-pink-500/20 text-white",
 };
 
 export function StudyPlansClient() {
     const { familyId } = useAuth();
-    const router = useRouter();
     const { toast } = useToast();
-    const [plans, setPlans] = useState<StudyPlan[]>([]);
-    const [assignments, setAssignments] = useState<StudyAssignment[]>([]);
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [editingPlan, setEditingPlan] = useState<StudyPlan | null>(null);
+    const router = useRouter();
+    const [plans, setPlans] = React.useState<StudyPlan[]>([]);
+    const [isFormOpen, setIsFormOpen] = React.useState(false);
+    const [editingPlan, setEditingPlan] = React.useState<StudyPlan | null>(null);
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (!familyId) return;
-        const unsubPlans = onStudyPlansUpdate(setPlans);
-        const unsubAssignments = onStudyAssignmentsUpdate(setAssignments);
-        return () => {
-            unsubPlans();
-            unsubAssignments();
-        };
+        const unsub = onStudyPlansUpdate(setPlans);
+        return () => unsub();
     }, [familyId]);
-
-    const handleOpenForm = (plan: StudyPlan | null) => {
-        setEditingPlan(plan);
-        setIsFormOpen(true);
-    };
 
     const handleFormSubmit = async (data: Omit<StudyPlan, 'id' | 'familyId'>) => {
         try {
             if (editingPlan) {
                 await updateStudyPlan(editingPlan.id, data);
-                toast({ title: "Plan Güncellendi" });
+                toast({ title: "Plan Güncellendi ✨" });
             } else {
                 await addStudyPlan(data);
-                toast({ title: "Yeni Plan Oluşturuldu" });
+                toast({ title: "Yeni Plan Oluşturuldu ✅" });
             }
             setIsFormOpen(false);
             setEditingPlan(null);
@@ -64,148 +52,126 @@ export function StudyPlansClient() {
             toast({ title: "Hata", variant: "destructive" });
         }
     };
-    
-    const handleDeletePlan = async (planId: string) => {
+
+    const handleDelete = async (id: string) => {
         try {
-            await deleteStudyPlan(planId);
-            toast({ title: "Plan Silindi", variant: "destructive" });
-        } catch(e) {
+            await deleteStudyPlan(id);
+            toast({ title: "Plan Silindi 🗑️" });
+        } catch (error) {
             toast({ title: "Hata", variant: "destructive" });
         }
-    }
-    
-    const handleManagePlan = (planId: string) => {
-        router.push(`/education/management/study-plans/${planId}`);
-    }
-
-    const planProgress = useMemo(() => {
-        const progressMap = new Map<string, { completed: number, total: number }>();
-        assignments.forEach(assignment => {
-            const planId = assignment.studyPlanId;
-            const current = progressMap.get(planId) || { completed: 0, total: 0 };
-            current.total++;
-            if (assignment.status === 'completed') {
-                current.completed++;
-            }
-            progressMap.set(planId, current);
-        });
-        return progressMap;
-    }, [assignments]);
+    };
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-hidden flex flex-col">
-            {/* FIXED BACKGROUND */}
-            <div className="fixed inset-0 bg-slate-950 -z-50" />
-            
-            {/* AMBIENT BACKGROUND */}
-            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-pink-900/20 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[20%] right-[-5%] w-[400px] h-[400px] bg-rose-900/20 rounded-full blur-[120px]" />
-            </div>
-
-            {/* HEADER */}
-            <div className={cn("sticky top-0 z-40 w-full transition-all duration-300", glassColors.HEADER_BG)}>
-                <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                         <Link href="/education/management">
-                            <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors -ml-2">
-                                <ArrowLeft className="h-6 w-6" />
-                            </Button>
-                        </Link>
-                        <div className={cn("from-pink-500 to-rose-600", glassColors.ICON_BOX)}>
-                             <BookHeart className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-black tracking-tight text-slate-100 leading-none">
-                                Konu Anlatım
-                            </h1>
-                            <p className="text-xs font-medium text-slate-400 mt-0.5">Eğitim Planları</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <Button 
-                            onClick={() => handleOpenForm(null)}
-                            className="rounded-xl px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-500/20 border border-indigo-400/20 h-9 text-sm"
-                        >
-                            <Plus className="mr-1.5 h-4 w-4" /> Yeni Plan
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans flex flex-col">
+            <header className={themeColors.HEADER_BG}>
+                <div className="max-w-6xl mx-auto px-4 md:px-6 h-16 sm:h-20 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <Button onClick={() => router.push('/education/management')} variant="ghost" size="icon" className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400">
+                            <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6" />
                         </Button>
+                        <div className={cn(themeColors.ICON_BOX)}>
+                            <Target className="w-5 h-5 sm:w-6 sm:h-6" />
+                        </div>
+                        <div className="flex flex-col justify-center">
+                            <h1 className="text-lg sm:text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 leading-none">Yol Haritaları</h1>
+                            <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Konu Anlatım Planları</p>
+                        </div>
                     </div>
+                    <Button onClick={() => { setEditingPlan(null); setIsFormOpen(true); }} className="rounded-xl h-9 sm:h-11 px-4 sm:px-5 bg-pink-600 hover:bg-pink-700 text-white font-bold shadow-lg shadow-pink-500/20 text-xs sm:text-sm">
+                        <Plus className="mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" /> <span className="hidden sm:inline">Yeni Plan</span>
+                    </Button>
                 </div>
-            </div>
+            </header>
 
-            <div className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 relative z-10 flex flex-col min-h-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {plans.length > 0 ? (
-                        plans.map(plan => {
-                            const totalSubjects = plan.subjects?.length || 0;
+            <main className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-6 space-y-6">
+                {plans.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+                        {plans.map(plan => {
                             const totalTopics = plan.subjects?.reduce((sum, s) => sum + (s.topics?.length || 0), 0) || 0;
-                            const progress = planProgress.get(plan.id);
-                            const progressPercentage = progress && progress.total > 0 ? (progress.completed / progress.total) * 100 : 0;
-                            
                             return (
-                                <Card key={plan.id} className={cn("flex flex-col h-full group hover:-translate-y-1 transition-all duration-300", glassColors.CARD_BG)}>
-                                    <CardHeader>
-                                        <CardTitle className="text-lg font-bold text-slate-200 group-hover:text-white transition-colors">{plan.title}</CardTitle>
-                                        <CardDescription className="text-slate-400 line-clamp-2">{plan.description}</CardDescription>
+                                <Card key={plan.id} className={cn("flex flex-col h-full group overflow-hidden", themeColors.CARD_BG)}>
+                                    <CardHeader className="pb-4">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <Badge variant="outline" className="bg-pink-500/10 text-pink-400 border-pink-500/20 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5">
+                                                PLAN
+                                            </Badge>
+                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-indigo-400" onClick={() => { setEditingPlan(plan); setIsFormOpen(true); }}>
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-rose-400">
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100 rounded-3xl">
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Planı Sil?</AlertDialogTitle>
+                                                            <AlertDialogDescription className="text-slate-400">
+                                                                "{plan.title}" planı ve bu plana bağlı tüm öğrenci atamaları silinecektir.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel className="bg-white/5 border-white/10 text-slate-200">İptal</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDelete(plan.id)} className="bg-rose-600 hover:bg-rose-700">Evet, Sil</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
+                                        </div>
+                                        <CardTitle className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors line-clamp-2">{plan.title}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="flex-grow space-y-4">
-                                            <div className="space-y-3 text-sm text-slate-300">
-                                                <div className="flex items-center gap-2 bg-white/5 p-2 rounded-lg border border-white/5">
-                                                    <FileText className="h-4 w-4 text-pink-400" /><span>{totalSubjects} Ders</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 bg-white/5 p-2 rounded-lg border border-white/5">
-                                                    <CheckCircle className="h-4 w-4 text-emerald-400" /><span>{totalTopics} Konu</span>
-                                                </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="bg-slate-50 dark:bg-black/20 p-3 rounded-xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center">
+                                                <span className="text-xl font-black text-slate-900 dark:text-white">{plan.subjects?.length || 0}</span>
+                                                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Ders</span>
                                             </div>
-                                            {progress && progress.total > 0 && (
-                                                <div className="pt-2">
-                                                    <div className="flex justify-between text-xs text-slate-400 mb-1 font-medium">
-                                                        <span>İlerleme</span>
-                                                        <span className="text-pink-300">{progress.completed} / {progress.total} atama</span>
-                                                    </div>
-                                                    <Progress value={progressPercentage} className="h-2 bg-pink-900/20" indicatorClassName="bg-pink-500" />
-                                                </div>
-                                            )}
+                                            <div className="bg-slate-50 dark:bg-black/20 p-3 rounded-xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center">
+                                                <span className="text-xl font-black text-slate-900 dark:text-white">{totalTopics}</span>
+                                                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Konu</span>
+                                            </div>
+                                        </div>
                                     </CardContent>
-                                    <CardFooter className="flex justify-end gap-2 pt-4 border-t border-white/5 bg-white/5 mt-auto">
-                                        <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white border-0 shadow-lg shadow-indigo-500/20" onClick={() => handleManagePlan(plan.id)}>Yönet</Button>
-                                        <Button size="icon" variant="ghost" className="text-slate-400 hover:text-white hover:bg-white/10" onClick={() => handleOpenForm(plan)}><Edit className="h-4 w-4"/></Button>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild><Button size="icon" variant="ghost" className="text-slate-400 hover:text-rose-400 hover:bg-rose-500/10"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
-                                            <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
-                                                <AlertDialogHeader><AlertDialogTitle>Planı Sil</AlertDialogTitle><AlertDialogDescription className="text-slate-400">"{plan.title}" planını ve ilgili tüm atamaları kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
-                                                <AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeletePlan(plan.id)} className="bg-rose-600 hover:bg-rose-700">Evet, Sil</AlertDialogAction></AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
+                                    <CardFooter className="p-4 pt-0">
+                                        <Link href={`/education/management/study-plans/${plan.id}`} className="w-full">
+                                            <Button variant="secondary" className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold h-10 rounded-xl">
+                                                Detayları Yönet <ChevronRight className="ml-2 h-4 w-4" />
+                                            </Button>
+                                        </Link>
                                     </CardFooter>
                                 </Card>
                             );
-                        })
-                    ) : (
-                         <div className="md:col-span-2 lg:col-span-3">
-                            <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-white/5 rounded-[2.5rem] border border-dashed border-white/10 w-full">
-                                <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center">
-                                    <BookHeart className="h-8 w-8 text-slate-500" />
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-bold text-slate-200">Plan Yok</h3>
-                                    <p className="text-slate-400 mt-1 text-sm">Başlamak için "Yeni Plan" butonuna tıklayın.</p>
-                                </div>
-                            </div>
+                        })}
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center justify-center py-20 sm:py-24 text-center bg-white dark:bg-slate-900/30 rounded-[2.5rem] sm:rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800 m-auto max-w-2xl w-full shadow-inner">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-pink-50 dark:bg-pink-900/20 rounded-2xl sm:rounded-[2rem] flex items-center justify-center mb-6">
+                            <BookHeart className="h-8 w-8 sm:h-10 sm:w-10 text-pink-500" />
                         </div>
-                    )}
-                </div>
-                
-                 <Dialog open={isFormOpen} onOpenChange={(open) => {if (!open) setEditingPlan(null); setIsFormOpen(open);}}>
-                    <DialogContent className="max-w-2xl bg-slate-900 border-white/10 text-slate-100 rounded-2xl">
+                        <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Yol Haritası Yok</h3>
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-xs mx-auto leading-relaxed">
+                            Ders veya ünite bazlı konu anlatım planları oluşturarak öğrencilere hedefler atayabilirsiniz.
+                        </p>
+                        <Button onClick={() => setIsFormOpen(true)} className="mt-8 rounded-xl bg-pink-600 hover:bg-pink-700 font-bold px-8 shadow-lg shadow-pink-500/20 h-11 sm:h-12">
+                            <Plus className="mr-2 h-5 w-5" /> İlk Planı Oluştur
+                        </Button>
+                    </div>
+                )}
+            </main>
+
+            <Dialog open={isFormOpen} onOpenChange={(open) => { if(!open) setEditingPlan(null); setIsFormOpen(open); }}>
+                <DialogContent className="max-w-3xl h-[95vh] md:h-auto md:max-h-[85vh] bg-white dark:bg-slate-900 border-none rounded-t-[2rem] md:rounded-[2rem] p-0 overflow-hidden shadow-2xl flex flex-col mt-auto md:mt-0">
+                    <div className="flex-1 overflow-hidden p-0">
                         <NewStudyPlanForm
                             onSubmit={handleFormSubmit}
                             initialData={editingPlan}
                         />
-                    </DialogContent>
-                </Dialog>
-            </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
