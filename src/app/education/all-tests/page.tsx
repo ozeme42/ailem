@@ -145,11 +145,17 @@ export default function AllTestsPage() {
                 const foundTopic = trackedBooks.flatMap(b => b.subjects.flatMap(s => s.topics)).find(t => t.id === test.topicId);
                 if (foundTopic) topicName = foundTopic.name;
             } else if ((test as any).topic) { topicName = (test as any).topic; }
+            
+            // Sıralama tarihi mantığı: Çözüldüyse çözüm tarihi, değilse son teslim tarihi
             let sortableDate = new Date();
             if (test.status === 'Sonuçlandı' && (test as any).updatedAt) {
                 sortableDate = new Date((test as any).updatedAt);
             } else {
-                sortableDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                try {
+                    sortableDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                } catch(e) {
+                    sortableDate = new Date(test.dueDate);
+                }
             }
             return { ...test, _sourceId: sourceId, _sourceName: sourceName, _topicName: topicName, _subjectName: subjectName, _date: sortableDate };
         });
@@ -286,7 +292,7 @@ function TestsListOrGrid({ tests, viewMode, familyMembers, onDelete, onReassign,
                         <tr>
                             <th onClick={() => onSort('title')} className={cn("p-4 pl-6 group", themeColors.TABLE_HEADER)}>ÖDEV & KONU</th>
                             <th onClick={() => onSort('studentId')} className={cn("p-4 text-center hidden sm:table-cell group", themeColors.TABLE_HEADER)}>ÖĞRENCİ</th>
-                            <th onClick={() => onSort('_date')} className={cn("p-4 text-center hidden lg:table-cell group", themeColors.TABLE_HEADER)}>TARİH</th>
+                            <th onClick={() => onSort('_date')} className={cn("p-4 text-center hidden lg:table-cell group", themeColors.TABLE_HEADER)}>BİTİŞ / ÇÖZÜLME</th>
                             <th onClick={() => onSort('status')} className={cn("p-4 text-center hidden md:table-cell group", themeColors.TABLE_HEADER)}>DURUM</th>
                             <th onClick={() => onSort('score')} className={cn("p-4 text-center group", themeColors.TABLE_HEADER)}>BAŞARI</th>
                             <th className={cn("p-4 text-right pr-6", themeColors.TABLE_HEADER)}>İŞLEM</th>
@@ -298,11 +304,21 @@ function TestsListOrGrid({ tests, viewMode, familyMembers, onDelete, onReassign,
                             const categoryName = getCategoryName(test);
                             const isCompleted = test.status === 'Sonuçlandı';
                             const colors = categoryThemeColors[categoryName] || categoryThemeColors['Diğer'];
+                            
+                            // Tarih Bilgileri
+                            const dueDateStr = test.dueDate;
+                            const solvedDateStr = isCompleted && test.updatedAt ? format(new Date(test.updatedAt), 'dd.MM.yyyy HH:mm', { locale: tr }) : "-";
+
                             return (
                                 <tr key={test.id} className={themeColors.TABLE_ROW}>
                                     <td className="p-4 pl-6"><span className="font-semibold text-slate-200 block truncate max-w-[200px]">{test.title}</span><Badge variant="outline" className={cn("text-[9px] h-4.5 px-1.5 uppercase font-bold", colors.text, colors.bg, colors.border)}>{categoryName}</Badge></td>
                                     <td className="p-4 text-center hidden sm:table-cell">{student && <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-800 border border-slate-700 text-xs text-slate-300"><div className="w-2 h-2 rounded-full" style={{backgroundColor: student.color}}/>{student.name}</div>}</td>
-                                    <td className="p-4 text-center hidden lg:table-cell text-xs text-slate-400">{(test._date as Date).toLocaleDateString('tr-TR')}</td>
+                                    <td className="p-4 text-center hidden lg:table-cell">
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{isCompleted ? "Çözüldü" : "Bitiş"}</span>
+                                            <span className="text-xs text-slate-200 font-semibold">{isCompleted ? solvedDateStr : dueDateStr}</span>
+                                        </div>
+                                    </td>
                                     <td className="p-4 text-center hidden md:table-cell">
                                         <Badge variant="outline" className={cn("text-[10px]", isCompleted ? "text-emerald-400" : test.status === 'Değerlendirme Bekliyor' ? "text-blue-400" : "text-amber-400")}>
                                             {test.status}
@@ -341,6 +357,8 @@ function TestCard({ test, student, onDelete, onReassign }: any) {
     const isPendingEvaluation = test.status === 'Değerlendirme Bekliyor';
     const categoryName = getCategoryName(test);
     const colors = categoryThemeColors[categoryName] || categoryThemeColors['Diğer'];
+    const solvedDateStr = isCompleted && test.updatedAt ? format(new Date(test.updatedAt), 'dd.MM.yyyy HH:mm', { locale: tr }) : null;
+
     return (
         <Card className={themeColors.CARD_BG}>
             <CardHeader className="p-5 pb-4 border-b border-slate-800/50 bg-slate-900/30 flex flex-row justify-between items-start">
@@ -355,7 +373,10 @@ function TestCard({ test, student, onDelete, onReassign }: any) {
             </CardHeader>
             <CardContent className="p-5">
                 <h3 className="text-base font-bold text-slate-100 line-clamp-2 mb-4">{test.title}</h3>
-                <div className="flex items-center gap-2 text-xs text-slate-400"><Calendar className="w-4 h-4" />{isCompleted ? `Bitti: ${test.dueDate}` : `Son Tarih: ${test.dueDate}`}</div>
+                <div className="flex flex-col gap-1 text-xs text-slate-400">
+                    <div className="flex items-center gap-2"><Calendar className="w-4 h-4" />Bitiş: {test.dueDate}</div>
+                    {isCompleted && solvedDateStr && <div className="flex items-center gap-2 text-emerald-400"><CheckCircle className="w-4 h-4" />Çözüldü: {solvedDateStr}</div>}
+                </div>
                 {isCompleted && <div className="mt-4 bg-slate-950/50 p-3 rounded-xl border border-slate-800 text-center"><span className="text-lg font-black text-emerald-400">%{test.score?.toFixed(0)} Başarı</span></div>}
                 {isPendingEvaluation && <div className="mt-4 bg-blue-500/10 p-3 rounded-xl border border-blue-500/20 text-center"><span className="text-sm font-bold text-blue-400">Değerlendirme Bekliyor</span></div>}
             </CardContent>
@@ -393,7 +414,8 @@ function ReassignTestDialog({ test, isOpen, onOpenChange, familyMembers }: { tes
                 assignedDate: format(new Date(), 'dd MMMM yyyy', { locale: tr }), 
                 dueDate: format(dueDate, 'dd MMMM yyyy', { locale: tr }), 
                 status: 'Atandı', 
-                isArchived: false 
+                isArchived: false,
+                updatedAt: null // Yeni atamada çözüm tarihini sıfırla
             };
             delete newTestData.id;
             
@@ -432,4 +454,3 @@ function ReassignTestDialog({ test, isOpen, onOpenChange, familyMembers }: { tes
         </Dialog>
     );
 }
-
