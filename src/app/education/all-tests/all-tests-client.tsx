@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle, XCircle, Edit, ListFilter, MinusCircle, Trash2, ClipboardList, BookCopy, Ruler, TestTube2, Globe, MessageSquare, Gamepad2, FileText, Calendar, Clock, ChevronRight, LayoutGrid, List, Filter, Book, Library, PenTool, ArrowUpDown, BookOpen, ChevronLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Edit, ListFilter, MinusCircle, Trash2, ClipboardList, BookCopy, Ruler, TestTube2, Globe, MessageSquare, Gamepad2, FileText, Calendar, Clock, ChevronRight, LayoutGrid, List, Filter, Book, Library, PenTool, ArrowUpDown, BookOpen, ChevronLeft, CheckSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -116,7 +116,6 @@ export default function AllTestsPage() {
     // Tip değiştiğinde alt filtreleri sıfırla
     React.useEffect(() => {
         setSelectedSubCategory('all');
-        // Ders ve konu filtresini korumak isteyebilirsiniz, o yüzden onları sıfırlamıyorum.
     }, [activeTestType]);
 
     // Ders değiştiğinde konuyu sıfırla
@@ -192,22 +191,19 @@ export default function AllTestsPage() {
         });
 
         // 3. Dropdown Seçeneklerini Oluştur (Mevcut filtrelere göre daraltılmış liste)
-        // Kaynaklar: Sadece aktif Test Tipine göre
         const uniqueSources = Array.from(new Set(
             enrichedTests
                 .filter(t => activeTestType === 'all' || t.sourceType === activeTestType)
                 .map(t => JSON.stringify({ id: t._sourceId, name: t._sourceName }))
         )).map(s => JSON.parse(s));
 
-        // Dersler: Tüm testlerden çek
         const uniqueSubjects = Array.from(new Set(enrichedTests.map(t => t._subjectName))).sort();
 
-        // Konular: Seçili Derse göre filtrele
         const uniqueTopics = Array.from(new Set(
             enrichedTests
                 .filter(t => selectedSubject === 'all' || t._subjectName === selectedSubject)
                 .map(t => t._topicName)
-                .filter(Boolean) // null olmayanlar
+                .filter(Boolean)
         )).sort();
 
         // 4. Sıralama
@@ -601,13 +597,12 @@ function TestsListOrGrid({
                             const student = familyMembers.find(m => m.id === test.studentId);
                             const categoryName = getCategoryName(test);
                             const isCompleted = test.status === 'Sonuçlandı';
+                            const isPendingEvaluation = test.status === 'Değerlendirme Bekliyor';
                             
-                            // TARİH GÖSTERİMİ DÜZELTİLDİ
                             const dateObj = (test as any)._date ? new Date((test as any)._date) : new Date();
                             const dateStr = dateObj.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
                             const dateLabel = isCompleted ? "Çözüldü" : "Son Tarih";
                             
-                            // Başarı Hesabı
                             const totalQ = (test.correctAnswers || 0) + (test.incorrectAnswers || 0) + (test.emptyAnswers || 0);
                             const successRate = totalQ > 0 ? ((test.correctAnswers || 0) / totalQ) * 100 : 0;
 
@@ -627,7 +622,6 @@ function TestsListOrGrid({
                                                     </div>
                                                 )}
                                             </div>
-                                            {/* Mobile only student name */}
                                             {student && <div className="sm:hidden text-xs text-slate-500 mt-1 flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full" style={{backgroundColor: student.color}}/> {student.name}</div>}
                                         </div>
                                     </td>
@@ -645,7 +639,7 @@ function TestsListOrGrid({
                                     <td className="p-4 text-center hidden md:table-cell">
                                         <div className="flex flex-col items-center">
                                             <span className="text-sm text-slate-300 font-medium">{dateStr}</span>
-                                            <span className={cn("text-[10px] uppercase font-bold", isCompleted ? "text-emerald-500" : "text-amber-500")}>
+                                            <span className={cn("text-[10px] uppercase font-bold", isCompleted ? "text-emerald-500" : isPendingEvaluation ? "text-blue-400" : "text-amber-500")}>
                                                 {dateLabel}
                                             </span>
                                         </div>
@@ -653,6 +647,8 @@ function TestsListOrGrid({
                                     <td className="p-4 text-center hidden sm:table-cell">
                                         {isCompleted ? (
                                             <Badge variant="outline" className="text-emerald-400 bg-emerald-500/10 border-emerald-500/20">Tamamlandı</Badge>
+                                        ) : isPendingEvaluation ? (
+                                            <Badge variant="outline" className="text-blue-400 bg-blue-500/10 border-blue-500/20 animate-pulse">Değerlendir</Badge>
                                         ) : (
                                             <Badge variant="outline" className="text-amber-400 bg-amber-500/10 border-amber-500/20">Bekliyor</Badge>
                                         )}
@@ -671,11 +667,19 @@ function TestsListOrGrid({
                                     </td>
                                     <td className="p-4 text-right pr-6">
                                         <div className="flex items-center justify-end gap-2">
-                                            <Link href={`/education/${test.id}`}>
-                                                <Button size="sm" className={cn("h-8 w-8 p-0 rounded-lg", isCompleted ? "bg-white/5 hover:bg-white/10 text-slate-400" : "bg-indigo-600 hover:bg-indigo-500 text-white")}>
-                                                    {isCompleted ? <ChevronRight className="w-4 h-4"/> : <PenTool className="w-3.5 h-3.5" />}
-                                                </Button>
-                                            </Link>
+                                            {isPendingEvaluation ? (
+                                                <Link href={`/education/${test.id}?mode=evaluate`}>
+                                                    <Button size="sm" className="h-8 px-3 rounded-lg text-[10px] font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20">
+                                                        <CheckSquare className="w-3 h-3 mr-1"/> Değerlendir
+                                                    </Button>
+                                                </Link>
+                                            ) : (
+                                                <Link href={`/education/${test.id}`}>
+                                                    <Button size="sm" className={cn("h-8 w-8 p-0 rounded-lg", isCompleted ? "bg-white/5 hover:bg-white/10 text-slate-400" : "bg-indigo-600 hover:bg-indigo-500 text-white")}>
+                                                        {isCompleted ? <ChevronRight className="w-4 h-4"/> : <PenTool className="w-3.5 h-3.5" />}
+                                                    </Button>
+                                                </Link>
+                                            )}
                                             
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
@@ -722,33 +726,34 @@ function EmptyState({ message = "Bu filtreye uygun ödev bulunamadı." }: { mess
 
 function TestCard({ test, student, onDelete }: { test: Test, student?: FamilyMember, onDelete: (id: string) => void }) {
     const isCompleted = test.status === 'Sonuçlandı';
+    const isPendingEvaluation = test.status === 'Değerlendirme Bekliyor';
     const categoryName = getCategoryName(test);
     const Icon = categoryIcons[categoryName] || FileText;
     const iconStyle = categoryIconColors[categoryName] || 'text-slate-400 bg-slate-400/10';
 
-    // TARİH GÖSTERİMİ DÜZELTİLDİ
     const dateObj = (test as any)._date ? new Date((test as any)._date) : new Date();
     const dateStr = dateObj.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
-    const dateLabel = isCompleted ? "Çözüldü" : "Son Tarih";
+    const dateLabel = isCompleted ? "Çözüldü" : isPendingEvaluation ? "Bekliyor" : "Son Tarih";
 
     const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
     const now = new Date();
     const daysDiff = differenceInDays(dueDate, now);
     const isTestDue = isPast(dueDate) && !isToday(dueDate);
 
-    // Score Calculation
     const totalQuestions = (test.correctAnswers || 0) + (test.incorrectAnswers || 0) + (test.emptyAnswers || 0);
     const successRate = totalQuestions > 0 ? ((test.correctAnswers || 0) / totalQuestions) * 100 : 0;
 
     return (
         <div className={cn(
             "group relative flex flex-col sm:flex-row gap-4 p-5 rounded-3xl transition-all border backdrop-blur-md",
-            isCompleted ? "bg-emerald-900/10 border-emerald-500/20 hover:border-emerald-500/40" : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10"
+            isCompleted ? "bg-emerald-900/10 border-emerald-500/20 hover:border-emerald-500/40" : 
+            isPendingEvaluation ? "bg-blue-900/10 border-blue-500/20 hover:border-blue-500/40" :
+            "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10"
         )}>
             {/* Status Indicator Bar */}
             <div className={cn(
                 "absolute left-0 top-6 bottom-6 w-1 rounded-r-full transition-all",
-                isCompleted ? "bg-emerald-500" : isTestDue ? "bg-rose-500" : "bg-indigo-500"
+                isCompleted ? "bg-emerald-500" : isPendingEvaluation ? "bg-blue-500 animate-pulse" : isTestDue ? "bg-rose-500" : "bg-indigo-500"
             )} />
 
             <div className="flex-grow min-w-0 pl-3">
@@ -779,12 +784,11 @@ function TestCard({ test, student, onDelete }: { test: Test, student?: FamilyMem
                             {test.title}
                         </h3>
                         <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 font-medium">
-                            {/* GÜNCELLENMİŞ TARİH ALANI */}
                             <span className="flex items-center gap-1.5">
                                 <Calendar className="w-3.5 h-3.5 text-indigo-400" /> 
                                 {dateLabel}: {dateStr}
                             </span>
-                            {!isCompleted && (
+                            {!isCompleted && !isPendingEvaluation && (
                                 <span className={cn(
                                     "flex items-center gap-1.5 px-2 py-0.5 rounded-md",
                                     isTestDue ? "text-rose-300 bg-rose-500/10" : "text-emerald-300 bg-emerald-500/10"
@@ -797,7 +801,6 @@ function TestCard({ test, student, onDelete }: { test: Test, student?: FamilyMem
                     </div>
                 </div>
                 
-                {/* Score Summary for Completed Tests */}
                 {isCompleted && (
                     <div className="mt-4 flex items-center gap-4 bg-black/20 p-3 rounded-xl border border-white/5 w-fit">
                         <div className="text-center px-2 border-r border-white/10">
@@ -815,17 +818,19 @@ function TestCard({ test, student, onDelete }: { test: Test, student?: FamilyMem
 
             {/* Actions */}
             <div className="flex flex-row sm:flex-col items-center justify-end gap-2 shrink-0 border-t sm:border-t-0 sm:border-l border-white/5 pt-4 sm:pt-0 sm:pl-4 mt-2 sm:mt-0">
-                 {test.status === 'Değerlendirme Bekliyor' ? (
-                    <Link href={`/education/${test.id}`} className="w-full sm:w-auto">
-                        <Button variant="secondary" size="sm" className="w-full bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border-amber-500/30">Not Ver</Button>
+                 {isPendingEvaluation ? (
+                    <Link href={`/education/${test.id}?mode=evaluate`} className="w-full sm:w-auto">
+                        <Button variant="secondary" size="sm" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold h-10 px-4 rounded-xl shadow-lg shadow-blue-500/20">
+                            <CheckSquare className="w-4 h-4 mr-2" /> Değerlendir
+                        </Button>
                     </Link>
                 ) : isCompleted ? (
                       <Link href={`/education/${test.id}`} className="w-full sm:w-auto">
-                        <Button variant="secondary" size="sm" className="w-full bg-white/10 hover:bg-white/20 text-white border-white/10">Sonuç</Button>
+                        <Button variant="secondary" size="sm" className="w-full bg-white/10 hover:bg-white/20 text-white border-white/10 h-10 rounded-xl">Sonuç</Button>
                     </Link>
                 ) : (
                     <Link href={`/education/${test.id}`} className="w-full sm:w-auto">
-                         <Button size="sm" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20">
+                         <Button size="sm" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 h-10 rounded-xl">
                             Çöz <ChevronRight className="w-3.5 h-3.5 ml-1"/>
                          </Button>
                     </Link>

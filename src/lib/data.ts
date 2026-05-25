@@ -390,7 +390,7 @@ export interface Student {
 
 export type AnswerKey = { [key: string]: string };
 export type GradingType = 'auto' | 'manual';
-export type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated' | 'empty';
+export type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated' | 'empty' | 'partial';
 
 export interface QuickTestQuestion {
   questionId: string; // Corresponds to BankQuestion id
@@ -460,6 +460,7 @@ export interface Test {
   openEnded?: boolean; // New flag for open-ended tests
   studentTextAnswers?: { [key: string]: string }; // For open-ended questions
   studentTextAnswersEvaluation?: { [key: string]: EvaluationStatus }; // For manual grading
+  studentTextAnswersFeedback?: { [key: string]: string }; // For manual feedback
   topicId?: string;
   jsonQuestions?: JsonTestQuestion[]; // For text-based questions
   htmlContent?: string; // HTML content for the test
