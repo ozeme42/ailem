@@ -7,7 +7,7 @@ import {
   Layers, PieChart, GraduationCap, AlertCircle, Timer, 
   BookOpen, ChevronDown, ChevronRight, Check, Sparkles, TrendingUp, 
   TrendingDown, PlayCircle, CalendarClock, Target, BarChart,
-  User, Settings, ScrollText
+  User, Settings, ScrollText, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, FileText, ClipboardList
 } from "lucide-react";
 
 import { Test, StudyAssignment, StudyPlan, TrackedBook } from "@/lib/data";
@@ -42,6 +42,72 @@ const categoryColor: Record<string, string> = {
   'Serbest Etkinlikler':     C.GREEN,
   'Yanlışlarım':             C.RED,
   'Diğer':                   '#64748B',
+};
+
+const categoryThemes: Record<string, { bg: string, text: string, icon: any, border: string, accent: string }> = {
+  'Matematik': { 
+      bg: 'bg-blue-50/50 dark:bg-blue-950/20', 
+      text: 'text-blue-700 dark:text-blue-400', 
+      icon: Ruler, 
+      border: 'border-blue-100 dark:border-blue-900/30',
+      accent: 'bg-blue-500'
+  },
+  'Fen Bilimleri': { 
+      bg: 'bg-teal-50/50 dark:bg-teal-950/20', 
+      text: 'text-teal-700 dark:text-teal-400', 
+      icon: TestTube2, 
+      border: 'border-teal-100 dark:border-teal-900/30',
+      accent: 'bg-teal-500'
+  },
+  'Türkçe': { 
+      bg: 'bg-orange-50/50 dark:bg-orange-950/20', 
+      text: 'text-orange-700 dark:text-orange-400', 
+      icon: BookCopy, 
+      border: 'border-orange-100 dark:border-orange-900/30',
+      accent: 'bg-orange-500'
+  },
+  'Sosyal Bilgiler': { 
+      bg: 'bg-purple-50/50 dark:bg-purple-950/20', 
+      text: 'text-purple-700 dark:text-purple-400', 
+      icon: Globe, 
+      border: 'border-purple-100 dark:border-purple-900/30',
+      accent: 'bg-purple-500'
+  },
+  'İngilizce': { 
+      bg: 'bg-rose-50/50 dark:bg-rose-950/20', 
+      text: 'text-rose-700 dark:text-rose-400', 
+      icon: MessageSquare, 
+      border: 'border-rose-100 dark:border-rose-900/30',
+      accent: 'bg-rose-500'
+  },
+  'Genel Deneme Sınavları': { 
+      bg: 'bg-indigo-50/50 dark:bg-indigo-950/20', 
+      text: 'text-indigo-700 dark:text-indigo-400', 
+      icon: ClipboardList, 
+      border: 'border-indigo-100 dark:border-indigo-900/30',
+      accent: 'bg-indigo-500'
+  },
+  'Serbest Etkinlikler': { 
+      bg: 'bg-emerald-50/50 dark:bg-emerald-950/20', 
+      text: 'text-emerald-700 dark:text-emerald-400', 
+      icon: Gamepad2, 
+      border: 'border-emerald-100 dark:border-emerald-900/30',
+      accent: 'bg-emerald-500'
+  },
+  'Yanlışlarım': { 
+      bg: 'bg-red-50/50 dark:bg-red-950/20', 
+      text: 'text-red-700 dark:text-red-400', 
+      icon: AlertCircle, 
+      border: 'border-red-100 dark:border-red-900/30',
+      accent: 'bg-red-500'
+  },
+  'Diğer': { 
+      bg: 'bg-slate-50/50 dark:bg-slate-900/20', 
+      text: 'text-slate-700 dark:text-slate-400', 
+      icon: FileText, 
+      border: 'border-slate-200 dark:border-slate-800',
+      accent: 'bg-slate-500'
+  },
 };
 
 export const getCategoryName = (test: Test): string => {
@@ -386,19 +452,23 @@ export default function EducationPage() {
         {/* ── YAPILACAKLAR (Grid Kartlar) ─────────────────────────────────── */}
         {groupedPendingTests.length > 0 && (
           <section>
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center justify-between mb-5 px-1">
               <div className="flex items-center gap-2">
-                <Layers className="w-5 h-5 text-slate-800 dark:text-slate-200" />
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                    <Layers className="w-4 h-4" />
+                </div>
                 <h2 className="text-xl font-black text-slate-900 dark:text-white">Yapılacaklar</h2>
               </div>
-              <span className="text-sm font-bold px-3 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              <span className="text-[10px] font-black px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800 uppercase tracking-widest">
                 {groupedPendingTests.reduce((s, [, t]) => s + t.length, 0)} Görev
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {groupedPendingTests.map(([category, categoryTests]) => {
-                const color = categoryColor[category] || '#64748B';
+                const theme = categoryThemes[category] || categoryThemes['Diğer'];
+                const Icon = theme.icon;
+
                 return categoryTests.map(test => {
                   const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
                   const overdue = isPast(dueDate) && !isToday(dueDate);
@@ -407,53 +477,58 @@ export default function EducationPage() {
                   const duration = test.durationMinutes || Math.ceil(test.questionCount * 1.5);
 
                   return (
-                    <div key={test.id} className="bg-white dark:bg-[#1E293B] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
-                      <div>
-                        {/* Üst Bilgiler (Tarih & Durum) */}
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400">
-                            <CalendarIcon className="w-4 h-4" />
-                            {test.dueDate}
-                          </div>
-                          {overdue ? (
-                            <span className="px-2.5 py-1 text-xs font-bold rounded-md bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400">Gecikti</span>
-                          ) : dueToday ? (
-                            <span className="px-2.5 py-1 text-xs font-bold rounded-md bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">Bugün</span>
-                          ) : null}
+                    <div key={test.id} className={cn("relative overflow-hidden rounded-[2rem] p-5 border transition-all duration-300 group flex flex-col justify-between bg-white dark:bg-slate-900 shadow-sm hover:shadow-xl hover:-translate-y-1", theme.border)}>
+                      {/* Üst Renk Bandı */}
+                      <div className={cn("absolute top-0 left-0 w-full h-1", theme.accent)} />
+                      
+                      <div className="relative z-10">
+                        {/* Başlık ve İkon */}
+                        <div className="flex justify-between items-start mb-4">
+                           <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-2">
+                                    <div className={cn("w-2 h-2 rounded-full", theme.accent)} />
+                                    <span className={cn("text-[10px] font-black uppercase tracking-widest", theme.text)}>{category}</span>
+                                </div>
+                                <h3 className={cn("text-lg font-bold leading-tight line-clamp-2 pr-4 text-slate-800 dark:text-slate-100")}>{test.title}</h3>
+                           </div>
+                           <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border", theme.bg, theme.border)}>
+                               <Icon className={cn("w-5 h-5", theme.text)} />
+                           </div>
                         </div>
 
-                        {/* İçerik Başlığı */}
-                        <div className="mb-6">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-                            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{category}</span>
-                            {!overdue && !dueToday && (
-                                <span className="ml-auto text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
-                                    {daysDiff + 1} gün kaldı
-                                </span>
+                        {/* Tarih ve Durum */}
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                                <CalendarIcon className="w-3.5 h-3.5" />
+                                <span className="text-[11px] font-bold">{test.dueDate}</span>
+                            </div>
+                            {overdue ? (
+                                <Badge className="bg-rose-500 text-white text-[10px] font-black uppercase px-2 h-6 border-none">Gecikti</Badge>
+                            ) : dueToday ? (
+                                <Badge className="bg-amber-500 text-white text-[10px] font-black uppercase px-2 h-6 border-none">Bugün</Badge>
+                            ) : (
+                                <span className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">{daysDiff + 1} gün kaldı</span>
                             )}
-                          </div>
-                          <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">{test.title}</h3>
                         </div>
                       </div>
 
-                      {/* Alt Meta & Buton */}
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-6 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-                          <div>
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5">Soru Sayısı</p>
-                            <p className="text-sm font-bold text-slate-900 dark:text-white">{test.questionCount || '-'}</p>
+                      {/* Alt Bilgi ve Aksiyon */}
+                      <div className="space-y-4 relative z-10">
+                        <div className="flex items-center gap-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+                          <div className="flex-1 text-center">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Soru</p>
+                            <p className="text-sm font-black text-slate-700 dark:text-slate-200">{test.questionCount || '-'}</p>
                           </div>
-                          <div className="w-px h-8 bg-slate-200 dark:bg-slate-700" />
-                          <div>
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5">Süre</p>
-                            <p className="text-sm font-bold text-slate-900 dark:text-white">{duration} dk</p>
+                          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700" />
+                          <div className="flex-1 text-center">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Süre</p>
+                            <p className="text-sm font-black text-slate-700 dark:text-slate-200">{duration} dk</p>
                           </div>
                         </div>
 
                         <Link href={`/education/${test.id}`} className="block w-full">
-                          <button className="w-full py-2.5 rounded-xl font-bold text-sm text-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20">
-                            Başla
+                          <button className={cn("w-full py-3 rounded-2xl font-black text-xs uppercase tracking-widest text-center transition-all shadow-md active:scale-95", "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20")}>
+                            Ödevi Çöz
                           </button>
                         </Link>
                       </div>
