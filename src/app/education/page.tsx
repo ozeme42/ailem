@@ -18,6 +18,8 @@ import { useAuth } from "@/components/auth-provider";
 import { parse, isPast, isToday, differenceInDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 // ─── RENK SİSTEMİ (Daha Kurumsal ve Yumuşak Tonlar) ───────────────────────
 const C = {
@@ -30,18 +32,6 @@ const C = {
   INDIGO: '#6366F1', // Tailwind Indigo 500
   NAVY:   '#0F172A', // Slate 900 (Dark mode bg)
   CARD_DARK: '#1E293B', // Slate 800
-};
-
-const categoryColor: Record<string, string> = {
-  'Matematik':               C.BLUE,
-  'Fen Bilimleri':           C.TEAL,
-  'Türkçe':                  C.ORANGE,
-  'Sosyal Bilgiler':         C.PURPLE,
-  'İngilizce':               C.RED,
-  'Genel Deneme Sınavları':  C.INDIGO,
-  'Serbest Etkinlikler':     C.GREEN,
-  'Yanlışlarım':             C.RED,
-  'Diğer':                   '#64748B',
 };
 
 const categoryThemes: Record<string, { bg: string, text: string, icon: any, border: string, accent: string }> = {
@@ -116,7 +106,6 @@ export const getCategoryName = (test: Test): string => {
   return test.subject || 'Diğer';
 };
 
-// ─── ANA SAYFA ───────────────────────────────────────────────────────────────
 export default function EducationPage() {
   const { toast } = useToast();
   const { familyMembers } = useAuth();
@@ -178,7 +167,6 @@ export default function EducationPage() {
     return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
   }, [tests]);
 
-  // "Günün Odağı" için en acil testi bul
   const focusTask = React.useMemo(() => {
     const pending = tests.filter(t => t.status === 'Atandı');
     if (pending.length === 0) return null;
@@ -190,21 +178,15 @@ export default function EducationPage() {
   }, [tests]);
 
   const stats = React.useMemo(() => {
-    // Toplam biten ödevler (Testler + Konu Çalışmaları)
     const completedTests = tests.filter(t => t.status === 'Sonuçlandı');
     const completedAssignments = assignments.filter(a => a.status === 'completed');
-    
-    // Toplam bitenlerin oranı (Ödev + Çalışma)
     const totalTasksCount = tests.length + assignments.length;
     const totalCompletedTasksCount = completedTests.length + completedAssignments.length;
     const completedRate = totalTasksCount > 0 ? (totalCompletedTasksCount / totalTasksCount) * 100 : 0;
 
-    // Başarı yüzdesi (Sadece çözülen testlerdeki sorulara göre)
     let totalQ = 0, totalC = 0;
     completedTests.forEach(t => { totalQ += t.questionCount || 0; totalC += t.correctAnswers || 0; });
     const successRate = totalQ > 0 ? (totalC / totalQ) * 100 : 0;
-    
-    // Geç kalmış görevler
     const overdueCount = tests.filter(t => t.status === 'Atandı' && isPast(parse(t.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr })) && !isToday(parse(t.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }))).length;
 
     return {
@@ -212,7 +194,7 @@ export default function EducationPage() {
       pendingCount: (tests.length - completedTests.length) + (assignments.length - completedAssignments.length),
       successRate,
       overdueCount,
-      completedAssignmentsRate: completedRate // KPI kartında gösterilen ana tamamlama yüzdesi
+      completedAssignmentsRate: completedRate
     };
   }, [tests, assignments]);
 
@@ -230,7 +212,6 @@ export default function EducationPage() {
     });
   };
 
-  // Mini Bar Chart Simulasyonu
   const MiniBarChart = ({ color }: { color: string }) => (
     <div className="flex items-end gap-1 h-8 mt-2 opacity-80">
       {[40, 70, 45, 90, 60, 85, 50].map((h, i) => (
@@ -243,7 +224,6 @@ export default function EducationPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] font-sans pb-28 text-slate-800 dark:text-slate-200">
       <div className="h-[env(safe-area-inset-top,0px)]" />
 
-      {/* ── HEADER & STUDENT SELECTOR ──────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-[#0F172A]/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800">
         <div className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -256,7 +236,6 @@ export default function EducationPage() {
             </div>
           </div>
 
-          {/* Profil Seçici Kartları & Yönetim Butonu */}
           <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
             <div className="flex gap-3">
               {studentMembers.map(s => {
@@ -280,10 +259,7 @@ export default function EducationPage() {
                 );
               })}
             </div>
-            
-            {/* Ayırıcı ve Yönetim Butonu */}
             <div className="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden md:block shrink-0 mx-1" />
-            
             <Link href="/education/management" title="Yönetim Paneli" className="shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-500/10 dark:hover:text-blue-400 border border-transparent dark:border-slate-700 transition-colors">
               <Settings className="w-5 h-5" />
             </Link>
@@ -292,17 +268,11 @@ export default function EducationPage() {
       </header>
 
       <main className="px-6 pt-8 space-y-8 max-w-7xl mx-auto">
-
-        {/* ── DASHBOARD GRID (Üst İstatistikler ve Odak) ─────────────────────────────── */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          
-          {/* 1. Başarı Oranı (Büyük Kart) */}
           {selectedStudent && (
             <Link href={`/education/stats?studentId=${selectedStudent.id}`} className="group block col-span-1 active:scale-[0.98] transition-transform">
               <div className="rounded-2xl p-6 relative overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20 flex flex-col justify-between min-h-[160px] h-full">
-                {/* Dekoratif Arka Plan Işıkları */}
                 <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/20 rounded-full blur-3xl pointer-events-none" />
-                
                 <div className="relative z-10 flex items-start justify-between mb-2">
                   <p className="text-white/90 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
                     <Target className="w-4 h-4" /> Başarı Oranı
@@ -311,9 +281,7 @@ export default function EducationPage() {
                     <TrendingUp className="w-3 h-3" /> %3 Artış
                   </div>
                 </div>
-
                 <div className="relative z-10 flex items-end justify-between mt-auto">
-                  {/* Yüzde Metni (Yuvarlağın dışına alındı ve tipografisi güçlendirildi) */}
                   <div className="flex flex-col">
                     <div className="flex items-baseline text-white">
                       <span className="text-2xl font-medium mr-0.5 opacity-80">%</span>
@@ -322,8 +290,6 @@ export default function EducationPage() {
                     </div>
                     <p className="text-white/80 text-xs font-medium mt-1">Geçen haftaya göre</p>
                   </div>
-
-                  {/* Dairesel Progress (Sadece grafiksel gösterim için ufaltıldı) */}
                   <div className="relative w-16 h-16 shrink-0 drop-shadow-lg mb-1">
                     <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                       <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="12" />
@@ -331,7 +297,6 @@ export default function EducationPage() {
                         strokeLinecap="round" strokeDasharray={251.2} strokeDashoffset={251.2 - (251.2 * stats.successRate) / 100}
                         className="transition-all duration-1000 ease-out" />
                     </svg>
-                    {/* İçine sıkışık bir yazı yerine şık bir ikon eklendi */}
                     <div className="absolute inset-0 flex items-center justify-center">
                       <Sparkles className="w-5 h-5 text-white" />
                     </div>
@@ -341,7 +306,6 @@ export default function EducationPage() {
             </Link>
           )}
 
-          {/* 2 & 3. Mini İstatistikler (Grid içinde Grid) */}
           <div className="grid grid-cols-2 gap-4 col-span-1 lg:col-span-2">
             <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
               <p className="text-xs font-bold text-slate-500 uppercase">Ödev Tamamlama</p>
@@ -363,7 +327,6 @@ export default function EducationPage() {
               <p className="text-xs font-bold text-slate-500 uppercase relative z-10">Geciken Görev</p>
               <p className="text-2xl font-black text-red-500 dark:text-red-400 mt-1 relative z-10">{stats.overdueCount}</p>
               <div className="w-full h-8 mt-2 opacity-50 relative z-10">
-                 {/* Çizgi grafik simülasyonu */}
                  <svg viewBox="0 0 100 30" className="w-full h-full fill-none stroke-red-500 stroke-2" preserveAspectRatio="none">
                     <path d="M0,25 Q20,5 40,20 T80,10 T100,20" />
                  </svg>
@@ -371,14 +334,12 @@ export default function EducationPage() {
             </div>
           </div>
 
-          {/* 4. Günün Odağı (Focus Task) */}
           <div className="bg-slate-900 dark:bg-slate-800 rounded-2xl p-5 border border-slate-800 dark:border-slate-700 shadow-xl flex flex-col relative overflow-hidden">
             <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl" />
             <div className="flex items-center gap-2 mb-4 relative z-10">
               <Target className="w-5 h-5 text-blue-400" />
               <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Günün Odağı</h3>
             </div>
-            
             {focusTask ? (
               <div className="flex-1 flex flex-col justify-between relative z-10">
                 <div>
@@ -401,7 +362,6 @@ export default function EducationPage() {
           </div>
         </section>
 
-        {/* --- ÖZETLER VE DİĞER MODÜLLER --- */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link href="/education/summaries" className="group">
                 <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
@@ -449,7 +409,6 @@ export default function EducationPage() {
             </Link>
         </section>
 
-        {/* ── YAPILACAKLAR (Grid Kartlar) ─────────────────────────────────── */}
         {groupedPendingTests.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-5 px-1">
@@ -478,11 +437,8 @@ export default function EducationPage() {
 
                   return (
                     <div key={test.id} className={cn("relative overflow-hidden rounded-[2rem] p-5 border transition-all duration-300 group flex flex-col justify-between bg-white dark:bg-slate-900 shadow-sm hover:shadow-xl hover:-translate-y-1", theme.border)}>
-                      {/* Üst Renk Bandı */}
                       <div className={cn("absolute top-0 left-0 w-full h-1", theme.accent)} />
-                      
                       <div className="relative z-10">
-                        {/* Başlık ve İkon */}
                         <div className="flex justify-between items-start mb-4">
                            <div className="flex flex-col gap-1">
                                 <div className="flex items-center gap-2">
@@ -495,8 +451,6 @@ export default function EducationPage() {
                                <Icon className={cn("w-5 h-5", theme.text)} />
                            </div>
                         </div>
-
-                        {/* Tarih ve Durum */}
                         <div className="flex items-center gap-3 mb-6">
                             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                                 <CalendarIcon className="w-3.5 h-3.5" />
@@ -511,8 +465,6 @@ export default function EducationPage() {
                             )}
                         </div>
                       </div>
-
-                      {/* Alt Bilgi ve Aksiyon */}
                       <div className="space-y-4 relative z-10">
                         <div className="flex items-center gap-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
                           <div className="flex-1 text-center">
@@ -525,7 +477,6 @@ export default function EducationPage() {
                             <p className="text-sm font-black text-slate-700 dark:text-slate-200">{duration} dk</p>
                           </div>
                         </div>
-
                         <Link href={`/education/${test.id}`} className="block w-full">
                           <button className={cn("w-full py-3 rounded-2xl font-black text-xs uppercase tracking-widest text-center transition-all shadow-md active:scale-95", "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20")}>
                             Ödevi Çöz
@@ -540,55 +491,38 @@ export default function EducationPage() {
           </section>
         )}
 
-        {/* ── KONU ÇALIŞMA PLANI (Kitap Görünümü) ────────────────────────────────────── */}
         {assignmentsByBook.length > 0 && (
           <section>
             <div className="flex items-center gap-2 mb-5">
               <BookOpen className="w-5 h-5 text-slate-800 dark:text-slate-200" />
               <h2 className="text-xl font-black text-slate-900 dark:text-white">Konu Çalışma Planı</h2>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {assignmentsByBook.map((group, index) => {
                 const pct = (group.completed / group.total) * 100;
                 const done = group.completed === group.total;
                 const open = expandedBooks.has(group.id);
-                
-                // Konuları Durumlarına Göre Ayır
                 const pending = group.assignments.filter(a => a.status !== 'completed');
                 const completed = group.assignments.filter(a => a.status === 'completed');
-
-                // Kitap kapağı renkleri için sıralı renk dizisi
-                const coverColors = [
-                  'from-blue-600 to-indigo-800', 'from-emerald-500 to-teal-700', 
-                  'from-amber-500 to-orange-700', 'from-rose-500 to-red-800'
-                ];
+                const coverColors = ['from-blue-600 to-indigo-800', 'from-emerald-500 to-teal-700', 'from-amber-500 to-orange-700', 'from-rose-500 to-red-800'];
                 const coverBg = coverColors[index % coverColors.length];
-
                 return (
                   <div key={group.id} className="bg-white dark:bg-[#1E293B] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
-                    {/* Kitap Kapağı Alanı */}
                     <button onClick={() => toggleBook(group.id)} className="p-5 flex items-start gap-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors relative">
-                      
-                      {/* BEKLEYEN KONU GÖSTERGESİ (BADGE) */}
                       {!done && (
                         <div className="absolute top-4 left-4 z-20">
                             <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)] animate-pulse border-2 border-white dark:border-[#1E293B]" />
                         </div>
                       )}
-
-                      {/* 3D Kitap İllüstrasyonu */}
                       <div className={cn("w-16 h-24 rounded-r-md rounded-l-sm shadow-md shrink-0 bg-gradient-to-br relative border-l-4 border-black/20", coverBg)}>
                         <div className="absolute top-2 left-2 text-[8px] font-bold text-white/70 uppercase">DERS<br/>PLANI</div>
                         <div className="absolute bottom-2 left-2 right-2 h-1 bg-white/20 rounded" />
                       </div>
-                      
                       <div className="flex-1 min-w-0 py-1">
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-2">{group.title}</h3>
                           <ChevronDown className={cn("w-5 h-5 text-slate-400 transition-transform shrink-0", open && "rotate-180")} />
                         </div>
-                        {/* İlerleme */}
                         <div className="mt-4">
                           <div className="flex justify-between text-xs font-bold mb-1">
                             <span className={done ? "text-emerald-500" : "text-blue-500"}>%{pct.toFixed(0)}</span>
@@ -600,12 +534,8 @@ export default function EducationPage() {
                         </div>
                       </div>
                     </button>
-
-                    {/* Açılır Görev Listesi */}
                     {open && (
                       <div className="bg-slate-50 dark:bg-[#0F172A]/50 border-t border-slate-200 dark:border-slate-800 p-2 space-y-4">
-                        
-                        {/* BEKLEYENLER (Her zaman açık) */}
                         {pending.length > 0 && (
                           <div className="space-y-1">
                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-1">Bekleyen Konular</p>
@@ -625,8 +555,6 @@ export default function EducationPage() {
                              ))}
                           </div>
                         )}
-
-                        {/* TAMAMLANANLAR (Collapsible) */}
                         {completed.length > 0 && (
                           <Accordion type="single" collapsible className="w-full">
                             <AccordionItem value="completed-list" className="border-none">
@@ -666,7 +594,6 @@ export default function EducationPage() {
           </section>
         )}
 
-        {/* Boş Durum */}
         {groupedPendingTests.length === 0 && assignmentsByBook.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 text-center bg-white dark:bg-[#1E293B] rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed">
             <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
