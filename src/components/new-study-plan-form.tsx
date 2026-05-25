@@ -7,7 +7,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { DialogHeader, DialogTitle, DialogDescription, DialogFooter, Dialog } from "./ui/dialog";
+import { DialogHeader, DialogTitle, DialogDescription, DialogFooter, Dialog, DialogContent } from "./ui/dialog";
 import type { StudyPlan } from "@/lib/data";
 import { Trash2, Layers, BookOpen, Plus, X, ArrowLeft, Check, FileText, PlusCircle, ListPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -104,10 +104,17 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
   };
 
   const handleFormError = (errors: any) => {
-    console.error("Plan Form Validation Errors:", errors);
+    console.error("Subject Editor Validation Errors:", errors);
+    
+    // Manuel kontrol
+    const name = form.getValues("name");
+
+    let message = "Lütfen tüm zorunlu alanları doldurun.";
+    if (!name?.trim()) message = "Lütfen plan başlığını yazın.";
+
     toast({
-        title: "Formda Eksikler Var ⚠️",
-        description: "Lütfen plan başlığını kontrol edin.",
+        title: "Eksik Bilgi ⚠️",
+        description: message,
         variant: "destructive"
     });
   };
@@ -291,7 +298,7 @@ function SubjectEditor({ initialData, onSave, onCancel }: { initialData: Subject
         const hasEmptyTopic = topics.some(t => !t.name.trim());
 
         let message = "Lütfen tüm zorunlu alanları doldurun.";
-        if (!name.trim()) message = "Lütfen ders adını yazın.";
+        if (!name?.trim()) message = "Lütfen ders adını yazın.";
         else if (topics.length === 0) message = "En az bir konu eklemelisiniz.";
         else if (hasEmptyTopic) message = "Lütfen tüm konu başlıklarını doldurun.";
 
