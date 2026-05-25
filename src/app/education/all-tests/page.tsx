@@ -6,10 +6,10 @@ import Link from "next/link";
 import { 
     ArrowLeft, CheckCircle, XCircle, Edit, ListFilter, MinusCircle, 
     Trash2, ClipboardList, BookCopy, Ruler, TestTube2, Globe, 
-    MessageSquare, Gamepad2, FileText, Calendar, Clock, ChevronRight, 
+    MessageSquare, Gamepad2, FileText, Calendar as CalendarLucide, Clock, ChevronRight, 
     LayoutGrid, List, Filter, BookOpen, PenTool, ArrowUpDown, 
     ChevronLeft, BarChart3, GraduationCap, Repeat, Send, User,
-    MoreVertical, Loader2, CheckSquare
+    MoreVertical, Loader2, CheckSquare, Calendar
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -350,7 +350,7 @@ function TestCard({ test, student, onDelete, onReassign }: any) {
                 </div>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-100"><DropdownMenuItem onClick={() => onReassign(test)}><Repeat className="mr-2 h-4 w-4" /> Tekrar Ata</DropdownMenuItem><AlertDialog><AlertDialogTrigger asChild><DropdownMenuItem onSelect={e => e.preventDefault()} className="text-rose-400"><Trash2 className="mr-2 h-4 w-4" /> Sil</DropdownMenuItem></AlertDialogTrigger><AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100"><AlertDialogHeader><AlertDialogTitle>Ödevi Sil</AlertDialogTitle><AlertDialogDescription>"{test.title}" ödevini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(test.id)} className="bg-rose-600 hover:bg-rose-700 border-none">Evet, Sil</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></DropdownMenuContent>
+                    <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-100"><DropdownMenuItem onClick={() => onReassign(test)}><Repeat className="mr-2 h-4 w-4" /> Tekrar Ata</DropdownMenuItem><AlertDialog><AlertDialogTrigger asChild><DropdownMenuItem onSelect={e => e.preventDefault()} className="text-rose-400"><Trash2 className="mr-2 h-4 w-4" /> Sil</DropdownMenuItem></AlertDialogTrigger><AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100"><AlertDialogHeader> <AlertDialogTitle>Ödevi Sil</AlertDialogTitle><AlertDialogDescription>"{test.title}" ödevini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(test.id)} className="bg-rose-600 hover:bg-rose-700 border-none">Evet, Sil</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></DropdownMenuContent>
                 </DropdownMenu>
             </CardHeader>
             <CardContent className="p-5">
