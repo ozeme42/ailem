@@ -445,7 +445,7 @@ export interface Test {
   dueDate: string;
   status: 'Atandı' | 'Değerlendirme Bekliyor' | 'Sonuçlandı' | 'Tekrar Çözülüyor';
   isArchived: boolean;
-  sourceType: 'bank' | 'quick' | 'exam' | 'mistake' | 'trackedBook' | 'json';
+  sourceType: 'bank' | 'quick' | 'exam' | 'mistake' | 'trackedBook' | 'json' | 'html';
   sourceId?: string;
   gradingType?: GradingType;
   score?: number;
@@ -462,6 +462,7 @@ export interface Test {
   studentTextAnswersEvaluation?: { [key: string]: EvaluationStatus }; // For manual grading
   topicId?: string;
   jsonQuestions?: JsonTestQuestion[]; // For text-based questions
+  htmlContent?: string; // HTML content for the test
 }
 
 export interface ShoppingItem {

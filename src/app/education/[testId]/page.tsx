@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -313,9 +312,11 @@ export default function OpticalFormPage() {
                     allStudentMcqAnswers[qNumStr] = mcqAnswers[qNumStr] || null;
                 }
                 updatedData.studentAnswers = allStudentMcqAnswers;
-                const answerKey = test.sourceType === 'json' 
-                    ? test.jsonQuestions!.reduce((acc, q, i) => ({ ...acc, [(i+1).toString()]: q.answer }), {})
-                    : test.answerKey;
+                
+                let answerKey = test.answerKey || {};
+                if (test.sourceType === 'json' && test.jsonQuestions) {
+                     answerKey = test.jsonQuestions.reduce((acc, q, i) => ({ ...acc, [(i+1).toString()]: q.answer }), {});
+                }
                 
                 if (answerKey && Object.keys(answerKey).length > 0) {
                     let correct = 0, incorrect = 0, empty = 0;
@@ -678,6 +679,7 @@ export default function OpticalFormPage() {
 
     const totalQuestions = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
     const isSingleQuestionView = test.sourceType === 'json' || test.sourceType === 'bank' || test.sourceType === 'mistake' || test.sourceType === 'quick';
+    const isHtmlTest = test.sourceType === 'html';
     
     // --- NAVIGATION ---
     const handleNext = () => {
@@ -697,9 +699,9 @@ export default function OpticalFormPage() {
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(() => handleSubmit(false))}>
+            <form onSubmit={form.handleSubmit(() => handleSubmit(false))} className="h-full flex flex-col">
                 <div className={cn("min-h-screen text-slate-900 font-sans flex flex-col p-4 sm:p-8", glassColors.PAGE_BG)}>
-                    <header className="max-w-4xl mx-auto w-full mb-8 flex justify-between items-center">
+                    <header className="max-w-7xl mx-auto w-full mb-8 flex justify-between items-center">
                         <Button type="button" variant="ghost" onClick={() => router.push('/education')} className="text-slate-500 hover:text-slate-900"><ArrowLeft className="mr-2 h-5 w-5" /> Çıkış</Button>
                         <div className="text-center hidden sm:block">
                             <h1 className="text-xl font-bold text-slate-900">{test.title}</h1>
@@ -708,331 +710,405 @@ export default function OpticalFormPage() {
                         <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
                     </header>
 
-                    <main className="flex-1 max-w-4xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 pb-32">
-                        
-                        {/* LEFT COLUMN: QUESTION AREA */}
-                        <div className="lg:col-span-8 space-y-6">
-                            <AnimatePresence mode="wait">
-                                {isSingleQuestionView ? (
-                                    <motion.div 
-                                        key={currentQuestionIndex}
-                                        initial={{ opacity: 0, x: 20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -20 }}
-                                        transition={{ duration: 0.2 }}
-                                    >
-                                        {test.sourceType === 'json' && test.jsonQuestions ? (
-                                            /* JSON SINGLE QUESTION */
-                                            <Card className="overflow-hidden bg-white border border-slate-200 shadow-lg rounded-3xl">
-                                                <CardHeader className="bg-slate-50/50 border-b p-6">
-                                                    <div className="flex gap-4">
+                    {isHtmlTest ? (
+                        /* HTML TEST VIEW: IFRAME + OPTICAL */
+                        <main className="flex-1 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 h-full min-h-[600px] mb-20">
+                            <div className="lg:col-span-8 h-full bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-lg">
+                                 {test.htmlContent ? (
+                                    <iframe 
+                                        srcDoc={`<!DOCTYPE html><html><head><style>body { font-family: sans-serif; padding: 20px; line-height: 1.6; } img { max-width: 100%; height: auto; border-radius: 8px; }</style></head><body>${test.htmlContent}</body></html>`}
+                                        className="w-full h-full border-none"
+                                        title={test.title}
+                                    />
+                                 ) : (
+                                     <div className="h-full flex items-center justify-center text-slate-400">İçerik yüklenemedi.</div>
+                                 )}
+                            </div>
+                            <div className="lg:col-span-4 h-full flex flex-col">
+                                <div className="sticky top-28 bg-white border border-slate-200 rounded-3xl shadow-xl flex flex-col max-h-[70vh]">
+                                    <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center shrink-0">
+                                        <h3 className="font-black text-slate-800 flex items-center gap-2">
+                                            <LayoutGrid className="w-4 h-4 text-indigo-600" /> Optik Form
+                                        </h3>
+                                        <Badge variant="secondary" className="bg-white border-slate-200 text-indigo-600 font-bold">
+                                            {Object.keys(mcqAnswers).length}/{totalQuestions}
+                                        </Badge>
+                                    </div>
+                                    <ScrollArea className="flex-1 p-4">
+                                        <div className="space-y-4">
+                                            {Array.from({ length: totalQuestions }).map((_, i) => {
+                                                const qNum = (i + 1).toString();
+                                                return (
+                                                    <div key={qNum} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
+                                                        <div className="w-8 font-bold text-slate-400 text-lg">{i + 1}</div>
+                                                        <RadioGroup 
+                                                            value={mcqAnswers[qNum] || ""} 
+                                                            onValueChange={(v) => handleMcqAnswerChange(qNum, v)}
+                                                            className="flex-1 flex justify-between gap-1"
+                                                        >
+                                                            {options.map(option => (
+                                                                <div key={option} className="flex flex-col items-center gap-1">
+                                                                    <RadioGroupItem value={option} id={`q${qNum}-${option}`} className="peer sr-only" />
+                                                                    <Label htmlFor={`q${qNum}-${option}`} className={cn(glassColors.OPTION_BUTTON, "w-9 h-9 text-sm")}>{option}</Label>
+                                                                </div>
+                                                            ))}
+                                                        </RadioGroup>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </ScrollArea>
+                                    <div className="p-4 border-t bg-slate-50/50 shrink-0">
+                                         <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button type="button" size="lg" className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg" disabled={isSubmitting}>
+                                                    {isSubmitting ? <Loader2 className="animate-spin h-5 w-5"/> : "Sınavı Bitir"}
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent className="bg-white rounded-3xl">
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Bitirmek İstediğine Emin Misin?</AlertDialogTitle>
+                                                    <AlertDialogDescription>Tüm cevapların kaydedilecek.</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel className="rounded-xl">Vazgeç</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleSubmit(false)} className="bg-emerald-600 rounded-xl">Bitir</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                </div>
+                            </div>
+                        </main>
+                    ) : (
+                        /* OTHER TEST VIEWS */
+                        <main className="flex-1 max-w-4xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 pb-32">
+                            
+                            {/* LEFT COLUMN: QUESTION AREA */}
+                            <div className="lg:col-span-8 space-y-6">
+                                <AnimatePresence mode="wait">
+                                    {isSingleQuestionView ? (
+                                        <motion.div 
+                                            key={currentQuestionIndex}
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -20 }}
+                                            transition={{ duration: 0.2 }}
+                                        >
+                                            {test.sourceType === 'json' && test.jsonQuestions ? (
+                                                /* JSON SINGLE QUESTION */
+                                                <Card className="overflow-hidden bg-white border border-slate-200 shadow-lg rounded-3xl">
+                                                    <CardHeader className="bg-slate-50/50 border-b p-6">
+                                                        <div className="flex gap-4">
+                                                            <Badge className="h-10 w-10 rounded-full flex items-center justify-center p-0 text-lg font-black bg-indigo-600 shrink-0">
+                                                                {currentQuestionIndex + 1}
+                                                            </Badge>
+                                                            <p className="text-xl font-bold text-slate-800 leading-tight pt-1">
+                                                                {test.jsonQuestions[currentQuestionIndex].text}
+                                                            </p>
+                                                        </div>
+                                                    </CardHeader>
+                                                    <CardContent className="p-6">
+                                                        <RadioGroup 
+                                                            value={mcqAnswers[(currentQuestionIndex + 1).toString()] || ""} 
+                                                            onValueChange={(v) => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), v)}
+                                                            className="space-y-4"
+                                                        >
+                                                            {test.jsonQuestions[currentQuestionIndex].options.map((opt, optIdx) => {
+                                                                const letter = String.fromCharCode(65 + optIdx);
+                                                                const isSelected = mcqAnswers[(currentQuestionIndex + 1).toString()] === opt;
+                                                                const itemId = `q${currentQuestionIndex}-${optIdx}`;
+                                                                return (
+                                                                    <div 
+                                                                        key={optIdx} 
+                                                                        className={cn(
+                                                                            "relative flex items-center space-x-3 p-5 rounded-2xl border-2 transition-all cursor-pointer",
+                                                                            isSelected 
+                                                                                ? "bg-indigo-50 border-indigo-600 shadow-sm" 
+                                                                                : "bg-white border-slate-100 hover:border-indigo-200 hover:bg-slate-50"
+                                                                        )}
+                                                                    >
+                                                                        <RadioGroupItem value={opt} id={itemId} className="peer sr-only" />
+                                                                        <Label 
+                                                                            htmlFor={itemId} 
+                                                                            className="flex flex-1 items-center gap-4 cursor-pointer"
+                                                                        >
+                                                                            <div className={cn(
+                                                                                "w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold text-base shrink-0",
+                                                                                isSelected ? "bg-indigo-600 border-indigo-600 text-white" : "border-slate-200 text-slate-400"
+                                                                            )}>
+                                                                                {letter}
+                                                                            </div>
+                                                                            <span className="text-lg font-medium text-slate-700">{opt}</span>
+                                                                        </Label>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </RadioGroup>
+                                                    </CardContent>
+                                                </Card>
+                                            ) : (
+                                                /* BANK / MISTAKE SINGLE QUESTION */
+                                                <Card className="overflow-hidden bg-white border border-slate-200 shadow-lg rounded-3xl">
+                                                    <CardHeader className="bg-slate-50/50 border-b p-4 flex flex-row items-center justify-between">
                                                         <Badge className="h-10 w-10 rounded-full flex items-center justify-center p-0 text-lg font-black bg-indigo-600 shrink-0">
                                                             {currentQuestionIndex + 1}
                                                         </Badge>
-                                                        <p className="text-xl font-bold text-slate-800 leading-tight pt-1">
-                                                            {test.jsonQuestions[currentQuestionIndex].text}
-                                                        </p>
-                                                    </div>
-                                                </CardHeader>
-                                                <CardContent className="p-6">
-                                                    <RadioGroup 
-                                                        value={mcqAnswers[(currentQuestionIndex + 1).toString()] || ""} 
-                                                        onValueChange={(v) => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), v)}
-                                                        className="space-y-4"
-                                                    >
-                                                        {test.jsonQuestions[currentQuestionIndex].options.map((opt, optIdx) => {
-                                                            const letter = String.fromCharCode(65 + optIdx);
-                                                            const isSelected = mcqAnswers[(currentQuestionIndex + 1).toString()] === opt;
-                                                            const itemId = `q${currentQuestionIndex}-${optIdx}`;
-                                                            return (
-                                                                <div 
-                                                                    key={optIdx} 
-                                                                    className={cn(
-                                                                        "relative flex items-center space-x-3 p-5 rounded-2xl border-2 transition-all cursor-pointer",
-                                                                        isSelected 
-                                                                            ? "bg-indigo-50 border-indigo-600 shadow-sm" 
-                                                                            : "bg-white border-slate-100 hover:border-indigo-200 hover:bg-slate-50"
-                                                                    )}
+                                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Soru Görseli</span>
+                                                    </CardHeader>
+                                                    <CardContent className="p-0">
+                                                        <div className="relative w-full aspect-video bg-slate-50">
+                                                            {test.questions && test.questions[currentQuestionIndex] && (
+                                                                <Image 
+                                                                    src={test.questions[currentQuestionIndex].imageUrl} 
+                                                                    alt={`Soru ${currentQuestionIndex + 1}`} 
+                                                                    fill 
+                                                                    className="object-contain p-4"
+                                                                    data-ai-hint="exam question"
+                                                                />
+                                                            )}
+                                                        </div>
+                                                        <div className="p-8 border-t bg-white">
+                                                            <p className="text-sm font-bold text-slate-500 mb-6 uppercase tracking-wider">Cevabınız:</p>
+                                                            {test.openEnded ? (
+                                                                <Textarea 
+                                                                    placeholder="Cevabınızı buraya yazın..." 
+                                                                    value={textAnswers[(currentQuestionIndex + 1).toString()] || ""} 
+                                                                    onChange={(e) => handleTextAnswerChange(currentQuestionIndex + 1, e.target.value)} 
+                                                                    className={cn("min-h-[150px] rounded-2xl text-lg", glassColors.INPUT_BG)}
+                                                                />
+                                                            ) : (
+                                                                <RadioGroup 
+                                                                    value={mcqAnswers[(currentQuestionIndex + 1).toString()] || ""} 
+                                                                    onValueChange={(v) => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), v)}
+                                                                    className="flex flex-wrap gap-4"
                                                                 >
-                                                                    <RadioGroupItem value={opt} id={itemId} className="peer sr-only" />
-                                                                    <Label 
-                                                                        htmlFor={itemId} 
-                                                                        className="flex flex-1 items-center gap-4 cursor-pointer"
-                                                                    >
-                                                                        <div className={cn(
-                                                                            "w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold text-base shrink-0",
-                                                                            isSelected ? "bg-indigo-600 border-indigo-600 text-white" : "border-slate-200 text-slate-400"
-                                                                        )}>
-                                                                            {letter}
+                                                                    {options.slice(0, 5).map(opt => (
+                                                                        <div key={opt} className="flex items-center">
+                                                                            <RadioGroupItem value={opt} id={`opt-${opt}`} className="peer sr-only" />
+                                                                            <Label htmlFor={`opt-${opt}`} className={cn(glassColors.OPTION_BUTTON, "w-14 h-14 text-xl")}>{opt}</Label>
                                                                         </div>
-                                                                        <span className="text-lg font-medium text-slate-700">{opt}</span>
-                                                                    </Label>
+                                                                    ))}
+                                                                </RadioGroup>
+                                                            )}
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            )}
+
+                                            {/* Navigation Buttons */}
+                                            <div className="flex justify-between items-center mt-8 gap-4">
+                                                <Button 
+                                                    type="button" 
+                                                    variant="outline" 
+                                                    size="lg"
+                                                    onClick={handlePrev} 
+                                                    disabled={currentQuestionIndex === 0}
+                                                    className="h-14 rounded-2xl px-8 font-bold border-slate-200"
+                                                >
+                                                    <ChevronLeft className="mr-2 h-6 w-6" /> Önceki
+                                                </Button>
+
+                                                {currentQuestionIndex === totalQuestions - 1 ? (
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button type="button" size="lg" className="h-14 rounded-2xl px-8 font-bold bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20" disabled={isSubmitting}>
+                                                                {isSubmitting ? <Loader2 className="animate-spin h-6 w-6"/> : "Sınavı Bitir"} <CheckCircle className="ml-2 h-6 w-6" />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent className="bg-white border-slate-200 rounded-3xl shadow-2xl">
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle className="text-2xl font-black">Emin misiniz?</AlertDialogTitle>
+                                                                <AlertDialogDescription className="text-slate-500 text-base">Cevaplarını kaydedip sınavı bitirmek üzeresin.</AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter className="mt-6">
+                                                                <AlertDialogCancel className="bg-slate-100 border-slate-200 rounded-xl h-12 font-bold">Vazgeç</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 font-bold">Evet, Bitir</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                ) : (
+                                                    <Button 
+                                                        type="button" 
+                                                        size="lg"
+                                                        onClick={handleNext} 
+                                                        className="h-14 rounded-2xl px-8 font-bold bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/20"
+                                                    >
+                                                        Sonraki <ChevronRight className="ml-2 h-6 w-6" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    ) : (
+                                        /* PRACTICE EXAM (ACCORDION VIEW) */
+                                        <Accordion type="multiple" className="w-full space-y-4">
+                                            {practiceExam?.subjects.map(subject => {
+                                                // Subject range mapping
+                                                let currentOffset = 0;
+                                                const sub = practiceExam.subjects.find(s => s.id === subject.id)!;
+                                                const idx = practiceExam.subjects.indexOf(sub);
+                                                for(let i=0; i<idx; i++) currentOffset += practiceExam.subjects[i].questionCount;
+                                                const range = { start: currentOffset + 1, end: currentOffset + sub.questionCount };
+
+                                                const isSubjectSubmitted = submittedSubjectIds.includes(subject.id);
+                                                const subjectAnswers = Array.from({ length: subject.questionCount }).map((_, i) => mcqAnswers[(range.start + i).toString()]);
+                                                const answeredCount = subjectAnswers.filter(Boolean).length;
+                                                const correctCount = isSubjectSubmitted ? subjectAnswers.filter((ans, i) => ans === (test.answerKey || {})[(range.start + i).toString()]).length : 0;
+                                                const incorrectCount = isSubjectSubmitted ? subjectAnswers.filter((ans, i) => ans && ans !== (test.answerKey || {})[(range.start + i).toString()]).length : 0;
+
+                                                return (
+                                                    <AccordionItem key={subject.id} value={subject.id} className="border rounded-2xl bg-white overflow-hidden shadow-sm">
+                                                        <AccordionTrigger className="bg-slate-50 hover:bg-slate-100 px-6 py-4 no-underline hover:no-underline">
+                                                            <div className="flex items-center justify-between w-full pr-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="bg-indigo-600 p-2 rounded-lg text-white"><BookOpen className="w-4 h-4" /></div>
+                                                                    <h3 className="font-bold text-slate-800 text-lg">{subject.name}</h3>
                                                                 </div>
-                                                            );
-                                                        })}
-                                                    </RadioGroup>
-                                                </CardContent>
-                                            </Card>
-                                        ) : (
-                                            /* BANK / MISTAKE SINGLE QUESTION */
-                                            <Card className="overflow-hidden bg-white border border-slate-200 shadow-lg rounded-3xl">
-                                                <CardHeader className="bg-slate-50/50 border-b p-4 flex flex-row items-center justify-between">
-                                                    <Badge className="h-10 w-10 rounded-full flex items-center justify-center p-0 text-lg font-black bg-indigo-600 shrink-0">
-                                                        {currentQuestionIndex + 1}
-                                                    </Badge>
-                                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Soru Görseli</span>
-                                                </CardHeader>
-                                                <CardContent className="p-0">
-                                                    <div className="relative w-full aspect-video bg-slate-50">
-                                                        {test.questions && test.questions[currentQuestionIndex] && (
-                                                            <Image 
-                                                                src={test.questions[currentQuestionIndex].imageUrl} 
-                                                                alt={`Soru ${currentQuestionIndex + 1}`} 
-                                                                fill 
-                                                                className="object-contain p-4"
-                                                                data-ai-hint="exam question"
-                                                            />
-                                                        )}
-                                                    </div>
-                                                    <div className="p-8 border-t bg-white">
-                                                        <p className="text-sm font-bold text-slate-500 mb-6 uppercase tracking-wider">Cevabınız:</p>
-                                                        {test.openEnded ? (
-                                                            <Textarea 
-                                                                placeholder="Cevabınızı buraya yazın..." 
-                                                                value={textAnswers[(currentQuestionIndex + 1).toString()] || ""} 
-                                                                onChange={(e) => handleTextAnswerChange(currentQuestionIndex + 1, e.target.value)} 
-                                                                className={cn("min-h-[150px] rounded-2xl text-lg", glassColors.INPUT_BG)}
-                                                            />
-                                                        ) : (
-                                                            <RadioGroup 
-                                                                value={mcqAnswers[(currentQuestionIndex + 1).toString()] || ""} 
-                                                                onValueChange={(v) => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), v)}
-                                                                className="flex flex-wrap gap-4"
-                                                            >
-                                                                {options.slice(0, 5).map(opt => (
-                                                                    <div key={opt} className="flex items-center">
-                                                                        <RadioGroupItem value={opt} id={`opt-${opt}`} className="peer sr-only" />
-                                                                        <Label htmlFor={`opt-${opt}`} className={cn(glassColors.OPTION_BUTTON, "w-14 h-14 text-xl")}>{opt}</Label>
-                                                                    </div>
-                                                                ))}
-                                                            </RadioGroup>
-                                                        )}
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        )}
-
-                                        {/* Navigation Buttons */}
-                                        <div className="flex justify-between items-center mt-8 gap-4">
-                                            <Button 
-                                                type="button" 
-                                                variant="outline" 
-                                                size="lg"
-                                                onClick={handlePrev} 
-                                                disabled={currentQuestionIndex === 0}
-                                                className="h-14 rounded-2xl px-8 font-bold border-slate-200"
-                                            >
-                                                <ChevronLeft className="mr-2 h-6 w-6" /> Önceki
-                                            </Button>
-
-                                            {currentQuestionIndex === totalQuestions - 1 ? (
+                                                                <div className="flex items-center gap-2">
+                                                                    {isSubjectSubmitted ? (
+                                                                        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                                                                            {correctCount}D - {incorrectCount}Y
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <Badge variant="secondary" className="bg-white border-slate-200 text-slate-500 font-bold px-3 py-1 shadow-sm">
+                                                                            {answeredCount}/{subject.questionCount} Soru
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </AccordionTrigger>
+                                                        <AccordionContent className="p-0 border-t">
+                                                            <div className="divide-y divide-slate-100 bg-white">
+                                                                {Array.from({ length: subject.questionCount }).map((_, i) => {
+                                                                    const qNum = range.start + i;
+                                                                    const qNumStr = qNum.toString();
+                                                                    const studentAns = mcqAnswers[qNumStr];
+                                                                    const correctAns = (test.answerKey || {})[qNumStr];
+                                                                    
+                                                                    return (
+                                                                        <div key={qNum} className="flex items-center p-3 sm:p-4 hover:bg-slate-50 transition-colors">
+                                                                            <div className="w-12 text-center font-bold text-slate-400 text-lg">{i + 1}</div>
+                                                                            
+                                                                            {isSubjectSubmitted ? (
+                                                                                <div className="flex-1 flex gap-4 ml-4">
+                                                                                    <span className={cn("font-bold text-lg", studentAns === correctAns ? "text-emerald-600" : "text-rose-600")}>
+                                                                                        {studentAns || "Boş"}
+                                                                                    </span>
+                                                                                    {studentAns !== correctAns && <span className="text-emerald-600 font-bold text-lg">Doğru: {correctAns}</span>}
+                                                                                </div>
+                                                                            ) : (
+                                                                                <RadioGroup 
+                                                                                    value={studentAns || ""} 
+                                                                                    onValueChange={(v) => handleMcqAnswerChange(qNumStr, v)}
+                                                                                    className="flex-1 flex justify-center sm:justify-start gap-2.5 sm:gap-6 ml-4"
+                                                                                >
+                                                                                    {options.slice(0,4).map(option => (
+                                                                                        <div key={option}>
+                                                                                            <RadioGroupItem value={option} id={`q${qNum}-${option}`} className="peer sr-only" />
+                                                                                            <Label htmlFor={`q${qNum}-${option}`} className={glassColors.OPTION_BUTTON}>{option}</Label>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </RadioGroup>
+                                                                            )}
+                                                                        </div>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                            {!isSubjectSubmitted && (
+                                                                <div className="p-6 bg-slate-50 border-t flex justify-center">
+                                                                    <Button type="button" className="bg-indigo-600 text-white font-bold px-8 rounded-xl h-11" onClick={() => handleSubjectFinish(subject.id)}>
+                                                                        Dersi Bitir ve Sonuçları Gör
+                                                                    </Button>
+                                                                </div>
+                                                            )}
+                                                        </AccordionContent>
+                                                    </AccordionItem>
+                                                )
+                                            })}
+                                            <div className="pt-6">
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
-                                                        <Button type="button" size="lg" className="h-14 rounded-2xl px-8 font-bold bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20" disabled={isSubmitting}>
-                                                            {isSubmitting ? <Loader2 className="animate-spin h-6 w-6"/> : "Sınavı Bitir"} <CheckCircle className="ml-2 h-6 w-6" />
+                                                        <Button type="button" size="lg" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-14 shadow-2xl rounded-2xl text-lg transition-transform active:scale-95" disabled={isSubmitting}>
+                                                            {isSubmitting ? <Loader2 className="animate-spin h-6 w-6"/> : "Tüm Testi Bitir ve Genel Sonucu Gör"} <Check className="ml-3 h-6 w-6" />
                                                         </Button>
                                                     </AlertDialogTrigger>
                                                     <AlertDialogContent className="bg-white border-slate-200 rounded-3xl shadow-2xl">
                                                         <AlertDialogHeader>
-                                                            <AlertDialogTitle className="text-2xl font-black">Emin misiniz?</AlertDialogTitle>
-                                                            <AlertDialogDescription className="text-slate-500 text-base">Cevaplarını kaydedip sınavı bitirmek üzeresin.</AlertDialogDescription>
+                                                            <AlertDialogTitle className="text-2xl font-black">Sınavı Bitir?</AlertDialogTitle>
+                                                            <AlertDialogDescription className="text-slate-500 text-base">Genel sonucunuz hesaplanacaktır.</AlertDialogDescription>
                                                         </AlertDialogHeader>
-                                                        <AlertDialogFooter className="mt-6">
-                                                            <AlertDialogCancel className="bg-slate-100 border-slate-200 rounded-xl h-12 font-bold">Vazgeç</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 font-bold">Evet, Bitir</AlertDialogAction>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel className="bg-slate-100 border-slate-200 rounded-xl h-12 font-bold">İptal</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 font-bold">Bitir</AlertDialogAction>
                                                         </AlertDialogFooter>
                                                     </AlertDialogContent>
                                                 </AlertDialog>
-                                            ) : (
-                                                <Button 
-                                                    type="button" 
-                                                    size="lg"
-                                                    onClick={handleNext} 
-                                                    className="h-14 rounded-2xl px-8 font-bold bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/20"
-                                                >
-                                                    Sonraki <ChevronRight className="ml-2 h-6 w-6" />
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </motion.div>
-                                ) : (
-                                    /* PRACTICE EXAM (ACCORDION VIEW) */
-                                    <Accordion type="multiple" className="w-full space-y-4">
-                                        {practiceExam?.subjects.map(subject => {
-                                            // Subject range mapping
-                                            let currentOffset = 0;
-                                            const sub = practiceExam.subjects.find(s => s.id === subject.id)!;
-                                            const idx = practiceExam.subjects.indexOf(sub);
-                                            for(let i=0; i<idx; i++) currentOffset += practiceExam.subjects[i].questionCount;
-                                            const range = { start: currentOffset + 1, end: currentOffset + sub.questionCount };
-
-                                            const isSubjectSubmitted = submittedSubjectIds.includes(subject.id);
-                                            const subjectAnswers = Array.from({ length: subject.questionCount }).map((_, i) => mcqAnswers[(range.start + i).toString()]);
-                                            const answeredCount = subjectAnswers.filter(Boolean).length;
-                                            const correctCount = isSubjectSubmitted ? subjectAnswers.filter((ans, i) => ans === (test.answerKey || {})[(range.start + i).toString()]).length : 0;
-                                            const incorrectCount = isSubjectSubmitted ? subjectAnswers.filter((ans, i) => ans && ans !== (test.answerKey || {})[(range.start + i).toString()]).length : 0;
-
-                                            return (
-                                                <AccordionItem key={subject.id} value={subject.id} className="border rounded-2xl bg-white overflow-hidden shadow-sm">
-                                                    <AccordionTrigger className="bg-slate-50 hover:bg-slate-100 px-6 py-4 no-underline hover:no-underline">
-                                                        <div className="flex items-center justify-between w-full pr-4">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="bg-indigo-600 p-2 rounded-lg text-white"><BookOpen className="w-4 h-4" /></div>
-                                                                <h3 className="font-bold text-slate-800 text-lg">{subject.name}</h3>
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                {isSubjectSubmitted ? (
-                                                                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
-                                                                        {correctCount}D - {incorrectCount}Y
-                                                                    </Badge>
-                                                                ) : (
-                                                                    <Badge variant="secondary" className="bg-white border-slate-200 text-slate-500 font-bold px-3 py-1 shadow-sm">
-                                                                        {answeredCount}/{subject.questionCount} Soru
-                                                                    </Badge>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </AccordionTrigger>
-                                                    <AccordionContent className="p-0 border-t">
-                                                        <div className="divide-y divide-slate-100 bg-white">
-                                                            {Array.from({ length: subject.questionCount }).map((_, i) => {
-                                                                const qNum = range.start + i;
-                                                                const qNumStr = qNum.toString();
-                                                                const studentAns = mcqAnswers[qNumStr];
-                                                                const correctAns = (test.answerKey || {})[qNumStr];
-                                                                
-                                                                return (
-                                                                    <div key={qNum} className="flex items-center p-3 sm:p-4 hover:bg-slate-50 transition-colors">
-                                                                        <div className="w-12 text-center font-bold text-slate-400 text-lg">{i + 1}</div>
-                                                                        
-                                                                        {isSubjectSubmitted ? (
-                                                                            <div className="flex-1 flex gap-4 ml-4">
-                                                                                <span className={cn("font-bold text-lg", studentAns === correctAns ? "text-emerald-600" : "text-rose-600")}>
-                                                                                    {studentAns || "Boş"}
-                                                                                </span>
-                                                                                {studentAns !== correctAns && <span className="text-emerald-600 font-bold text-lg">Doğru: {correctAns}</span>}
-                                                                            </div>
-                                                                        ) : (
-                                                                            <RadioGroup 
-                                                                                value={studentAns || ""} 
-                                                                                onValueChange={(v) => handleMcqAnswerChange(qNumStr, v)}
-                                                                                className="flex-1 flex justify-center sm:justify-start gap-2.5 sm:gap-6 ml-4"
-                                                                            >
-                                                                                {options.slice(0,4).map(option => (
-                                                                                    <div key={option}>
-                                                                                        <RadioGroupItem value={option} id={`q${qNum}-${option}`} className="peer sr-only" />
-                                                                                        <Label htmlFor={`q${qNum}-${option}`} className={glassColors.OPTION_BUTTON}>{option}</Label>
-                                                                                    </div>
-                                                                                ))}
-                                                                            </RadioGroup>
-                                                                        )}
-                                                                    </div>
-                                                                )
-                                                            })}
-                                                        </div>
-                                                        {!isSubjectSubmitted && (
-                                                            <div className="p-6 bg-slate-50 border-t flex justify-center">
-                                                                <Button type="button" className="bg-indigo-600 text-white font-bold px-8 rounded-xl h-11" onClick={() => handleSubjectFinish(subject.id)}>
-                                                                    Dersi Bitir ve Sonuçları Gör
-                                                                </Button>
-                                                            </div>
-                                                        )}
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            )
-                                        })}
-                                        <div className="pt-6">
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button type="button" size="lg" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-14 shadow-2xl rounded-2xl text-lg transition-transform active:scale-95" disabled={isSubmitting}>
-                                                        {isSubmitting ? <Loader2 className="animate-spin h-6 w-6"/> : "Tüm Testi Bitir ve Genel Sonucu Gör"} <Check className="ml-3 h-6 w-6" />
-                                                    </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent className="bg-white border-slate-200 rounded-3xl shadow-2xl">
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle className="text-2xl font-black">Sınavı Bitir?</AlertDialogTitle>
-                                                        <AlertDialogDescription className="text-slate-500 text-base">Genel sonucunuz hesaplanacaktır.</AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter className="mt-6">
-                                                        <AlertDialogCancel className="bg-slate-100 border-slate-200 rounded-xl h-12 font-bold">İptal</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 font-bold">Bitir</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </div>
-                                    </Accordion>
-                                )}
-                            </AnimatePresence>
-                        </div>
-
-                        {/* RIGHT COLUMN: QUESTION PALETTE (DESKTOP) */}
-                        <div className="hidden lg:block lg:col-span-4">
-                            <div className={cn("sticky top-28 rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-xl")}>
-                                <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center">
-                                    <h3 className="font-black text-slate-800 flex items-center gap-2">
-                                        <LayoutGrid className="w-4 h-4 text-indigo-600" /> Soru Gezgini
-                                    </h3>
-                                    <Badge variant="secondary" className="bg-white border-slate-200 text-indigo-600 font-bold">
-                                        {Object.keys(mcqAnswers).length + Object.keys(textAnswers).length}/{totalQuestions}
-                                    </Badge>
-                                </div>
-                                <ScrollArea className="h-[500px]">
-                                    <QuestionPalette 
-                                        total={totalQuestions} 
-                                        currentIndex={currentQuestionIndex} 
-                                        onNavigate={setCurrentQuestionIndex} 
-                                        isAnswered={isQuestionAnswered} 
-                                        practiceExam={practiceExam} 
-                                        submittedSubjects={submittedSubjectIds}
-                                    />
-                                </ScrollArea>
+                                            </div>
+                                        </Accordion>
+                                    )}
+                                </AnimatePresence>
                             </div>
-                        </div>
-                    </main>
-                    
-                    {/* MOBILE: PALETTE BUTTON & SHEET */}
-                    <div className="lg:hidden fixed bottom-24 left-6 z-50">
-                        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                            <SheetTrigger asChild>
-                                <Button type="button" size="icon" className="h-14 w-14 rounded-full bg-indigo-600 text-white shadow-2xl border-2 border-white ring-4 ring-indigo-500/20 active:scale-95 transition-all">
-                                    <LayoutGrid className="w-6 h-6" />
-                                </Button>
-                            </SheetTrigger>
-                            <SheetContent side="bottom" className="rounded-t-[2.5rem] bg-white p-6 h-[70vh]">
-                                <SheetHeader className="mb-4">
-                                    <SheetTitle className="flex items-center justify-center gap-3 font-black text-xl">Soru Gezgini</SheetTitle>
-                                </SheetHeader>
-                                <ScrollArea className="h-full">
-                                    <div className="pb-24">
+
+                            {/* RIGHT COLUMN: QUESTION PALETTE (DESKTOP) */}
+                            <div className="hidden lg:block lg:col-span-4">
+                                <div className={cn("sticky top-28 rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-xl")}>
+                                    <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center">
+                                        <h3 className="font-black text-slate-800 flex items-center gap-2">
+                                            <LayoutGrid className="w-4 h-4 text-indigo-600" /> Soru Gezgini
+                                        </h3>
+                                        <Badge variant="secondary" className="bg-white border-slate-200 text-indigo-600 font-bold">
+                                            {Object.keys(mcqAnswers).length + Object.keys(textAnswers).length}/{totalQuestions}
+                                        </Badge>
+                                    </div>
+                                    <ScrollArea className="h-[500px]">
                                         <QuestionPalette 
                                             total={totalQuestions} 
                                             currentIndex={currentQuestionIndex} 
-                                            onNavigate={(idx) => {
-                                                setCurrentQuestionIndex(idx);
-                                                setIsSheetOpen(false);
-                                            }} 
+                                            onNavigate={setCurrentQuestionIndex} 
                                             isAnswered={isQuestionAnswered} 
                                             practiceExam={practiceExam} 
                                             submittedSubjects={submittedSubjectIds}
                                         />
-                                    </div>
-                                </ScrollArea>
-                            </SheetContent>
-                        </Sheet>
-                    </div>
+                                    </ScrollArea>
+                                </div>
+                            </div>
+                        </main>
+                    )}
+                    
+                    {/* MOBILE: PALETTE BUTTON & SHEET */}
+                    {!isHtmlTest && (
+                        <div className="lg:hidden fixed bottom-24 left-6 z-50">
+                            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                                <SheetTrigger asChild>
+                                    <Button type="button" size="icon" className="h-14 w-14 rounded-full bg-indigo-600 text-white shadow-2xl border-2 border-white ring-4 ring-indigo-500/20 active:scale-95 transition-all">
+                                        <LayoutGrid className="w-6 h-6" />
+                                    </Button>
+                                </SheetTrigger>
+                                <SheetContent side="bottom" className="rounded-t-[2.5rem] bg-white p-6 h-[70vh]">
+                                    <SheetHeader className="mb-4">
+                                        <SheetTitle className="flex items-center justify-center gap-3 font-black text-xl">Soru Gezgini</SheetTitle>
+                                    </SheetHeader>
+                                    <ScrollArea className="h-full">
+                                        <div className="pb-24">
+                                            <QuestionPalette 
+                                                total={totalQuestions} 
+                                                currentIndex={currentQuestionIndex} 
+                                                onNavigate={(idx) => {
+                                                    setCurrentQuestionIndex(idx);
+                                                    setIsSheetOpen(false);
+                                                }} 
+                                                isAnswered={isQuestionAnswered} 
+                                                practiceExam={practiceExam} 
+                                                submittedSubjects={submittedSubjectIds}
+                                            />
+                                        </div>
+                                    </ScrollArea>
+                                </SheetContent>
+                            </Sheet>
+                        </div>
+                    )}
                 </div>
             </form>
         </Form>
     );
 }
-

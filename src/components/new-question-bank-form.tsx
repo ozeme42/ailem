@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -86,6 +85,9 @@ export function NewQuestionBankForm({
   const [isAddingNewTopic, setIsAddingNewTopic] = React.useState(false);
   const [newItemName, setNewItemName] = React.useState("");
 
+  // DÜZELTME 1: O an eklenen konuların ilgili dersle ilişkilendirilip ekranda kalması için geçici state
+  const [sessionAddedTopics, setSessionAddedTopics] = React.useState<Record<string, string[]>>({});
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -117,6 +119,15 @@ export function NewQuestionBankForm({
         const opts = initialData.options || { 'A': '', 'B': '', 'C': '', 'D': '' };
         setOptionKeys(Object.keys(opts));
         setImageQueue([initialData.imageUrl]);
+        
+        // Düzenleme modundayken mevcut konunun listede görünmesini sağla
+        if (initialData.subject && initialData.topic) {
+            setSessionAddedTopics(prev => ({
+                ...prev,
+                [initialData.subject]: Array.from(new Set([...(prev[initialData.subject] || []), initialData.topic]))
+            }));
+        }
+
         form.reset({
             subject: initialData.subject,
             topic: initialData.topic,
@@ -205,22 +216,45 @@ export function NewQuestionBankForm({
     const name = newItemName.trim();
     if (type === 'subject') {
         if (!availableSubjects.includes(name)) { await updateSubjects([...availableSubjects, name]); onSubjectCreated(name); }
-        setValue('subject', name); setIsAddingNewSubject(false);
+        setValue('subject', name); 
+        setIsAddingNewSubject(false);
     } else {
         if (!availableTopics.includes(name)) { await updateTopics([...availableTopics, name]); onTopicCreated(name); }
-        setValue('topic', name); setIsAddingNewTopic(false);
+        
+        // DÜZELTME 2: Eklenen konuyu o an seçili olan ders ile eşleştir
+        if (watchedSubject) {
+            setSessionAddedTopics(prev => ({
+                ...prev,
+                [watchedSubject]: Array.from(new Set([...(prev[watchedSubject] || []), name]))
+            }));
+        }
+        
+        setValue('topic', name); 
+        setIsAddingNewTopic(false);
     }
     setNewItemName("");
   };
 
+  // DÜZELTME 3: Sadece ilgili derse ait ve oturumda yeni eklenen konuları getir
   const relevantTopics = React.useMemo(() => {
     if (!watchedSubject) return [];
     const topicsSet = new Set<string>();
-    trackedBooks.forEach(book => (book.subjects || []).forEach(s => { if (s.name === watchedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); }));
-    studyPlans.forEach(plan => (plan.subjects || []).forEach(s => { if (s.name === watchedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); }));
-    availableTopics.forEach(t => { if (t) topicsSet.add(t); }); // Add master list too
+    
+    // Kitaplardan gelen bu derse ait konular
+    trackedBooks.forEach(book => (book.subjects || []).forEach(s => { 
+        if (s.name === watchedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
+    }));
+    
+    // Çalışma planlarından gelen bu derse ait konular
+    studyPlans.forEach(plan => (plan.subjects || []).forEach(s => { 
+        if (s.name === watchedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
+    }));
+    
+    // Bu oturumda (form açıkken) eklenen ve bu derse ait konular
+    (sessionAddedTopics[watchedSubject] || []).forEach(t => topicsSet.add(t));
+    
     return Array.from(topicsSet).sort((a, b) => a.localeCompare(b, 'tr'));
-  }, [watchedSubject, trackedBooks, studyPlans, availableTopics]);
+  }, [watchedSubject, trackedBooks, studyPlans, sessionAddedTopics]);
 
   const handleOptionCountChange = (newCount: number) => {
       const currentKeys = [...optionKeys];
@@ -235,45 +269,50 @@ export function NewQuestionBankForm({
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) return;
+    if (!user || !user.uid) {
+        toast({ title: "Oturum Hatası", description: "İşlem yapmak için giriş yapmış olmalısınız.", variant: "destructive" });
+        return;
+    }
+
     setLoading(true);
     try {
       let finalImageUrl = values.imageDataUri;
       
-      // Perform client-side upload if it's a new data URI
       if (values.imageDataUri.startsWith('data:image')) {
-          // Change path to users/{uid}/... to match standard Firebase Storage rules
           const destinationPath = `users/${user.uid}/bank-questions/${Date.now()}-${currentIndex}.jpg`;
           const storageRef = ref(storage, destinationPath);
           await uploadString(storageRef, values.imageDataUri, 'data_url');
           finalImageUrl = await getDownloadURL(storageRef);
       }
       
-      const questionData = {
+      const questionData: any = {
         title: values.originalFilename || values.topic,
         subject: values.subject,
         topic: values.topic,
         imageUrl: finalImageUrl,
-        originalFilename: values.originalFilename,
         type: values.type,
-        options: values.type === 'mcq' ? values.options : undefined,
-        correctAnswer: values.type === 'mcq' ? values.correctAnswer : undefined,
+        originalFilename: values.originalFilename || null, 
       };
+
+      if (values.type === 'mcq') {
+          questionData.options = values.options;
+          questionData.correctAnswer = values.correctAnswer;
+      }
 
       if (initialData) {
           await updateBankQuestion(initialData.id, questionData);
           toast({ title: "Güncellendi ✨" });
           onQuestionProcessed();
       } else {
-          await addBankQuestion(questionData as any);
+          await addBankQuestion(questionData);
           
           if (currentIndex < imageQueue.length - 1) {
               const nextIdx = currentIndex + 1;
               setCurrentIndex(nextIdx);
               setValue('imageDataUri', imageQueue[nextIdx]);
               setValue('originalFilename', '');
-              setCurrentStep('subject'); // Go back to start of categorization for next image
-              toast({ title: "Kaydedildi, Sıradaki Soruya Geçildi" });
+              setCurrentStep('subject'); 
+              toast({ title: "Kaydedildi", description: "Sıradaki Soruya Geçildi" });
           } else {
               toast({ title: "Tamamlandı ✨", description: "Tüm sorular başarıyla kaydedildi." });
               onQuestionProcessed();
@@ -281,10 +320,12 @@ export function NewQuestionBankForm({
       }
     } catch (error: any) {
       console.error("Save error:", error);
-      let errorMessage = error.message || "Bilinmeyen bir hata oluştu.";
+      let errorMessage = "Bilinmeyen bir hata oluştu. Lütfen tekrar deneyin.";
+      
       if (error.code === 'storage/unauthorized') {
-          errorMessage = "Dosya yükleme yetkiniz yok. Lütfen Firebase Storage servisinin açık olduğundan emin olun.";
+          errorMessage = "Dosya yükleme yetkiniz reddedildi. Lütfen Firebase Storage güvenlik kurallarını (Rules) güncellediğinizden emin olun.";
       }
+      
       toast({ title: "Kaydedilemedi", description: errorMessage, variant: "destructive" });
     } finally {
       setLoading(false);
