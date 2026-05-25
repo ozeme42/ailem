@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { tr } from "date-fns/locale";
 
 // --- YARDIMCI FONKSİYON ---
 const generateSafeId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -101,10 +102,10 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
   };
 
   const handleFormError = (errors: any) => {
-    console.error("Validation Errors:", errors);
+    console.error("Plan Form Errors:", errors);
     toast({
         title: "Formda Eksik Var ⚠️",
-        description: "Lütfen plan başlığını ve dersleri kontrol edin.",
+        description: "Lütfen plan başlığını kontrol edin.",
         variant: "destructive"
     });
   };
@@ -245,6 +246,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
 // ALT BİLEŞEN: DERS EDİTÖRÜ (INNER MODAL)
 // ==========================================
 function SubjectEditor({ initialData, onSave, onCancel }: { initialData: SubjectType | null, onSave: (data: SubjectType) => void, onCancel: () => void }) {
+    const { toast } = useToast();
     const form = useForm<SubjectType>({
         resolver: zodResolver(subjectSchema),
         defaultValues: initialData || {
@@ -257,6 +259,31 @@ function SubjectEditor({ initialData, onSave, onCancel }: { initialData: Subject
         control: form.control,
         name: "topics"
     });
+
+    // Sync form when initialData changes
+    React.useEffect(() => {
+        if (initialData) {
+            form.reset(initialData);
+        } else {
+            form.reset({
+                name: "",
+                topics: [{ name: "", sources: [""] }]
+            });
+        }
+    }, [initialData, form]);
+
+    const handleInternalSubmit = (data: SubjectType) => {
+        onSave(data);
+    };
+
+    const handleInternalError = (errors: any) => {
+        console.error("Subject Editor Errors:", errors);
+        toast({
+            title: "Ders Bilgileri Eksik ⚠️",
+            description: "Lütfen ders adını ve tüm konu başlıklarını doldurun.",
+            variant: "destructive"
+        });
+    };
 
     return (
         <div className="flex flex-col h-full overflow-hidden bg-white dark:bg-slate-950">
@@ -335,7 +362,7 @@ function SubjectEditor({ initialData, onSave, onCancel }: { initialData: Subject
             </ScrollArea>
             
             <div className="p-4 md:p-6 border-t dark:border-white/5 bg-slate-50 dark:bg-slate-900 shrink-0">
-                <Button onClick={form.handleSubmit(onSave)} type="button" className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-md text-white">
+                <Button onClick={form.handleSubmit(handleInternalSubmit, handleInternalError)} type="button" className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-md text-white">
                     Modülü Tamamla <Check className="ml-2 h-4 w-4" />
                 </Button>
             </div>
