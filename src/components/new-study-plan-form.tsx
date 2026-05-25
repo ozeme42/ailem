@@ -3,14 +3,14 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray, Control, FormProvider } from "react-hook-form";
+import { useForm, useFieldArray, Control } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
-import type { StudyPlan, StudyPlanSubject, StudyTopic } from "@/lib/data";
+import type { StudyPlan } from "@/lib/data";
 import { PlusCircle, Trash2, BookOpen, Layers, Link as LinkIcon, FileText, Plus, X, ChevronRight, ChevronLeft, Check, Sparkles } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -63,6 +63,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
     },
   });
   
+  // Re-sync when initialData changes (for editing)
   React.useEffect(() => {
     if (initialData) {
       form.reset({
@@ -104,7 +105,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
   const stepIndex = steps.indexOf(currentStep);
 
   const goToNext = async () => {
-    const isStepValid = await form.trigger(currentStep === 'info' ? ['title', 'description'] : ['subjects']);
+    const isStepValid = await form.trigger(['title', 'description']);
     if (isStepValid) {
         setCurrentStep('curriculum');
     }
@@ -184,6 +185,16 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
                                         )}
                                     />
                                 </div>
+                                
+                                {initialData && (
+                                    <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                                        <p className="text-[10px] font-black uppercase text-slate-400 mb-2">Mevcut Yapı Özeti</p>
+                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                                            {initialData.subjects?.length || 0} Ders ve {initialData.subjects?.reduce((acc, s) => acc + (s.topics?.length || 0), 0) || 0} Konu tanımlı.
+                                        </p>
+                                    </div>
+                                )}
+
                                 <div className="bg-indigo-50 dark:bg-indigo-900/20 p-6 rounded-3xl border border-indigo-100 dark:border-indigo-800/50 flex items-start gap-4">
                                     <div className="p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm text-indigo-600">
                                         <Sparkles className="w-6 h-6" />
@@ -275,7 +286,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
                     <>
                         <Button type="button" variant="ghost" onClick={() => form.reset()} className="flex-1 h-12 rounded-2xl font-bold">Temizle</Button>
                         <Button type="button" onClick={goToNext} className="flex-[2] h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-500/20 text-white transition-all active:scale-95">
-                            Dersleri Ekle <ChevronRight className="ml-2 h-5 w-5" />
+                            Dersleri Düzenle <ChevronRight className="ml-2 h-5 w-5" />
                         </Button>
                     </>
                 ) : (
@@ -295,7 +306,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
   );
 }
 
-function TopicArrayComponent({ subjectIndex, control }: { subjectIndex: number, control: Control<z.infer<typeof formSchema>> }) {
+function TopicArrayComponent({ subjectIndex, control }: { subjectIndex: number, control: any }) {
     const { fields, append, remove } = useFieldArray({
         control,
         name: `subjects.${subjectIndex}.topics`,
@@ -360,7 +371,7 @@ function TopicArrayComponent({ subjectIndex, control }: { subjectIndex: number, 
     );
 }
 
-function SourceArrayComponent({ subjectIndex, topicIndex, control}: { subjectIndex: number, topicIndex: number, control: Control<z.infer<typeof formSchema>>}) {
+function SourceArrayComponent({ subjectIndex, topicIndex, control}: { subjectIndex: number, topicIndex: number, control: any}) {
     const { fields, append, remove } = useFieldArray({
         control: control,
         name: `subjects.${subjectIndex}.topics.${topicIndex}.sources`,
