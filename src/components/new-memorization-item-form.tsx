@@ -8,7 +8,8 @@ import { z } from 'zod';
 import { useAuth } from '@/components/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import { addMemorizationItem, updateMemorizationItem } from '@/lib/dataService';
-import { migrateImage } from '@/ai/flows/migrate-image-flow';
+import { storage } from '@/lib/firebase';
+import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -82,13 +83,9 @@ export function NewMemorizationItemForm({ onFormSubmit, initialData }: NewMemori
         if (values.newImageDataUri) {
              toast({ title: "Görsel Yükleniyor...", description: "Görsel depolama alanına kaydediliyor." });
              const destinationPath = `ezber-images/${user.uid}-${Date.now()}.jpg`;
-             const migrationResult = await migrateImage({ imageDataUri: values.newImageDataUri, destinationPath });
-
-             if (migrationResult.success && migrationResult.newUrl) {
-                finalImageUrl = migrationResult.newUrl;
-             } else {
-                 throw new Error(migrationResult.error || 'Bilinmeyen bir görsel yükleme hatası.');
-             }
+             const storageRef = ref(storage, destinationPath);
+             await uploadString(storageRef, values.newImageDataUri, 'data_url');
+             finalImageUrl = await getDownloadURL(storageRef);
         }
 
       const itemData: Omit<MemorizationItem, 'id' | 'familyId'> = {

@@ -8,7 +8,8 @@ import { z } from 'zod';
 import { useAuth } from '@/components/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import { onSubjectsUpdate, updateSubjects, addMistake, onTopicsUpdate, updateTopics } from '@/lib/dataService';
-import { migrateImage } from '@/ai/flows/migrate-image-flow';
+import { storage } from '@/lib/firebase';
+import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -147,20 +148,15 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
     try {
       toast({ title: "Görseller Yükleniyor...", description: `${values.imageDataUris.length} adet soru havuza ekleniyor.` });
 
-      for (const imageDataUri of values.imageDataUris) {
-         const destinationPath = `mistake-pool/${user.uid}-${Date.now()}-${Math.random()}.jpg`;
-         const migrationResult = await migrateImage({
-            imageDataUri: imageDataUri,
-            destinationPath,
-         });
-
-         if (!migrationResult.success || !migrationResult.newUrl) {
-            throw new Error(migrationResult.error || 'Resim yüklenemedi.');
-         }
+      for (const [index, imageDataUri] of values.imageDataUris.entries()) {
+         const destinationPath = `mistake-pool/${user.uid}-${Date.now()}-${index}.jpg`;
+         const storageRef = ref(storage, destinationPath);
+         await uploadString(storageRef, imageDataUri, 'data_url');
+         const publicUrl = await getDownloadURL(storageRef);
 
          const mistakeData = {
             creatorId: user.uid,
-            imageUrl: migrationResult.newUrl,
+            imageUrl: publicUrl,
             subject: values.subject,
             topic: values.topic,
             createdAt: new Date().toISOString(),

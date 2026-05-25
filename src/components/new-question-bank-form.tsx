@@ -13,7 +13,8 @@ import { BankQuestion, TrackedBook, StudyPlan } from "@/lib/data";
 import { useAuth } from "./auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import { addBankQuestion, updateBankQuestion, updateSubjects, updateTopics, onTrackedBooksUpdate, onStudyPlansUpdate } from "@/lib/dataService";
-import { migrateImage } from "@/ai/flows/migrate-image-flow";
+import { storage } from "@/lib/firebase";
+import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import Image from 'next/image';
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -238,11 +239,13 @@ export function NewQuestionBankForm({
     setLoading(true);
     try {
       let finalImageUrl = values.imageDataUri;
+      
+      // Perform client-side upload if it's a new data URI
       if (values.imageDataUri.startsWith('data:image')) {
           const destinationPath = `bank-questions/${user.uid}-${Date.now()}-${currentIndex}.jpg`;
-          const migrationResult = await migrateImage({ imageDataUri: values.imageDataUri, destinationPath });
-          if (!migrationResult.success || !migrationResult.newUrl) throw new Error(migrationResult.error || "Görsel yüklenemedi.");
-          finalImageUrl = migrationResult.newUrl;
+          const storageRef = ref(storage, destinationPath);
+          await uploadString(storageRef, values.imageDataUri, 'data_url');
+          finalImageUrl = await getDownloadURL(storageRef);
       }
       
       const questionData = {
@@ -542,4 +545,3 @@ export function NewQuestionBankForm({
     </div>
   );
 }
-
