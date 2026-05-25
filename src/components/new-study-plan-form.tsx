@@ -15,10 +15,11 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { tr } from "date-fns/locale";
 
 // --- YARDIMCI FONKSİYON ---
-const generateSafeId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
+const generateSafeId = () => {
+    return 'id-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
+};
 
 // --- SCHEMAS ---
 const topicSchema = z.object({
@@ -59,6 +60,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
     defaultValues: {
       title: initialData?.title || "",
     },
+    shouldUnregister: false,
   });
 
   // Sync subjects from initialData
@@ -102,9 +104,9 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
   };
 
   const handleFormError = (errors: any) => {
-    console.error("Plan Form Errors:", errors);
+    console.error("Plan Form Validation Errors:", errors);
     toast({
-        title: "Formda Eksik Var ⚠️",
+        title: "Formda Eksikler Var ⚠️",
         description: "Lütfen plan başlığını kontrol edin.",
         variant: "destructive"
     });
@@ -139,7 +141,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-white dark:bg-slate-950">
-        <DialogHeader className="px-6 py-5 border-b dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+        <DialogHeader className="px-6 py-5 border-b dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/50 shrink-0 text-left">
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
                 <Layers className="w-6 h-6 text-indigo-500" />
                 {initialData ? "Yol Haritasını Düzenle" : "Yeni Yol Haritası"}
@@ -252,7 +254,8 @@ function SubjectEditor({ initialData, onSave, onCancel }: { initialData: Subject
         defaultValues: initialData || {
             name: "",
             topics: [{ name: "", sources: [""] }]
-        }
+        },
+        shouldUnregister: false,
     });
 
     const { fields: topicFields, append: appendTopic, remove: removeTopic } = useFieldArray({
@@ -277,10 +280,21 @@ function SubjectEditor({ initialData, onSave, onCancel }: { initialData: Subject
     };
 
     const handleInternalError = (errors: any) => {
-        console.error("Subject Editor Errors:", errors);
+        console.error("Subject Editor Validation Errors:", errors);
+        
+        // Manuel kontrol (Errors objesi bazen proxy nedeniyle boş görünebilir)
+        const name = form.getValues("name");
+        const topics = form.getValues("topics");
+        const hasEmptyTopic = topics.some(t => !t.name.trim());
+
+        let message = "Lütfen tüm zorunlu alanları doldurun.";
+        if (!name.trim()) message = "Lütfen ders adını yazın.";
+        else if (topics.length === 0) message = "En az bir konu eklemelisiniz.";
+        else if (hasEmptyTopic) message = "Lütfen tüm konu başlıklarını doldurun.";
+
         toast({
-            title: "Ders Bilgileri Eksik ⚠️",
-            description: "Lütfen ders adını ve tüm konu başlıklarını doldurun.",
+            title: "Eksik Bilgi ⚠️",
+            description: message,
             variant: "destructive"
         });
     };
