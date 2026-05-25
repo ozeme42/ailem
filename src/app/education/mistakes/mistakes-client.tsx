@@ -99,7 +99,8 @@ export function MistakesClient() {
         const filteredTestsBySource = tests.filter(t => 
             t.sourceType === 'bank' || 
             t.sourceType === 'quick' || 
-            t.sourceType === 'json'
+            t.sourceType === 'json' ||
+            t.sourceType === 'html'
         );
 
         filteredTestsBySource.forEach(test => {
@@ -181,7 +182,7 @@ export function MistakesClient() {
     }, [tests, trackedBooks, searchTerm]);
 
     // Gruplandırma: Ders > Konu > Test
-    const hiearchy = React.useMemo(() => {
+    const hierarchy = React.useMemo(() => {
         const map: Record<string, Record<string, Record<string, MistakeDetail[]>>> = {};
         
         aggregatedMistakes.forEach(m => {
@@ -275,9 +276,13 @@ export function MistakesClient() {
 
                 {/* HIERARCHICAL ACCORDIONS */}
                 <div className="pb-20">
-                    {Object.keys(hiearchy).length > 0 ? (
-                        <Accordion type="multiple" className="space-y-4">
-                            {Object.entries(hiearchy).map(([subject, topics]) => (
+                    {Object.keys(hierarchy).length > 0 ? (
+                        <Accordion 
+                            type="multiple" 
+                            className="space-y-4" 
+                            defaultValue={Object.keys(hierarchy)}
+                        >
+                            {Object.entries(hierarchy).map(([subject, topics]) => (
                                 <AccordionItem key={subject} value={subject} className="border-none rounded-3xl overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
                                     <AccordionTrigger className="px-6 py-5 hover:no-underline bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                                         <div className="flex items-center gap-4">
@@ -383,4 +388,3 @@ export function MistakesClient() {
         </div>
     );
 }
-
