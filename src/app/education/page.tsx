@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -17,6 +18,7 @@ import { onTestsUpdate, onStudyAssignmentsUpdate, onStudyPlansUpdate, onTrackedB
 import { useAuth } from "@/components/auth-provider";
 import { parse, isPast, isToday, differenceInDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 // ─── RENK SİSTEMİ (Daha Kurumsal ve Yumuşak Tonlar) ───────────────────────
 const C = {
@@ -476,6 +478,11 @@ export default function EducationPage() {
                 const pct = (group.completed / group.total) * 100;
                 const done = group.completed === group.total;
                 const open = expandedBooks.has(group.id);
+                
+                // Konuları Durumlarına Göre Ayır
+                const pending = group.assignments.filter(a => a.status !== 'completed');
+                const completed = group.assignments.filter(a => a.status === 'completed');
+
                 // Kitap kapağı renkleri için sıralı renk dizisi
                 const coverColors = [
                   'from-blue-600 to-indigo-800', 'from-emerald-500 to-teal-700', 
@@ -486,7 +493,15 @@ export default function EducationPage() {
                 return (
                   <div key={group.id} className="bg-white dark:bg-[#1E293B] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
                     {/* Kitap Kapağı Alanı */}
-                    <button onClick={() => toggleBook(group.id)} className="p-5 flex items-start gap-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <button onClick={() => toggleBook(group.id)} className="p-5 flex items-start gap-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors relative">
+                      
+                      {/* BEKLEYEN KONU GÖSTERGESİ (BADGE) */}
+                      {!done && (
+                        <div className="absolute top-4 left-4 z-20">
+                            <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)] animate-pulse border-2 border-white dark:border-[#1E293B]" />
+                        </div>
+                      )}
+
                       {/* 3D Kitap İllüstrasyonu */}
                       <div className={cn("w-16 h-24 rounded-r-md rounded-l-sm shadow-md shrink-0 bg-gradient-to-br relative border-l-4 border-black/20", coverBg)}>
                         <div className="absolute top-2 left-2 text-[8px] font-bold text-white/70 uppercase">Course<br/>Book</div>
@@ -513,35 +528,60 @@ export default function EducationPage() {
 
                     {/* Açılır Görev Listesi */}
                     {open && (
-                      <div className="bg-slate-50 dark:bg-[#0F172A]/50 border-t border-slate-200 dark:border-slate-800 p-2">
-                        {group.assignments.map((a) => (
-                          <div key={a.id} onClick={() => handleCompleteStudy(a.id, a.status)}
-                            className="flex items-start gap-3 p-3 rounded-lg hover:bg-white dark:hover:bg-[#1E293B] cursor-pointer transition-colors group">
-                            
-                            {/* Checkbox */}
-                            <div className={cn("w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 mt-0.5 transition-colors",
-                                a.status === 'completed' ? "bg-emerald-500 border-emerald-500" : "border-slate-300 dark:border-slate-600 group-hover:border-blue-400"
-                              )}>
-                              {a.status === 'completed' && <Check className="w-3.5 h-3.5 text-white" />}
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                              <p className={cn("text-sm font-medium transition-colors",
-                                a.status === 'completed' ? "text-slate-400 line-through" : "text-slate-800 dark:text-slate-200"
-                              )}>
-                                {a.topic}
-                              </p>
-                              <div className="flex items-center gap-3 mt-1.5 opacity-70">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded">{a.subject}</span>
-                                {a.durationMinutes && (
-                                  <span className="flex items-center gap-1 text-xs text-slate-500">
-                                    <Clock className="w-3 h-3" /> {a.durationMinutes} dk
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                      <div className="bg-slate-50 dark:bg-[#0F172A]/50 border-t border-slate-200 dark:border-slate-800 p-2 space-y-4">
+                        
+                        {/* BEKLEYENLER (Her zaman açık) */}
+                        {pending.length > 0 && (
+                          <div className="space-y-1">
+                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-1">Bekleyen Konular</p>
+                             {pending.map((a) => (
+                                <div key={a.id} onClick={() => handleCompleteStudy(a.id, a.status)}
+                                    className="flex items-start gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-[#1E293B] cursor-pointer transition-colors group border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+                                    <div className={cn("w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 mt-0.5 transition-colors border-slate-300 dark:border-slate-600 group-hover:border-blue-400")}>
+                                      {a.status === 'completed' && <Check className="w-3.5 h-3.5 text-white" />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{a.topic}</p>
+                                      <div className="flex items-center gap-3 mt-1 opacity-70">
+                                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded">{a.subject}</span>
+                                      </div>
+                                    </div>
+                                </div>
+                             ))}
                           </div>
-                        ))}
+                        )}
+
+                        {/* TAMAMLANANLAR (Collapsible) */}
+                        {completed.length > 0 && (
+                          <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="completed-list" className="border-none">
+                              <AccordionTrigger className="flex items-center justify-between px-3 py-2 h-8 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:no-underline transition-all">
+                                <div className="flex items-center gap-2">
+                                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tamamlananlar ({completed.length})</span>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="pt-2 pb-0">
+                                <div className="space-y-1">
+                                  {completed.map((a) => (
+                                    <div key={a.id} onClick={() => handleCompleteStudy(a.id, a.status)}
+                                        className="flex items-start gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-[#1E293B] cursor-pointer transition-colors group opacity-60 hover:opacity-100">
+                                        <div className="w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 mt-0.5 transition-colors bg-emerald-500 border-emerald-500">
+                                          <Check className="w-3.5 h-3.5 text-white" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium text-slate-400 line-through">{a.topic}</p>
+                                          <div className="flex items-center gap-3 mt-1 opacity-50">
+                                            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded">{a.subject}</span>
+                                          </div>
+                                        </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          </Accordion>
+                        )}
                       </div>
                     )}
                   </div>
