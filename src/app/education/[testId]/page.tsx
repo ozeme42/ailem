@@ -3,17 +3,17 @@
 
 import * as React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Test as TestType, QuickTestQuestion, PracticeExam, EvaluationStatus, BankQuestion } from "@/lib/data";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Test as TestType, QuickTestQuestion, EvaluationStatus } from "@/lib/data";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, FileQuestion, ArrowRight, Play, Pause, Check, X, MinusCircle, LayoutGrid, BookOpen, ChevronRight, Home, Loader2, Sparkles, Trophy, ChevronLeft, CheckCircle2, XCircle, Eye, Send, MessageSquareText, Maximize2, ImageIcon } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, ArrowRight, Play, Pause, Check, X, MinusCircle, LayoutGrid, Loader2, Sparkles, ChevronRight, ChevronLeft, CheckCircle2, XCircle, Send, MessageSquareText, ImageIcon, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { doc, getDoc, getDocs, collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { doc, getDocs, collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { updateTest, checkAndAwardBadges } from "@/lib/dataService";
 import { cn } from "@/lib/utils";
@@ -22,30 +22,16 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/components/auth-provider";
 import { useForm } from "react-hook-form";
-import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { tr } from "date-fns/locale";
-import { format, parseISO } from "date-fns";
 
 // --- DESIGN SYSTEM ---
 const glassColors = {
     PAGE_BG: "bg-slate-50", 
     HEADER_BG: "bg-white/80 backdrop-blur-xl border-b border-slate-200",
     CARD_BG: "bg-white border border-slate-200 shadow-sm", 
-    ICON_BOX: "bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5 rounded-xl shadow-lg text-white",
-    BUTTON_GLASS: "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-sm",
     OPTION_BUTTON: "flex items-center justify-center w-12 h-12 rounded-xl border border-slate-200 bg-white cursor-pointer transition-all duration-200 font-bold text-lg text-slate-600 hover:bg-slate-50 hover:border-indigo-400 hover:text-indigo-600 peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white peer-data-[state=checked]:border-indigo-600 peer-data-[state=checked]:shadow-lg peer-data-[state=checked]:scale-110",
-    INPUT_BG: "bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500",
 };
-
-type McqAnswers = { [key: string]: string | null };
-type TextAnswers = { [key: string]: string };
-type ManualEvaluation = { [key: string]: EvaluationStatus };
-type TextFeedback = { [key: string]: string };
 
 function formatTime(seconds: number) {
   if (seconds < 0) seconds = 0;
@@ -84,18 +70,22 @@ const QuestionPalette = ({
     total, 
     currentIndex, 
     onNavigate, 
-    isAnswered 
+    isAnswered,
+    evaluationMap
 }: { 
     total: number; 
     currentIndex: number; 
     onNavigate: (index: number) => void;
     isAnswered: (index: number) => boolean;
+    evaluationMap?: { [key: string]: EvaluationStatus };
 }) => {
     return (
         <div className="grid grid-cols-5 gap-2 p-4">
             {Array.from({ length: total }).map((_, i) => {
+                const qNum = (i + 1).toString();
                 const answered = isAnswered(i);
                 const active = currentIndex === i;
+                const status = evaluationMap?.[qNum];
                 
                 return (
                     <Button
@@ -103,13 +93,17 @@ const QuestionPalette = ({
                         type="button"
                         variant={active ? "default" : answered ? "secondary" : "outline"}
                         className={cn(
-                            "h-10 w-10 p-0 font-bold rounded-lg text-xs transition-all",
+                            "h-10 w-10 p-0 font-bold rounded-lg text-xs transition-all relative",
                             active && "bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300 ring-offset-1",
-                            answered && !active && "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200"
+                            answered && !active && "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200",
+                            status === 'correct' && "border-emerald-500 bg-emerald-50 text-emerald-700",
+                            status === 'incorrect' && "border-rose-500 bg-rose-50 text-rose-700",
                         )}
                         onClick={() => onNavigate(i)}
                     >
                         {i + 1}
+                        {status === 'correct' && <Check className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 text-white rounded-full p-0.5" />}
+                        {status === 'incorrect' && <X className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 text-white rounded-full p-0.5" />}
                     </Button>
                 );
             })}
@@ -129,14 +123,12 @@ export default function OpticalFormPage() {
 
     const [test, setTest] = React.useState<TestType | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
-    const [mcqAnswers, setMcqAnswers] = React.useState<McqAnswers>({});
-    const [textAnswers, setTextAnswers] = React.useState<TextAnswers>({});
-    const [manualEvaluation, setManualEvaluation] = React.useState<ManualEvaluation>({});
-    const [textFeedback, setTextFeedback] = React.useState<TextFeedback>({});
+    const [mcqAnswers, setMcqAnswers] = React.useState<{ [key: string]: string | null }>({});
+    const [textAnswers, setTextAnswers] = React.useState<{ [key: string]: string }>({});
+    const [manualEvaluation, setManualEvaluation] = React.useState<{ [key: string]: EvaluationStatus }>({});
+    const [textFeedback, setTextFeedback] = React.useState<{ [key: string]: string }>({});
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
-    const [isSheetOpen, setIsSheetOpen] = React.useState(false);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
-    const [viewingQuestionIndex, setViewingQuestionIndex] = React.useState<number | null>(null);
     
     const isInitializedRef = React.useRef(false);
     const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -157,13 +149,10 @@ export default function OpticalFormPage() {
         const unsubTest = onSnapshot(testDocRef, async (docSnap) => {
             if (docSnap.exists()) {
                 const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
-                
                 if ((currentTest.sourceType === 'quick' || currentTest.sourceType === 'bank' || currentTest.sourceType === 'mistake' || currentTest.sourceType === 'trackedBook') && (!currentTest.questions || currentTest.questions.length === 0)) {
                   currentTest.questions = await fetchQuestions(testId);
                 }
-                
                 setTest(currentTest);
-                
                 if (!isInitializedRef.current) {
                     setMcqAnswers(currentTest.studentAnswers || {});
                     setTextAnswers(currentTest.studentTextAnswers || {});
@@ -180,7 +169,7 @@ export default function OpticalFormPage() {
         return () => unsubTest();
     }, [testId, fetchQuestions]);
 
-    const handleSavePartial = React.useCallback(async (latestMcq: McqAnswers, latestText: TextAnswers) => {
+    const handleSavePartial = React.useCallback(async (latestMcq: any, latestText: any) => {
         if (!test) return;
         try {
             await updateTest(test.id, {
@@ -192,7 +181,7 @@ export default function OpticalFormPage() {
         }
     }, [test]);
 
-    const debouncedSave = (newMcq: McqAnswers, newText: TextAnswers) => {
+    const debouncedSave = (newMcq: any, newText: any) => {
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = setTimeout(() => {
             handleSavePartial(newMcq, newText);
@@ -241,16 +230,13 @@ export default function OpticalFormPage() {
         try {
             const questionCount = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
             let correct = 0, incorrect = 0, empty = 0;
-            
             for (let i = 1; i <= questionCount; i++) {
                 const status = manualEvaluation[i.toString()];
                 if (status === 'correct') correct++;
                 else if (status === 'incorrect') incorrect++;
                 else empty++;
             }
-
             const calculatedScore = (correct / questionCount) * 100;
-
             await updateTest(test.id, {
                 studentTextAnswersEvaluation: manualEvaluation,
                 studentTextAnswersFeedback: textFeedback,
@@ -260,7 +246,6 @@ export default function OpticalFormPage() {
                 emptyAnswers: empty,
                 score: calculatedScore
             });
-
             toast({ title: "Değerlendirme Tamamlandı", description: `Başarı: %${calculatedScore.toFixed(0)}` });
             if (test.familyId && test.studentId) {
                 await checkAndAwardBadges(test.studentId, test.familyId, { 
@@ -286,10 +271,8 @@ export default function OpticalFormPage() {
                 studentAnswers: test.openEnded ? undefined : mcqAnswers,
                 studentTextAnswers: test.openEnded ? textAnswers : undefined,
             };
-
             const questionCount = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
             const isAutoGrade = !test.openEnded && test.answerKey && Object.keys(test.answerKey).length > 0;
-
             if (isAutoGrade) {
                 let correct = 0, incorrect = 0, empty = 0;
                 for (let i = 1; i <= questionCount; i++) {
@@ -306,9 +289,7 @@ export default function OpticalFormPage() {
                 updatedData.emptyAnswers = empty;
                 updatedData.score = (correct / questionCount) * 100;
             }
-
             await updateTest(test.id, updatedData);
-            
             if (updatedData.status === 'Sonuçlandı') {
                 toast({ title: "Sınav Sonuçlandı!", description: `Başarı: %${updatedData.score?.toFixed(0)}`, className: "bg-indigo-600 border-none text-white" });
                 if (test.familyId && test.studentId) {
@@ -331,13 +312,118 @@ export default function OpticalFormPage() {
     };
 
     if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="w-16 h-16 animate-spin text-indigo-600 mr-4" /><p className="text-slate-500 font-medium animate-pulse">Test Yükleniyor...</p></div>;
-    if (!test) return <div className="flex flex-col items-center justify-center h-screen bg-slate-50"><h1 className="text-3xl font-black mb-2">Test Bulunamadı</h1><Link href="/education"><Button size="lg" className={glassColors.BUTTON_GLASS}>Geri Dön</Button></Link></div>;
+    if (!test) return <div className="flex flex-col items-center justify-center h-screen bg-slate-50"><h1 className="text-3xl font-black mb-2">Test Bulunamadı</h1><Link href="/education"><Button size="lg">Geri Dön</Button></Link></div>;
 
     const isBookTracked = test.sourceType === 'trackedBook';
     const totalQuestions = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
     const testDurationMinutes = test.durationMinutes || totalQuestions * 1.5;
 
-    // --- EVALUATION MODE ---
+    // --- SONUÇ İNCELEME GÖRÜNÜMÜ (Sonuçlandı Durumu) ---
+    if (test.status === 'Sonuçlandı' && !isEvaluateMode) {
+        return (
+            <div className={cn("min-h-screen text-slate-900 font-sans p-4 sm:p-8", glassColors.PAGE_BG)}>
+                <div className="max-w-4xl mx-auto w-full space-y-8 pb-32">
+                    <header className="flex justify-between items-center bg-white/50 backdrop-blur-md p-4 rounded-2xl border border-slate-200 sticky top-4 z-50 shadow-sm">
+                        <Button variant="ghost" onClick={() => router.back()} className="text-slate-500 hover:text-slate-900"><ArrowLeft className="mr-2 h-5 w-5" /> Geri</Button>
+                        <div className="text-center">
+                            <h1 className="text-lg font-black">{test.title}</h1>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase">Sonuç İnceleme</p>
+                        </div>
+                        <Badge className="bg-emerald-600 text-white font-bold px-4 py-1.5 rounded-xl">Başarı: %{test.score?.toFixed(0)}</Badge>
+                    </header>
+
+                    {isBookTracked ? (
+                        /* KİTAP TAKİBİ İNCELEME (LİSTE) */
+                        <div className="space-y-6">
+                            {Array.from({ length: totalQuestions }).map((_, i) => {
+                                const qNum = (i + 1).toString();
+                                const studentAns = textAnswers[qNum];
+                                const status = manualEvaluation[qNum];
+                                const feedback = textFeedback[qNum];
+
+                                return (
+                                    <Card key={qNum} className={cn("rounded-3xl border", status === 'correct' ? 'border-emerald-200 bg-emerald-50/20' : 'border-rose-200 bg-rose-50/20')}>
+                                        <CardHeader className="pb-4 border-b flex flex-row items-center justify-between gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <Badge className={cn("h-10 w-10 rounded-full flex items-center justify-center p-0 text-base font-black", status === 'correct' ? 'bg-emerald-600' : 'bg-rose-600')}>{qNum}</Badge>
+                                                <span className="font-bold text-slate-700">Soru Detayı</span>
+                                            </div>
+                                            {status === 'correct' ? <div className="flex items-center gap-1.5 text-emerald-600 font-bold"><CheckCircle2 className="w-5 h-5"/> Doğru</div> : <div className="flex items-center gap-1.5 text-rose-600 font-bold"><XCircle className="w-5 h-5"/> Yanlış</div>}
+                                        </CardHeader>
+                                        <CardContent className="p-6 space-y-6">
+                                            <div className="space-y-2">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Senin Cevabın</p>
+                                                <div className="p-4 bg-white/60 rounded-2xl border border-slate-100 italic text-slate-700">{studentAns || "— Cevap verilmedi —"}</div>
+                                            </div>
+                                            {feedback && (
+                                                <div className="space-y-2 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl">
+                                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-1.5"><MessageSquareText className="w-3.5 h-3.5"/> Öğretmen Notu</p>
+                                                    <p className="text-sm font-medium text-indigo-800">{feedback}</p>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        /* DİĞERLERİ İÇİN İNCELEME (SİHİRBAZ) */
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                             <div className="lg:col-span-8 space-y-6">
+                                <Card className="overflow-hidden bg-white border border-slate-200 shadow-2xl rounded-[3rem]">
+                                    <CardHeader className="bg-slate-50/50 border-b p-6 flex flex-row items-center gap-4">
+                                        <Badge className="h-14 w-14 rounded-3xl flex items-center justify-center p-0 text-2xl font-black bg-indigo-600 text-white shrink-0">{currentQuestionIndex + 1}</Badge>
+                                        <div className="flex-grow">
+                                            <h2 className="text-lg font-black text-slate-800">Soru İnceleme</h2>
+                                            {manualEvaluation[(currentQuestionIndex + 1).toString()] === 'correct' ? <span className="text-xs font-bold text-emerald-600">✓ Doğru Bildin</span> : <span className="text-xs font-bold text-rose-600">✗ Hatalı Cevap</span>}
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="p-0">
+                                        <div className="relative w-full aspect-video bg-slate-50 border-b flex items-center justify-center">
+                                            {test.questions?.[currentQuestionIndex] ? (
+                                                <Image src={test.questions[currentQuestionIndex].imageUrl} alt={`Soru ${currentQuestionIndex + 1}`} fill className="object-contain p-6" />
+                                            ) : <ImageIcon className="w-12 h-12 text-slate-300" />}
+                                        </div>
+                                        <div className="p-8">
+                                            <div className="space-y-4">
+                                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Cevabın</p>
+                                                <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl text-lg font-medium text-slate-700 italic">
+                                                    {test.openEnded 
+                                                        ? (textAnswers[(currentQuestionIndex + 1).toString()] || "— Boş Bırakıldı —")
+                                                        : (mcqAnswers[(currentQuestionIndex + 1).toString()] || "— İşaretlenmedi —")
+                                                    }
+                                                </div>
+                                                {textFeedback[(currentQuestionIndex + 1).toString()] && (
+                                                    <div className="mt-6 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl">
+                                                         <p className="text-[10px] font-black text-indigo-400 uppercase mb-2">ÖĞRETMEN NOTU</p>
+                                                         <p className="text-sm font-bold text-indigo-800">{textFeedback[(currentQuestionIndex + 1).toString()]}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <div className="flex justify-between gap-6">
+                                    <Button variant="outline" size="lg" className="h-16 rounded-[2rem] px-10 font-black flex-1" onClick={() => setCurrentQuestionIndex(p => Math.max(0, p - 1))} disabled={currentQuestionIndex === 0}><ChevronLeft className="mr-2 h-6 w-6"/> Önceki</Button>
+                                    <Button variant="outline" size="lg" className="h-16 rounded-[2rem] px-10 font-black flex-1" onClick={() => setCurrentQuestionIndex(p => Math.min(totalQuestions - 1, p + 1))} disabled={currentQuestionIndex === totalQuestions - 1}>Sonraki <ChevronRight className="ml-2 h-6 w-6"/></Button>
+                                </div>
+                             </div>
+                             <div className="hidden lg:block lg:col-span-4">
+                                <div className="sticky top-28 rounded-[2.5rem] border border-slate-200 bg-white shadow-xl overflow-hidden">
+                                    <div className="p-6 border-b bg-slate-50/50 font-black text-slate-800">Soru Navigasyonu</div>
+                                    <ScrollArea className="h-[450px]">
+                                        <QuestionPalette total={totalQuestions} currentIndex={currentQuestionIndex} onNavigate={setCurrentQuestionIndex} isAnswered={isQuestionAnswered} evaluationMap={manualEvaluation} />
+                                    </ScrollArea>
+                                </div>
+                             </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // --- EVALUATION MODE (Teacher View) ---
     if (test.status === 'Değerlendirme Bekliyor' && isEvaluateMode) {
         return (
             <div className={cn("min-h-screen text-slate-900 font-sans p-4 sm:p-8", glassColors.PAGE_BG)}>
@@ -352,9 +438,9 @@ export default function OpticalFormPage() {
 
                     <div className="space-y-6">
                         {Array.from({ length: totalQuestions }).map((_, i) => {
-                            const qNum = i + 1;
-                            const studentAns = textAnswers[qNum.toString()];
-                            const status = manualEvaluation[qNum.toString()];
+                            const qNum = (i + 1).toString();
+                            const studentAns = textAnswers[qNum];
+                            const status = manualEvaluation[qNum];
                             const questionImage = test.questions?.[i]?.imageUrl;
 
                             return (
@@ -362,9 +448,9 @@ export default function OpticalFormPage() {
                                     <CardHeader className="pb-4 border-b flex flex-row justify-between items-center bg-slate-50/50 rounded-t-3xl gap-4">
                                         <Badge className="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center p-0 text-base font-black shrink-0">{qNum}</Badge>
                                         <div className="flex flex-wrap justify-end gap-1.5 flex-1">
-                                            <Button variant="outline" size="sm" onClick={() => handleEvaluate(qNum, 'correct')} className={cn("h-8 rounded-lg gap-1.5 px-4 text-[11px] font-bold", status === 'correct' ? "bg-emerald-600 text-white border-emerald-600 shadow-md" : "bg-white border-slate-200 text-slate-500")}><CheckCircle2 className="w-3.5 h-3.5" /> Doğru</Button>
-                                            <Button variant="outline" size="sm" onClick={() => handleEvaluate(qNum, 'incorrect')} className={cn("h-8 rounded-lg gap-1.5 px-4 text-[11px] font-bold", status === 'incorrect' ? "bg-rose-600 text-white border-rose-600 shadow-md" : "bg-white border-slate-200 text-slate-500")}><XCircle className="w-3.5 h-3.5" /> Yanlış</Button>
-                                            <Button variant="outline" size="sm" onClick={() => handleEvaluate(qNum, 'empty')} className={cn("h-8 rounded-lg gap-1.5 px-4 text-[11px] font-bold", status === 'empty' ? "bg-slate-600 text-white border-slate-600 shadow-md" : "bg-white border-slate-200 text-slate-500")}><MinusCircle className="w-3.5 h-3.5" /> Boş</Button>
+                                            <Button variant="outline" size="sm" onClick={() => handleEvaluate(parseInt(qNum), 'correct')} className={cn("h-8 rounded-lg gap-1.5 px-4 text-[11px] font-bold", status === 'correct' ? "bg-emerald-600 text-white border-emerald-600 shadow-md" : "bg-white border-slate-200 text-slate-500")}><CheckCircle2 className="w-3.5 h-3.5" /> Doğru</Button>
+                                            <Button variant="outline" size="sm" onClick={() => handleEvaluate(parseInt(qNum), 'incorrect')} className={cn("h-8 rounded-lg gap-1.5 px-4 text-[11px] font-bold", status === 'incorrect' ? "bg-rose-600 text-white border-rose-600 shadow-md" : "bg-white border-slate-200 text-slate-500")}><XCircle className="w-3.5 h-3.5" /> Yanlış</Button>
+                                            <Button variant="outline" size="sm" onClick={() => handleEvaluate(parseInt(qNum), 'empty')} className={cn("h-8 rounded-lg gap-1.5 px-4 text-[11px] font-bold", status === 'empty' ? "bg-slate-600 text-white border-slate-600 shadow-md" : "bg-white border-slate-200 text-slate-500")}><MinusCircle className="w-3.5 h-3.5" /> Boş</Button>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="p-0">
@@ -382,7 +468,7 @@ export default function OpticalFormPage() {
                                             </div>
                                             <div className="space-y-3 pt-4 border-t border-slate-100">
                                                 <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><MessageSquareText className="w-3.5 h-3.5 text-indigo-500" /> Geri Bildirim</Label>
-                                                <Textarea placeholder="Not bırakın..." value={textFeedback[qNum.toString()] || ""} onChange={(e) => handleFeedbackChange(qNum, e.target.value)} className="bg-white border-slate-200 min-h-[80px] rounded-xl text-sm" />
+                                                <Textarea placeholder="Not bırakın..." value={textFeedback[qNum] || ""} onChange={(e) => handleFeedbackChange(parseInt(qNum), e.target.value)} className="bg-white border-slate-200 min-h-[80px] rounded-xl text-sm" />
                                             </div>
                                         </div>
                                     </CardContent>
@@ -404,7 +490,7 @@ export default function OpticalFormPage() {
         )
     }
 
-    // --- STUDENT VIEW ---
+    // --- STUDENT VIEW (Solving Mode) ---
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(() => handleSubmit(false))} className="h-full flex flex-col">
@@ -418,7 +504,6 @@ export default function OpticalFormPage() {
                         <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
                     </header>
 
-                    {/* KİTAP TAKİBİ (LİSTE GÖRÜNÜMÜ - GÖRSEL YOK) */}
                     {isBookTracked && test.openEnded ? (
                         <main className="flex-1 max-w-4xl mx-auto w-full space-y-8 pb-32 animate-in fade-in duration-500">
                             {Array.from({ length: totalQuestions }).map((_, i) => {
@@ -450,7 +535,6 @@ export default function OpticalFormPage() {
                             </div>
                         </main>
                     ) : (
-                        /* DİĞER TÜMLER (SİHİRBAZ GÖRÜNÜMÜ - GÖRSEL VAR) */
                         <main className="flex-1 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 pb-32">
                             <div className="lg:col-span-8 space-y-6">
                                 <AnimatePresence mode="wait">
@@ -467,12 +551,7 @@ export default function OpticalFormPage() {
                                                 <div className="relative w-full aspect-video bg-slate-50 border-b flex items-center justify-center">
                                                     {test.questions?.[currentQuestionIndex] ? (
                                                         <Image src={test.questions[currentQuestionIndex].imageUrl} alt={`Soru ${currentQuestionIndex + 1}`} fill className="object-contain p-6" />
-                                                    ) : (
-                                                        <div className="flex flex-col items-center gap-2 text-slate-300">
-                                                            <ImageIcon className="w-12 h-12" />
-                                                            <span className="font-bold">Görsel Yüklenemedi</span>
-                                                        </div>
-                                                    )}
+                                                    ) : <ImageIcon className="w-12 h-12 text-slate-300" />}
                                                 </div>
                                                 <div className="p-8 md:p-10 bg-white">
                                                     {test.openEnded ? (
