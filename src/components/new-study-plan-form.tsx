@@ -7,11 +7,9 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
 import type { StudyPlan } from "@/lib/data";
-import { Trash2, Layers, Link as LinkIcon, FileText, Plus, X, ArrowLeft, Check, BookOpen, Edit3, GripVertical } from "lucide-react";
-import { ScrollArea } from "./ui/scroll-area";
+import { Trash2, Layers, Link as LinkIcon, FileText, Plus, X, ArrowLeft, Check, BookOpen, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // --- YARDIMCI FONKSİYON ---
@@ -20,7 +18,6 @@ const generateSafeId = () => Date.now().toString(36) + Math.random().toString(36
 // --- SCHEMAS ---
 const planInfoSchema = z.object({
   title: z.string().min(3, "Plan adı en az 3 karakter olmalıdır."),
-  description: z.string().optional(),
 });
 
 const topicSchema = z.object({
@@ -51,7 +48,6 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
     resolver: zodResolver(planInfoSchema),
     defaultValues: {
       title: initialData?.title || "",
-      description: initialData?.description || "",
     },
   });
 
@@ -61,6 +57,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
 
   const [editingSubject, setEditingSubject] = React.useState<{ subject: SubjectType | null, index: number } | null>(null);
   const [isAddingSubject, setIsAddingSubject] = React.useState(false);
+  const [draggedSubjectIndex, setDraggedSubjectIndex] = React.useState<number | null>(null);
 
   const handleFinalSubmit = (values: z.infer<typeof planInfoSchema>) => {
     if (subjects.length === 0) {
@@ -101,6 +98,33 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
       }
   };
 
+  const onSubjectDragStart = (e: React.DragEvent, index: number) => {
+      setDraggedSubjectIndex(index);
+      e.dataTransfer.effectAllowed = "move";
+      const target = e.target as HTMLElement;
+      setTimeout(() => { target.style.opacity = "0.5"; }, 0);
+  };
+
+  const onSubjectDragEnter = (e: React.DragEvent, index: number) => {
+      e.preventDefault();
+      if (draggedSubjectIndex === null || draggedSubjectIndex === index) return;
+
+      setSubjects(prev => {
+          const newSubjects = [...prev];
+          const draggedItem = newSubjects[draggedSubjectIndex];
+          newSubjects.splice(draggedSubjectIndex, 1);
+          newSubjects.splice(index, 0, draggedItem);
+          return newSubjects;
+      });
+      setDraggedSubjectIndex(index);
+  };
+
+  const onSubjectDragEnd = (e: React.DragEvent) => {
+      setDraggedSubjectIndex(null);
+      const target = e.target as HTMLElement;
+      target.style.opacity = "1";
+  };
+
   if (isAddingSubject || editingSubject) {
       return (
           <SubjectEditor 
@@ -115,132 +139,128 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
   }
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/50 dark:bg-slate-950 items-center">
-        {/* Masaüstünde içeriği ortalamak için w-full max-w-4xl kullanıyoruz */}
-        <div className="w-full max-w-4xl flex flex-col h-full bg-white dark:bg-slate-950 md:border-x md:border-slate-200 md:dark:border-slate-800 shadow-sm">
-            <DialogHeader className="px-6 pt-6 pb-4 border-b dark:border-white/5 bg-white dark:bg-slate-900 shrink-0">
-                <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                    <Layers className="w-6 h-6 text-indigo-500" />
-                    {initialData ? "Yol Haritasını Düzenle" : "Yeni Yol Haritası"}
-                </DialogTitle>
-                <DialogDescription className="text-slate-500 font-medium">
-                    Plan bilgilerini girin ve derslerinizi ayrı ayrı modüller halinde ekleyin.
-                </DialogDescription>
-            </DialogHeader>
-            
-            <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleFinalSubmit)} className="flex flex-col flex-1 overflow-hidden">
-                <ScrollArea className="flex-1">
-                    <div className="px-4 md:px-8 py-6 space-y-8 max-w-3xl mx-auto w-full">
-                        
-                        <div className="space-y-4 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                            <FormField
-                                control={form.control}
-                                name="title"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-xs font-black text-slate-500 uppercase tracking-widest pl-1">Plan Başlığı</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Örn: 8. Sınıf LGS Deneme Takibi" {...field} className="h-12 md:h-14 rounded-xl text-base md:text-lg font-bold bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800" />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="description"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-xs font-black text-slate-500 uppercase tracking-widest pl-1">Açıklama (İsteğe Bağlı)</FormLabel>
-                                        <FormControl>
-                                            <Textarea placeholder="Bu çalışma planının amacı..." {...field} className="min-h-[80px] md:min-h-[100px] rounded-xl text-sm resize-none bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800" />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+    <div className="w-full bg-white dark:bg-slate-950 flex flex-col">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b dark:border-white/5 bg-slate-50 dark:bg-slate-900 shrink-0">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Layers className="w-6 h-6 text-indigo-500" />
+                {initialData ? "Yol Haritasını Düzenle" : "Yeni Yol Haritası"}
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 font-medium">
+                Plan bilgilerini girin ve derslerinizi ayrı ayrı modüller halinde ekleyin.
+            </DialogDescription>
+        </DialogHeader>
+        
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleFinalSubmit)} className="flex flex-col w-full">
+                <div className="px-4 md:px-8 py-6 space-y-8 max-w-4xl mx-auto w-full">
+                    
+                    <div className="space-y-4 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <FormField
+                            control={form.control}
+                            name="title"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-xs font-black text-slate-500 uppercase tracking-widest pl-1">Plan Başlığı</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Örn: 8. Sınıf LGS Deneme Takibi" {...field} className="h-12 md:h-14 rounded-xl text-base md:text-lg font-bold bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between px-1 mb-4">
+                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Eklenen Dersler</h3>
+                            <span className="text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-md">
+                                Toplam: {subjects.length}
+                            </span>
                         </div>
 
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between px-1 mb-4">
-                                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Eklenen Dersler</h3>
-                                <span className="text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-md">
-                                    Toplam: {subjects.length}
-                                </span>
+                        {subjects.length === 0 ? (
+                            <div className="text-center py-12 px-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl bg-slate-50 dark:bg-slate-900/50">
+                                <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                                <p className="text-sm md:text-base text-slate-500 font-medium">Henüz ders eklenmedi.<br/>Aşağıdaki butondan ilk dersinizi oluşturun.</p>
                             </div>
-
-                            {subjects.length === 0 ? (
-                                <div className="text-center py-12 px-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900">
-                                    <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                                    <p className="text-sm md:text-base text-slate-500 font-medium">Henüz ders eklenmedi.<br/>Aşağıdaki butondan ilk dersinizi oluşturun.</p>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {subjects.map((subject, index) => (
-                                        <div key={subject.id || index} className="flex flex-col justify-between p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-indigo-300 transition-colors group">
-                                            <div className="flex items-start gap-3 mb-4">
-                                                <div className="w-10 h-10 shrink-0 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center font-black">
-                                                    {index + 1}
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-base leading-tight">{subject.name}</h4>
-                                                    <p className="text-xs font-medium text-slate-500 mt-1">{subject.topics.length} Konu tanımlı</p>
-                                                </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {subjects.map((subject, index) => (
+                                    <div 
+                                        key={subject.id || index} 
+                                        draggable
+                                        onDragStart={(e) => onSubjectDragStart(e, index)}
+                                        onDragEnter={(e) => onSubjectDragEnter(e, index)}
+                                        onDragEnd={onSubjectDragEnd}
+                                        onDragOver={(e) => e.preventDefault()}
+                                        className={cn(
+                                            "flex flex-col justify-between p-5 bg-white dark:bg-slate-900 rounded-2xl border shadow-sm transition-all group cursor-grab active:cursor-grabbing",
+                                            draggedSubjectIndex === index ? "border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/50 dark:bg-indigo-900/20" : "border-slate-200 dark:border-slate-800 hover:border-indigo-300"
+                                        )}
+                                    >
+                                        <div className="flex items-start gap-3 mb-4">
+                                            <div className="mt-1 text-slate-300 hover:text-indigo-400 transition-colors">
+                                                <GripVertical className="w-5 h-5" />
                                             </div>
-                                            <div className="flex gap-2 w-full pt-3 border-t border-slate-100 dark:border-slate-800">
-                                                <Button 
-                                                    type="button" 
-                                                    variant="outline" 
-                                                    onClick={() => setEditingSubject({ subject, index })}
-                                                    className="flex-1 h-9 text-xs font-bold text-indigo-600 hover:bg-indigo-50 border-slate-200 dark:border-slate-700"
-                                                >
-                                                    <Edit3 className="w-3.5 h-3.5 mr-1.5" /> Düzenle
-                                                </Button>
-                                                <Button 
-                                                    type="button" 
-                                                    variant="outline" 
-                                                    size="icon"
-                                                    onClick={() => removeSubject(index)}
-                                                    className="h-9 w-9 text-rose-500 hover:bg-rose-50 border-slate-200 dark:border-slate-700"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
+                                            <div className="w-8 h-8 shrink-0 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center font-black text-sm">
+                                                {index + 1}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-base leading-tight">{subject.name}</h4>
+                                                <p className="text-xs font-medium text-slate-500 mt-1">{subject.topics.length} Konu tanımlı</p>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
+                                        <div className="flex gap-2 w-full pt-3 border-t border-slate-100 dark:border-slate-800">
+                                            <Button 
+                                                type="button" 
+                                                variant="outline" 
+                                                onClick={() => setEditingSubject({ subject, index })}
+                                                className="flex-1 h-9 text-xs font-bold text-indigo-600 hover:bg-indigo-50 border-slate-200 dark:border-slate-700"
+                                            >
+                                                Düzenle
+                                            </Button>
+                                            <Button 
+                                                type="button" 
+                                                variant="outline" 
+                                                size="icon"
+                                                onClick={() => removeSubject(index)}
+                                                className="h-9 w-9 text-rose-500 hover:bg-rose-50 border-slate-200 dark:border-slate-700"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
-                            <Button 
-                                type="button" 
-                                variant="outline" 
-                                className="w-full h-14 rounded-2xl border-2 border-dashed border-indigo-300 dark:border-indigo-800 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950 font-bold mt-6"
-                                onClick={() => setIsAddingSubject(true)}
-                            >
-                                <Plus className="mr-2 h-5 w-5" /> Ders ve Konu Ekle
-                            </Button>
-                        </div>
-
+                        <Button 
+                            type="button" 
+                            variant="outline" 
+                            className="w-full h-14 rounded-2xl border-2 border-dashed border-indigo-300 dark:border-indigo-800 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950 font-bold mt-6"
+                            onClick={() => setIsAddingSubject(true)}
+                        >
+                            <Plus className="mr-2 h-5 w-5" /> Ders ve Konu Ekle
+                        </Button>
                     </div>
-                </ScrollArea>
+
+                </div>
                 
-                <DialogFooter className="p-4 md:p-6 border-t dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
-                    <div className="w-full max-w-3xl mx-auto">
+                <DialogFooter className="p-4 md:p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 shrink-0">
+                    <div className="w-full max-w-4xl mx-auto">
                         <Button type="submit" className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 font-black shadow-lg shadow-indigo-500/20 text-white transition-all text-base md:text-lg">
                             <Check className="mr-2 h-5 w-5" /> Tüm Planı Tamamla ve Kaydet
                         </Button>
                     </div>
                 </DialogFooter>
             </form>
-            </Form>
-        </div>
+        </Form>
     </div>
   );
 }
 
 // ==========================================
-// ALT BİLEŞEN: DERS EDİTÖRÜ (SUBJECT EDITOR)
+// ALT BİLEŞEN: DERS EDİTÖRÜ (SUBJECT EDITOR - MODAL)
 // ==========================================
 function SubjectEditor({ 
     initialData, 
@@ -259,125 +279,153 @@ function SubjectEditor({
         }
     });
 
-    const { fields: topicFields, append: appendTopic, remove: removeTopic } = useFieldArray({
+    const { fields: topicFields, append: appendTopic, remove: removeTopic, move: moveTopic } = useFieldArray({
         control: form.control,
         name: "topics"
     });
+
+    const [draggedTopicIndex, setDraggedTopicIndex] = React.useState<number | null>(null);
 
     const onSubmit = (data: SubjectType) => {
         onSave(data);
     };
 
+    const onTopicDragStart = (e: React.DragEvent, index: number) => {
+        setDraggedTopicIndex(index);
+        e.dataTransfer.effectAllowed = "move";
+        const target = e.target as HTMLElement;
+        setTimeout(() => { target.style.opacity = "0.4"; }, 0);
+    };
+
+    const onTopicDragEnter = (e: React.DragEvent, index: number) => {
+        e.preventDefault();
+        if (draggedTopicIndex === null || draggedTopicIndex === index) return;
+        
+        moveTopic(draggedTopicIndex, index);
+        setDraggedTopicIndex(index);
+    };
+
+    const onTopicDragEnd = (e: React.DragEvent) => {
+        setDraggedTopicIndex(null);
+        const target = e.target as HTMLElement;
+        target.style.opacity = "1";
+    };
+
     return (
-        // Mobilde tam ekran (fixed inset-0), masaüstünde ortalanmış modal (md:bg-black/50 vs)
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white dark:bg-slate-950 md:bg-slate-900/40 md:dark:bg-black/60 md:backdrop-blur-sm p-0 md:p-6">
-            
-            <div className="flex flex-col w-full h-full md:h-[90vh] md:max-w-3xl bg-white dark:bg-slate-950 md:rounded-[2rem] md:shadow-2xl md:border border-slate-200 dark:border-slate-800 overflow-hidden">
-                <div className="flex items-center justify-between p-4 md:px-6 md:py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 shrink-0">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 dark:bg-black/70 backdrop-blur-sm p-4 md:p-8">
+            <div className="flex flex-col w-full max-w-3xl bg-white dark:bg-slate-950 rounded-2xl md:rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh]">
+                <div className="flex items-center justify-between p-4 md:px-6 md:py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 rounded-t-2xl md:rounded-t-[2rem] shrink-0">
                     <Button type="button" variant="ghost" onClick={onCancel} className="h-10 px-3 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl">
                         <ArrowLeft className="w-5 h-5 mr-1 md:mr-2" /> <span className="hidden md:inline">İptal Et</span>
                     </Button>
                     <h2 className="font-bold text-slate-800 dark:text-slate-100 flex-1 text-center md:text-lg">
                         {initialData ? "Dersi Düzenle" : "Yeni Ders Modülü"}
                     </h2>
-                    <div className="w-[72px] md:w-[96px]"></div> {/* Ortalamak için boşluk koruma */}
+                    <div className="w-[72px] md:w-[96px]"></div> 
                 </div>
 
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
-                        <ScrollArea className="flex-1">
-                            <div className="p-4 md:p-8 space-y-8 max-w-2xl mx-auto w-full">
-                                
-                                <FormField
-                                    control={form.control}
-                                    name="name"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-xs font-black text-indigo-500 uppercase tracking-widest pl-1">Dersin Adı</FormLabel>
-                                            <FormControl>
-                                                <Input 
-                                                    placeholder="Örn: Din Kültürü, Siyer, Kodlama..." 
-                                                    {...field} 
-                                                    autoFocus
-                                                    className="h-14 md:h-16 md:text-xl rounded-2xl text-lg font-bold bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800 focus-visible:ring-indigo-500" 
-                                                />
-                                            </FormControl>
-                                            <FormMessage className="text-rose-500" />
-                                        </FormItem>
-                                    )}
-                                />
+                <div className="overflow-y-auto w-full">
+                    <Form {...form}>
+                        <div className="p-4 md:p-8 space-y-8 w-full max-w-2xl mx-auto">
+                            <FormField
+                                control={form.control}
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-black text-indigo-500 uppercase tracking-widest pl-1">Dersin Adı</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                placeholder="Örn: Din Kültürü, Siyer, Kodlama..." 
+                                                {...field} 
+                                                autoFocus
+                                                className="h-14 md:h-16 md:text-xl rounded-2xl text-lg font-bold bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800 focus-visible:ring-indigo-500" 
+                                            />
+                                        </FormControl>
+                                        <FormMessage className="text-rose-500" />
+                                    </FormItem>
+                                )}
+                            />
 
-                                <div className="space-y-4 pt-2">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <span className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 pl-1">
-                                            <Layers className="w-4 h-4" /> Alt Konular
-                                        </span>
-                                    </div>
-
-                                    {topicFields.map((topicField, topicIndex) => (
-                                        <div key={topicField.id} className="relative p-4 md:p-6 rounded-2xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-all hover:border-indigo-200">
-                                            
-                                            <div className="flex items-start gap-2 md:gap-3">
-                                                <div className="mt-3 cursor-grab text-slate-300 hidden md:block">
-                                                    <GripVertical className="w-5 h-5" />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <FormField
-                                                        control={form.control}
-                                                        name={`topics.${topicIndex}.name`}
-                                                        render={({ field, fieldState }) => (
-                                                            <FormItem className="space-y-1">
-                                                                <FormControl>
-                                                                    <Input 
-                                                                        placeholder="Konu başlığı yazın..." 
-                                                                        {...field} 
-                                                                        className={cn("h-11 md:h-12 bg-slate-50 dark:bg-slate-950 rounded-xl font-bold text-sm md:text-base", fieldState.error ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-800")}
-                                                                    />
-                                                                </FormControl>
-                                                                <FormMessage className="text-rose-500 text-[10px]" />
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                </div>
-                                                <Button 
-                                                    type="button" 
-                                                    variant="ghost" 
-                                                    size="icon" 
-                                                    className="mt-1 md:mt-1.5 h-9 w-9 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-full shrink-0" 
-                                                    onClick={() => removeTopic(topicIndex)}
-                                                >
-                                                    <X className="h-5 w-5"/>
-                                                </Button>
-                                            </div>
-
-                                            <div className="pl-2 md:pl-11 pr-2">
-                                                <TopicSourcesEditor control={form.control} topicIndex={topicIndex} />
-                                            </div>
-                                        </div>
-                                    ))}
-
-                                    <Button 
-                                        type="button" 
-                                        variant="ghost" 
-                                        className="w-full h-12 md:h-14 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 transition-all font-bold mt-4" 
-                                        onClick={() => appendTopic({ name: "", sources: [""] })}
-                                    >
-                                        <Plus className="mr-2 h-4 w-4 md:h-5 md:w-5"/> Yeni Konu Ekle
-                                    </Button>
+                            <div className="space-y-4 pt-2">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 pl-1">
+                                        <Layers className="w-4 h-4" /> Alt Konular
+                                    </span>
                                 </div>
 
-                            </div>
-                        </ScrollArea>
-                        
-                        <div className="p-4 md:p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 shrink-0">
-                            <div className="max-w-2xl mx-auto">
-                                <Button type="submit" className="w-full h-12 md:h-14 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-md text-white md:text-lg transition-all active:scale-95">
-                                    Bu Dersi Listeye Ekle <Check className="ml-2 h-5 w-5" />
+                                {topicFields.map((topicField, topicIndex) => (
+                                    <div 
+                                        key={topicField.id} 
+                                        draggable
+                                        onDragStart={(e) => onTopicDragStart(e, topicIndex)}
+                                        onDragEnter={(e) => onTopicDragEnter(e, topicIndex)}
+                                        onDragEnd={onTopicDragEnd}
+                                        onDragOver={(e) => e.preventDefault()}
+                                        className={cn(
+                                            "relative p-4 md:p-6 rounded-2xl border shadow-sm space-y-4 transition-all cursor-grab active:cursor-grabbing",
+                                            draggedTopicIndex === topicIndex ? "border-indigo-500 bg-indigo-50/30 dark:bg-indigo-900/10 ring-2 ring-indigo-500/20" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-indigo-200"
+                                        )}
+                                    >
+                                        <div className="flex items-start gap-2 md:gap-3">
+                                            <div className="mt-3 text-slate-300 hover:text-indigo-400 transition-colors hidden md:block">
+                                                <GripVertical className="w-5 h-5" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`topics.${topicIndex}.name`}
+                                                    render={({ field, fieldState }) => (
+                                                        <FormItem className="space-y-1">
+                                                            <FormControl>
+                                                                <Input 
+                                                                    placeholder="Konu başlığı yazın..." 
+                                                                    {...field} 
+                                                                    className={cn("h-11 md:h-12 bg-slate-50 dark:bg-slate-950 rounded-xl font-bold text-sm md:text-base cursor-text", fieldState.error ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-800")}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage className="text-rose-500 text-[10px]" />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                            <Button 
+                                                type="button" 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="mt-1 md:mt-1.5 h-9 w-9 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-full shrink-0" 
+                                                onClick={() => removeTopic(topicIndex)}
+                                            >
+                                                <X className="h-5 w-5"/>
+                                            </Button>
+                                        </div>
+
+                                        <div className="pl-2 md:pl-11 pr-2">
+                                            <TopicSourcesEditor control={form.control} topicIndex={topicIndex} />
+                                        </div>
+                                    </div>
+                                ))}
+
+                                <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    className="w-full h-12 md:h-14 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 transition-all font-bold mt-4" 
+                                    onClick={() => appendTopic({ name: "", sources: [""] })}
+                                >
+                                    <Plus className="mr-2 h-4 w-4 md:h-5 md:w-5"/> Yeni Konu Ekle
                                 </Button>
                             </div>
+
                         </div>
-                    </form>
-                </Form>
+                    </Form>
+                </div>
+                
+                <div className="p-4 md:p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 rounded-b-2xl md:rounded-b-[2rem] shrink-0">
+                    <div className="max-w-2xl mx-auto">
+                        <Button onClick={form.handleSubmit(onSubmit)} type="button" className="w-full h-12 md:h-14 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-md text-white md:text-lg transition-all active:scale-95">
+                            Bu Dersi Listeye Ekle <Check className="ml-2 h-5 w-5" />
+                        </Button>
+                    </div>
+                </div>
             </div>
         </div>
     );
