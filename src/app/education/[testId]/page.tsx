@@ -307,7 +307,10 @@ export default function OpticalFormPage() {
 
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
         if (!test || !user) return;
-        const isMcqTest = !test.openEnded;
+        
+        // HTML ve JSON testleri genellikle MCQ (seçenekli) kabul edilir.
+        const isMcqTest = !test.openEnded || test.sourceType === 'html' || test.sourceType === 'json';
+        
         setIsSubmitting(true);
         try {
             let updatedData: Partial<TestType> = { timerStatus: 'finished' };
@@ -321,12 +324,13 @@ export default function OpticalFormPage() {
                 }
                 updatedData.studentAnswers = allStudentMcqAnswers;
                 
+                // Cevap anahtarını bul (JSON testleri için jsonQuestions'dan, HTML için direkt test.answerKey'den)
                 let answerKey = test.answerKey || {};
                 if (test.sourceType === 'json' && test.jsonQuestions) {
                      answerKey = test.jsonQuestions.reduce((acc, q, i) => ({ ...acc, [(i+1).toString()]: q.answer }), {});
                 }
                 
-                // HTML testleri ve JSON testleri gibi cevap anahtarı baştan belli olan testlerde otomatik puanla
+                // Cevap anahtarı varsa OTOMATİK puanla (HTML testleri her zaman buraya girmeli)
                 if (answerKey && Object.keys(answerKey).length > 0) {
                     let correct = 0, incorrect = 0, empty = 0;
                     for (let i = 1; i <= questionCount; i++) {
@@ -347,11 +351,13 @@ export default function OpticalFormPage() {
                     updatedData.incorrectAnswers = incorrect;
                     updatedData.emptyAnswers = empty;
                     updatedData.score = (correct / questionCount) * 100;
-                    updatedData.timeSpentSeconds = (test.durationMinutes || 0) * 60; // Basit süre takibi
+                    updatedData.timeSpentSeconds = (test.durationMinutes || 0) * 60;
                 } else {
+                    // Cevap anahtarı yoksa (örn: eski usul fotoğraf testi)
                     updatedData.status = 'Değerlendirme Bekliyor';
                 }
             } else { 
+                // Gerçek açık uçlu metin testi
                 updatedData.studentTextAnswers = textAnswers;
                 updatedData.status = 'Değerlendirme Bekliyor';
             }
@@ -367,6 +373,7 @@ export default function OpticalFormPage() {
                 toast({ title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!", description: "Cevapların başarıyla kaydedildi. Değerlendirilmek üzere gönderildi.", className: "bg-emerald-600 border-none text-white" });
             }
         } catch (error) {
+            console.error("Submission error:", error);
             toast({ variant: "destructive", title: "❌ Hata!", description: "Test sonuçları kaydedilirken bir sorun oluştu." });
         } finally {
             setIsSubmitting(false);
@@ -1143,4 +1150,3 @@ export default function OpticalFormPage() {
         </Form>
     );
 }
-
