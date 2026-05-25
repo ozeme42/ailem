@@ -11,10 +11,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
 import type { StudyPlan, StudyPlanSubject, StudyTopic } from "@/lib/data";
-import { PlusCircle, Trash2, BookOpen, Layers, Link as LinkIcon, FileText, Plus, X } from "lucide-react";
+import { PlusCircle, Trash2, BookOpen, Layers, Link as LinkIcon, FileText, Plus, X, ChevronRight, ChevronLeft, Check, Sparkles } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
-import { Card, CardContent, CardHeader } from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+
+// --- DESIGN SYSTEM ---
+const themeColors = {
+    INPUT_BG: "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:border-indigo-500 transition-all",
+    CARD_BG: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm",
+    WIZARD_STEP_ACTIVE: "bg-indigo-600 text-white shadow-lg",
+    WIZARD_STEP_INACTIVE: "bg-slate-100 dark:bg-slate-800 text-slate-400",
+};
 
 // --- SCHEMAS ---
 const topicSchema = z.object({
@@ -40,7 +49,11 @@ type NewStudyPlanFormProps = {
   initialData?: StudyPlan | null;
 };
 
+type Step = 'info' | 'curriculum';
+
 export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProps) {
+  const [currentStep, setCurrentStep] = React.useState<Step>('info');
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -63,12 +76,6 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
             }))
         })) || [],
       });
-    } else {
-        form.reset({
-            title: "",
-            description: "",
-            subjects: [{ id: Date.now().toString(), name: "", topics: [{ name: "", sources: [""] }] }],
-        })
     }
   }, [initialData, form]);
 
@@ -91,123 +98,196 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
         }))
     }
     onSubmit(cleanedData);
-    form.reset();
+  };
+
+  const steps: Step[] = ['info', 'curriculum'];
+  const stepIndex = steps.indexOf(currentStep);
+
+  const goToNext = async () => {
+    const isStepValid = await form.trigger(currentStep === 'info' ? ['title', 'description'] : ['subjects']);
+    if (isStepValid) {
+        setCurrentStep('curriculum');
+    }
+  };
+
+  const goToPrev = () => setCurrentStep('info');
+
+  const variants = {
+    enter: (direction: number) => ({ x: direction > 0 ? 100 : -100, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (direction: number) => ({ x: direction < 0 ? 100 : -100, opacity: 0 })
   };
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-slate-950">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b dark:border-white/5 bg-slate-50 dark:bg-slate-900/50">
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                <Layers className="w-6 h-6 text-indigo-500" />
-                {initialData ? "Planı Düzenle" : "Yeni Yol Haritası"}
-            </DialogTitle>
-            <DialogDescription className="text-slate-500">
-                Ders ve ünite bazlı konu anlatım planı oluşturun.
+        <DialogHeader className="px-6 pt-6 pb-4 border-b dark:border-white/5 bg-slate-50 dark:bg-slate-900/50 shrink-0">
+            <div className="flex items-center justify-between mb-4">
+                <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                    <Layers className="w-6 h-6 text-indigo-500" />
+                    {initialData ? "Planı Düzenle" : "Yeni Yol Haritası"}
+                </DialogTitle>
+                <div className="flex items-center gap-2">
+                    {steps.map((s, i) => (
+                        <div key={s} className={cn(
+                            "h-1.5 rounded-full transition-all duration-300",
+                            s === currentStep ? "w-8 bg-indigo-600 shadow-md" : "w-2 bg-slate-200 dark:bg-slate-800"
+                        )} />
+                    ))}
+                </div>
+            </div>
+            <DialogDescription className="text-slate-500 font-medium">
+                {currentStep === 'info' ? "Planın temel bilgilerini belirleyin." : "Ders ve konu hiyerarşisini kartlar üzerinden yönetin."}
             </DialogDescription>
         </DialogHeader>
         
-        <Form {...form}>
+        <FormProvider {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col flex-1 overflow-hidden">
             <ScrollArea className="flex-1">
-                <div className="px-6 py-6 space-y-8">
-                    {/* Genel Bilgiler */}
-                    <div className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="title"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-xs font-bold text-slate-500 uppercase tracking-widest">Plan Başlığı</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Örn: 8. Sınıf LGS Hazırlık" {...field} className="h-12 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="description"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-xs font-bold text-slate-500 uppercase tracking-widest">Açıklama</FormLabel>
-                                    <FormControl>
-                                        <Textarea placeholder="Bu planın kapsamı hakkında kısa notlar..." {...field} className="min-h-[80px] rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 resize-none" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-
-                    {/* Dersler ve Konular Bölümü */}
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between px-1">
-                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Müfredat Yapısı</h3>
-                            <Button 
-                                type="button" 
-                                variant="outline" 
-                                size="sm" 
-                                className="h-8 rounded-lg border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 font-bold"
-                                onClick={() => appendSubject({ id: Date.now().toString(), name: "", topics: [{ name: "", sources: [""] }] })}
+                <div className="px-6 py-6">
+                    <AnimatePresence mode="wait" custom={stepIndex}>
+                        {currentStep === 'info' ? (
+                            <motion.div 
+                                key="info" 
+                                custom={stepIndex} 
+                                variants={variants} 
+                                initial="enter" 
+                                animate="center" 
+                                exit="exit"
+                                transition={{ duration: 0.2 }}
+                                className="space-y-6"
                             >
-                                <PlusCircle className="mr-1.5 h-4 w-4" /> Ders Ekle
-                            </Button>
-                        </div>
+                                <div className="space-y-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="title"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-xs font-black text-slate-500 uppercase tracking-widest pl-1">Plan Başlığı</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="Örn: 8. Sınıf LGS Hazırlık" {...field} className={cn("h-12 rounded-xl text-lg font-bold", themeColors.INPUT_BG)} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="description"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-xs font-black text-slate-500 uppercase tracking-widest pl-1">Açıklama</FormLabel>
+                                                <FormControl>
+                                                    <Textarea placeholder="Bu planın kapsamı hakkında kısa notlar..." {...field} className={cn("min-h-[120px] rounded-xl text-base leading-relaxed resize-none", themeColors.INPUT_BG)} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                                <div className="bg-indigo-50 dark:bg-indigo-900/20 p-6 rounded-3xl border border-indigo-100 dark:border-indigo-800/50 flex items-start gap-4">
+                                    <div className="p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm text-indigo-600">
+                                        <Sparkles className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-indigo-900 dark:text-indigo-100">Nasıl Çalışır?</h4>
+                                        <p className="text-sm text-indigo-700/80 dark:text-indigo-400 mt-1 leading-relaxed">
+                                            Bir sonraki adımda dersleri ve konuları ekleyeceksiniz. Her konu için çalışma kaynaklarını (YouTube linki, kitap notu vb.) tanımlayabilirsiniz.
+                                        </p>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <motion.div 
+                                key="curriculum" 
+                                custom={stepIndex} 
+                                variants={variants} 
+                                initial="enter" 
+                                animate="center" 
+                                exit="exit"
+                                transition={{ duration: 0.2 }}
+                                className="space-y-6"
+                            >
+                                <div className="flex items-center justify-between mb-4 px-1">
+                                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Müfredat Yapısı</h3>
+                                    <Button 
+                                        type="button" 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="h-9 rounded-xl border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 font-bold"
+                                        onClick={() => appendSubject({ id: Date.now().toString(), name: "", topics: [{ name: "", sources: [""] }] })}
+                                    >
+                                        <PlusCircle className="mr-1.5 h-4 w-4" /> Ders Ekle
+                                    </Button>
+                                </div>
 
-                        <div className="space-y-6">
-                            {subjectFields.map((subjectField, subjectIndex) => (
-                                <Card key={subjectField.id} className="border-2 border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-                                    <CardHeader className="bg-slate-50 dark:bg-slate-900/50 p-4 border-b dark:border-white/5 flex flex-row items-center justify-between gap-4 space-y-0">
-                                        <div className="flex items-center gap-3 flex-1">
-                                            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md">
-                                                {subjectIndex + 1}
-                                            </div>
-                                            <FormField
-                                                control={form.control}
-                                                name={`subjects.${subjectIndex}.name`}
-                                                render={({ field }) => (
-                                                    <FormItem className="flex-1 space-y-0">
-                                                        <FormControl>
-                                                            <Input 
-                                                                placeholder="Ders Adı (örn: Matematik)" 
-                                                                {...field} 
-                                                                className="h-10 bg-white dark:bg-slate-950 border-transparent focus:border-indigo-500 font-bold text-base shadow-none"
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                        <Button 
-                                            type="button" 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className="h-9 w-9 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl" 
-                                            onClick={() => removeSubject(subjectIndex)}
-                                        >
-                                            <Trash2 className="h-5 w-5"/>
-                                        </Button>
-                                    </CardHeader>
-                                    <CardContent className="p-4 bg-white dark:bg-slate-900">
-                                        <TopicArrayComponent 
-                                            control={form.control}
-                                            subjectIndex={subjectIndex}
-                                        />
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    </div>
+                                <div className="space-y-6">
+                                    {subjectFields.map((subjectField, subjectIndex) => (
+                                        <Card key={subjectField.id} className={cn("border-2 rounded-[2rem] overflow-hidden transition-all", themeColors.CARD_BG)}>
+                                            <CardHeader className="bg-slate-50 dark:bg-slate-900/50 p-5 border-b dark:border-white/5 flex flex-row items-center justify-between gap-4 space-y-0">
+                                                <div className="flex items-center gap-3 flex-1">
+                                                    <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-lg shadow-lg shadow-indigo-500/20">
+                                                        {subjectIndex + 1}
+                                                    </div>
+                                                    <FormField
+                                                        control={form.control}
+                                                        name={`subjects.${subjectIndex}.name`}
+                                                        render={({ field }) => (
+                                                            <FormItem className="flex-1 space-y-0">
+                                                                <FormControl>
+                                                                    <Input 
+                                                                        placeholder="Ders Adı (örn: Matematik)" 
+                                                                        {...field} 
+                                                                        className="h-10 bg-transparent border-none focus-visible:ring-0 font-black text-lg text-slate-900 dark:text-slate-100 shadow-none p-0"
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage className="text-rose-500" />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </div>
+                                                <Button 
+                                                    type="button" 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-10 w-10 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-full" 
+                                                    onClick={() => removeSubject(subjectIndex)}
+                                                >
+                                                    <Trash2 className="h-5 w-5"/>
+                                                </Button>
+                                            </CardHeader>
+                                            <CardContent className="p-5 bg-white dark:bg-slate-900">
+                                                <TopicArrayComponent 
+                                                    control={form.control}
+                                                    subjectIndex={subjectIndex}
+                                                />
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </ScrollArea>
             
-            <DialogFooter className="p-6 border-t dark:border-white/5 bg-slate-50 dark:bg-slate-900/50 flex-row gap-3">
-                <Button type="button" variant="ghost" onClick={() => form.reset()} className="flex-1 h-12 rounded-xl font-bold">Temizle</Button>
-                <Button type="submit" className="flex-[2] h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-500/20 text-white transition-all active:scale-95">
-                    {initialData ? 'Değişiklikleri Kaydet' : 'Yol Haritasını Oluştur'}
-                </Button>
+            <DialogFooter className="p-6 border-t dark:border-white/5 bg-slate-50 dark:bg-slate-900/50 flex-row gap-3 shrink-0">
+                {currentStep === 'info' ? (
+                    <>
+                        <Button type="button" variant="ghost" onClick={() => form.reset()} className="flex-1 h-12 rounded-2xl font-bold">Temizle</Button>
+                        <Button type="button" onClick={goToNext} className="flex-[2] h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-500/20 text-white transition-all active:scale-95">
+                            Dersleri Ekle <ChevronRight className="ml-2 h-5 w-5" />
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <Button type="button" variant="ghost" onClick={goToPrev} className="flex-1 h-12 rounded-2xl font-bold flex items-center justify-center gap-2">
+                            <ChevronLeft className="h-5 w-5" /> Geri
+                        </Button>
+                        <Button type="submit" className="flex-[2] h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 font-black shadow-lg shadow-indigo-500/20 text-white transition-all active:scale-95">
+                            <Check className="mr-2 h-5 w-5" /> Planı Kaydet
+                        </Button>
+                    </>
+                )}
             </DialogFooter>
           </form>
         </Form>
@@ -231,12 +311,12 @@ function TopicArrayComponent({ subjectIndex, control }: { subjectIndex: number, 
 
              <div className="grid grid-cols-1 gap-4">
                 {fields.map((field, topicIndex) => (
-                    <div key={field.id} className="relative group p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-black/20 space-y-4">
+                    <div key={field.id} className="relative group p-4 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-black/20 space-y-4 transition-all hover:border-indigo-500/30">
                         <Button 
                             type="button" 
                             variant="ghost" 
                             size="icon" 
-                            className="absolute top-2 right-2 h-7 w-7 text-slate-400 hover:text-rose-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" 
+                            className="absolute top-3 right-3 h-8 w-8 text-slate-400 hover:text-rose-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" 
                             onClick={() => remove(topicIndex)}
                         >
                             <X className="h-4 w-4"/>
@@ -247,20 +327,20 @@ function TopicArrayComponent({ subjectIndex, control }: { subjectIndex: number, 
                             name={`subjects.${subjectIndex}.topics.${topicIndex}.name`}
                             render={({ field: topicField }) => (
                                 <FormItem className="space-y-1">
-                                    <FormLabel className="text-[10px] font-bold text-slate-500 uppercase">Konu Adı</FormLabel>
+                                    <FormLabel className="text-[10px] font-bold text-slate-500 uppercase ml-1">Konu Adı</FormLabel>
                                     <FormControl>
                                         <Input 
                                             placeholder="Örn: Üslü Sayılar" 
                                             {...topicField} 
-                                            className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-lg"
+                                            className="h-11 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl font-bold"
                                         />
                                     </FormControl>
-                                    <FormMessage />
+                                    <FormMessage className="text-rose-500" />
                                 </FormItem>
                             )}
                         />
                         
-                        <div className="pl-2 border-l-2 border-indigo-100 dark:border-indigo-900/50">
+                        <div className="pl-3 border-l-2 border-indigo-100 dark:border-indigo-900/50">
                             <SourceArrayComponent control={control} subjectIndex={subjectIndex} topicIndex={topicIndex} />
                         </div>
                     </div>
@@ -271,7 +351,7 @@ function TopicArrayComponent({ subjectIndex, control }: { subjectIndex: number, 
                 type="button" 
                 size="sm" 
                 variant="ghost" 
-                className="w-full h-10 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 transition-all font-bold" 
+                className="w-full h-11 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 transition-all font-bold bg-white dark:bg-slate-950" 
                 onClick={() => append({ name: "", sources: [""] })}
             >
                 <Plus className="mr-2 h-4 w-4"/> Yeni Konu Ekle
@@ -316,7 +396,7 @@ function SourceArrayComponent({ subjectIndex, topicIndex, control}: { subjectInd
                                             )}
                                         </div>
                                     </FormControl>
-                                    <FormMessage className="text-[10px]" />
+                                    <FormMessage className="text-[10px] text-rose-500" />
                                 </FormItem>
                             )}
                         />
