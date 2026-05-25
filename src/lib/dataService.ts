@@ -936,7 +936,7 @@ export const onStudyAssignmentsUpdate = (callback: (assignments: StudyAssignment
 export const addStudyAssignment = async (data: Omit<StudyAssignment, 'id' | 'familyId' | 'status'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("User not in a family");
-    const assignmentData = { ...data, status: 'assigned' as const };
+    const assignmentData = { ...data, status: 'assigned' as const, familyId };
     return addDoc(collection(db, 'studyAssignments'), assignmentData);
 };
 export const updateStudyAssignment = (id: string, data: Partial<Omit<StudyAssignment, 'id' | 'familyId'>>) => {

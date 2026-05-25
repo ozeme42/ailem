@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -151,8 +150,8 @@ export default function EducationPage() {
   }, [tests, assignments]);
 
   const handleCompleteStudy = async (id: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
-    await updateStudyAssignment(id, { status: newStatus as any });
+    const newStatus = currentStatus === 'completed' ? 'assigned' : 'completed';
+    await updateStudyAssignment(id, { status: newStatus as any, completedAt: newStatus === 'completed' ? new Date().toISOString() : null });
     toast({ title: currentStatus === 'completed' ? "Geri Alındı" : "Tamamlandı ✓" });
   };
 
