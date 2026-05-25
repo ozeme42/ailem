@@ -504,7 +504,7 @@ export default function EducationPage() {
 
                       {/* 3D Kitap İllüstrasyonu */}
                       <div className={cn("w-16 h-24 rounded-r-md rounded-l-sm shadow-md shrink-0 bg-gradient-to-br relative border-l-4 border-black/20", coverBg)}>
-                        <div className="absolute top-2 left-2 text-[8px] font-bold text-white/70 uppercase">Course<br/>Book</div>
+                        <div className="absolute top-2 left-2 text-[8px] font-bold text-white/70 uppercase">DERS<br/>PLANI</div>
                         <div className="absolute bottom-2 left-2 right-2 h-1 bg-white/20 rounded" />
                       </div>
                       
