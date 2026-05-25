@@ -13,6 +13,7 @@ import { Trash2, Layers, BookOpen, Plus, X, ArrowLeft, Check, GripVertical, File
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 // --- YARDIMCI FONKSİYON ---
 const generateSafeId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -54,9 +55,19 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
     },
   });
 
-  const [subjects, setSubjects] = React.useState<SubjectType[]>(
-    initialData?.subjects ? initialData.subjects as SubjectType[] : []
-  );
+  const [subjects, setSubjects] = React.useState<SubjectType[]>([]);
+
+  // initialData değiştiğinde (veya ilk yüklendiğinde) subjects state'ini güncelle
+  React.useEffect(() => {
+    if (initialData) {
+      form.reset({
+        title: initialData.title,
+      });
+      if (initialData.subjects) {
+          setSubjects(initialData.subjects as SubjectType[]);
+      }
+    }
+  }, [initialData, form]);
 
   const [editingSubject, setEditingSubject] = React.useState<{ subject: SubjectType | null, index: number } | null>(null);
   const [isAddingSubject, setIsAddingSubject] = React.useState(false);
@@ -147,12 +158,12 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
                 {initialData ? "Yol Haritasını Düzenle" : "Yeni Yol Haritası"}
             </DialogTitle>
             <DialogDescription className="text-slate-500 font-medium">
-                Plan bilgilerini girin ve derslerinizi ayrı ayrı modüller halinde ekleyin.
+                Plan başlığını girin ve derslerinizi modüller halinde ekleyip yönetin.
             </DialogDescription>
         </DialogHeader>
         
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleFinalSubmit)} className="flex flex-col flex-1 min-h-0">
+            <form onSubmit={form.handleSubmit(handleFinalSubmit)} className="flex flex-col flex-1 min-h-0 overflow-hidden">
                 <ScrollArea className="flex-1 w-full">
                     <div className="px-4 md:px-8 py-6 space-y-8 max-w-4xl mx-auto w-full">
                         
@@ -176,9 +187,9 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
                             <div className="flex items-center justify-between px-1 mb-4">
                                 <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Eklenen Dersler</h3>
                                 <div className="flex items-center gap-2">
-                                     <span className="text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-md">
+                                     <Badge variant="secondary" className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-none font-bold">
                                         Toplam: {subjects.length}
-                                    </span>
+                                    </Badge>
                                 </div>
                             </div>
 
@@ -253,7 +264,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
                 <DialogFooter className="p-4 md:p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 shrink-0">
                     <div className="w-full max-w-4xl mx-auto">
                         <Button type="submit" className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 font-black shadow-lg shadow-indigo-500/20 text-white transition-all text-base md:text-lg">
-                            <Check className="mr-2 h-5 w-5" /> Tüm Planı Tamamla ve Kaydet
+                            <Check className="mr-2 h-5 w-5" /> Tüm Planı Kaydet
                         </Button>
                     </div>
                 </DialogFooter>
@@ -339,7 +350,7 @@ function SubjectEditor({
                                         <FormLabel className="text-xs font-black text-indigo-500 uppercase tracking-widest pl-1">Dersin Adı</FormLabel>
                                         <FormControl>
                                             <Input 
-                                                placeholder="Örn: Din Kültürü, Siyer, Kodlama..." 
+                                                placeholder="Örn: Matematik, Türkçe..." 
                                                 {...field} 
                                                 autoFocus
                                                 className="h-14 md:h-16 md:text-xl rounded-2xl text-lg font-bold bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800 focus-visible:ring-indigo-500" 
@@ -426,7 +437,7 @@ function SubjectEditor({
                 <div className="p-4 md:p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 rounded-b-2xl md:rounded-b-[2rem] shrink-0">
                     <div className="max-w-2xl mx-auto">
                         <Button onClick={form.handleSubmit(onSubmit)} type="button" className="w-full h-12 md:h-14 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-md text-white md:text-lg transition-all active:scale-95">
-                            Bu Dersi Listeye Ekle <Check className="ml-2 h-5 w-5" />
+                            Ders Modülünü Kaydet <Check className="ml-2 h-5 w-5" />
                         </Button>
                     </div>
                 </div>
@@ -456,7 +467,7 @@ function TopicSourcesEditor({ topicIndex, control}: { topicIndex: number, contro
                                 <FormControl>
                                     <div className="relative">
                                         <Input 
-                                            placeholder="YouTube linki, kitap sf. vb." 
+                                            placeholder="Link veya not..." 
                                             {...sourceField} 
                                             className="h-9 md:h-10 pr-8 md:pr-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs md:text-sm rounded-lg"
                                         />
