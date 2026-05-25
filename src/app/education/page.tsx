@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -405,6 +404,7 @@ export default function EducationPage() {
                   const overdue = isPast(dueDate) && !isToday(dueDate);
                   const dueToday = isToday(dueDate);
                   const daysDiff = differenceInDays(dueDate, new Date());
+                  const duration = test.durationMinutes || Math.ceil(test.questionCount * 1.5);
 
                   return (
                     <div key={test.id} className="bg-white dark:bg-[#1E293B] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between">
@@ -447,7 +447,7 @@ export default function EducationPage() {
                           <div className="w-px h-8 bg-slate-200 dark:bg-slate-700" />
                           <div>
                             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5">Süre</p>
-                            <p className="text-sm font-bold text-slate-900 dark:text-white">{test.durationMinutes ? `${test.durationMinutes} dk` : '-'}</p>
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">{duration} dk</p>
                           </div>
                         </div>
 
