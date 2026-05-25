@@ -697,6 +697,63 @@ export default function OpticalFormPage() {
     const options = ['A', 'B', 'C', 'D', 'E'];
     const testDurationMinutes = test.durationMinutes || totalQuestions * 1.5;
 
+    // --- REUSABLE OPTICAL FORM (For HTML Tests) ---
+    const HtmlOpticalForm = () => (
+        <div className="bg-white border border-slate-200 rounded-3xl shadow-xl flex flex-col h-full overflow-hidden">
+            <div className="p-4 border-b bg-slate-50/50 flex justify-between items-center shrink-0">
+                <h3 className="font-black text-slate-800 flex items-center gap-2">
+                    <LayoutGrid className="w-4 h-4 text-indigo-600" /> Optik Form
+                </h3>
+                <Badge variant="secondary" className="bg-white border-slate-200 text-indigo-600 font-bold">
+                    {Object.keys(mcqAnswers).length}/{totalQuestions}
+                </Badge>
+            </div>
+            <ScrollArea className="flex-1 p-4">
+                <div className="space-y-2">
+                    {Array.from({ length: totalQuestions }).map((_, i) => {
+                        const qNum = (i + 1).toString();
+                        return (
+                            <div key={qNum} className="flex items-center gap-2 p-2 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
+                                <div className="w-6 font-bold text-slate-400 text-xs">{i + 1}</div>
+                                <RadioGroup 
+                                    value={mcqAnswers[qNum] || ""} 
+                                    onValueChange={(v) => handleMcqAnswerChange(qNum, v)}
+                                    className="flex-1 flex justify-between gap-1"
+                                >
+                                    {options.map(option => (
+                                        <div key={option} className="flex flex-col items-center gap-1">
+                                            <RadioGroupItem value={option} id={`q${qNum}-${option}`} className="peer sr-only" />
+                                            <Label htmlFor={`q${qNum}-${option}`} className={cn(glassColors.OPTION_BUTTON, "w-8 h-8 text-[10px] rounded-lg")}>{option}</Label>
+                                        </div>
+                                    ))}
+                                </RadioGroup>
+                            </div>
+                        )
+                    })}
+                </div>
+            </ScrollArea>
+            <div className="p-4 border-t bg-slate-50/50 shrink-0">
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button type="button" size="lg" className="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg" disabled={isSubmitting}>
+                            {isSubmitting ? <Loader2 className="animate-spin h-4 w-4"/> : "Sınavı Bitir"}
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-white rounded-3xl">
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Bitirmek İstediğine Emin Misin?</AlertDialogTitle>
+                            <AlertDialogDescription>Tüm cevapların kaydedilecek.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel className="rounded-xl">Vazgeç</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleSubmit(false)} className="bg-emerald-600 rounded-xl">Bitir</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
+        </div>
+    );
+
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(() => handleSubmit(false))} className="h-full flex flex-col">
@@ -712,8 +769,8 @@ export default function OpticalFormPage() {
 
                     {isHtmlTest ? (
                         /* HTML TEST VIEW: IFRAME + OPTICAL */
-                        <main className="flex-1 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 h-full min-h-[600px] mb-20">
-                            <div className="lg:col-span-8 h-full bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-lg">
+                        <main className="flex-1 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 h-full min-h-[600px] mb-20 lg:mb-0">
+                            <div className="lg:col-span-9 h-full bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-lg relative min-h-[500px]">
                                  {test.htmlContent ? (
                                     <iframe 
                                         srcDoc={`<!DOCTYPE html><html><head><style>body { font-family: sans-serif; padding: 20px; line-height: 1.6; } img { max-width: 100%; height: auto; border-radius: 8px; }</style></head><body>${test.htmlContent}</body></html>`}
@@ -724,60 +781,10 @@ export default function OpticalFormPage() {
                                      <div className="h-full flex items-center justify-center text-slate-400">İçerik yüklenemedi.</div>
                                  )}
                             </div>
-                            <div className="lg:col-span-4 h-full flex flex-col">
-                                <div className="sticky top-28 bg-white border border-slate-200 rounded-3xl shadow-xl flex flex-col max-h-[70vh]">
-                                    <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center shrink-0">
-                                        <h3 className="font-black text-slate-800 flex items-center gap-2">
-                                            <LayoutGrid className="w-4 h-4 text-indigo-600" /> Optik Form
-                                        </h3>
-                                        <Badge variant="secondary" className="bg-white border-slate-200 text-indigo-600 font-bold">
-                                            {Object.keys(mcqAnswers).length}/{totalQuestions}
-                                        </Badge>
-                                    </div>
-                                    <ScrollArea className="flex-1 p-4">
-                                        <div className="space-y-4">
-                                            {Array.from({ length: totalQuestions }).map((_, i) => {
-                                                const qNum = (i + 1).toString();
-                                                return (
-                                                    <div key={qNum} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
-                                                        <div className="w-8 font-bold text-slate-400 text-lg">{i + 1}</div>
-                                                        <RadioGroup 
-                                                            value={mcqAnswers[qNum] || ""} 
-                                                            onValueChange={(v) => handleMcqAnswerChange(qNum, v)}
-                                                            className="flex-1 flex justify-between gap-1"
-                                                        >
-                                                            {options.map(option => (
-                                                                <div key={option} className="flex flex-col items-center gap-1">
-                                                                    <RadioGroupItem value={option} id={`q${qNum}-${option}`} className="peer sr-only" />
-                                                                    <Label htmlFor={`q${qNum}-${option}`} className={cn(glassColors.OPTION_BUTTON, "w-9 h-9 text-sm")}>{option}</Label>
-                                                                </div>
-                                                            ))}
-                                                        </RadioGroup>
-                                                    </div>
-                                                )
-                                            })}
-                                        </div>
-                                    </ScrollArea>
-                                    <div className="p-4 border-t bg-slate-50/50 shrink-0">
-                                         <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button type="button" size="lg" className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg" disabled={isSubmitting}>
-                                                    {isSubmitting ? <Loader2 className="animate-spin h-5 w-5"/> : "Sınavı Bitir"}
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent className="bg-white rounded-3xl">
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Bitirmek İstediğine Emin Misin?</AlertDialogTitle>
-                                                    <AlertDialogDescription>Tüm cevapların kaydedilecek.</AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel className="rounded-xl">Vazgeç</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleSubmit(false)} className="bg-emerald-600 rounded-xl">Bitir</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
-                                </div>
+                            
+                            {/* DESKTOP OPTICAL FORM */}
+                            <div className="hidden lg:flex lg:col-span-3 h-full flex-col sticky top-28 max-h-[70vh]">
+                                <HtmlOpticalForm />
                             </div>
                         </main>
                     ) : (
@@ -1076,37 +1083,43 @@ export default function OpticalFormPage() {
                     )}
                     
                     {/* MOBILE: PALETTE BUTTON & SHEET */}
-                    {!isHtmlTest && (
-                        <div className="lg:hidden fixed bottom-24 left-6 z-50">
-                            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                                <SheetTrigger asChild>
-                                    <Button type="button" size="icon" className="h-14 w-14 rounded-full bg-indigo-600 text-white shadow-2xl border-2 border-white ring-4 ring-indigo-500/20 active:scale-95 transition-all">
-                                        <LayoutGrid className="w-6 h-6" />
-                                    </Button>
-                                </SheetTrigger>
-                                <SheetContent side="bottom" className="rounded-t-[2.5rem] bg-white p-6 h-[70vh]">
-                                    <SheetHeader className="mb-4">
-                                        <SheetTitle className="flex items-center justify-center gap-3 font-black text-xl">Soru Gezgini</SheetTitle>
-                                    </SheetHeader>
-                                    <ScrollArea className="h-full">
-                                        <div className="pb-24">
-                                            <QuestionPalette 
-                                                total={totalQuestions} 
-                                                currentIndex={currentQuestionIndex} 
-                                                onNavigate={(idx) => {
-                                                    setCurrentQuestionIndex(idx);
-                                                    setIsSheetOpen(false);
-                                                }} 
-                                                isAnswered={isQuestionAnswered} 
-                                                practiceExam={practiceExam} 
-                                                submittedSubjects={submittedSubjectIds}
-                                            />
+                    <div className="lg:hidden fixed bottom-24 right-6 z-50">
+                        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                            <SheetTrigger asChild>
+                                <Button type="button" size="icon" className="h-14 w-14 rounded-full bg-indigo-600 text-white shadow-2xl border-2 border-white ring-4 ring-indigo-500/20 active:scale-95 transition-all">
+                                    <LayoutGrid className="w-6 h-6" />
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent side="bottom" className="rounded-t-[2.5rem] bg-white p-6 h-[80vh] flex flex-col">
+                                <SheetHeader className="mb-4">
+                                    <SheetTitle className="flex items-center justify-center gap-3 font-black text-xl">Soru Gezgini</SheetTitle>
+                                </SheetHeader>
+                                <div className="flex-1 overflow-hidden">
+                                    {isHtmlTest ? (
+                                        <div className="h-full">
+                                            <HtmlOpticalForm />
                                         </div>
-                                    </ScrollArea>
-                                </SheetContent>
-                            </Sheet>
-                        </div>
-                    )}
+                                    ) : (
+                                        <ScrollArea className="h-full">
+                                            <div className="pb-24">
+                                                <QuestionPalette 
+                                                    total={totalQuestions} 
+                                                    currentIndex={currentQuestionIndex} 
+                                                    onNavigate={(idx) => {
+                                                        setCurrentQuestionIndex(idx);
+                                                        setIsSheetOpen(false);
+                                                    }} 
+                                                    isAnswered={isQuestionAnswered} 
+                                                    practiceExam={practiceExam} 
+                                                    submittedSubjects={submittedSubjectIds}
+                                                />
+                                            </div>
+                                        </ScrollArea>
+                                    )}
+                                </div>
+                            </SheetContent>
+                        </Sheet>
+                    </div>
                 </div>
             </form>
         </Form>
