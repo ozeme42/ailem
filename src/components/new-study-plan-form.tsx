@@ -34,7 +34,6 @@ const subjectSchema = z.object({
 
 const planInfoSchema = z.object({
   title: z.string().min(3, "Plan adı en az 3 karakter olmalıdır."),
-  subjects: z.array(subjectSchema).optional().default([]),
 });
 
 // TYPES
@@ -51,27 +50,21 @@ type NewStudyPlanFormProps = {
 export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProps) {
   const { toast } = useToast();
   
-  // Initialize subjects from initialData if available
-  const [subjects, setSubjects] = React.useState<SubjectType[]>(
-      initialData?.subjects ? (initialData.subjects as SubjectType[]) : []
-  );
+  // Master state for subjects
+  const [subjects, setSubjects] = React.useState<SubjectType[]>([]);
 
   const form = useForm<z.infer<typeof planInfoSchema>>({
     resolver: zodResolver(planInfoSchema),
     defaultValues: {
       title: initialData?.title || "",
-      subjects: initialData?.subjects ? (initialData.subjects as SubjectType[]) : [],
     },
-    // Don't unregister fields so they stay validated across sub-editors
-    shouldUnregister: false
   });
 
-  // Keep subjects in sync if initialData changes after mount
+  // Sync subjects from initialData
   React.useEffect(() => {
     if (initialData) {
       form.reset({
         title: initialData.title,
-        subjects: (initialData.subjects || []) as SubjectType[],
       });
       setSubjects((initialData.subjects || []) as SubjectType[]);
     }
@@ -89,7 +82,9 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
         });
         return;
     }
-    onSubmit({
+    
+    // Process data for submission
+    const finalData = {
         title: values.title,
         subjects: subjects.map(s => ({
             ...s,
@@ -100,6 +95,17 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
                 sources: t.sources?.filter(src => src.trim() !== '') || []
             }))
         }))
+    };
+    
+    onSubmit(finalData);
+  };
+
+  const handleFormError = (errors: any) => {
+    console.error("Validation Errors:", errors);
+    toast({
+        title: "Formda Eksik Var ⚠️",
+        description: "Lütfen plan başlığını ve dersleri kontrol edin.",
+        variant: "destructive"
     });
   };
 
@@ -143,7 +149,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
         </DialogHeader>
         
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleFinalSubmit)} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <form onSubmit={form.handleSubmit(handleFinalSubmit, handleFormError)} className="flex flex-col flex-1 min-h-0 overflow-hidden">
                 <ScrollArea className="flex-1 h-full">
                     <div className="p-6 space-y-8 max-w-2xl mx-auto w-full">
                         
@@ -218,7 +224,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
                                 className="w-full h-12 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50/30 transition-all font-bold"
                                 onClick={() => setIsAddingSubject(true)}
                             >
-                                <Plus className="mr-2 h-4 w-4" /> Yeni Ders Ekle
+                                <PlusCircle className="mr-2 h-4 w-4" /> Yeni Ders Ekle
                             </Button>
                         </div>
                     </div>
