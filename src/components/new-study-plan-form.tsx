@@ -7,14 +7,14 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
+import { DialogHeader, DialogTitle, DialogDescription, DialogFooter, Dialog } from "./ui/dialog";
 import type { StudyPlan } from "@/lib/data";
-import { Trash2, Layers, BookOpen, Plus, X, ArrowLeft, Check, FileText, PlusCircle } from "lucide-react";
+import { Trash2, Layers, BookOpen, Plus, X, ArrowLeft, Check, FileText, PlusCircle, ListPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { tr } from "date-fns/locale";
+import { Textarea } from "./ui/textarea";
 
 // --- YARDIMCI FONKSİYON ---
 const generateSafeId = () => {
@@ -249,6 +249,9 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
 // ==========================================
 function SubjectEditor({ initialData, onSave, onCancel }: { initialData: SubjectType | null, onSave: (data: SubjectType) => void, onCancel: () => void }) {
     const { toast } = useToast();
+    const [isBulkAddOpen, setIsBulkAddOpen] = React.useState(false);
+    const [bulkText, setBulkText] = React.useState("");
+
     const form = useForm<SubjectType>({
         resolver: zodResolver(subjectSchema),
         defaultValues: initialData || {
@@ -299,6 +302,25 @@ function SubjectEditor({ initialData, onSave, onCancel }: { initialData: Subject
         });
     };
 
+    const handleBulkAdd = () => {
+        const lines = bulkText.split('\n').map(l => l.trim()).filter(Boolean);
+        if (lines.length === 0) return;
+
+        // If the first topic is empty, remove it before appending
+        const currentTopics = form.getValues('topics');
+        if (currentTopics.length === 1 && !currentTopics[0].name.trim()) {
+            removeTopic(0);
+        }
+
+        lines.forEach(line => {
+            appendTopic({ name: line, sources: [""] });
+        });
+
+        setBulkText("");
+        setIsBulkAddOpen(false);
+        toast({ title: "Konular Eklendi", description: `${lines.length} adet konu listeye eklendi.` });
+    };
+
     return (
         <div className="flex flex-col h-full overflow-hidden bg-white dark:bg-slate-950">
             <div className="flex items-center justify-between p-4 md:px-6 border-b dark:border-white/5 bg-slate-50 dark:bg-slate-900 shrink-0">
@@ -328,7 +350,18 @@ function SubjectEditor({ initialData, onSave, onCancel }: { initialData: Subject
                             />
 
                             <div className="space-y-4">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Konu Başlıkları</span>
+                                <div className="flex items-center justify-between px-1">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Konu Başlıkları</span>
+                                    <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 text-[10px] font-bold text-indigo-500 hover:bg-indigo-50 rounded-lg"
+                                        onClick={() => setIsBulkAddOpen(true)}
+                                    >
+                                        <ListPlus className="w-3 h-3 mr-1" /> Toplu Konu Ekle
+                                    </Button>
+                                </div>
                                 
                                 {topicFields.map((topicField, topicIndex) => (
                                     <div key={topicField.id} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 space-y-3 relative group">
@@ -381,6 +414,28 @@ function SubjectEditor({ initialData, onSave, onCancel }: { initialData: Subject
                     Modülü Tamamla <Check className="ml-2 h-4 w-4" />
                 </Button>
             </div>
+
+            {/* TOPLU KONU EKLEME DIALOG */}
+            <Dialog open={isBulkAddOpen} onOpenChange={setIsBulkAddOpen}>
+                <DialogContent className="sm:max-w-md bg-white dark:bg-slate-950 rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Toplu Konu Ekle</DialogTitle>
+                        <DialogDescription>Her satıra bir konu gelecek şekilde listeyi buraya yapıştırın.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Textarea 
+                            placeholder="Üslü Sayılar&#10;Köklü Sayılar&#10;Mutlak Değer..." 
+                            value={bulkText} 
+                            onChange={(e) => setBulkText(e.target.value)} 
+                            className="h-48 rounded-xl font-medium text-sm leading-relaxed"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsBulkAddOpen(false)}>İptal</Button>
+                        <Button onClick={handleBulkAdd} className="bg-indigo-600 hover:bg-indigo-700">Listeye Ekle</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
