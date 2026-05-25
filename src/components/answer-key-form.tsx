@@ -193,7 +193,7 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+      <div className="flex flex-col h-full">
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/[0.02]">
             <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 Soru No / Seçenekler
@@ -301,13 +301,13 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
           </div>
         </ScrollArea>
         
-        <DialogFooter className="p-6 mt-auto border-t border-white/10 bg-slate-900/50 backdrop-blur-sm">
-          <Button type="submit" size="lg" className={cn("w-full font-bold h-12 rounded-xl", glassColors.BUTTON_PRIMARY)}>
+        <div className="p-6 mt-auto border-t border-white/10 bg-slate-900/50 backdrop-blur-sm">
+          <Button type="button" onClick={form.handleSubmit(onSubmit)} size="lg" className={cn("w-full font-bold h-12 rounded-xl", glassColors.BUTTON_PRIMARY)}>
             <Save className="w-5 h-5 mr-2" />
             Cevap Anahtarını Kaydet
           </Button>
-        </DialogFooter>
-      </form>
+        </div>
+      </div>
     </Form>
   );
 }
