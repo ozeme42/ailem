@@ -353,12 +353,12 @@ export default function OpticalFormPage() {
                     </header>
 
                     {test.sourceType === 'html' ? (
-                        /* HTML TEST SONUÇ İNCELEME */
+                        /* HTML TEST SONUÇ İNCELEME (9/3 Oranı) */
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                             <div className="lg:col-span-8 h-[70vh] lg:h-auto bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+                             <div className="lg:col-span-9 h-[70vh] lg:h-[85vh] bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
                                 <iframe srcDoc={getIframeDocument(test.htmlContent || '')} className="w-full h-full border-none" title={test.title} sandbox="allow-scripts allow-same-origin" />
                              </div>
-                             <div className="lg:col-span-4">
+                             <div className="lg:col-span-3 h-[70vh] lg:h-[85vh]">
                                 <Card className="rounded-3xl border border-slate-200 bg-white shadow-xl h-full flex flex-col overflow-hidden">
                                     <div className="p-4 border-b bg-slate-50 font-black flex items-center gap-2">
                                         <CheckCircle className="w-5 h-5 text-indigo-600" /> Analiz
@@ -372,11 +372,11 @@ export default function OpticalFormPage() {
                                                 const isCorrect = sAns === cAns;
                                                 return (
                                                     <div key={qNum} className={cn("flex items-center justify-between p-3 rounded-xl border transition-all", isCorrect ? "bg-emerald-50 border-emerald-100" : sAns ? "bg-rose-50 border-rose-100" : "bg-slate-50 border-slate-100 opacity-60")}>
-                                                        <span className="font-bold text-sm">Soru {qNum}</span>
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="text-[10px] font-bold text-slate-500 uppercase">Sen: <span className={cn("text-sm", isCorrect ? "text-emerald-600" : sAns ? "text-rose-600" : "text-slate-400")}>{sAns || "Boş"}</span></div>
-                                                            <div className="text-[10px] font-bold text-slate-500 uppercase">D: <span className="text-sm text-emerald-700">{cAns}</span></div>
-                                                            {isCorrect ? <CheckCircle2 className="w-4 h-4 text-emerald-600"/> : sAns ? <XCircle className="w-4 h-4 text-rose-600"/> : <MinusCircle className="w-4 h-4 text-slate-300" />}
+                                                        <span className="font-bold text-xs shrink-0">{qNum}</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="text-[9px] font-bold text-slate-500 uppercase">Sen: <span className={cn("text-sm", isCorrect ? "text-emerald-600" : sAns ? "text-rose-600" : "text-slate-400")}>{sAns || "B"}</span></div>
+                                                            <div className="text-[9px] font-bold text-slate-500 uppercase">D: <span className="text-sm text-emerald-700">{cAns}</span></div>
+                                                            {isCorrect ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0"/> : sAns ? <XCircle className="w-4 h-4 text-rose-600 shrink-0"/> : <MinusCircle className="w-4 h-4 text-slate-300 shrink-0" />}
                                                         </div>
                                                     </div>
                                                 );
@@ -522,7 +522,9 @@ export default function OpticalFormPage() {
                                             </div>
                                             <div className="space-y-3 pt-4 border-t border-slate-100">
                                                 <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><MessageSquareText className="w-3.5 h-3.5 text-indigo-500" /> Geri Bildirim</Label>
-                                                <Textarea placeholder="Not bırakın..." value={textFeedback[qNum] || ""} onChange={(e) => handleFeedbackChange(parseInt(qNum), e.target.value)} className="bg-white border-slate-200 min-h-[80px] rounded-xl text-sm" />
+                                                <div className="relative">
+                                                  <Textarea placeholder="Not bırakın..." value={textFeedback[qNum] || ""} onChange={(e) => handleFeedbackChange(parseInt(qNum), e.target.value)} className="bg-white border-slate-200 min-h-[80px] rounded-xl text-sm" />
+                                                </div>
                                             </div>
                                         </div>
                                     </CardContent>
@@ -533,7 +535,7 @@ export default function OpticalFormPage() {
 
                     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4 z-50">
                         <Card className="rounded-[2.5rem] bg-white border-slate-200 shadow-2xl p-2 flex gap-2">
-                            <Button size="lg" disabled={Object.keys(manualEvaluation).length < totalQuestions || isSubmitting} onClick={handleSubmitEvaluation} className="flex-1 h-14 rounded-[2rem] bg-indigo-600 hover:bg-indigo-700 text-white text-base font-black shadow-lg shadow-indigo-500/30 transition-transform active:scale-95 disabled:grayscale">
+                            <Button size="lg" disabled={Object.keys(manualEvaluation).length < totalQuestions || isSubmitting} onClick={handleSubmitEvaluation} className="flex-1 h-14 rounded-[2rem] bg-indigo-600 hover:bg-indigo-700 text-white text-base font-black shadow-lg shadow-indigo-500/20 transition-transform active:scale-95 disabled:grayscale">
                                 {isSubmitting ? <Loader2 className="animate-spin mr-2"/> : <Check className="mr-2 h-6 w-6"/>}
                                 {Object.keys(manualEvaluation).length < totalQuestions ? `${totalQuestions - Object.keys(manualEvaluation).length} Soru Daha Var` : "Değerlendirmeyi Bitir"}
                             </Button>
@@ -559,10 +561,10 @@ export default function OpticalFormPage() {
                     </header>
 
                     {test.sourceType === 'html' ? (
-                        /* HTML TEST ÇÖZÜM MODU (IFRAME + OPTİK) */
+                        /* HTML TEST ÇÖZÜM MODU (IFRAME + OPTİK - 9/3 Oranı) */
                         <main className="flex-1 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 pb-32 animate-in fade-in duration-500">
-                             {/* SOL: HTML İÇERİĞİ */}
-                             <div className="lg:col-span-8 flex flex-col h-[70vh] lg:h-auto bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl overflow-hidden relative group">
+                             {/* SOL: HTML İÇERİĞİ (Genişletilmiş) */}
+                             <div className="lg:col-span-9 flex flex-col h-[70vh] lg:h-[85vh] bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl overflow-hidden relative group">
                                 <div className="absolute top-4 left-4 z-10">
                                      <Badge className="bg-slate-950/80 backdrop-blur-md text-white font-bold px-3 py-1 border-white/20">Soru Kitapçığı</Badge>
                                 </div>
@@ -574,31 +576,31 @@ export default function OpticalFormPage() {
                                 />
                              </div>
 
-                             {/* SAĞ: OPTİK FORM */}
-                             <div className="lg:col-span-4 flex flex-col min-h-[500px]">
+                             {/* SAĞ: OPTİK FORM (Kompaktlaştırılmış) */}
+                             <div className="lg:col-span-3 flex flex-col h-[70vh] lg:h-[85vh]">
                                 <Card className="rounded-[2.5rem] border border-slate-200 bg-white shadow-2xl flex-1 flex flex-col overflow-hidden">
-                                    <div className="p-6 border-b bg-slate-50/50">
-                                         <h3 className="font-black text-slate-800 text-lg flex items-center gap-2">
-                                             <FileCode className="w-5 h-5 text-indigo-600" /> Cevap Anahtarı
+                                    <div className="p-5 border-b bg-slate-50/50">
+                                         <h3 className="font-black text-slate-800 text-base flex items-center gap-2">
+                                             <FileCode className="w-4 h-4 text-indigo-600" /> Cevap Anahtarı
                                          </h3>
-                                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">İşaretlemeleri buradan yapın.</p>
+                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Seçenekleri işaretleyin.</p>
                                     </div>
                                     <ScrollArea className="flex-1">
-                                        <div className="p-6 space-y-4">
+                                        <div className="p-4 space-y-3">
                                             {Array.from({ length: totalQuestions }).map((_, i) => {
                                                 const qNum = (i + 1).toString();
                                                 return (
-                                                    <div key={qNum} className="flex items-center gap-4 p-3 rounded-2xl bg-slate-50/50 border border-slate-100 hover:bg-slate-50 transition-all">
-                                                        <Badge className="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-indigo-100 text-indigo-700 border-indigo-200 p-0 text-base">{qNum}</Badge>
+                                                    <div key={qNum} className="flex items-center gap-3 p-2 rounded-xl bg-slate-50/50 border border-slate-100 hover:bg-slate-50 transition-all">
+                                                        <Badge className="w-8 h-8 rounded-lg flex items-center justify-center font-black bg-indigo-100 text-indigo-700 border-indigo-200 p-0 text-xs shrink-0">{qNum}</Badge>
                                                         <RadioGroup 
                                                             value={mcqAnswers[qNum] || ""} 
                                                             onValueChange={(v) => handleMcqAnswerChange(qNum, v)} 
-                                                            className="flex gap-2"
+                                                            className="flex gap-1"
                                                         >
                                                             {['A', 'B', 'C', 'D', 'E'].map(opt => (
                                                                 <div key={opt} className="flex items-center">
                                                                     <RadioGroupItem value={opt} id={`q${qNum}-${opt}`} className="peer sr-only" />
-                                                                    <Label htmlFor={`q${qNum}-${opt}`} className="w-9 h-9 rounded-xl border-2 border-slate-200 flex items-center justify-center text-xs font-black cursor-pointer hover:border-indigo-400 hover:text-indigo-600 peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white peer-data-[state=checked]:border-indigo-600 transition-all">
+                                                                    <Label htmlFor={`q${qNum}-${opt}`} className="w-7 h-7 rounded-lg border-2 border-slate-200 flex items-center justify-center text-[10px] font-black cursor-pointer hover:border-indigo-400 hover:text-indigo-600 peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white peer-data-[state=checked]:border-indigo-600 transition-all">
                                                                         {opt}
                                                                     </Label>
                                                                 </div>
@@ -609,10 +611,10 @@ export default function OpticalFormPage() {
                                             })}
                                         </div>
                                     </ScrollArea>
-                                    <div className="p-6 bg-slate-50/50 border-t">
+                                    <div className="p-4 bg-slate-50/50 border-t">
                                          <AlertDialog>
                                             <AlertDialogTrigger asChild>
-                                                <Button type="button" size="lg" className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 font-black shadow-lg shadow-indigo-500/30 text-white transition-transform active:scale-95">
+                                                <Button type="button" size="lg" className="w-full h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 font-black shadow-lg shadow-indigo-500/30 text-white transition-transform active:scale-95 text-sm">
                                                     Ödevi Gönder
                                                 </Button>
                                             </AlertDialogTrigger>
