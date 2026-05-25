@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -15,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { tr } from "date-fns/locale";
 
 // --- YARDIMCI FONKSİYON ---
 const generateSafeId = () => {
@@ -282,7 +282,7 @@ function SubjectEditor({ initialData, onSave, onCancel }: { initialData: Subject
     const handleInternalError = (errors: any) => {
         console.error("Subject Editor Validation Errors:", errors);
         
-        // Manuel kontrol (Errors objesi bazen proxy nedeniyle boş görünebilir)
+        // Manuel kontrol
         const name = form.getValues("name");
         const topics = form.getValues("topics");
         const hasEmptyTopic = topics.some(t => !t.name.trim());
@@ -306,74 +306,75 @@ function SubjectEditor({ initialData, onSave, onCancel }: { initialData: Subject
                     <ArrowLeft className="w-4 h-4" /> Vazgeç
                 </Button>
                 <h2 className="font-bold text-slate-900 dark:text-white">{initialData ? "Dersi Düzenle" : "Yeni Ders Modülü"}</h2>
-                <div className="w-20" /> {/* Spacer */}
+                <div className="w-20" />
             </div>
 
-            <ScrollArea className="flex-1 h-full">
-                <Form {...form}>
-                    <div className="p-6 space-y-6 max-w-xl mx-auto w-full">
-                        <FormField
-                            control={form.control}
-                            name="name"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-xs font-black text-indigo-500 uppercase tracking-widest pl-1">Ders Adı</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Matematik, Türkçe..." {...field} autoFocus className="h-12 rounded-xl text-base font-bold bg-slate-50 dark:bg-slate-900 border-indigo-100 dark:border-indigo-900/50" />
-                                    </FormControl>
-                                    <FormMessage className="text-rose-500" />
-                                </FormItem>
-                            )}
-                        />
+            <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                <ScrollArea className="flex-1">
+                    <Form {...form}>
+                        <div className="p-6 space-y-6 max-w-xl mx-auto w-full">
+                            <FormField
+                                control={form.control}
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-black text-indigo-500 uppercase tracking-widest pl-1">Ders Adı</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Matematik, Türkçe..." {...field} autoFocus className="h-12 rounded-xl text-base font-bold bg-slate-50 dark:bg-slate-900 border-indigo-100 dark:border-indigo-900/50" />
+                                        </FormControl>
+                                        <FormMessage className="text-rose-500" />
+                                    </FormItem>
+                                )}
+                            />
 
-                        <div className="space-y-4">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Konu Başlıkları</span>
-                            
-                            {topicFields.map((topicField, topicIndex) => (
-                                <div key={topicField.id} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 space-y-3 relative group">
-                                    <div className="flex items-start gap-3">
-                                        <div className="flex-grow">
-                                            <FormField
-                                                control={form.control}
-                                                name={`topics.${topicIndex}.name`}
-                                                render={({ field }) => (
-                                                    <FormItem className="space-y-0">
-                                                        <FormControl>
-                                                            <Input placeholder="Konu başlığı..." {...field} className="h-10 rounded-lg font-bold text-sm bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" />
-                                                        </FormControl>
-                                                        <FormMessage className="text-[10px] mt-1" />
-                                                    </FormItem>
-                                                )}
-                                            />
+                            <div className="space-y-4">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Konu Başlıkları</span>
+                                
+                                {topicFields.map((topicField, topicIndex) => (
+                                    <div key={topicField.id} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 space-y-3 relative group">
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex-grow">
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`topics.${topicIndex}.name`}
+                                                    render={({ field }) => (
+                                                        <FormItem className="space-y-0">
+                                                            <FormControl>
+                                                                <Input placeholder="Konu başlığı..." {...field} className="h-10 rounded-lg font-bold text-sm bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" />
+                                                            </FormControl>
+                                                            <FormMessage className="text-[10px] mt-1" />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                            <Button 
+                                                type="button" 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-10 w-10 text-slate-300 hover:text-rose-500 rounded-lg shrink-0" 
+                                                onClick={() => removeTopic(topicIndex)}
+                                            >
+                                                <X className="h-5 w-5"/>
+                                            </Button>
                                         </div>
-                                        <Button 
-                                            type="button" 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className="h-10 w-10 text-slate-300 hover:text-rose-500 rounded-lg shrink-0" 
-                                            onClick={() => removeTopic(topicIndex)}
-                                        >
-                                            <X className="h-5 w-5"/>
-                                        </Button>
+
+                                        <TopicSourcesEditor control={form.control} topicIndex={topicIndex} />
                                     </div>
+                                ))}
 
-                                    {/* Kaynaklar (Basit Metin Alanı) */}
-                                    <TopicSourcesEditor control={form.control} topicIndex={topicIndex} />
-                                </div>
-                            ))}
-
-                            <Button 
-                                type="button" 
-                                variant="ghost" 
-                                className="w-full h-10 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-400 hover:text-indigo-600 transition-all font-bold text-xs" 
-                                onClick={() => appendTopic({ name: "", sources: [""] })}
-                            >
-                                <Plus className="mr-2 h-3 w-3"/> Yeni Konu
-                            </Button>
+                                <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    className="w-full h-10 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-400 hover:text-indigo-600 transition-all font-bold text-xs" 
+                                    onClick={() => appendTopic({ name: "", sources: [""] })}
+                                >
+                                    <Plus className="mr-2 h-3 w-3"/> Yeni Konu
+                                </Button>
+                            </div>
                         </div>
-                    </div>
-                </Form>
-            </ScrollArea>
+                    </Form>
+                </ScrollArea>
+            </div>
             
             <div className="p-4 md:p-6 border-t dark:border-white/5 bg-slate-50 dark:bg-slate-900 shrink-0">
                 <Button onClick={form.handleSubmit(handleInternalSubmit, handleInternalError)} type="button" className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-md text-white">
