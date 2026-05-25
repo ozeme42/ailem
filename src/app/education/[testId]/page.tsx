@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -166,7 +167,7 @@ export default function OpticalFormPage() {
     const params = useParams();
     const searchParams = useSearchParams();
     const { toast } = useToast();
-    const { user } = useAuth();
+    const { user, familyId } = useAuth();
     
     const testId = params.testId as string;
     const isEvaluateMode = searchParams.get('mode') === 'evaluate';
@@ -290,6 +291,13 @@ export default function OpticalFormPage() {
             });
 
             toast({ title: "Değerlendirme Tamamlandı", description: "Sonuçlar kaydedildi." });
+            
+            if (test.familyId && test.studentId) {
+                await checkAndAwardBadges(test.studentId, test.familyId, { 
+                    type: 'test_completed', 
+                    test: { ...test, status: 'Sonuçlandı', correctAnswers: correct, incorrectAnswers: incorrect, emptyAnswers: empty, score: (correct / questionCount) * 100 } 
+                });
+            }
         } catch (e) {
             toast({ title: "Hata", variant: 'destructive' });
         } finally {
@@ -318,20 +326,28 @@ export default function OpticalFormPage() {
                      answerKey = test.jsonQuestions.reduce((acc, q, i) => ({ ...acc, [(i+1).toString()]: q.answer }), {});
                 }
                 
+                // HTML testleri ve JSON testleri gibi cevap anahtarı baştan belli olan testlerde otomatik puanla
                 if (answerKey && Object.keys(answerKey).length > 0) {
                     let correct = 0, incorrect = 0, empty = 0;
                     for (let i = 1; i <= questionCount; i++) {
                         const qNumStr = i.toString();
                         const studentAns = allStudentMcqAnswers[qNumStr];
-                        if (!studentAns) empty++;
-                        else if (studentAns === (answerKey as any)[qNumStr]) correct++;
-                        else incorrect++;
+                        const correctAns = (answerKey as any)[qNumStr];
+                        
+                        if (!studentAns) {
+                            empty++;
+                        } else if (studentAns === correctAns) {
+                            correct++;
+                        } else {
+                            incorrect++;
+                        }
                     }
                     updatedData.status = 'Sonuçlandı';
                     updatedData.correctAnswers = correct;
                     updatedData.incorrectAnswers = incorrect;
                     updatedData.emptyAnswers = empty;
                     updatedData.score = (correct / questionCount) * 100;
+                    updatedData.timeSpentSeconds = (test.durationMinutes || 0) * 60; // Basit süre takibi
                 } else {
                     updatedData.status = 'Değerlendirme Bekliyor';
                 }
@@ -341,10 +357,14 @@ export default function OpticalFormPage() {
             }
 
             await updateTest(test.id, updatedData);
-            toast({ title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!", description: "Cevapların başarıyla kaydedildi.", className: "bg-emerald-600 border-none text-white" });
             
-            if (updatedData.status === 'Sonuçlandı' && test.familyId && test.studentId) {
-                await checkAndAwardBadges(test.studentId, test.familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
+            if (updatedData.status === 'Sonuçlandı') {
+                toast({ title: "Sınav Sonuçlandı! 📊", description: `Tebrikler! %${updatedData.score?.toFixed(0)} başarı elde ettin.`, className: "bg-indigo-600 border-none text-white" });
+                if (test.familyId && test.studentId) {
+                    await checkAndAwardBadges(test.studentId, test.familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
+                }
+            } else {
+                toast({ title: isFinishedByTimer ? "⏳ Süre Doldu!" : "✅ Test Tamamlandı!", description: "Cevapların başarıyla kaydedildi. Değerlendirilmek üzere gönderildi.", className: "bg-emerald-600 border-none text-white" });
             }
         } catch (error) {
             toast({ variant: "destructive", title: "❌ Hata!", description: "Test sonuçları kaydedilirken bir sorun oluştu." });
@@ -369,7 +389,6 @@ export default function OpticalFormPage() {
 
     // --- EVALUATION MODE (For Teachers/Parents) ---
     if (test.status === 'Değerlendirme Bekliyor') {
-        // Evaluate Mode via URL Param
         if (isEvaluateMode) {
             const questionCount = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
             const totalEvaluated = Object.keys(manualEvaluation).length;
@@ -458,7 +477,6 @@ export default function OpticalFormPage() {
                 </div>
             )
         } else {
-            // Student finished view
             return (
                 <div className={cn("min-h-screen flex items-center justify-center p-4", glassColors.PAGE_BG)}>
                     <Card className="max-w-md w-full rounded-[2.5rem] p-8 text-center space-y-6 shadow-2xl border-none bg-white">
@@ -467,7 +485,7 @@ export default function OpticalFormPage() {
                         </div>
                         <div>
                             <h2 className="text-2xl font-black text-slate-900">Ödev Gönderildi!</h2>
-                            <p className="text-slate-500 mt-2">Cevapların başarıyla kaydedildi. Öğretmenin/ebeveynin değerlendirmesi için beklemeye alındı.</p>
+                            <p className="text-slate-500 mt-2">Cevapların başarıyla kaydedildi. Değerlendirilmek üzere gönderildi.</p>
                         </div>
                         <Badge className="bg-amber-100 text-amber-700 border-none font-bold px-4 py-1">Değerlendirme Bekliyor</Badge>
                         <div className="pt-4">
@@ -742,7 +760,7 @@ export default function OpticalFormPage() {
                     <AlertDialogContent className="bg-white rounded-3xl">
                         <AlertDialogHeader>
                             <AlertDialogTitle>Bitirmek İstediğine Emin Misin?</AlertDialogTitle>
-                            <AlertDialogDescription>Tüm cevapların kaydedilecek.</AlertDialogDescription>
+                            <AlertDialogDescription>Tüm cevapların kaydedilecek ve puanın hesaplanacak.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel className="rounded-xl">Vazgeç</AlertDialogCancel>
@@ -1125,3 +1143,4 @@ export default function OpticalFormPage() {
         </Form>
     );
 }
+
