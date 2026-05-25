@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Send, Calendar as CalendarIcon, BookHeart, FileText, CheckCircle, Trash2, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { onStudyPlanUpdate, addStudyAssignment } from "@/lib/dataService";
+import { onStudyPlanUpdate, addStudyAssignment, onStudyAssignmentsUpdate } from "@/lib/dataService";
 import type { StudyPlan, StudyTopic, StudyAssignment } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 // --- DESIGN SYSTEM: Glassmorphism ---
 const glassColors = {
@@ -51,6 +52,7 @@ export function StudyPlanClient() {
   const { familyMembers } = useAuth();
 
   const [plan, setPlan] = useState<StudyPlan | null>(null);
+  const [studyAssignments, setStudyAssignments] = useState<StudyAssignment[]>([]);
   const [selectedTopics, setSelectedTopics] = useState<StudyTopic[]>([]);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   
@@ -66,8 +68,11 @@ export function StudyPlanClient() {
 
   useEffect(() => {
     if (!planId) return;
-    const unsub = onStudyPlanUpdate(planId, setPlan);
-    return () => unsub();
+    const unsubPlan = onStudyPlanUpdate(planId, setPlan);
+    const unsubAssignments = onStudyAssignmentsUpdate((all) => {
+        setStudyAssignments(all.filter(sa => sa.studyPlanId === planId));
+    });
+    return () => { unsubPlan(); unsubAssignments(); };
   }, [planId]);
 
   const toggleTopicSelection = (topic: StudyTopic) => {
@@ -191,20 +196,30 @@ export function StudyPlanClient() {
               </div>
                <AccordionContent className="p-0 border-t border-white/5 bg-black/20">
                    <div className="p-2 space-y-1">
-                    {(subject.topics || []).map(topic => (
-                        <div key={topic.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group" onClick={() => toggleTopicSelection(topic)}>
-                          <div className="flex items-center gap-3">
-                            <Checkbox
-                              id={`topic-${topic.id}`}
-                              checked={selectedTopics.some(t => t.id === topic.id)}
-                              onCheckedChange={() => toggleTopicSelection(topic)}
-                              className="border-white/30 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
-                            />
-                            <label htmlFor={`topic-${topic.id}`} className="font-medium text-slate-300 cursor-pointer group-hover:text-white transition-colors">{topic.name}</label>
-                          </div>
-                           <CheckCircle className={cn("w-4 h-4 transition-all", selectedTopics.some(t => t.id === topic.id) ? "text-pink-500 opacity-100" : "text-slate-600 opacity-0 group-hover:opacity-50")} />
-                        </div>
-                    ))}
+                    {(subject.topics || []).map(topic => {
+                        const allAssignedToTopic = studyAssignments.filter(sa => sa.topicId === topic.id);
+                        const isAssigned = allAssignedToTopic.some(sa => sa.status === 'assigned');
+                        const isCompleted = allAssignedToTopic.some(sa => sa.status === 'completed');
+
+                        return (
+                            <div key={topic.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group" onClick={() => toggleTopicSelection(topic)}>
+                              <div className="flex items-center gap-3">
+                                <Checkbox
+                                  id={`topic-${topic.id}`}
+                                  checked={selectedTopics.some(t => t.id === topic.id)}
+                                  onCheckedChange={() => toggleTopicSelection(topic)}
+                                  className="border-white/30 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
+                                />
+                                <div className="flex items-center gap-2">
+                                    <label htmlFor={`topic-${topic.id}`} className="font-medium text-slate-300 cursor-pointer group-hover:text-white transition-colors">{topic.name}</label>
+                                    {isAssigned && <Badge variant="outline" className="h-4 text-[8px] bg-blue-500/10 text-blue-400 border-blue-500/20 px-1 font-bold">ATANDI</Badge>}
+                                    {isCompleted && <Badge variant="outline" className="h-4 text-[8px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20 px-1 font-bold">TAMAMLANDI</Badge>}
+                                </div>
+                              </div>
+                               <CheckCircle className={cn("w-4 h-4 transition-all", selectedTopics.some(t => t.id === topic.id) ? "text-pink-500 opacity-100" : "text-slate-600 opacity-0 group-hover:opacity-50")} />
+                            </div>
+                        )
+                    })}
                     {(subject.topics || []).length === 0 && (
                         <p className="text-center text-slate-500 py-4 italic text-sm">Bu derste henüz konu yok.</p>
                     )}

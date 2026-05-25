@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Edit, Trash2, Send, Check, FileText, HelpCircle, CheckCircle, XCircle, Library, BookOpen, ChevronRight, CheckSquare, ListX, BookCopy, AlertTriangle, FileOutput, MinusCircle, Filter } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Send, Check, FileText, HelpCircle, CheckCircle, XCircle, Library, BookOpen, ChevronRight, CheckSquare, ListX, BookCopy, AlertTriangle, FileOutput, MinusCircle, Filter, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest, addBulkTrackedBookTests, deleteTrackedBookTopic, deleteTrackedBookSubject, onTestsUpdate } from "@/lib/dataService";
 import type { TrackedBook, TrackedBookSubject, TrackedBookTest, FamilyMember, Topic, Test } from "@/lib/data";
@@ -466,7 +466,7 @@ export default function BookDetailClient() {
                                         </Button>
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10" onClick={(e) => e.stopPropagation()}>
+                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400 hover:text-rose-400 hover:bg-rose-50/10" onClick={(e) => e.stopPropagation()}>
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             </AlertDialogTrigger>
@@ -505,7 +505,9 @@ export default function BookDetailClient() {
                                                                 {topicTests.map(test => {
                                                                     const completedTests = allAssignedTests.filter(t => t.sourceType === 'trackedBook' && t.sourceId === test.id && t.status === 'Sonuçlandı');
                                                                     const lastResult = completedTests.length > 0 ? completedTests[completedTests.length - 1] : null;
-                                                                    const assignedCount = allAssignedTests.filter(t => t.sourceType === 'trackedBook' && t.sourceId === test.id).length;
+                                                                    const allAssignedToTest = allAssignedTests.filter(t => t.sourceType === 'trackedBook' && t.sourceId === test.id);
+                                                                    const isAssigned = allAssignedToTest.some(t => t.status === 'Atandı');
+                                                                    const isCompletedAny = allAssignedToTest.some(t => t.status === 'Sonuçlandı');
 
                                                                     let successRate = 0;
                                                                     if (lastResult) {
@@ -518,9 +520,13 @@ export default function BookDetailClient() {
                                                                             <div className="flex items-center gap-3 flex-1 min-w-0">
                                                                                 <Checkbox checked={selectedTests.includes(test.id)} onCheckedChange={() => toggleTestSelection(test.id)} className="border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500" />
                                                                                 <div className="flex flex-col min-w-0">
-                                                                                    <p className="text-sm font-medium text-slate-200 truncate">{test.name}</p>
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <p className="text-sm font-medium text-slate-200 truncate">{test.name}</p>
+                                                                                        {isAssigned && <Badge variant="outline" className="h-4 text-[8px] bg-blue-500/10 text-blue-400 border-blue-500/20 px-1 font-bold">ATANDI</Badge>}
+                                                                                        {isCompletedAny && <Badge variant="outline" className="h-4 text-[8px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20 px-1 font-bold">TAMAMLANDI</Badge>}
+                                                                                    </div>
                                                                                     <div className="flex items-center gap-2 mt-0.5">
-                                                                                        <span className="text-[10px] text-slate-500">{test.questionCount} Soru {assignedCount > 0 && `• ${assignedCount} kişiye atandı`}</span>
+                                                                                        <span className="text-[10px] text-slate-500">{test.questionCount} Soru {allAssignedToTest.length > 0 && `• ${allAssignedToTest.length} kişiye atandı`}</span>
                                                                                         {lastResult && (
                                                                                             <Badge variant="outline" className={cn(
                                                                                                 "h-4 text-[9px] px-1.5 border-0 font-bold",
