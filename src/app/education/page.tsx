@@ -182,7 +182,7 @@ export default function EducationPage() {
         <div className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-blue-500/20">
-              <GraduationCap className="w-5 h-5 text-white" />
+              < GraduationCap className="w-5 h-5 text-white" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white leading-none">Eğitim Paneli</h1>
@@ -231,45 +231,49 @@ export default function EducationPage() {
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           
           {/* 1. Başarı Oranı (Büyük Kart) */}
-          <div className="rounded-2xl p-6 relative overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20 col-span-1 flex flex-col justify-between min-h-[160px]">
-            {/* Dekoratif Arka Plan Işıkları */}
-            <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/20 rounded-full blur-3xl pointer-events-none" />
-            
-            <div className="relative z-10 flex items-start justify-between mb-2">
-              <p className="text-white/90 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-                <Target className="w-4 h-4" /> Başarı Oranı
-              </p>
-              <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wider">
-                <TrendingUp className="w-3 h-3" /> %3 Artış
-              </div>
-            </div>
-
-            <div className="relative z-10 flex items-end justify-between mt-auto">
-              {/* Yüzde Metni (Yuvarlağın dışına alındı ve tipografisi güçlendirildi) */}
-              <div className="flex flex-col">
-                <div className="flex items-baseline text-white">
-                  <span className="text-2xl font-medium mr-0.5 opacity-80">%</span>
-                  <span className="text-5xl font-black tracking-tighter leading-none">{Math.floor(stats.successRate)}</span>
-                  <span className="text-xl font-bold text-white/80">.{(stats.successRate % 1).toFixed(2).substring(2)}</span>
+          {selectedStudent && (
+            <Link href={`/education/stats?studentId=${selectedStudent.id}`} className="group block col-span-1 active:scale-[0.98] transition-transform">
+              <div className="rounded-2xl p-6 relative overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20 flex flex-col justify-between min-h-[160px] h-full">
+                {/* Dekoratif Arka Plan Işıkları */}
+                <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/20 rounded-full blur-3xl pointer-events-none" />
+                
+                <div className="relative z-10 flex items-start justify-between mb-2">
+                  <p className="text-white/90 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <Target className="w-4 h-4" /> Başarı Oranı
+                  </p>
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wider">
+                    <TrendingUp className="w-3 h-3" /> %3 Artış
+                  </div>
                 </div>
-                <p className="text-white/80 text-xs font-medium mt-1">Geçen haftaya göre</p>
-              </div>
 
-              {/* Dairesel Progress (Sadece grafiksel gösterim için ufaltıldı) */}
-              <div className="relative w-16 h-16 shrink-0 drop-shadow-lg mb-1">
-                <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="12" />
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="white" strokeWidth="12"
-                    strokeLinecap="round" strokeDasharray={251.2} strokeDashoffset={251.2 - (251.2 * stats.successRate) / 100}
-                    className="transition-all duration-1000 ease-out" />
-                </svg>
-                {/* İçine sıkışık bir yazı yerine şık bir ikon eklendi */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
+                <div className="relative z-10 flex items-end justify-between mt-auto">
+                  {/* Yüzde Metni (Yuvarlağın dışına alındı ve tipografisi güçlendirildi) */}
+                  <div className="flex flex-col">
+                    <div className="flex items-baseline text-white">
+                      <span className="text-2xl font-medium mr-0.5 opacity-80">%</span>
+                      <span className="text-5xl font-black tracking-tighter leading-none">{Math.floor(stats.successRate)}</span>
+                      <span className="text-xl font-bold text-white/80">.{(stats.successRate % 1).toFixed(2).substring(2)}</span>
+                    </div>
+                    <p className="text-white/80 text-xs font-medium mt-1">Geçen haftaya göre</p>
+                  </div>
+
+                  {/* Dairesel Progress (Sadece grafiksel gösterim için ufaltıldı) */}
+                  <div className="relative w-16 h-16 shrink-0 drop-shadow-lg mb-1">
+                    <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                      <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="12" />
+                      <circle cx="50" cy="50" r="40" fill="none" stroke="white" strokeWidth="12"
+                        strokeLinecap="round" strokeDasharray={251.2} strokeDashoffset={251.2 - (251.2 * stats.successRate) / 100}
+                        className="transition-all duration-1000 ease-out" />
+                    </svg>
+                    {/* İçine sıkışık bir yazı yerine şık bir ikon eklendi */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </Link>
+          )}
 
           {/* 2 & 3. Mini İstatistikler (Grid içinde Grid) */}
           <div className="grid grid-cols-2 gap-4 col-span-1 lg:col-span-2">
