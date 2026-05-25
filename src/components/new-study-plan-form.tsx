@@ -140,7 +140,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
             </DialogDescription>
         </DialogHeader>
         
-        <FormProvider {...form}>
+        <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col flex-1 overflow-hidden">
             <ScrollArea className="flex-1">
                 <div className="px-6 py-6">
