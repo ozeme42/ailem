@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -279,8 +278,7 @@ export function MistakesClient() {
                     {Object.keys(hierarchy).length > 0 ? (
                         <Accordion 
                             type="multiple" 
-                            className="space-y-4" 
-                            defaultValue={Object.keys(hierarchy)}
+                            className="space-y-4"
                         >
                             {Object.entries(hierarchy).map(([subject, topics]) => (
                                 <AccordionItem key={subject} value={subject} className="border-none rounded-3xl overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
