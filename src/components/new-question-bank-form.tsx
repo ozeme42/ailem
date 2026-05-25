@@ -242,7 +242,8 @@ export function NewQuestionBankForm({
       
       // Perform client-side upload if it's a new data URI
       if (values.imageDataUri.startsWith('data:image')) {
-          const destinationPath = `bank-questions/${user.uid}-${Date.now()}-${currentIndex}.jpg`;
+          // Change path to users/{uid}/... to match standard Firebase Storage rules
+          const destinationPath = `users/${user.uid}/bank-questions/${Date.now()}-${currentIndex}.jpg`;
           const storageRef = ref(storage, destinationPath);
           await uploadString(storageRef, values.imageDataUri, 'data_url');
           finalImageUrl = await getDownloadURL(storageRef);
@@ -280,7 +281,11 @@ export function NewQuestionBankForm({
       }
     } catch (error: any) {
       console.error("Save error:", error);
-      toast({ title: "Kaydedilemedi", description: error.message || "Bilinmeyen bir hata oluştu.", variant: "destructive" });
+      let errorMessage = error.message || "Bilinmeyen bir hata oluştu.";
+      if (error.code === 'storage/unauthorized') {
+          errorMessage = "Dosya yükleme yetkiniz yok. Lütfen Firebase Storage servisinin açık olduğundan emin olun.";
+      }
+      toast({ title: "Kaydedilemedi", description: errorMessage, variant: "destructive" });
     } finally {
       setLoading(false);
     }

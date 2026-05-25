@@ -82,7 +82,8 @@ export function NewMemorizationItemForm({ onFormSubmit, initialData }: NewMemori
     try {
         if (values.newImageDataUri) {
              toast({ title: "Görsel Yükleniyor...", description: "Görsel depolama alanına kaydediliyor." });
-             const destinationPath = `ezber-images/${user.uid}-${Date.now()}.jpg`;
+             // Standardize path to users/{uid}/...
+             const destinationPath = `users/${user.uid}/ezber-images/${Date.now()}.jpg`;
              const storageRef = ref(storage, destinationPath);
              await uploadString(storageRef, values.newImageDataUri, 'data_url');
              finalImageUrl = await getDownloadURL(storageRef);
@@ -104,7 +105,12 @@ export function NewMemorizationItemForm({ onFormSubmit, initialData }: NewMemori
 
       onFormSubmit();
     } catch (err: any) {
-      toast({ title: 'Hata', description: err.message, variant: 'destructive' });
+      console.error("Memorization save error:", err);
+      let errorMessage = err.message || "Bir hata oluştu.";
+      if (err.code === 'storage/unauthorized') {
+          errorMessage = "Görsel yükleme yetkiniz yok. Lütfen Firebase Storage servisinin açık olduğundan emin olun.";
+      }
+      toast({ title: 'Hata', description: errorMessage, variant: 'destructive' });
     } finally {
       setLoading(false);
     }

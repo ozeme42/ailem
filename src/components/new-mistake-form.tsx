@@ -149,7 +149,8 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
       toast({ title: "Görseller Yükleniyor...", description: `${values.imageDataUris.length} adet soru havuza ekleniyor.` });
 
       for (const [index, imageDataUri] of values.imageDataUris.entries()) {
-         const destinationPath = `mistake-pool/${user.uid}-${Date.now()}-${index}.jpg`;
+         // Standardize path to users/{uid}/...
+         const destinationPath = `users/${user.uid}/mistake-pool/${Date.now()}-${index}.jpg`;
          const storageRef = ref(storage, destinationPath);
          await uploadString(storageRef, imageDataUri, 'data_url');
          const publicUrl = await getDownloadURL(storageRef);
@@ -168,7 +169,12 @@ export function NewMistakeForm({ onFormSubmit }: NewMistakeFormProps) {
       toast({ title: 'Başarılı!', description: `${values.imageDataUris.length} yanlış soru havuza eklendi.` });
       onFormSubmit();
     } catch (err: any) {
-      toast({ title: 'Hata', description: err.message, variant: 'destructive' });
+      console.error("Mistake save error:", err);
+      let errorMessage = err.message || "Bir hata oluştu.";
+      if (err.code === 'storage/unauthorized') {
+          errorMessage = "Storage erişim yetkiniz yok. Lütfen Firebase konsolundan Storage servisini etkinleştirin.";
+      }
+      toast({ title: 'Hata', description: errorMessage, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
