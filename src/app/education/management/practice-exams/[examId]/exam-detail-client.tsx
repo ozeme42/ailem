@@ -116,7 +116,7 @@ export function ExamDetailClient() {
 
         {/* HEADER */}
         <div className={cn("sticky top-0 z-40 w-full transition-all duration-300", glassColors.HEADER_BG)}>
-            <div className="max-w-4xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
+            <div className="max-w-4xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <Button 
                         onClick={() => router.push('/education/management/practice-exams')} 
@@ -167,7 +167,7 @@ export function ExamDetailClient() {
             </div>
         </div>
 
-      <Accordion type="multiple" className="w-full space-y-4" defaultValue={(exam.subjects || []).map(s => s.id)}>
+      <Accordion type="multiple" className="w-full space-y-4">
         {(exam.subjects || []).map(subject => (
           <AccordionItem key={subject.id} value={subject.id} className="border-none rounded-2xl overflow-hidden bg-white/5 border border-white/5">
               <div className="flex items-center justify-between pr-4 bg-slate-900/30">
