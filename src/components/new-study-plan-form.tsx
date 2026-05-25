@@ -9,8 +9,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
 import type { StudyPlan } from "@/lib/data";
-import { Trash2, Layers, Link as LinkIcon, FileText, Plus, X, ArrowLeft, Check, BookOpen, GripVertical } from "lucide-react";
+import { Trash2, Layers, BookOpen, Plus, X, ArrowLeft, Check, GripVertical, FileText, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
 
 // --- YARDIMCI FONKSİYON ---
 const generateSafeId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -44,6 +46,7 @@ type NewStudyPlanFormProps = {
 // ANA BİLEŞEN (MAIN VIEW)
 // ==========================================
 export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProps) {
+  const { toast } = useToast();
   const form = useForm<z.infer<typeof planInfoSchema>>({
     resolver: zodResolver(planInfoSchema),
     defaultValues: {
@@ -61,7 +64,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
 
   const handleFinalSubmit = (values: z.infer<typeof planInfoSchema>) => {
     if (subjects.length === 0) {
-        alert("Lütfen en az bir ders ekleyin!");
+        toast({ title: "Ders Eksik", description: "Lütfen en az bir ders ekleyin!", variant: "destructive" });
         return;
     }
     onSubmit({
@@ -79,9 +82,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
   };
 
   const removeSubject = (index: number) => {
-      if(window.confirm("Bu dersi silmek istediğinize emin misiniz?")) {
-          setSubjects(prev => prev.filter((_, i) => i !== index));
-      }
+      setSubjects(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSaveSubject = (savedSubject: SubjectType) => {
@@ -139,9 +140,9 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
   }
 
   return (
-    <div className="w-full bg-white dark:bg-slate-950 flex flex-col">
+    <div className="w-full bg-white dark:bg-slate-950 flex flex-col h-full overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-4 border-b dark:border-white/5 bg-slate-50 dark:bg-slate-900 shrink-0">
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
                 <Layers className="w-6 h-6 text-indigo-500" />
                 {initialData ? "Yol Haritasını Düzenle" : "Yeni Yol Haritası"}
             </DialogTitle>
@@ -151,100 +152,103 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
         </DialogHeader>
         
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleFinalSubmit)} className="flex flex-col w-full">
-                <div className="px-4 md:px-8 py-6 space-y-8 max-w-4xl mx-auto w-full">
-                    
-                    <div className="space-y-4 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                        <FormField
-                            control={form.control}
-                            name="title"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-xs font-black text-slate-500 uppercase tracking-widest pl-1">Plan Başlığı</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Örn: 8. Sınıf LGS Deneme Takibi" {...field} className="h-12 md:h-14 rounded-xl text-base md:text-lg font-bold bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between px-1 mb-4">
-                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Eklenen Dersler</h3>
-                            <span className="text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-md">
-                                Toplam: {subjects.length}
-                            </span>
+            <form onSubmit={form.handleSubmit(handleFinalSubmit)} className="flex flex-col flex-1 min-h-0">
+                <ScrollArea className="flex-1 w-full">
+                    <div className="px-4 md:px-8 py-6 space-y-8 max-w-4xl mx-auto w-full">
+                        
+                        <div className="space-y-4 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                            <FormField
+                                control={form.control}
+                                name="title"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-black text-slate-500 uppercase tracking-widest pl-1">Plan Başlığı</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Örn: 8. Sınıf LGS Deneme Takibi" {...field} className="h-12 md:h-14 rounded-xl text-base md:text-lg font-bold bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800" />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                         </div>
 
-                        {subjects.length === 0 ? (
-                            <div className="text-center py-12 px-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl bg-slate-50 dark:bg-slate-900/50">
-                                <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                                <p className="text-sm md:text-base text-slate-500 font-medium">Henüz ders eklenmedi.<br/>Aşağıdaki butondan ilk dersinizi oluşturun.</p>
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between px-1 mb-4">
+                                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Eklenen Dersler</h3>
+                                <div className="flex items-center gap-2">
+                                     <span className="text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-md">
+                                        Toplam: {subjects.length}
+                                    </span>
+                                </div>
                             </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {subjects.map((subject, index) => (
-                                    <div 
-                                        key={subject.id || index} 
-                                        draggable
-                                        onDragStart={(e) => onSubjectDragStart(e, index)}
-                                        onDragEnter={(e) => onSubjectDragEnter(e, index)}
-                                        onDragEnd={onSubjectDragEnd}
-                                        onDragOver={(e) => e.preventDefault()}
-                                        className={cn(
-                                            "flex flex-col justify-between p-5 bg-white dark:bg-slate-900 rounded-2xl border shadow-sm transition-all group cursor-grab active:cursor-grabbing",
-                                            draggedSubjectIndex === index ? "border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/50 dark:bg-indigo-900/20" : "border-slate-200 dark:border-slate-800 hover:border-indigo-300"
-                                        )}
-                                    >
-                                        <div className="flex items-start gap-3 mb-4">
-                                            <div className="mt-1 text-slate-300 hover:text-indigo-400 transition-colors">
-                                                <GripVertical className="w-5 h-5" />
-                                            </div>
-                                            <div className="w-8 h-8 shrink-0 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center font-black text-sm">
-                                                {index + 1}
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-base leading-tight">{subject.name}</h4>
-                                                <p className="text-xs font-medium text-slate-500 mt-1">{subject.topics.length} Konu tanımlı</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-2 w-full pt-3 border-t border-slate-100 dark:border-slate-800">
-                                            <Button 
-                                                type="button" 
-                                                variant="outline" 
-                                                onClick={() => setEditingSubject({ subject, index })}
-                                                className="flex-1 h-9 text-xs font-bold text-indigo-600 hover:bg-indigo-50 border-slate-200 dark:border-slate-700"
-                                            >
-                                                Düzenle
-                                            </Button>
-                                            <Button 
-                                                type="button" 
-                                                variant="outline" 
-                                                size="icon"
-                                                onClick={() => removeSubject(index)}
-                                                className="h-9 w-9 text-rose-500 hover:bg-rose-50 border-slate-200 dark:border-slate-700"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
 
-                        <Button 
-                            type="button" 
-                            variant="outline" 
-                            className="w-full h-14 rounded-2xl border-2 border-dashed border-indigo-300 dark:border-indigo-800 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950 font-bold mt-6"
-                            onClick={() => setIsAddingSubject(true)}
-                        >
-                            <Plus className="mr-2 h-5 w-5" /> Ders ve Konu Ekle
-                        </Button>
+                            {subjects.length === 0 ? (
+                                <div className="text-center py-12 px-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl bg-slate-50 dark:bg-slate-900/50">
+                                    <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                                    <p className="text-sm md:text-base text-slate-500 font-medium">Henüz ders eklenmedi.<br/>Aşağıdaki butondan ilk dersinizi oluşturun.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {subjects.map((subject, index) => (
+                                        <div 
+                                            key={subject.id || index} 
+                                            draggable
+                                            onDragStart={(e) => onSubjectDragStart(e, index)}
+                                            onDragEnter={(e) => onSubjectDragEnter(e, index)}
+                                            onDragEnd={onSubjectDragEnd}
+                                            onDragOver={(e) => e.preventDefault()}
+                                            className={cn(
+                                                "flex flex-col justify-between p-5 bg-white dark:bg-slate-900 rounded-2xl border shadow-sm transition-all group cursor-grab active:cursor-grabbing",
+                                                draggedSubjectIndex === index ? "border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/50 dark:bg-indigo-900/20" : "border-slate-200 dark:border-slate-800 hover:border-indigo-300"
+                                            )}
+                                        >
+                                            <div className="flex items-start gap-3 mb-4">
+                                                <div className="mt-1 text-slate-300 hover:text-indigo-400 transition-colors">
+                                                    <GripVertical className="w-5 h-5" />
+                                                </div>
+                                                <div className="w-8 h-8 shrink-0 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center font-black text-sm">
+                                                    {index + 1}
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-base leading-tight truncate">{subject.name}</h4>
+                                                    <p className="text-xs font-medium text-slate-500 mt-1">{subject.topics.length} Konu tanımlı</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2 w-full pt-3 border-t border-slate-100 dark:border-slate-800">
+                                                <Button 
+                                                    type="button" 
+                                                    variant="outline" 
+                                                    onClick={() => setEditingSubject({ subject, index })}
+                                                    className="flex-1 h-9 text-xs font-bold text-indigo-600 hover:bg-indigo-50 border-slate-200 dark:border-slate-700"
+                                                >
+                                                    Düzenle
+                                                </Button>
+                                                <Button 
+                                                    type="button" 
+                                                    variant="outline" 
+                                                    size="icon"
+                                                    onClick={() => removeSubject(index)}
+                                                    className="h-9 w-9 text-rose-500 hover:bg-rose-50 border-slate-200 dark:border-slate-700"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                className="w-full h-14 rounded-2xl border-2 border-dashed border-indigo-300 dark:border-indigo-800 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950 font-bold mt-6"
+                                onClick={() => setIsAddingSubject(true)}
+                            >
+                                <Plus className="mr-2 h-5 w-5" /> Ders ve Konu Ekle
+                            </Button>
+                        </div>
                     </div>
-
-                </div>
+                </ScrollArea>
                 
                 <DialogFooter className="p-4 md:p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 shrink-0">
                     <div className="w-full max-w-4xl mx-auto">
@@ -313,7 +317,7 @@ function SubjectEditor({
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 dark:bg-black/70 backdrop-blur-sm p-4 md:p-8">
-            <div className="flex flex-col w-full max-w-3xl bg-white dark:bg-slate-950 rounded-2xl md:rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh]">
+            <div className="flex flex-col w-full max-w-3xl bg-white dark:bg-slate-950 rounded-2xl md:rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-hidden">
                 <div className="flex items-center justify-between p-4 md:px-6 md:py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 rounded-t-2xl md:rounded-t-[2rem] shrink-0">
                     <Button type="button" variant="ghost" onClick={onCancel} className="h-10 px-3 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl">
                         <ArrowLeft className="w-5 h-5 mr-1 md:mr-2" /> <span className="hidden md:inline">İptal Et</span>
@@ -324,9 +328,9 @@ function SubjectEditor({
                     <div className="w-[72px] md:w-[96px]"></div> 
                 </div>
 
-                <div className="overflow-y-auto w-full">
+                <ScrollArea className="flex-1 w-full">
                     <Form {...form}>
-                        <div className="p-4 md:p-8 space-y-8 w-full max-w-2xl mx-auto">
+                        <div className="p-4 md:p-8 space-y-8 w-full max-w-2xl mx-auto pb-12">
                             <FormField
                                 control={form.control}
                                 name="name"
@@ -370,7 +374,7 @@ function SubjectEditor({
                                             <div className="mt-3 text-slate-300 hover:text-indigo-400 transition-colors hidden md:block">
                                                 <GripVertical className="w-5 h-5" />
                                             </div>
-                                            <div className="flex-1">
+                                            <div className="flex-1 min-w-0">
                                                 <FormField
                                                     control={form.control}
                                                     name={`topics.${topicIndex}.name`}
@@ -417,7 +421,7 @@ function SubjectEditor({
 
                         </div>
                     </Form>
-                </div>
+                </ScrollArea>
                 
                 <div className="p-4 md:p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 rounded-b-2xl md:rounded-b-[2rem] shrink-0">
                     <div className="max-w-2xl mx-auto">
