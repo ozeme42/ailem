@@ -4,12 +4,12 @@
 import * as React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Test as TestType, QuickTestQuestion, EvaluationStatus } from "@/lib/data";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, ArrowRight, Play, Pause, Check, X, MinusCircle, LayoutGrid, Loader2, Sparkles, ChevronRight, ChevronLeft, CheckCircle2, XCircle, Send, MessageSquareText, ImageIcon, RotateCcw } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, ArrowRight, Play, Pause, Check, X, MinusCircle, LayoutGrid, Loader2, Sparkles, ChevronRight, ChevronLeft, CheckCircle2, XCircle, Send, MessageSquareText, ImageIcon, RotateCcw, FileCode } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +32,26 @@ const glassColors = {
     CARD_BG: "bg-white border border-slate-200 shadow-sm", 
     OPTION_BUTTON: "flex items-center justify-center w-12 h-12 rounded-xl border border-slate-200 bg-white cursor-pointer transition-all duration-200 font-bold text-lg text-slate-600 hover:bg-slate-50 hover:border-indigo-400 hover:text-indigo-600 peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white peer-data-[state=checked]:border-indigo-600 peer-data-[state=checked]:shadow-lg peer-data-[state=checked]:scale-110",
 };
+
+const getIframeDocument = (htmlContent: string) => `
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: ui-sans-serif, system-ui, sans-serif; padding: 20px; color: #1e293b; background: white; }
+        h1, h2, h3 { color: #0f172a; font-weight: 800; margin-top: 1.5em; margin-bottom: 0.5em; }
+        p { line-height: 1.6; margin-bottom: 1em; }
+        img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; }
+        .question-block { margin-bottom: 30px; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body>
+    ${htmlContent}
+</body>
+</html>
+`;
 
 function formatTime(seconds: number) {
   if (seconds < 0) seconds = 0;
@@ -173,8 +193,8 @@ export default function OpticalFormPage() {
         if (!test) return;
         try {
             await updateTest(test.id, {
-                studentAnswers: test.openEnded ? undefined : latestMcq,
-                studentTextAnswers: test.openEnded ? latestText : undefined,
+                studentAnswers: latestMcq,
+                studentTextAnswers: latestText,
             });
         } catch (e) {
             console.error("Partial save error:", e);
@@ -268,8 +288,8 @@ export default function OpticalFormPage() {
             let updatedData: Partial<TestType> = { 
                 timerStatus: 'finished',
                 status: 'Değerlendirme Bekliyor',
-                studentAnswers: test.openEnded ? undefined : mcqAnswers,
-                studentTextAnswers: test.openEnded ? textAnswers : undefined,
+                studentAnswers: mcqAnswers,
+                studentTextAnswers: textAnswers,
             };
             const questionCount = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
             const isAutoGrade = !test.openEnded && test.answerKey && Object.keys(test.answerKey).length > 0;
@@ -322,7 +342,7 @@ export default function OpticalFormPage() {
     if (test.status === 'Sonuçlandı' && !isEvaluateMode) {
         return (
             <div className={cn("min-h-screen text-slate-900 font-sans p-4 sm:p-8", glassColors.PAGE_BG)}>
-                <div className="max-w-4xl mx-auto w-full space-y-8 pb-32">
+                <div className="max-w-7xl mx-auto w-full space-y-8 pb-32">
                     <header className="flex justify-between items-center bg-white/50 backdrop-blur-md p-4 rounded-2xl border border-slate-200 sticky top-4 z-50 shadow-sm">
                         <Button variant="ghost" onClick={() => router.back()} className="text-slate-500 hover:text-slate-900"><ArrowLeft className="mr-2 h-5 w-5" /> Geri</Button>
                         <div className="text-center">
@@ -332,7 +352,41 @@ export default function OpticalFormPage() {
                         <Badge className="bg-emerald-600 text-white font-bold px-4 py-1.5 rounded-xl">Başarı: %{test.score?.toFixed(0)}</Badge>
                     </header>
 
-                    {isBookTracked ? (
+                    {test.sourceType === 'html' ? (
+                        /* HTML TEST SONUÇ İNCELEME */
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                             <div className="lg:col-span-8 h-[70vh] lg:h-auto bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+                                <iframe srcDoc={getIframeDocument(test.htmlContent || '')} className="w-full h-full border-none" title={test.title} sandbox="allow-scripts allow-same-origin" />
+                             </div>
+                             <div className="lg:col-span-4">
+                                <Card className="rounded-3xl border border-slate-200 bg-white shadow-xl h-full flex flex-col overflow-hidden">
+                                    <div className="p-4 border-b bg-slate-50 font-black flex items-center gap-2">
+                                        <CheckCircle className="w-5 h-5 text-indigo-600" /> Analiz
+                                    </div>
+                                    <ScrollArea className="flex-1">
+                                        <div className="p-4 space-y-2">
+                                            {Array.from({ length: totalQuestions }).map((_, i) => {
+                                                const qNum = (i + 1).toString();
+                                                const sAns = mcqAnswers[qNum];
+                                                const cAns = test.answerKey?.[qNum];
+                                                const isCorrect = sAns === cAns;
+                                                return (
+                                                    <div key={qNum} className={cn("flex items-center justify-between p-3 rounded-xl border transition-all", isCorrect ? "bg-emerald-50 border-emerald-100" : sAns ? "bg-rose-50 border-rose-100" : "bg-slate-50 border-slate-100 opacity-60")}>
+                                                        <span className="font-bold text-sm">Soru {qNum}</span>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="text-[10px] font-bold text-slate-500 uppercase">Sen: <span className={cn("text-sm", isCorrect ? "text-emerald-600" : sAns ? "text-rose-600" : "text-slate-400")}>{sAns || "Boş"}</span></div>
+                                                            <div className="text-[10px] font-bold text-slate-500 uppercase">D: <span className="text-sm text-emerald-700">{cAns}</span></div>
+                                                            {isCorrect ? <CheckCircle2 className="w-4 h-4 text-emerald-600"/> : sAns ? <XCircle className="w-4 h-4 text-rose-600"/> : <MinusCircle className="w-4 h-4 text-slate-300" />}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </ScrollArea>
+                                </Card>
+                             </div>
+                        </div>
+                    ) : isBookTracked ? (
                         /* KİTAP TAKİBİ İNCELEME (LİSTE) */
                         <div className="space-y-6">
                             {Array.from({ length: totalQuestions }).map((_, i) => {
@@ -427,7 +481,7 @@ export default function OpticalFormPage() {
     if (test.status === 'Değerlendirme Bekliyor' && isEvaluateMode) {
         return (
             <div className={cn("min-h-screen text-slate-900 font-sans p-4 sm:p-8", glassColors.PAGE_BG)}>
-                <div className="max-w-4xl mx-auto w-full space-y-8 pb-32">
+                <div className="max-w-7xl mx-auto w-full space-y-8 pb-32">
                     <header className="flex justify-between items-center bg-white/50 backdrop-blur-md p-4 rounded-2xl border border-slate-200 sticky top-4 z-50 shadow-sm">
                         <Button variant="ghost" onClick={() => router.push('/education/all-tests')} className="text-slate-500 hover:text-slate-900"><ArrowLeft className="mr-2 h-5 w-5" /> Çıkış</Button>
                         <div className="flex items-center gap-4">
@@ -504,7 +558,81 @@ export default function OpticalFormPage() {
                         <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
                     </header>
 
-                    {isBookTracked && test.openEnded ? (
+                    {test.sourceType === 'html' ? (
+                        /* HTML TEST ÇÖZÜM MODU (IFRAME + OPTİK) */
+                        <main className="flex-1 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 pb-32 animate-in fade-in duration-500">
+                             {/* SOL: HTML İÇERİĞİ */}
+                             <div className="lg:col-span-8 flex flex-col h-[70vh] lg:h-auto bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl overflow-hidden relative group">
+                                <div className="absolute top-4 left-4 z-10">
+                                     <Badge className="bg-slate-950/80 backdrop-blur-md text-white font-bold px-3 py-1 border-white/20">Soru Kitapçığı</Badge>
+                                </div>
+                                <iframe 
+                                    srcDoc={getIframeDocument(test.htmlContent || '')}
+                                    className="w-full h-full border-none"
+                                    title={test.title}
+                                    sandbox="allow-scripts allow-same-origin"
+                                />
+                             </div>
+
+                             {/* SAĞ: OPTİK FORM */}
+                             <div className="lg:col-span-4 flex flex-col min-h-[500px]">
+                                <Card className="rounded-[2.5rem] border border-slate-200 bg-white shadow-2xl flex-1 flex flex-col overflow-hidden">
+                                    <div className="p-6 border-b bg-slate-50/50">
+                                         <h3 className="font-black text-slate-800 text-lg flex items-center gap-2">
+                                             <FileCode className="w-5 h-5 text-indigo-600" /> Cevap Anahtarı
+                                         </h3>
+                                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">İşaretlemeleri buradan yapın.</p>
+                                    </div>
+                                    <ScrollArea className="flex-1">
+                                        <div className="p-6 space-y-4">
+                                            {Array.from({ length: totalQuestions }).map((_, i) => {
+                                                const qNum = (i + 1).toString();
+                                                return (
+                                                    <div key={qNum} className="flex items-center gap-4 p-3 rounded-2xl bg-slate-50/50 border border-slate-100 hover:bg-slate-50 transition-all">
+                                                        <Badge className="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-indigo-100 text-indigo-700 border-indigo-200 p-0 text-base">{qNum}</Badge>
+                                                        <RadioGroup 
+                                                            value={mcqAnswers[qNum] || ""} 
+                                                            onValueChange={(v) => handleMcqAnswerChange(qNum, v)} 
+                                                            className="flex gap-2"
+                                                        >
+                                                            {['A', 'B', 'C', 'D', 'E'].map(opt => (
+                                                                <div key={opt} className="flex items-center">
+                                                                    <RadioGroupItem value={opt} id={`q${qNum}-${opt}`} className="peer sr-only" />
+                                                                    <Label htmlFor={`q${qNum}-${opt}`} className="w-9 h-9 rounded-xl border-2 border-slate-200 flex items-center justify-center text-xs font-black cursor-pointer hover:border-indigo-400 hover:text-indigo-600 peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white peer-data-[state=checked]:border-indigo-600 transition-all">
+                                                                        {opt}
+                                                                    </Label>
+                                                                </div>
+                                                            ))}
+                                                        </RadioGroup>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </ScrollArea>
+                                    <div className="p-6 bg-slate-50/50 border-t">
+                                         <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button type="button" size="lg" className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 font-black shadow-lg shadow-indigo-500/30 text-white transition-transform active:scale-95">
+                                                    Ödevi Gönder
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent className="bg-white border-slate-200 rounded-[2.5rem] shadow-2xl p-8">
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle className="text-3xl font-black tracking-tight text-slate-900">Bitiriyoruz?</AlertDialogTitle>
+                                                    <AlertDialogDescription className="text-slate-500 text-lg font-medium leading-relaxed">Cevaplarını kontrol ettiysen ödevi gönderebilirsin.</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter className="mt-8 gap-4 flex-row">
+                                                    <AlertDialogCancel className="bg-slate-100 border-none rounded-2xl h-14 font-black flex-1 m-0">Vazgeç</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl h-14 font-black flex-1 m-0 shadow-lg shadow-emerald-500/20">Evet, Gönder</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
+                                </Card>
+                             </div>
+                        </main>
+                    ) : isBookTracked && test.openEnded ? (
+                        /* KİTAP TAKİBİ AÇIK UÇLU MODU */
                         <main className="flex-1 max-w-4xl mx-auto w-full space-y-8 pb-32 animate-in fade-in duration-500">
                             {Array.from({ length: totalQuestions }).map((_, i) => {
                                 const qNum = i + 1;
@@ -535,6 +663,7 @@ export default function OpticalFormPage() {
                             </div>
                         </main>
                     ) : (
+                        /* DİĞERLERİ (SORU BANKASI VB.) SİHİRBAZ GÖRÜNÜMÜ */
                         <main className="flex-1 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 pb-32">
                             <div className="lg:col-span-8 space-y-6">
                                 <AnimatePresence mode="wait">
@@ -595,12 +724,12 @@ export default function OpticalFormPage() {
                                                     </AlertDialogTrigger>
                                                     <AlertDialogContent className="bg-white border-slate-200 rounded-[2.5rem] shadow-2xl p-8">
                                                         <AlertDialogHeader>
-                                                            <AlertDialogTitle className="text-3xl font-black tracking-tight">Ödev Bitti?</AlertDialogTitle>
+                                                            <AlertDialogTitle className="text-3xl font-black tracking-tight text-slate-900">Ödev Bitti?</AlertDialogTitle>
                                                             <AlertDialogDescription className="text-slate-500 text-lg font-medium leading-relaxed">Tüm soruları kontrol ettiysen gönderebilirsin.</AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter className="mt-8 gap-4 flex-row">
                                                             <AlertDialogCancel className="bg-slate-100 border-none rounded-2xl h-14 font-black flex-1 m-0">Vazgeç</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl h-14 font-black flex-1 m-0 shadow-lg">Evet, Bitir</AlertDialogAction>
+                                                            <AlertDialogAction onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl h-14 font-black flex-1 m-0 shadow-lg shadow-emerald-500/20">Evet, Bitir</AlertDialogAction>
                                                         </AlertDialogFooter>
                                                     </AlertDialogContent>
                                                 </AlertDialog>
