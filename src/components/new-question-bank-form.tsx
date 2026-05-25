@@ -8,13 +8,12 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2, UploadCloud, ChevronRight, ChevronLeft, Check, LayoutGrid, Type, Trash2, Plus, Minus, Image as ImageIcon, X } from "lucide-react";
-import { BankQuestion } from "@/lib/data";
+import { Loader2, UploadCloud, ChevronRight, ChevronLeft, Check, LayoutGrid, Type, Trash2, Plus, Minus, Image as ImageIcon, X, BookOpen, Layers, PlusCircle, Sparkles } from "lucide-react";
+import { BankQuestion, TrackedBook, StudyPlan } from "@/lib/data";
 import { useAuth } from "./auth-provider";
 import { useToast } from "@/hooks/use-toast";
-import { addBankQuestion, updateBankQuestion } from "@/lib/dataService";
+import { addBankQuestion, updateBankQuestion, updateSubjects, updateTopics, onTrackedBooksUpdate, onStudyPlansUpdate } from "@/lib/dataService";
 import { migrateImage } from "@/ai/flows/migrate-image-flow";
-import { Combobox } from "./ui/combobox";
 import Image from 'next/image';
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -22,6 +21,17 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Badge } from "./ui/badge";
 import { DialogFooter } from "./ui/dialog";
 import { ScrollArea } from "./ui/scroll-area";
+
+// --- DESIGN SYSTEM ---
+const themeColors = {
+    WIZARD_STEP_ACTIVE: "bg-indigo-600 text-white shadow-lg",
+    WIZARD_STEP_INACTIVE: "bg-slate-100 dark:bg-slate-900 text-slate-400",
+    SELECTION_CARD: "relative flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer text-center gap-2 h-24",
+    CARD_ACTIVE: "border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 shadow-md",
+    CARD_INACTIVE: "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-200 dark:hover:border-indigo-800",
+    ADD_CARD: "border-dashed border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:bg-indigo-50/50 transition-all",
+    INPUT_BG: "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:border-indigo-500",
+};
 
 // --- SCHEMAS ---
 const formSchema = z.object({
@@ -44,7 +54,7 @@ type NewQuestionFormProps = {
   defaultType?: 'mcq' | 'open_ended';
 };
 
-type Step = 'image' | 'category' | 'details' | 'confirm';
+type Step = 'image' | 'subject' | 'topic' | 'details' | 'confirm';
 
 export function NewQuestionBankForm({ 
   availableSubjects,
@@ -62,9 +72,18 @@ export function NewQuestionBankForm({
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [optionKeys, setOptionKeys] = React.useState(['A', 'B', 'C', 'D']);
   
+  // Data for filtering
+  const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
+  const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([]);
+  
   // Multiple image handling
   const [imageQueue, setImageQueue] = React.useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = React.useState(0);
+
+  // Inline add states
+  const [isAddingNewSubject, setIsAddingNewSubject] = React.useState(false);
+  const [isAddingNewTopic, setIsAddingNewTopic] = React.useState(false);
+  const [newItemName, setNewItemName] = React.useState("");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -84,6 +103,12 @@ export function NewQuestionBankForm({
   const watchedSubject = watch("subject");
   const watchedTopic = watch("topic");
 
+  React.useEffect(() => {
+    const unsubBooks = onTrackedBooksUpdate(setTrackedBooks);
+    const unsubPlans = onStudyPlansUpdate(setStudyPlans);
+    return () => { unsubBooks(); unsubPlans(); };
+  }, []);
+
   // Load initial data for editing mode
   React.useEffect(() => {
     if (initialData) {
@@ -100,7 +125,7 @@ export function NewQuestionBankForm({
             options: opts,
             type: type,
         });
-        setCurrentStep('category');
+        setCurrentStep('subject');
     }
   }, [initialData, form, defaultType]);
 
@@ -121,11 +146,10 @@ export function NewQuestionBankForm({
 
     setImageQueue(prev => [...prev, ...newImages]);
     
-    // Auto start first image if not already started
     if (imageQueue.length === 0 && newImages.length > 0) {
         setValue('imageDataUri', newImages[0], { shouldValidate: true });
         setCurrentIndex(0);
-        setCurrentStep('category');
+        setCurrentStep('subject');
     }
   };
 
@@ -145,30 +169,57 @@ export function NewQuestionBankForm({
     }
   };
 
-  const steps: Step[] = ['image', 'category', 'details', 'confirm'];
+  const steps: Step[] = ['image', 'subject', 'topic', 'details', 'confirm'];
   const stepIndex = steps.indexOf(currentStep);
 
   const goToNextStep = () => {
-    let canProceed = false;
-    if (currentStep === 'image') canProceed = imageQueue.length > 0;
-    else if (currentStep === 'category') canProceed = !!watchedSubject && !!watchedTopic;
-    else if (currentStep === 'details') canProceed = true;
-
-    if (canProceed || stepIndex === 2) {
-        if (currentStep === 'image') {
-            setValue('imageDataUri', imageQueue[currentIndex]);
-        }
-        const nextStep = steps[stepIndex + 1];
-        if (nextStep) setCurrentStep(nextStep);
-    } else {
-        toast({ title: "Eksik Bilgi", description: "Lütfen bu adımı tamamlayın.", variant: "destructive" });
+    if (currentStep === 'image' && imageQueue.length === 0) {
+        toast({ title: "Görsel Seçin", description: "Lütfen en az bir soru görseli yükleyin.", variant: "destructive" });
+        return;
     }
+    if (currentStep === 'subject' && !watchedSubject) {
+        toast({ title: "Ders Seçin", description: "Devam etmek için bir ders seçmelisiniz.", variant: "destructive" });
+        return;
+    }
+    if (currentStep === 'topic' && !watchedTopic) {
+        toast({ title: "Konu Seçin", description: "Devam etmek için bir konu seçmelisiniz.", variant: "destructive" });
+        return;
+    }
+
+    if (currentStep === 'image') {
+        setValue('imageDataUri', imageQueue[currentIndex]);
+    }
+
+    const nextStep = steps[stepIndex + 1];
+    if (nextStep) setCurrentStep(nextStep);
   };
 
   const goToPrevStep = () => {
     const prevStep = steps[stepIndex - 1];
     if (prevStep) setCurrentStep(prevStep);
   };
+
+  const handleQuickAdd = async (type: 'subject' | 'topic') => {
+    if (!newItemName.trim()) return;
+    const name = newItemName.trim();
+    if (type === 'subject') {
+        if (!availableSubjects.includes(name)) { await updateSubjects([...availableSubjects, name]); onSubjectCreated(name); }
+        setValue('subject', name); setIsAddingNewSubject(false);
+    } else {
+        if (!availableTopics.includes(name)) { await updateTopics([...availableTopics, name]); onTopicCreated(name); }
+        setValue('topic', name); setIsAddingNewTopic(false);
+    }
+    setNewItemName("");
+  };
+
+  const relevantTopics = React.useMemo(() => {
+    if (!watchedSubject) return [];
+    const topicsSet = new Set<string>();
+    trackedBooks.forEach(book => (book.subjects || []).forEach(s => { if (s.name === watchedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); }));
+    studyPlans.forEach(plan => (plan.subjects || []).forEach(s => { if (s.name === watchedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); }));
+    availableTopics.forEach(t => { if (t) topicsSet.add(t); }); // Add master list too
+    return Array.from(topicsSet).sort((a, b) => a.localeCompare(b, 'tr'));
+  }, [watchedSubject, trackedBooks, studyPlans, availableTopics]);
 
   const handleOptionCountChange = (newCount: number) => {
       const currentKeys = [...optionKeys];
@@ -190,7 +241,7 @@ export function NewQuestionBankForm({
       if (values.imageDataUri.startsWith('data:image')) {
           const destinationPath = `bank-questions/${user.uid}-${Date.now()}-${currentIndex}.jpg`;
           const migrationResult = await migrateImage({ imageDataUri: values.imageDataUri, destinationPath });
-          if (!migrationResult.success || !migrationResult.newUrl) throw new Error("Görsel yüklenemedi.");
+          if (!migrationResult.success || !migrationResult.newUrl) throw new Error(migrationResult.error || "Görsel yüklenemedi.");
           finalImageUrl = migrationResult.newUrl;
       }
       
@@ -212,74 +263,54 @@ export function NewQuestionBankForm({
       } else {
           await addBankQuestion(questionData as any);
           
-          // Check if there are more images in the queue
           if (currentIndex < imageQueue.length - 1) {
               const nextIdx = currentIndex + 1;
               setCurrentIndex(nextIdx);
               setValue('imageDataUri', imageQueue[nextIdx]);
-              // Reset some fields but KEEP subject/topic for convenience
               setValue('originalFilename', '');
-              setCurrentStep('category');
+              setCurrentStep('subject'); // Go back to start of categorization for next image
               toast({ title: "Kaydedildi, Sıradaki Soruya Geçildi" });
           } else {
-              toast({ title: "Tamamlandı ✨", description: "Tüm sorular kaydedildi." });
+              toast({ title: "Tamamlandı ✨", description: "Tüm sorular başarıyla kaydedildi." });
               onQuestionProcessed();
           }
       }
     } catch (error: any) {
-      toast({ title: "Hata", description: error.message, variant: "destructive" });
+      console.error("Save error:", error);
+      toast({ title: "Kaydedilemedi", description: error.message || "Bilinmeyen bir hata oluştu.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   }
 
   const variants = {
-    enter: (direction: number) => ({ x: direction > 0 ? 300 : -300, opacity: 0 }),
+    enter: (direction: number) => ({ x: direction > 0 ? 200 : -200, opacity: 0 }),
     center: { x: 0, opacity: 1 },
-    exit: (direction: number) => ({ x: direction < 0 ? 300 : -300, opacity: 0 })
+    exit: (direction: number) => ({ x: direction < 0 ? 200 : -200, opacity: 0 })
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-950">
-        {/* Progress Header */}
-        <div className="px-6 pt-4 pb-6">
-            <div className="flex justify-between items-center mb-4">
-                {steps.map((s, i) => (
-                    <div key={s} className="flex flex-col items-center gap-2 flex-1 relative">
-                        {i > 0 && <div className={cn("absolute right-1/2 top-4 w-full h-[1px] -z-10", i <= stepIndex ? "bg-indigo-600" : "bg-slate-100 dark:bg-slate-900")} />}
-                        <div className={cn(
-                            "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-500",
-                            i <= stepIndex ? "bg-indigo-600 text-white shadow-lg" : "bg-slate-100 text-slate-400 dark:bg-slate-900"
-                        )}>
-                            {i < stepIndex ? <Check className="w-4 h-4" /> : i + 1}
-                        </div>
-                        <span className={cn("text-[10px] font-bold uppercase tracking-tighter", i <= stepIndex ? "text-indigo-600" : "text-slate-400")}>
-                            {s === 'image' ? 'Görsel' : s === 'category' ? 'Kategori' : s === 'details' ? 'İçerik' : 'Onay'}
-                        </span>
-                    </div>
-                ))}
-            </div>
-            
-            {imageQueue.length > 1 && (
-                <div className="flex items-center justify-center mb-2">
-                    <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border-none font-bold">
-                        Soru {currentIndex + 1} / {imageQueue.length}
-                    </Badge>
-                </div>
-            )}
+    <div className="flex flex-col h-full">
+        {/* Progress Dots */}
+        <div className="flex items-center justify-center gap-2 mb-8 mt-2">
+            {steps.map((s, i) => (
+                <div key={s} className={cn(
+                    "h-2 rounded-full transition-all duration-300",
+                    i === stepIndex ? "w-8 bg-indigo-600 shadow-md" : "w-2 bg-slate-200 dark:bg-slate-800"
+                )} />
+            ))}
         </div>
 
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                <div className="flex-1 relative overflow-hidden px-6">
+                <div className="flex-1 relative overflow-hidden">
                     <AnimatePresence mode="wait" custom={stepIndex}>
                         {currentStep === 'image' && (
                             <motion.div key="image" custom={1} variants={variants} initial="enter" animate="center" exit="exit" className="space-y-6">
                                 <div className="text-center space-y-2">
-                                    <h3 className="text-xl font-black tracking-tight">Soru Görselleri</h3>
-                                    <p className="text-sm text-slate-500">Bir veya birden fazla soru fotoğrafı yükleyebilirsiniz.</p>
+                                    <h3 className="text-xl font-black tracking-tight">Soru Görseli</h3>
+                                    <p className="text-sm text-slate-500">Cihazından bir veya daha fazla soru seç.</p>
                                 </div>
-                                
                                 <div className="space-y-4">
                                     <div 
                                         onClick={() => fileInputRef.current?.click()}
@@ -290,72 +321,93 @@ export function NewQuestionBankForm({
                                     >
                                         <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} multiple />
                                         <div className="flex flex-col items-center gap-3">
-                                            <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
+                                            <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 shadow-inner">
                                                 <UploadCloud className="w-8 h-8" />
                                             </div>
-                                            <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">Görsel(ler) Seç</p>
+                                            <p className="font-bold text-slate-700 dark:text-slate-300">Görsel Seç</p>
                                         </div>
                                     </div>
 
                                     {imageQueue.length > 0 && (
-                                        <ScrollArea className="h-40 w-full border rounded-2xl p-4 bg-slate-50 dark:bg-slate-900">
-                                            <div className="grid grid-cols-4 gap-3">
-                                                {imageQueue.map((uri, idx) => (
-                                                    <div key={idx} className={cn("relative aspect-square rounded-lg overflow-hidden border-2", currentIndex === idx ? "border-indigo-500" : "border-transparent")}>
-                                                        <Image src={uri} alt="Queue" fill className="object-cover" />
-                                                        <button 
-                                                            type="button" 
-                                                            onClick={(e) => { e.stopPropagation(); removeImageFromQueue(idx); }}
-                                                            className="absolute top-0.5 right-0.5 bg-rose-500 text-white rounded-full p-0.5 shadow-md"
-                                                        >
-                                                            <X className="w-3 h-3" />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </ScrollArea>
+                                        <div className="grid grid-cols-4 gap-3 p-1">
+                                            {imageQueue.map((uri, idx) => (
+                                                <div key={idx} className={cn("relative aspect-square rounded-xl overflow-hidden border-2 transition-all", currentIndex === idx ? "border-indigo-500 scale-105 shadow-md z-10" : "border-transparent opacity-60 hover:opacity-100")}>
+                                                    <Image src={uri} alt="Queue" fill className="object-cover" />
+                                                    <button type="button" onClick={(e) => { e.stopPropagation(); removeImageFromQueue(idx); }} className="absolute top-1 right-1 bg-rose-500 text-white rounded-full p-0.5 shadow-md"><X className="w-3 h-3" /></button>
+                                                </div>
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
                             </motion.div>
                         )}
 
-                        {currentStep === 'category' && (
-                            <motion.div key="category" custom={1} variants={variants} initial="enter" animate="center" exit="exit" className="space-y-6">
+                        {currentStep === 'subject' && (
+                            <motion.div key="subject" custom={1} variants={variants} initial="enter" animate="center" exit="exit" className="space-y-6">
                                 <div className="text-center space-y-2">
-                                    <h3 className="text-xl font-black tracking-tight">Kategori & Tip</h3>
-                                    <p className="text-sm text-slate-500">Bu soru hangi ders ve konuya ait?</p>
+                                    <h3 className="text-xl font-black tracking-tight">Ders Seçimi</h3>
+                                    <p className="text-sm text-slate-500">Sorunun ait olduğu dersi belirleyin.</p>
                                 </div>
-                                <div className="space-y-4">
-                                    <FormField control={form.control} name="type" render={({field}) => (
-                                        <FormItem className="space-y-3">
-                                            <FormLabel className="text-xs font-bold uppercase text-slate-400 tracking-widest">Soru Tipi</FormLabel>
-                                            <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-2 gap-3">
-                                                <div onClick={() => field.onChange('mcq')} className={cn("flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all cursor-pointer", field.value === 'mcq' ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20" : "border-slate-200 dark:border-slate-800")}>
-                                                    <LayoutGrid className={cn("w-6 h-6", field.value === 'mcq' ? "text-indigo-600" : "text-slate-400")} />
-                                                    <span className="text-xs font-bold">Çoktan Seçmeli</span>
-                                                </div>
-                                                <div onClick={() => field.onChange('open_ended')} className={cn("flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all cursor-pointer", field.value === 'open_ended' ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20" : "border-slate-200 dark:border-slate-800")}>
-                                                    <Type className={cn("w-6 h-6", field.value === 'open_ended' ? "text-indigo-600" : "text-slate-400")} />
-                                                    <span className="text-xs font-bold">Açık Uçlu</span>
-                                                </div>
-                                            </RadioGroup>
-                                        </FormItem>
-                                    )}/>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {availableSubjects.map((s) => {
+                                        const isActive = watchedSubject === s;
+                                        return (
+                                            <div key={s} onClick={() => setValue('subject', s)} className={cn(themeColors.SELECTION_CARD, isActive ? themeColors.CARD_ACTIVE : themeColors.CARD_INACTIVE)}>
+                                                {isActive && <div className="absolute top-2 right-2 bg-indigo-600 text-white rounded-full p-0.5"><Check className="w-3 h-3" /></div>}
+                                                <BookOpen className={cn("w-5 h-5", isActive ? "text-indigo-600" : "text-slate-400")} />
+                                                <span className="text-xs font-bold truncate w-full px-1">{s}</span>
+                                            </div>
+                                        );
+                                    })}
+                                    {isAddingNewSubject ? (
+                                        <div className={cn(themeColors.SELECTION_CARD, "border-indigo-300 bg-indigo-50/20")}>
+                                            <Input autoFocus placeholder="Ders adı..." className="h-8 text-[11px] font-bold text-center bg-white" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd('subject')} />
+                                            <div className="flex gap-1 w-full mt-1">
+                                                <Button size="sm" className="h-6 flex-1 text-[10px] bg-indigo-600" onClick={() => handleQuickAdd('subject')}>Ekle</Button>
+                                                <Button size="sm" variant="ghost" className="h-6 flex-1 text-[10px]" onClick={() => {setIsAddingNewSubject(false); setNewItemName("");}}>İptal</Button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div onClick={() => setIsAddingNewSubject(true)} className={cn(themeColors.SELECTION_CARD, themeColors.ADD_CARD)}>
+                                            <PlusCircle className="w-5 h-5 text-slate-400" />
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase">Yeni Ders</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
 
-                                    <div className="grid grid-cols-1 gap-4">
-                                        <FormField control={form.control} name="subject" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-xs font-bold uppercase text-slate-400 tracking-widest">Ders</FormLabel>
-                                                <Combobox options={availableSubjects.map(s => ({ label: s, value: s }))} value={field.value} onChange={field.onChange} onCreate={onSubjectCreated} placeholder="Ders seç..." className="h-12 rounded-xl" />
-                                            </FormItem>
-                                        )}/>
-                                        <FormField control={form.control} name="topic" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-xs font-bold uppercase text-slate-400 tracking-widest">Konu</FormLabel>
-                                                <Combobox options={availableTopics.map(t => ({ label: t, value: t }))} value={field.value} onChange={field.onChange} onCreate={onTopicCreated} placeholder="Konu seç..." className="h-12 rounded-xl" />
-                                            </FormItem>
-                                        )}/>
-                                    </div>
+                        {currentStep === 'topic' && (
+                            <motion.div key="topic" custom={1} variants={variants} initial="enter" animate="center" exit="exit" className="space-y-6">
+                                <div className="text-center space-y-2">
+                                    <h3 className="text-xl font-black tracking-tight">Konu Seçimi</h3>
+                                    <p className="text-sm text-slate-500">Ders: <span className="text-indigo-600 font-bold">{watchedSubject}</span></p>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {relevantTopics.map((t) => {
+                                        const isActive = watchedTopic === t;
+                                        return (
+                                            <div key={t} onClick={() => setValue('topic', t)} className={cn(themeColors.SELECTION_CARD, isActive ? themeColors.CARD_ACTIVE : themeColors.CARD_INACTIVE)}>
+                                                {isActive && <div className="absolute top-2 right-2 bg-indigo-600 text-white rounded-full p-0.5"><Check className="w-3 h-3" /></div>}
+                                                <Layers className={cn("w-5 h-5", isActive ? "text-indigo-600" : "text-slate-400")} />
+                                                <span className="text-xs font-bold truncate w-full px-1">{t}</span>
+                                            </div>
+                                        );
+                                    })}
+                                    {isAddingNewTopic ? (
+                                        <div className={cn(themeColors.SELECTION_CARD, "border-indigo-300 bg-indigo-50/20")}>
+                                            <Input autoFocus placeholder="Konu adı..." className="h-8 text-[11px] font-bold text-center bg-white" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd('topic')} />
+                                            <div className="flex gap-1 w-full mt-1">
+                                                <Button size="sm" className="h-6 flex-1 text-[10px] bg-indigo-600" onClick={() => handleQuickAdd('topic')}>Ekle</Button>
+                                                <Button size="sm" variant="ghost" className="h-6 flex-1 text-[10px]" onClick={() => {setIsAddingNewTopic(false); setNewItemName("");}}>İptal</Button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div onClick={() => setIsAddingNewTopic(true)} className={cn(themeColors.SELECTION_CARD, themeColors.ADD_CARD)}>
+                                            <PlusCircle className="w-5 h-5 text-slate-400" />
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase">Yeni Konu</span>
+                                        </div>
+                                    )}
                                 </div>
                             </motion.div>
                         )}
@@ -363,106 +415,124 @@ export function NewQuestionBankForm({
                         {currentStep === 'details' && (
                             <motion.div key="details" custom={1} variants={variants} initial="enter" animate="center" exit="exit" className="space-y-6">
                                 <div className="text-center space-y-2">
-                                    <h3 className="text-xl font-black tracking-tight">{watchedType === 'mcq' ? 'Seçenekler' : 'Detaylar'}</h3>
-                                    <p className="text-sm text-slate-500">Doğru cevabı işaretleyin.</p>
+                                    <h3 className="text-xl font-black tracking-tight">Soru Tipi & Cevap</h3>
+                                    <p className="text-sm text-slate-500">Doğru cevabı veya tipi belirleyin.</p>
                                 </div>
-                                {watchedType === 'mcq' ? (
-                                    <div className="space-y-6">
-                                        <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
-                                            <span className="text-xs font-bold text-slate-500 px-2 uppercase tracking-widest">Şık Sayısı</span>
-                                            <div className="flex items-center gap-3">
-                                                <Button type="button" variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleOptionCountChange(optionKeys.length - 1)} disabled={optionKeys.length <= 2}><Minus className="w-4 h-4"/></Button>
-                                                <span className="text-sm font-black w-4 text-center">{optionKeys.length}</span>
-                                                <Button type="button" variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleOptionCountChange(optionKeys.length + 1)} disabled={optionKeys.length >= 5}><Plus className="w-4 h-4"/></Button>
-                                            </div>
-                                        </div>
-                                        
-                                        <FormField control={form.control} name="correctAnswer" render={({ field }) => (
-                                            <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-3">
-                                                {optionKeys.map((key) => {
-                                                    const isActive = field.value === key;
-                                                    return (
-                                                        <div key={key} className={cn("flex items-center gap-3 p-3 rounded-2xl border transition-all", isActive ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20" : "border-slate-100 dark:border-slate-900")}>
-                                                            <FormControl><RadioGroupItem value={key} className="h-6 w-6" /></FormControl>
-                                                            <span className="text-sm font-black w-4 text-center text-indigo-600">{key}</span>
-                                                            <FormField
-                                                                control={form.control}
-                                                                name={`options.${key}`}
-                                                                render={({ field: optionField }) => (
-                                                                    <Input {...optionField} placeholder={`${key} seçeneği (isteğe bağlı)...`} className="bg-transparent border-none shadow-none h-8 px-0 focus-visible:ring-0" />
-                                                                )}
-                                                            />
-                                                        </div>
-                                                    );
-                                                })}
+                                
+                                <div className="space-y-6">
+                                    <FormField control={form.control} name="type" render={({field}) => (
+                                        <FormItem className="space-y-3">
+                                            <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-2 gap-3">
+                                                <div onClick={() => field.onChange('mcq')} className={cn("flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all cursor-pointer", field.value === 'mcq' ? "border-indigo-600 bg-indigo-50/50" : "border-slate-200")}>
+                                                    <LayoutGrid className={cn("w-6 h-6", field.value === 'mcq' ? "text-indigo-600" : "text-slate-400")} />
+                                                    <span className="text-xs font-bold">Çoktan Seçmeli</span>
+                                                </div>
+                                                <div onClick={() => field.onChange('open_ended')} className={cn("flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all cursor-pointer", field.value === 'open_ended' ? "border-indigo-600 bg-indigo-50/50" : "border-slate-200")}>
+                                                    <Type className={cn("w-6 h-6", field.value === 'open_ended' ? "text-indigo-600" : "text-slate-400")} />
+                                                    <span className="text-xs font-bold">Açık Uçlu</span>
+                                                </div>
                                             </RadioGroup>
-                                        )}/>
-                                    </div>
-                                ) : (
-                                    <div className="bg-slate-50 dark:bg-slate-900 rounded-3xl p-6 flex flex-col items-center justify-center border border-dashed border-slate-200 dark:border-slate-800 space-y-4">
-                                        <div className="w-16 h-16 rounded-2xl bg-indigo-600/10 flex items-center justify-center text-indigo-600">
-                                            <CheckCircle2 className="w-8 h-8" />
+                                        </FormItem>
+                                    )}/>
+
+                                    {watchedType === 'mcq' ? (
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between px-2">
+                                                <span className="text-xs font-black uppercase text-slate-400 tracking-widest">Şıklar</span>
+                                                <div className="flex items-center gap-3">
+                                                    <Button type="button" variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleOptionCountChange(optionKeys.length - 1)} disabled={optionKeys.length <= 2}><Minus className="w-4 h-4"/></Button>
+                                                    <span className="text-sm font-black w-4 text-center">{optionKeys.length}</span>
+                                                    <Button type="button" variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleOptionCountChange(optionKeys.length + 1)} disabled={optionKeys.length >= 5}><Plus className="w-4 h-4"/></Button>
+                                                </div>
+                                            </div>
+                                            
+                                            <FormField control={form.control} name="correctAnswer" render={({ field }) => (
+                                                <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-2 gap-3">
+                                                    {optionKeys.map((key) => {
+                                                        const isActive = field.value === key;
+                                                        return (
+                                                            <div key={key} className={cn("flex items-center gap-3 p-3 rounded-xl border transition-all", isActive ? "border-emerald-600 bg-emerald-50/50" : "border-slate-100")}>
+                                                                <FormControl><RadioGroupItem value={key} className="h-5 w-5" /></FormControl>
+                                                                <span className="text-sm font-black text-emerald-600">{key}</span>
+                                                                <FormField
+                                                                    control={form.control}
+                                                                    name={`options.${key}`}
+                                                                    render={({ field: optionField }) => (
+                                                                        <Input {...optionField} placeholder="Opsiyonel..." className="bg-transparent border-none shadow-none h-8 px-0 text-xs focus-visible:ring-0" />
+                                                                    )}
+                                                                />
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </RadioGroup>
+                                            )}/>
                                         </div>
-                                        <p className="text-sm text-center text-slate-500 font-medium">Açık uçlu soru olarak kaydedilecek.</p>
-                                    </div>
-                                )}
+                                    ) : (
+                                        <div className="bg-emerald-50 rounded-3xl p-8 flex flex-col items-center justify-center border border-dashed border-emerald-200">
+                                            <Sparkles className="w-10 h-10 text-emerald-500 mb-2" />
+                                            <p className="text-sm font-bold text-emerald-700">Değerlendirme Modu Aktif</p>
+                                            <p className="text-xs text-emerald-600 text-center mt-1">Öğrencinin cevabı öğretmen tarafından puanlanacak.</p>
+                                        </div>
+                                    )}
+                                </div>
                             </motion.div>
                         )}
 
                         {currentStep === 'confirm' && (
-                            <motion.div key="confirm" custom={1} variants={variants} initial="enter" animate="center" exit="exit" className="space-y-6 pb-6">
+                            <motion.div key="confirm" custom={1} variants={variants} initial="enter" animate="center" exit="exit" className="space-y-6">
                                 <div className="text-center space-y-2">
-                                    <h3 className="text-xl font-black tracking-tight">Son Kontrol</h3>
-                                    <p className="text-sm text-slate-500">Bilgileri gözden geçirin ve kaydedin.</p>
+                                    <h3 className="text-xl font-black tracking-tight">Son Onay</h3>
+                                    <p className="text-sm text-slate-500">Bilgiler doğruysa kaydedebilirsiniz.</p>
                                 </div>
                                 <div className="space-y-4">
-                                    <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
+                                    <div className="relative aspect-video w-full rounded-3xl overflow-hidden border-4 border-white shadow-xl bg-slate-100">
                                         <Image src={watchedImage} alt="Final" fill className="object-contain p-2" />
                                     </div>
                                     
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Ders</p>
-                                            <p className="text-sm font-bold truncate">{watchedSubject}</p>
+                                    <div className="bg-slate-50 rounded-2xl p-4 divide-y divide-slate-200 border">
+                                        <div className="flex justify-between py-2.5">
+                                            <span className="text-xs font-bold text-slate-400 uppercase">Ders</span>
+                                            <span className="text-sm font-bold text-slate-800">{watchedSubject}</span>
                                         </div>
-                                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tip</p>
-                                            <p className="text-sm font-bold truncate">{watchedType === 'mcq' ? 'Çoktan Seçmeli' : 'Açık Uçlu'}</p>
+                                        <div className="flex justify-between py-2.5">
+                                            <span className="text-xs font-bold text-slate-400 uppercase">Konu</span>
+                                            <span className="text-sm font-bold text-slate-800">{watchedTopic}</span>
                                         </div>
-                                    </div>
-
-                                    {watchedType === 'mcq' && (
-                                        <div className="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900">
-                                            <div className="flex items-center gap-2">
-                                                <Check className="w-4 h-4 text-indigo-600" />
-                                                <p className="text-sm font-bold text-indigo-900 dark:text-indigo-200">Doğru Cevap: <span className="text-indigo-600 font-black ml-1">{form.getValues('correctAnswer')}</span></p>
+                                        <div className="flex justify-between py-2.5">
+                                            <span className="text-xs font-bold text-slate-400 uppercase">Soru Tipi</span>
+                                            <span className="text-sm font-bold text-slate-800">{watchedType === 'mcq' ? 'Çoktan Seçmeli' : 'Açık Uçlu'}</span>
+                                        </div>
+                                        {watchedType === 'mcq' && (
+                                            <div className="flex justify-between py-2.5">
+                                                <span className="text-xs font-bold text-slate-400 uppercase">Doğru Cevap</span>
+                                                <Badge className="bg-emerald-600">{form.getValues('correctAnswer')}</Badge>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </div>
 
-                <DialogFooter className="p-6 border-t border-slate-100 dark:border-slate-900 bg-slate-50/30 dark:bg-slate-950/30 flex-row gap-3">
+                <DialogFooter className="p-6 border-t bg-slate-50/50 flex-row gap-3 mt-8">
                     {stepIndex > 0 ? (
-                        <Button type="button" variant="ghost" className="h-12 rounded-2xl px-6 font-bold flex-1" onClick={goToPrevStep} disabled={loading}>
+                        <Button type="button" variant="ghost" className="h-12 rounded-2xl font-bold flex-1" onClick={goToPrevStep} disabled={loading}>
                             Geri
                         </Button>
                     ) : (
-                        <Button type="button" variant="ghost" className="h-12 rounded-2xl px-6 font-bold flex-1" onClick={onQuestionProcessed} disabled={loading}>
+                        <Button type="button" variant="ghost" className="h-12 rounded-2xl font-bold flex-1" onClick={onQuestionProcessed} disabled={loading}>
                             İptal
                         </Button>
                     )}
                     
                     {currentStep === 'confirm' ? (
-                        <Button type="submit" className="h-12 rounded-2xl px-8 font-bold flex-[2] bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20" disabled={loading}>
+                        <Button type="submit" className="h-12 rounded-2xl font-black flex-[2] bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 text-white" disabled={loading}>
                             {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Check className="w-5 h-5 mr-2" />}
-                            {currentIndex < imageQueue.length - 1 ? 'Kaydet ve Sıradakine Geç' : (initialData ? 'Güncelle' : 'Bankaya Kaydet')}
+                            {currentIndex < imageQueue.length - 1 ? 'Sıradaki Soruya Geç' : 'Bankaya Kaydet'}
                         </Button>
                     ) : (
-                        <Button type="button" className="h-12 rounded-2xl px-8 font-bold flex-[2] bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20" onClick={goToNextStep}>
+                        <Button type="button" className="h-12 rounded-2xl font-black flex-[2] bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 text-white" onClick={goToNextStep}>
                             İlerle <ChevronRight className="w-4 h-4 ml-2" />
                         </Button>
                     )}
@@ -472,3 +542,4 @@ export function NewQuestionBankForm({
     </div>
   );
 }
+
