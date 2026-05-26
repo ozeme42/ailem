@@ -135,9 +135,22 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                     
                                     <div className="flex items-center gap-4">
                                         {isReviewMode ? (
-                                            <Badge className={cn("px-4 h-7 rounded-full font-bold", stats.rate >= 70 ? "bg-emerald-500 text-white" : "bg-rose-500 text-white")}>
-                                                %{stats.rate} Başarı
-                                            </Badge>
+                                            <div className="flex items-center gap-2">
+                                                <div className="hidden sm:flex items-center gap-1.5">
+                                                    <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-lg border border-emerald-500/20 text-[11px] font-black">
+                                                        {stats.correct} <span className="opacity-60 text-[9px]">D</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded-lg border border-rose-500/20 text-[11px] font-black">
+                                                        {stats.incorrect} <span className="opacity-60 text-[9px]">Y</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 bg-slate-500/10 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-lg border border-slate-500/20 text-[11px] font-black">
+                                                        {stats.empty} <span className="opacity-60 text-[9px]">B</span>
+                                                    </div>
+                                                </div>
+                                                <Badge className={cn("px-4 h-7 rounded-full font-bold ml-1", stats.rate >= 70 ? "bg-emerald-500 text-white" : "bg-rose-500 text-white")}>
+                                                    %{stats.rate} Başarı
+                                                </Badge>
+                                            </div>
                                         ) : (
                                             <Badge variant="secondary" className={cn("px-4 h-7 rounded-full font-bold", isAllAnswered ? "bg-emerald-500 text-white" : "bg-indigo-600/10 text-indigo-600")}>
                                                 {stats.correct + stats.incorrect} / {subject.questionCount} İşaretlendi
