@@ -2,11 +2,13 @@
 
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft, Check, X, Percent, Search,
   Target, TrendingUp, AlertCircle, Award, Filter, RotateCcw,
   Flame, Calendar, BarChart3, PieChart as PieIcon, LineChart as LineIcon,
-  Calculator, Zap, Layers, ChevronRight, Activity, BookOpen, Loader2
+  Calculator, Zap, Layers, ChevronRight, Activity, BookOpen, Loader2,
+  TrendingDown, Star, CheckCircle2, MinusCircle
 } from "lucide-react";
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip,
@@ -88,7 +90,7 @@ function translateType(type: string) {
     return types[type] || type;
 }
 
-export function StatsClient() {
+export default function StatsClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const studentId = searchParams.get('studentId');
@@ -135,6 +137,7 @@ export function StatsClient() {
           solvedDate = parseISO(test.updatedAt);
       } else {
           try {
+              // Sisteme kayıtlı olan "15 Ağustos 2024" formatını parse etmek için date-fns kullanıyoruz
               solvedDate = parse(test.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
           } catch (e) {
               solvedDate = new Date(test.assignedDate);
@@ -249,6 +252,30 @@ export function StatsClient() {
     return Array.from(dataMap.values());
   }, [processedData, activePeriod]);
 
+  // --- TOP/WORST TOPICS ANALYSIS ---
+  const topicStats = React.useMemo(() => {
+    const map = new Map<string, { subject: string, topic: string, total: number, correct: number }>();
+    
+    processedData.forEach(t => {
+        if (!t._topicName || t._topicName === "Genel") return;
+        const key = `${t._subjectName}-${t._topicName}`;
+        const cur = map.get(key) || { subject: t._subjectName, topic: t._topicName, total: 0, correct: 0 };
+        cur.total += t.questionCount || 0;
+        cur.correct += t.correctAnswers || 0;
+        map.set(key, cur);
+    });
+
+    const list = Array.from(map.values()).map(d => ({
+        ...d,
+        rate: d.total > 0 ? (d.correct / d.total) * 100 : 0
+    })).sort((a, b) => b.rate - a.rate);
+
+    return {
+        best: list.filter(t => t.total >= 5).slice(0, 5), // En az 5 soru çözülmüş olanlar
+        worst: [...list].filter(t => t.total >= 5).reverse().slice(0, 5)
+    };
+  }, [processedData]);
+
   // --- TYPE BREAKDOWN ---
   const typeBreakdown = React.useMemo(() => {
     const map = new Map<string, { name: string, value: number, fill: string, net: number }>();
@@ -303,7 +330,7 @@ export function StatsClient() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => router.back()}>
-              <ArrowLeft className="w-6 h-6" />
+              <ArrowLeft className="h-6 w-6" />
             </Button>
             <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5 rounded-2xl shadow-lg shadow-indigo-500/20 text-white">
               <BarChart3 className="w-6 h-6" />
@@ -396,6 +423,69 @@ export function StatsClient() {
           <StatBox icon={Calculator} value={kpis.totalNet.toFixed(1)} label="Toplam Net" subValue="3 Yanlış -1 Doğru" color={COLORS.PURPLE} />
           <StatBox icon={Percent} value={`%${kpis.successRate.toFixed(0)}`} label="Başarı Oranı" subValue="Doğru/Toplam" color={COLORS.GREEN} />
           <StatBox icon={Layers} value={kpis.testCount} label="Çözülen Sınav" subValue="Adet bazında" color={COLORS.ORANGE} />
+        </section>
+
+        {/* TOP & WORST TOPICS SECTION */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
+                <CardHeader className="p-6 pb-2">
+                    <div className="flex items-center gap-3">
+                         <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950 flex items-center justify-center text-emerald-600">
+                            <TrendingUp className="w-6 h-6" />
+                         </div>
+                         <div>
+                            <CardTitle className="text-lg font-black text-slate-800 dark:text-slate-100">En Başarılı Konular</CardTitle>
+                            <CardDescription>Usta olduğun 5 konu</CardDescription>
+                         </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-6 pt-2">
+                    <div className="space-y-3">
+                        {topicStats.best.length > 0 ? topicStats.best.map((t, i) => (
+                            <div key={i} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                <div className="flex flex-col min-w-0 pr-2">
+                                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">{t.subject}</span>
+                                    <p className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{t.topic}</p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                    <p className="text-lg font-black text-emerald-600">%{t.rate.toFixed(0)}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase">{t.total} Soru</p>
+                                </div>
+                            </div>
+                        )) : <p className="text-center py-10 text-slate-400 text-sm italic">Yeterli veri bulunmuyor.</p>}
+                    </div>
+                </CardContent>
+             </Card>
+
+             <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
+                <CardHeader className="p-6 pb-2">
+                    <div className="flex items-center gap-3">
+                         <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950 flex items-center justify-center text-rose-600">
+                            <TrendingDown className="w-6 h-6" />
+                         </div>
+                         <div>
+                            <CardTitle className="text-lg font-black text-slate-800 dark:text-slate-100">Geliştirilmesi Gerekenler</CardTitle>
+                            <CardDescription>Tekrar etmen gereken 5 konu</CardDescription>
+                         </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-6 pt-2">
+                    <div className="space-y-3">
+                        {topicStats.worst.length > 0 ? topicStats.worst.map((t, i) => (
+                            <div key={i} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                <div className="flex flex-col min-w-0 pr-2">
+                                    <span className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest">{t.subject}</span>
+                                    <p className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{t.topic}</p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                    <p className="text-lg font-black text-rose-600">%{t.rate.toFixed(0)}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase">{t.total} Soru</p>
+                                </div>
+                            </div>
+                        )) : <p className="text-center py-10 text-slate-400 text-sm italic">Henüz kritik bir konu saptanmadı.</p>}
+                    </div>
+                </CardContent>
+             </Card>
         </section>
 
         <section className="grid grid-cols-1 gap-6">
@@ -554,5 +644,3 @@ export function StatsClient() {
     </div>
   );
 }
-
-export default StatsClient;
