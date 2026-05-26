@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getCategoryName } from "@/app/education/page";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, parse } from "date-fns";
 import { tr } from 'date-fns/locale';
 import { 
     DropdownMenu, 
@@ -34,7 +34,7 @@ const themeColors = {
     HEADER_BG: "bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800/50 sticky top-0 z-40",
     CARD_BG: "bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md",
     ICON_BOX: "bg-gradient-to-br from-indigo-500 to-blue-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20 text-white",
-    TABLE_HEADER: "bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-black h-12 whitespace-nowrap",
+    TABLE_HEADER: "bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-black h-12 whitespace-nowrap cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none",
     TABLE_ROW: "hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-colors border-b border-slate-100 dark:border-slate-800/50 last:border-0 cursor-pointer",
     FILTER_SELECT: "w-full sm:w-[160px] h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs",
 };
@@ -72,7 +72,7 @@ export function ResultsClient() {
     const [filterType, setFilterType] = React.useState("all");
     
     const [currentPage, setCurrentPage] = React.useState(1);
-    const [sortConfig, setSortKey] = React.useState<{ key: keyof Test | '_date' | '_net', direction: 'asc' | 'desc' }>({ key: '_date', direction: 'desc' });
+    const [sortConfig, setSortConfig] = React.useState<{ key: keyof Test | '_date' | '_net' | '_subjectName' | '_topicName' | 'title', direction: 'asc' | 'desc' }>({ key: '_date', direction: 'desc' });
 
     // Initial student selection
     React.useEffect(() => {
@@ -113,7 +113,20 @@ export function ResultsClient() {
             const empty = test.emptyAnswers || 0;
             
             const net = isCompleted ? (correct - (incorrect / 3)) : 0;
-            const sortableDate = test.updatedAt ? new Date(test.updatedAt).getTime() : new Date(test.assignedDate).getTime();
+            
+            // --- GÜÇLÜ TARİH PARSING ---
+            let sortableDate = 0;
+            if (test.updatedAt) {
+                sortableDate = new Date(test.updatedAt).getTime();
+            } else {
+                try {
+                    // "15 Ağustos 2024" gibi formatları parse et
+                    const parsed = parse(test.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                    sortableDate = parsed.getTime();
+                } catch (e) {
+                    sortableDate = new Date(test.assignedDate).getTime() || 0;
+                }
+            }
             
             // Format date for display
             let dateDisplay = "Değerlendirilmedi";
@@ -161,12 +174,20 @@ export function ResultsClient() {
             return matchesSearch && matchesSubject && matchesTopic && matchesType;
         });
 
+        // --- SORTING LOGIC ---
         data.sort((a: any, b: any) => {
             const valA = a[sortConfig.key];
             const valB = b[sortConfig.key];
-            if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
-            if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
-            return 0;
+
+            if (valA === valB) return 0;
+            if (valA === null || valA === undefined) return 1;
+            if (valB === null || valB === undefined) return -1;
+
+            if (sortConfig.direction === 'asc') {
+                return valA > valB ? 1 : -1;
+            } else {
+                return valA < valB ? 1 : -1;
+            }
         });
 
         return data;
@@ -180,7 +201,7 @@ export function ResultsClient() {
     const totalPages = Math.ceil(filteredAndSortedData.length / ITEMS_PER_PAGE);
 
     const handleSort = (key: any) => {
-        setSortKey(prev => ({
+        setSortConfig(prev => ({
             key,
             direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
         }));
@@ -189,11 +210,11 @@ export function ResultsClient() {
     const handleDownloadCSV = () => {
         const headers = ["Ders", "Konu", "Tür", "Sınav Adı", "Tarih", "Doğru", "Yanlış", "Boş", "Net"];
         const rows = filteredAndSortedData.map(d => [
-            d._subjectName,
-            d._topicName,
-            d._translatedType,
-            d.title,
-            d._dateStr,
+            `"${d._subjectName}"`,
+            `"${d._topicName}"`,
+            `"${d._translatedType}"`,
+            `"${d.title.replace(/"/g, '""')}"`,
+            `"${d._dateStr}"`,
             d.correctAnswers || 0,
             d.incorrectAnswers || 0,
             d.emptyAnswers || 0,
@@ -213,6 +234,7 @@ export function ResultsClient() {
         setFilterSubject("all");
         setFilterTopic("all");
         setFilterType("all");
+        setSortConfig({ key: '_date', direction: 'desc' });
     };
 
     return (
@@ -233,11 +255,13 @@ export function ResultsClient() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {familyMembers.filter(m => m.role.includes('Çocuk')).map(member => (
-                            <button key={member.id} onClick={() => { setSelectedStudent(member); setCurrentPage(1); }} className={cn("hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all border shrink-0", selectedStudent?.id === member.id ? "bg-indigo-600 text-white border-indigo-500 shadow-md" : "bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800")}>
-                                {member.name}
-                            </button>
-                        ))}
+                        <div className="hidden sm:flex items-center gap-2">
+                            {familyMembers.filter(m => m.role.includes('Çocuk')).map(member => (
+                                <button key={member.id} onClick={() => { setSelectedStudent(member); setCurrentPage(1); }} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all border shrink-0", selectedStudent?.id === member.id ? "bg-indigo-600 text-white border-indigo-500 shadow-md" : "bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800")}>
+                                    {member.name}
+                                </button>
+                            ))}
+                        </div>
                          <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="sm:hidden rounded-full"><User className="w-5 h-5"/></Button>
@@ -305,7 +329,7 @@ export function ResultsClient() {
 
                         {(filterSubject !== 'all' || filterTopic !== 'all' || filterType !== 'all' || searchTerm) && (
                             <Button variant="ghost" size="sm" onClick={clearFilters} className="h-10 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl font-bold">
-                                <RotateCcw className="mr-1.5 w-3.5 h-3.5" /> Temizle
+                                <RotateCcw className="mr-1.5 w-3.5 h-3.5" /> Sıfırla
                             </Button>
                         )}
                     </div>
@@ -317,15 +341,15 @@ export function ResultsClient() {
                         <Table>
                             <TableHeader>
                                 <TableRow className="hover:bg-transparent border-b border-slate-200 dark:border-slate-800">
-                                    <TableHead onClick={() => handleSort('_subjectName')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-4">Ders <ArrowUpDown className="ml-1 w-3 h-3 opacity-30"/></div></TableHead>
-                                    <TableHead onClick={() => handleSort('_topicName')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-4">Konu <ArrowUpDown className="ml-1 w-3 h-3 opacity-30"/></div></TableHead>
+                                    <TableHead onClick={() => handleSort('_subjectName')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-4">Ders {sortConfig.key === '_subjectName' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
+                                    <TableHead onClick={() => handleSort('_topicName')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-4">Konu {sortConfig.key === '_topicName' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
                                     <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Tür</div></TableHead>
-                                    <TableHead onClick={() => handleSort('title')} className={cn(themeColors.TABLE_HEADER, "min-w-[200px]")}><div className="flex items-center px-4">Sınav Adı <ArrowUpDown className="ml-1 w-3 h-3 opacity-30"/></div></TableHead>
-                                    <TableHead onClick={() => handleSort('_date')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-4">Tarih <ArrowUpDown className="ml-1 w-3 h-3 opacity-30"/></div></TableHead>
+                                    <TableHead onClick={() => handleSort('title')} className={cn(themeColors.TABLE_HEADER, "min-w-[200px]")}><div className="flex items-center px-4">Sınav Adı {sortConfig.key === 'title' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
+                                    <TableHead onClick={() => handleSort('_date')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-4">Tarih {sortConfig.key === '_date' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
                                     <TableHead className={cn(themeColors.TABLE_HEADER, "text-center")}>D</TableHead>
                                     <TableHead className={cn(themeColors.TABLE_HEADER, "text-center")}>Y</TableHead>
                                     <TableHead className={cn(themeColors.TABLE_HEADER, "text-center")}>B</TableHead>
-                                    <TableHead onClick={() => handleSort('_net')} className={cn(themeColors.TABLE_HEADER, "text-center text-indigo-600 dark:text-indigo-400")}><div className="flex items-center justify-center">Net <ArrowUpDown className="ml-1 w-3 h-3 opacity-30"/></div></TableHead>
+                                    <TableHead onClick={() => handleSort('_net')} className={cn(themeColors.TABLE_HEADER, "text-center text-indigo-600 dark:text-indigo-400")}><div className="flex items-center justify-center">Net {sortConfig.key === '_net' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -351,7 +375,7 @@ export function ResultsClient() {
                                                     {test._net.toFixed(2)}
                                                 </div>
                                             ) : (
-                                                <Badge variant="outline" className="animate-pulse bg-amber-50 text-amber-600 border-amber-200 text-[10px] font-bold">Değerlendiriliyor</Badge>
+                                                <Badge variant="outline" className="animate-pulse bg-amber-50 text-amber-600 border-amber-200 text-[10px] font-bold">Bekleniyor</Badge>
                                             )}
                                         </TableCell>
                                     </TableRow>
