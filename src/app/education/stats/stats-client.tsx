@@ -29,7 +29,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { motion } from "framer-motion";
 
 // --- iOS / MODERN PREMIUM RENK PALETİ ---
 const COLORS = {
@@ -74,7 +76,6 @@ const StatBox = ({ icon: Icon, value, label, subValue, color, trend }: any) => (
 );
 
 // --- MAIN CLIENT ---
-export function BudgetStatsClient() { return null; } // For type safety with earlier components
 
 export default function StatsClient() {
   const searchParams = useSearchParams();
@@ -106,20 +107,18 @@ export default function StatsClient() {
     const enriched = tests.map(test => {
       const subjectName = getCategoryName(test);
       
-      // GÜVENLİ TARİH AYRIŞTIRMA (results-client ile senkron)
+      // GÜVENLİ TARİH AYRIŞTIRMA
       let solvedDate: Date;
       if (test.updatedAt) {
           solvedDate = parseISO(test.updatedAt);
       } else {
           try {
-              // "15 Ağustos 2024" gibi Türkçe formatları ayrıştır
               solvedDate = parse(test.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
           } catch (e) {
               solvedDate = new Date(test.assignedDate);
           }
       }
 
-      // Geçersiz tarih kontrolü
       if (isNaN(solvedDate.getTime())) {
           solvedDate = new Date();
       }
@@ -264,7 +263,6 @@ export default function StatsClient() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans pb-28 text-slate-900 dark:text-slate-100">
       
-      {/* ── HEADER ─────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -294,15 +292,13 @@ export default function StatsClient() {
 
       <main className="max-w-7xl mx-auto px-4 md:px-6 pt-8 space-y-8">
 
-        {/* ── KPI GRID ───────────────────────────────────────── */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatBox icon={SigmaIcon} value={kpis.totalQ} label="Toplam Soru" subValue="Tüm zamanlar" color={COLORS.BLUE} />
+          <StatBox icon={BarChart3} value={kpis.totalQ} label="Toplam Soru" subValue="Tüm zamanlar" color={COLORS.BLUE} />
           <StatBox icon={Calculator} value={kpis.totalNet.toFixed(1)} label="Toplam Net" subValue="3 Yanlış -1 Doğru" color={COLORS.PURPLE} />
           <StatBox icon={Percent} value={`%${kpis.successRate.toFixed(0)}`} label="Başarı Oranı" subValue="Doğru/Toplam" color={COLORS.GREEN} />
           <StatBox icon={Layers} value={kpis.testCount} label="Çözülen Sınav" subValue="Adet bazında" color={COLORS.ORANGE} />
         </section>
 
-        {/* ── ANA ZAMAN SERİSİ GRAFİĞİ ────────────────────────── */}
         <section className="grid grid-cols-1 gap-6">
             <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
                 <CardHeader className="p-8 pb-4 flex flex-row items-center justify-between">
@@ -313,7 +309,6 @@ export default function StatsClient() {
                         </CardTitle>
                         <CardDescription>Soru hacmi ve net başarısı korelasyonu</CardDescription>
                     </div>
-                    {/* Mobil Dönem Seçici */}
                     <div className="md:hidden">
                         <Select value={activePeriod} onValueChange={(v: any) => setActivePeriod(v)}>
                             <SelectTrigger className="w-32 h-9 rounded-xl">
@@ -354,8 +349,6 @@ export default function StatsClient() {
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            
-            {/* ── SINAV TÜRÜ ANALİZİ ───────────────────────────── */}
             <section className="space-y-4">
                 <div className="flex items-center gap-2 px-2">
                     <PieIcon className="w-5 h-5 text-indigo-500" />
@@ -391,7 +384,6 @@ export default function StatsClient() {
                 </Card>
             </section>
 
-            {/* ── DERS BAZLI BAŞARI ANALİZİ ───────────────────────── */}
             <section className="space-y-4">
                 <div className="flex items-center gap-2 px-2">
                     <Award className="w-5 h-5 text-indigo-500" />
@@ -431,7 +423,6 @@ export default function StatsClient() {
             </section>
         </div>
 
-        {/* ── ÇALIŞMA YOĞUNLUĞU (HEATMAP) ─────────────────────── */}
         <section className="pb-10">
              <div className="flex items-center gap-2 mb-4 px-2">
                 <Flame className="w-5 h-5 text-orange-500" />
@@ -475,9 +466,6 @@ export default function StatsClient() {
     </div>
   );
 }
-
-// Helper: İkonlar için placeholder
-function SigmaIcon(props: any) { return <BarChart3 {...props} /> }
 
 // Helper: Tür çevirisi
 function translateType(type: string) {
