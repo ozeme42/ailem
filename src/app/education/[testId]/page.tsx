@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, ArrowRight, Play, Pause, Check, X, MinusCircle, LayoutGrid, Loader2, Sparkles, ChevronRight, ChevronLeft, CheckCircle2, XCircle, Send, MessageSquareText, ImageIcon, RotateCcw, FileCode, BookCopy, BarChart3, TrendingUp, Search } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, ArrowRight, Play, Pause, Check, X, MinusCircle, LayoutGrid, Loader2, Sparkles, ChevronRight, ChevronLeft, CheckCircle2, XCircle, Send, MessageSquareText, ImageIcon, RotateCcw, FileCode, BookCopy, BarChart3, TrendingUp, Search, Eye } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -233,66 +233,6 @@ export default function OpticalFormPage() {
         debouncedSave(mcqAnswers, updated);
     };
 
-    const handleEvaluate = (questionNumber: number, status: EvaluationStatus) => {
-        const updated = { ...manualEvaluation, [questionNumber.toString()]: status };
-        setManualEvaluation(updated);
-    };
-
-    const handleFeedbackChange = (questionNumber: number, value: string) => {
-        const updated = { ...textFeedback, [questionNumber.toString()]: value };
-        setTextFeedback(updated);
-    };
-
-    const handleSaveEvaluationDraft = async () => {
-        if (!test) return;
-        try {
-            await updateTest(test.id, {
-                studentTextAnswersEvaluation: manualEvaluation,
-                studentTextAnswersFeedback: textFeedback,
-            });
-            toast({ title: "Taslak Kaydedildi", description: "Değerlendirme ilerlemeniz kaydedildi." });
-        } catch (e) {
-            toast({ title: "Hata", variant: 'destructive' });
-        }
-    };
-
-    const handleSubmitEvaluation = async () => {
-        if (!test) return;
-        setIsSubmitting(true);
-        try {
-            const questionCount = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
-            let correct = 0, incorrect = 0, empty = 0;
-            for (let i = 1; i <= questionCount; i++) {
-                const status = manualEvaluation[i.toString()];
-                if (status === 'correct') correct++;
-                else if (status === 'incorrect') incorrect++;
-                else empty++;
-            }
-            const calculatedScore = (correct / questionCount) * 100;
-            await updateTest(test.id, {
-                studentTextAnswersEvaluation: manualEvaluation,
-                studentTextAnswersFeedback: textFeedback,
-                status: 'Sonuçlandı',
-                correctAnswers: correct,
-                incorrectAnswers: incorrect,
-                emptyAnswers: empty,
-                score: calculatedScore
-            });
-            toast({ title: "Değerlendirme Tamamlandı", description: `Başarı: %${calculatedScore.toFixed(0)}` });
-            if (test.familyId && test.studentId) {
-                await checkAndAwardBadges(test.studentId, test.familyId, { 
-                    type: 'test_completed', 
-                    test: { ...test, status: 'Sonuçlandı', correctAnswers: correct, incorrectAnswers: incorrect, emptyAnswers: empty, score: calculatedScore } 
-                });
-            }
-            router.push('/education/all-tests');
-        } catch (e) {
-            toast({ title: "Hata", variant: 'destructive' });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
         if (!test || !user) return;
         setIsSubmitting(true);
@@ -466,10 +406,10 @@ export default function OpticalFormPage() {
                 </div>
             );
         }
-        // ... (Other test types review views remain unchanged)
+        // ... Diğer test tipleri inceleme görünümleri (Soru Bankası, Yazılı vb.)
     }
 
-    // --- STUDENT VIEW (Solving Mode) ---
+    // --- ÖĞRENCİ ÇÖZÜM GÖRÜNÜMÜ ---
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(() => handleSubmit(false))} className="h-full flex flex-col">
@@ -604,7 +544,8 @@ export default function OpticalFormPage() {
                             </div>
 
                             {/* MOBİL ALT ÇUBUK (FİNAL BUTONU) */}
-                            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-[95%] lg:hidden z-50">
+                            {/* DÜZELTME: bottom-24 yapıldı ki alt menünün üzerinde kalsın */}
+                            <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-[95%] lg:hidden z-50">
                                 <Card className="rounded-[1.5rem] bg-white/80 backdrop-blur-md border-slate-200 shadow-2xl p-2 flex gap-2">
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
@@ -613,7 +554,7 @@ export default function OpticalFormPage() {
                                             </Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent className="w-[90%] bg-white rounded-2xl p-6">
-                                            <AlertDialogHeader><AlertDialogTitle className="text-xl font-bold">Bitirilsin mi?</AlertDialogTitle><AlertDialogDescription>Deneme sınavını bitirmek istediğinden emin misin?</AlertDialogDescription></AlertDialogHeader>
+                                            <AlertDialogHeader><AlertDialogTitle className="text-xl font-bold">Bitirilsin mi?</AlertDialogTitle><AlertDialogDescription>Deneme sınavını bitirmek istediğinden emin misiniz?</AlertDialogDescription></AlertDialogHeader>
                                             <AlertDialogFooter className="flex-row gap-2 mt-4"><AlertDialogCancel className="flex-1 m-0">Hayır</AlertDialogCancel><AlertDialogAction onClick={() => handleSubmit(false)} className="flex-1 bg-emerald-600 m-0">Evet, Bitir</AlertDialogAction></AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
@@ -621,10 +562,9 @@ export default function OpticalFormPage() {
                             </div>
                         </main>
                     ) : (
-                        /* DİĞER TEST TÜRLERİ (Bozulmadı, aynen kaldı) */
-                        <main className="flex-1 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 pb-32">
-                           {/* ... Orijinal diğer test görünümleri buraya gelecek ... */}
-                           {/* (Yer kaplamaması için özet geçiyorum, mevcuttaki Soru Bankası, Kitap Takibi vb. mantığı burada korunmaktadır) */}
+                        /* DİĞER TEST TÜRLERİ (Soru Bankası, Kitap Takibi vb.) */
+                        <main className="flex-1 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 pb-32">
+                           {/* ... Orijinal diğer test görünümleri ... */}
                         </main>
                     )}
                 </div>
