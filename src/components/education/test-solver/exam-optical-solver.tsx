@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { onSinglePracticeExamUpdate } from "@/lib/dataService";
-import { CheckCircle2, BarChart3, Check, X, Trophy, Target, ChevronRight, ListChecks } from "lucide-react";
+import { Check, X, Trophy, ListChecks, ChevronRight, AlertCircle, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ExamOpticalSolverProps {
@@ -36,7 +36,7 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
         </div>
     );
 
-    // Ders bazlı istatistikleri hesaplayan yardımcı fonksiyon
+    // Ders bazlı istatistikleri hesaplayan yardımcı fonksiyon (Anlık çalışır)
     const getSubjectStats = (subject: any, offset: number) => {
         let correct = 0, incorrect = 0, empty = 0;
         const total = subject.questionCount;
@@ -65,10 +65,10 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
     };
 
     return (
-        <div className="space-y-6 pb-20 max-w-5xl mx-auto w-full">
+        <div className="space-y-6 pb-20 max-w-5xl mx-auto w-full animate-in fade-in duration-500">
             {/* Üst Bilgi Paneli */}
             <div className={cn(
-                "rounded-[2.5rem] p-6 border shadow-xl flex flex-col md:flex-row items-center justify-between gap-6",
+                "rounded-[2.5rem] p-6 border shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 transition-all",
                 isReviewMode ? "bg-indigo-600 text-white border-none" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
             )}>
                  <div className="flex items-center gap-5">
@@ -84,27 +84,28 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                 </div>
 
                 <div className="flex gap-4 items-center">
-                    {isReviewMode ? (
-                        <div className="flex gap-4 sm:gap-6 text-center bg-black/20 p-4 rounded-3xl border border-white/10 backdrop-blur-sm">
+                    {!isReviewMode && (
+                        <Button type="button" size="lg" className="h-14 rounded-2xl px-10 bg-indigo-600 hover:bg-indigo-500 text-white font-black shadow-lg shadow-indigo-500/20" onClick={onFinish}>
+                            Sınavı Bitir
+                        </Button>
+                    )}
+                    {isReviewMode && (
+                         <div className="flex gap-4 sm:gap-6 text-center bg-black/20 p-4 rounded-3xl border border-white/10 backdrop-blur-sm">
                              <div>
                                 <p className="text-2xl font-black text-emerald-400">{test.correctAnswers || 0}</p>
-                                <p className="text-[10px] font-bold text-white/60 uppercase">Doğru</p>
+                                <p className="text-[10px] font-bold text-white/60 uppercase">D</p>
                             </div>
                             <div className="w-px h-8 bg-white/10" />
                             <div>
                                 <p className="text-2xl font-black text-rose-400">{test.incorrectAnswers || 0}</p>
-                                <p className="text-[10px] font-bold text-white/60 uppercase">Yanlış</p>
+                                <p className="text-[10px] font-bold text-white/60 uppercase">Y</p>
                             </div>
                             <div className="w-px h-8 bg-white/10" />
                             <div className="text-center">
                                 <p className="text-2xl font-black text-indigo-200">%{test.score?.toFixed(0) || 0}</p>
-                                <p className="text-[10px] font-bold text-white/60 uppercase">Başarı</p>
+                                <p className="text-[10px] font-bold text-white/60 uppercase">SKOR</p>
                             </div>
                         </div>
-                    ) : (
-                        <Button type="button" size="lg" className="h-14 rounded-2xl px-10 bg-emerald-600 hover:bg-emerald-500 text-white font-black shadow-lg shadow-emerald-500/20" onClick={onFinish}>
-                            Sınavı Bitir
-                        </Button>
                     )}
                 </div>
             </div>
@@ -118,40 +119,48 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                     }
                     
                     const stats = getSubjectStats(subject, offset);
-                    const isAllAnswered = (stats.correct + stats.incorrect) === subject.questionCount;
 
                     return (
                         <AccordionItem key={subject.id} value={subject.id} className="border-none rounded-[2rem] overflow-hidden bg-white dark:bg-slate-900 shadow-md border border-slate-200 dark:border-slate-800">
                             <AccordionTrigger className="px-6 py-5 hover:no-underline bg-slate-50/50 dark:bg-slate-950/50 hover:bg-slate-100 transition-colors">
-                                <div className="flex items-center justify-between w-full pr-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full pr-4 gap-4">
                                     <div className="flex items-center gap-4">
                                         <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-500">
                                             {sIdx + 1}
                                         </div>
                                         <div className="text-left">
                                             <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">{subject.name}</h3>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{subject.questionCount} Soru</p>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{subject.questionCount} Soru Tanımlı</p>
                                         </div>
                                     </div>
                                     
-                                    {/* DERS BAZLI SONUÇLAR - TAM BURADA */}
-                                    <div className="flex items-center gap-2 md:gap-4">
-                                        {isReviewMode ? (
-                                            <div className="flex items-center gap-2">
-                                                <div className="hidden sm:flex items-center gap-1.5 mr-2">
-                                                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-black text-[10px]">D: {stats.correct}</Badge>
-                                                    <Badge variant="outline" className="bg-rose-500/10 text-rose-600 border-rose-500/20 font-black text-[10px]">Y: {stats.incorrect}</Badge>
-                                                    <Badge variant="outline" className="bg-slate-100 text-slate-500 border-slate-200 font-black text-[10px]">B: {stats.empty}</Badge>
-                                                </div>
-                                                <Badge className={cn("px-3 h-7 rounded-full font-bold", stats.rate >= 70 ? "bg-emerald-500" : "bg-rose-500")}>
-                                                    %{stats.rate} Başarı
-                                                </Badge>
+                                    {/* CANLI DERS SONUÇLARI - HER ZAMAN GÖRÜNÜR */}
+                                    <div className="flex items-center gap-2 md:gap-4 bg-white/40 dark:bg-black/20 p-2 px-4 rounded-2xl border border-slate-100 dark:border-white/5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-emerald-600 dark:text-emerald-400 font-black text-sm">{stats.correct}</span>
+                                                <span className="text-[8px] font-bold text-slate-400 uppercase">Doğru</span>
                                             </div>
-                                        ) : (
-                                            <Badge variant="secondary" className={cn("px-4 h-7 rounded-full font-bold", isAllAnswered ? "bg-emerald-500 text-white" : "bg-indigo-600/10 text-indigo-600")}>
-                                                {stats.correct + stats.incorrect} / {subject.questionCount} İşaretlendi
-                                            </Badge>
-                                        )}
+                                            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700" />
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-rose-600 dark:text-rose-400 font-black text-sm">{stats.incorrect}</span>
+                                                <span className="text-[8px] font-bold text-slate-400 uppercase">Yanlış</span>
+                                            </div>
+                                            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700" />
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-slate-500 dark:text-slate-400 font-black text-sm">{stats.empty}</span>
+                                                <span className="text-[8px] font-bold text-slate-400 uppercase">Boş</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1 md:mx-2" />
+                                        
+                                        <div className="text-right">
+                                            <p className={cn("font-black text-lg leading-none", stats.rate >= 70 ? "text-emerald-600" : stats.rate >= 40 ? "text-amber-500" : "text-rose-600")}>
+                                                %{stats.rate}
+                                            </p>
+                                            <p className="text-[8px] font-bold text-slate-400 uppercase">Başarı</p>
+                                        </div>
                                     </div>
                                 </div>
                             </AccordionTrigger>
@@ -167,22 +176,22 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                         return (
                                             <div key={qNum} className={cn(
                                                 "flex flex-col gap-3 p-4 rounded-2xl border transition-all",
-                                                isReviewMode ? (
+                                                (isReviewMode || sAns) ? (
                                                     isCorrect ? "bg-emerald-50/30 border-emerald-200 shadow-sm" :
                                                     isWrong ? "bg-rose-50/30 border-rose-200 shadow-sm" :
                                                     "bg-slate-50 border-slate-100"
                                                 ) : "bg-slate-50 dark:bg-black/20 border-slate-100 dark:border-slate-800"
                                             )}>
                                                 <div className="flex justify-between items-center px-1">
-                                                    <span className={cn("text-[10px] font-black uppercase tracking-widest", isReviewMode && isCorrect ? "text-emerald-600" : isReviewMode && isWrong ? "text-rose-600" : "text-slate-400")}>Soru {qNum}</span>
-                                                    {isReviewMode && isCorrect && <Check className="w-3.5 h-3.5 text-emerald-500" strokeWidth={4} />}
-                                                    {isReviewMode && isWrong && <X className="w-3.5 h-3.5 text-rose-500" strokeWidth={4} />}
+                                                    <span className={cn("text-[10px] font-black uppercase tracking-widest", (isReviewMode || sAns) && isCorrect ? "text-emerald-600" : (isReviewMode || sAns) && isWrong ? "text-rose-600" : "text-slate-400")}>Soru {qNum}</span>
+                                                    {(isReviewMode || sAns) && isCorrect && <Check className="w-3.5 h-3.5 text-emerald-500" strokeWidth={4} />}
+                                                    {(isReviewMode || sAns) && isWrong && <X className="w-3.5 h-3.5 text-rose-500" strokeWidth={4} />}
                                                 </div>
 
                                                 <RadioGroup value={sAns} onValueChange={(v) => !isReviewMode && onAnswer(qNum, v)} className="flex justify-between items-center gap-1.5">
                                                     {['A', 'B', 'C', 'D', 'E'].map(opt => {
-                                                        const isCorrectOpt = isReviewMode && opt === cAns;
-                                                        const isStudentWrongOpt = isReviewMode && opt === sAns && opt !== cAns;
+                                                        const isCorrectOpt = (isReviewMode || sAns) && opt === cAns;
+                                                        const isStudentWrongOpt = (isReviewMode || sAns) && opt === sAns && opt !== cAns;
 
                                                         return (
                                                             <div key={opt} className="flex-1">
@@ -193,7 +202,7 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                                                         "flex items-center justify-center h-10 w-full rounded-xl border transition-all text-xs font-black cursor-pointer",
                                                                         !isReviewMode ? (
                                                                             sAns === opt 
-                                                                                ? "bg-indigo-600 border-indigo-600 text-white shadow-md scale-105" 
+                                                                                ? (isCorrectOpt ? "bg-emerald-600 border-emerald-600 text-white shadow-md scale-105" : "bg-rose-600 border-rose-600 text-white shadow-md scale-105")
                                                                                 : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 hover:border-indigo-400"
                                                                         ) : (
                                                                             isCorrectOpt ? "bg-emerald-600 border-emerald-600 text-white shadow-md scale-110 z-10 ring-2 ring-emerald-300 ring-offset-2" :
