@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -156,7 +155,6 @@ export default function OpticalFormPage() {
     const [textFeedback, setTextFeedback] = React.useState<{ [key: string]: string }>({});
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
-    const [openSubjectStats, setOpenSubjectStats] = React.useState<Set<string>>(new Set());
     
     // UI Navigation States
     const [showMobilePalette, setShowMobilePalette] = React.useState(false);
@@ -213,6 +211,7 @@ export default function OpticalFormPage() {
     }, [testId, fetchQuestions]);
 
     const isReviewMode = test?.status === 'Sonuçlandı' && !isEvaluationMode;
+    const isSolveMode = !isReviewMode && !isEvaluationMode;
 
     const handleSavePartial = React.useCallback(async (latestMcq: any, latestText: any) => {
         if (!test || isReviewMode || isEvaluationMode) return;
@@ -336,15 +335,6 @@ export default function OpticalFormPage() {
     const isQuestionAnswered = (index: number): boolean => {
         const qNumStr = (index + 1).toString();
         return test?.openEnded ? !!textAnswers[qNumStr] : !!mcqAnswers[qNumStr];
-    };
-
-    const toggleSubjectStats = (subjectId: string) => {
-        setOpenSubjectStats(prev => {
-            const next = new Set(prev);
-            if (next.has(subjectId)) next.delete(subjectId);
-            else next.add(subjectId);
-            return next;
-        });
     };
 
     if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="w-16 h-16 animate-spin text-indigo-600 mr-4" /><p className="text-slate-500 font-medium animate-pulse">Test Yükleniyor...</p></div>;
