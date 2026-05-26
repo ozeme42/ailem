@@ -5,6 +5,7 @@ import * as React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Test, QuickTestQuestion, EvaluationStatus } from "@/lib/data";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Loader2, BookOpen, GraduationCap, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -103,15 +104,19 @@ export default function UnifiedTestPage() {
         if (!test || !familyId) return;
         setIsSubmitting(true);
         try {
-            let status: Test['status'] = test.openEnded ? 'Değerlendirme Bekliyor' : 'Sonuçlandı';
+            // Yazılı (JSON) ve normal Çoktan Seçmeli testler her zaman otomatik puanlanır.
+            // Sadece Soru Bankası'ndan "Açık Uçlu" seçilenler manuel değerlendirmeye gider.
+            const isManual = test.openEnded && test.sourceType !== 'json';
+            let status: Test['status'] = isManual ? 'Değerlendirme Bekliyor' : 'Sonuçlandı';
+            
             let updatedData: Partial<Test> = { 
                 studentAnswers,
                 studentTextAnswers,
                 status: status
             };
 
-            // EĞER OPTİKLİ (MCQ VEYA JSON) İSE OTOMATİK PUANLA
-            if (!test.openEnded) {
+            // OTOMATİK PUANLAMA MANTIĞI
+            if (!isManual) {
                 let correct = 0, incorrect = 0, empty = 0;
                 
                 // Cevap Anahtarını Hazırla
@@ -136,7 +141,7 @@ export default function UnifiedTestPage() {
                 updatedData.incorrectAnswers = incorrect;
                 updatedData.emptyAnswers = empty;
                 updatedData.score = questions.length > 0 ? (correct / questions.length) * 100 : 0;
-                updatedData.answerKey = finalAnswerKey; // JSON ise anahtarı dökümana sabitle
+                updatedData.answerKey = finalAnswerKey; 
                 
                 await checkAndAwardBadges(test.studentId, familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
             }
@@ -209,7 +214,12 @@ export default function UnifiedTestPage() {
             </header>
 
             <main className="max-w-7xl mx-auto w-full flex-1">
-                {/* 1. MOD: ÇÖZME (Öğrenci) */}
+                {/* 1. MOD: SONUÇ (Analiz) - Her zaman en üstte kontrol edilmeli */}
+                {test.status === 'Sonuçlandı' && (
+                    <ResultScreen test={test} questions={questions} />
+                )}
+
+                {/* 2. MOD: ÇÖZME (Öğrenci) */}
                 {test.status === 'Atandı' && (
                     test.sourceType === 'json' ? (
                         <JSONSolver 
@@ -238,7 +248,7 @@ export default function UnifiedTestPage() {
                     )
                 )}
 
-                {/* 2. MOD: DEĞERLENDİRME (Ebeveyn) */}
+                {/* 3. MOD: DEĞERLENDİRME (Ebeveyn) */}
                 {test.status === 'Değerlendirme Bekliyor' && (
                     isEvaluationMode ? (
                         <EvaluationScreen 
@@ -262,11 +272,6 @@ export default function UnifiedTestPage() {
                             <Link href="/education"><Button variant="outline" className="rounded-xl px-8 h-12 font-bold">Geri Dön</Button></Link>
                         </div>
                     )
-                )}
-
-                {/* 3. MOD: SONUÇ (Analiz) */}
-                {test.status === 'Sonuçlandı' && (
-                    <ResultScreen test={test} questions={questions} />
                 )}
             </main>
         </div>
