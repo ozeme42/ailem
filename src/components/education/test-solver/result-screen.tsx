@@ -6,13 +6,16 @@ import { Test, EvaluationStatus, PracticeExam } from "@/lib/data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, MinusCircle, ChevronRight, LayoutGrid, ImageIcon, MessageSquareText, Target, AlertCircle, Check, X, BookOpen, BarChart3, ChevronDown } from "lucide-react";
+import { 
+    CheckCircle2, XCircle, MinusCircle, ChevronRight, LayoutGrid, 
+    ImageIcon, MessageSquareText, Target, AlertCircle, Check, X, 
+    BookOpen, BarChart3, ChevronDown 
+} from "lucide-react";
 import { QuestionPalette } from "./shared-components";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { onSinglePracticeExamUpdate } from "@/lib/dataService";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface ResultScreenProps {
     test: Test;

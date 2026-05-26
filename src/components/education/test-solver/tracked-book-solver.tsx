@@ -77,7 +77,7 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
             <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
                 <div className="bg-slate-50 dark:bg-slate-950 px-8 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
                     <span>SORU NO</span>
-                    <span>{isMCQ ? "İŞARETLEME & ANALİZ" : "SENİN CEVABIN"}</span>
+                    <span>{isMCQ ? "İŞARETLEME & ANALİZ" : "CEVAP GİRİŞİ"}</span>
                 </div>
 
                 <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -115,7 +115,7 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
                                     <div className="flex-1 w-full">
                                         {isMCQ ? (
                                             <div className="flex flex-col gap-4">
-                                                {/* Harf Butonları */}
+                                                {/* Harf Butonları - RENKLİ SONUÇ DURUMLARI BURADA */}
                                                 <div className="flex gap-2.5">
                                                     {['A', 'B', 'C', 'D', 'E'].map(opt => {
                                                         const isActive = sAns === opt;
@@ -125,8 +125,13 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
                                                         return (
                                                             <button
                                                                 key={opt}
+                                                                type="button"
                                                                 disabled={isReviewMode}
-                                                                onClick={() => onAnswer(qNum, isActive ? "" : opt)}
+                                                                onClick={() => {
+                                                                    if (isReviewMode) return;
+                                                                    const newValue = isActive ? "" : opt;
+                                                                    onAnswer(qNum, newValue);
+                                                                }}
                                                                 className={cn(
                                                                     "w-11 h-11 md:w-12 md:h-12 rounded-xl border-2 flex items-center justify-center font-black text-base transition-all",
                                                                     !isReviewMode ? (
@@ -145,36 +150,6 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
                                                         )
                                                     })}
                                                 </div>
-
-                                                {/* ANALİZ ETİKETLERİ (KABAK GİBİ GÖRÜNÜR) */}
-                                                {isReviewMode && (
-                                                    <div className="flex flex-wrap gap-4 animate-in fade-in slide-in-from-left-2 mt-2">
-                                                        {/* Senin Cevabın */}
-                                                        <div className="flex flex-col gap-1">
-                                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Senin Cevabın</span>
-                                                            <div className={cn(
-                                                                "flex items-center gap-2 px-3 py-2 rounded-2xl border-2 font-bold shadow-sm",
-                                                                isCorrect ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700" : 
-                                                                isWrong ? "bg-rose-500/10 border-rose-500/30 text-rose-700" : 
-                                                                "bg-slate-100 border-slate-200 text-slate-500"
-                                                            )}>
-                                                                {isCorrect ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : isWrong ? <XCircle className="w-4 h-4 text-rose-500" /> : <MinusCircle className="w-4 h-4 text-slate-400" />}
-                                                                <span className="text-sm">{sAns || "Cevap Verilmedi"}</span>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Doğru Cevap (Yanlış veya Boş ise göster) */}
-                                                        {(isWrong || isEmpty) && (
-                                                            <div className="flex flex-col gap-1">
-                                                                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ml-1">Doğru Cevap</span>
-                                                                <div className="flex items-center gap-2 px-3 py-2 rounded-2xl border-2 border-emerald-500/40 bg-emerald-500/20 text-emerald-800 text-sm font-black shadow-sm">
-                                                                    <Check className="w-4 h-4" strokeWidth={4} />
-                                                                    <span className="text-base font-black">{cAns || "Tanımlanmamış"}</span>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
                                             </div>
                                         ) : (
                                             <div className="flex flex-col gap-3">
