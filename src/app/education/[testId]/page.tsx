@@ -314,14 +314,14 @@ export default function OpticalFormPage() {
     };
 
     if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="w-16 h-16 animate-spin text-indigo-600 mr-4" /><p className="text-slate-500 font-medium animate-pulse">Test Yükleniyor...</p></div>;
-    if (!test) return <div className="flex flex-col items-center justify-center h-screen bg-slate-50"><h1 className="text-3xl font-black mb-2">Test Bulunamadı</h1><Link href="/education"><Button size="lg">Geri Dön</Button></Link></div>;
+    if (!test) return <div className="flex flex-col items-center justify-center h-screen bg-slate-50"><h1 className="text-3xl font-black mb-2">Test Bulunamadı</h1><Link href="/education"><Button type="button" size="lg">Geri Dön</Button></Link></div>;
 
     const totalQuestions = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
     const testDurationMinutes = test.durationMinutes || totalQuestions * 1.5;
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(() => handleSubmit(false))} className="h-full flex flex-col">
+            <div className="h-full flex flex-col">
                 <div className={cn("min-h-screen text-slate-900 font-sans flex flex-col p-3 md:p-8", glassColors.PAGE_BG)}>
                     <header className="max-w-7xl mx-auto w-full mb-6 md:mb-8 flex justify-between items-center bg-white/40 backdrop-blur-md p-3 md:p-4 rounded-xl md:rounded-3xl border border-white/40 shadow-sm">
                         <Button type="button" variant="ghost" onClick={() => router.push('/education')} className="text-slate-500 hover:text-slate-900 rounded-lg md:rounded-2xl h-9 md:h-10 px-2 md:px-4"><ArrowLeft className="md:mr-2 h-5 w-5" /> <span className="hidden md:inline">Çıkış</span></Button>
@@ -329,7 +329,10 @@ export default function OpticalFormPage() {
                             <h1 className="text-sm md:text-lg font-black text-slate-900 tracking-tight truncate max-w-[120px] md:max-w-full">{test.title}</h1>
                             <p className="text-[8px] md:text-[10px] font-black uppercase text-slate-500 tracking-widest">{test.subject}</p>
                         </div>
-                        <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
+                        <div className="flex items-center gap-3">
+                            <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
+                            <Button type="button" className="hidden md:flex bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl" onClick={() => handleSubmit(false)}>Bitir</Button>
+                        </div>
                     </header>
 
                     {/* TEST TÜRÜNE GÖRE İÇERİK */}
@@ -433,7 +436,7 @@ export default function OpticalFormPage() {
                                     <div className="p-4 border-t"><Button type="button" className="w-full h-14 rounded-2xl bg-indigo-600 text-white font-black" onClick={() => handleSubmit(false)}>Sınavı Bitir</Button></div>
                                 </div>
                              </div>
-                             <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-[95%] lg:hidden z-50"><Button onClick={() => handleSubmit(false)} className="w-full h-14 rounded-xl bg-indigo-600 text-white font-black shadow-lg">Sınavı Bitir</Button></div>
+                             <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-[95%] lg:hidden z-50"><Button type="button" onClick={() => handleSubmit(false)} className="w-full h-14 rounded-xl bg-indigo-600 text-white font-black shadow-lg">Sınavı Bitir</Button></div>
                         </main>
                     ) : test.sourceType === 'html' ? (
                         /* HTML TEST ÇÖZÜM MODU */
@@ -455,7 +458,7 @@ export default function OpticalFormPage() {
                              )}>
                                 <div className="flex justify-between items-center mb-4 lg:hidden">
                                     <h3 className="font-black text-slate-800 text-lg">Cevap Formu</h3>
-                                    <Button variant="ghost" size="icon" onClick={() => setShowMobileOptical(false)} className="rounded-full"><X className="w-6 h-6"/></Button>
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => setShowMobileOptical(false)} className="rounded-full"><X className="w-6 h-6"/></Button>
                                 </div>
 
                                 <Card className="rounded-3xl border-slate-200 shadow-xl flex-1 flex flex-col overflow-hidden">
@@ -480,7 +483,7 @@ export default function OpticalFormPage() {
                                             })}
                                         </div>
                                     </ScrollArea>
-                                    <div className="p-4 border-t"><Button type="button" onClick={() => { if(showMobileOptical) setShowMobileOptical(false); handleSubmit(false); }} className="w-full h-12 rounded-xl bg-indigo-600 text-white font-black">Bitir</Button></div>
+                                    <div className="p-4 border-t"><Button type="button" onClick={() => setShowMobileOptical(false)} className="w-full h-12 rounded-xl bg-indigo-600 text-white font-black">Kapat</Button></div>
                                 </Card>
                              </div>
                         </main>
@@ -527,7 +530,7 @@ export default function OpticalFormPage() {
                                     })}
                                 </div>
                             </ScrollArea>
-                            <div className="p-6 border-t"><Button onClick={() => handleSubmit(false)} className="w-full h-14 rounded-2xl bg-indigo-600 text-white font-black text-lg shadow-lg">Tamamla ve Gönder</Button></div>
+                            <div className="p-6 border-t"><Button type="button" onClick={() => handleSubmit(false)} className="w-full h-14 rounded-2xl bg-indigo-600 text-white font-black text-lg shadow-lg">Tamamla ve Gönder</Button></div>
                         </main>
                     ) : (
                         /* STANDART SİHİRBAZ (WIZARD) MODU - Bank, Quick, Mistake, JSON */
@@ -625,7 +628,7 @@ export default function OpticalFormPage() {
                              )}>
                                 <div className="flex justify-between items-center mb-4 lg:hidden">
                                     <h3 className="font-black text-slate-800 text-lg">Soru Gezgini</h3>
-                                    <Button variant="ghost" size="icon" onClick={() => setShowMobilePalette(false)} className="rounded-full"><X className="w-6 h-6"/></Button>
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => setShowMobilePalette(false)} className="rounded-full"><X className="w-6 h-6"/></Button>
                                 </div>
 
                                 <div className="sticky top-28 rounded-[2rem] border border-slate-200 bg-white shadow-xl flex-1 flex flex-col overflow-hidden max-h-[85vh] lg:h-[70vh]">
@@ -643,7 +646,7 @@ export default function OpticalFormPage() {
                         </main>
                     )}
                 </div>
-            </form>
+            </div>
         </Form>
     );
 }
