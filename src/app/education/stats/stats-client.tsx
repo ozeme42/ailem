@@ -22,13 +22,14 @@ import {
   format, startOfWeek, endOfWeek, eachDayOfInterval, 
   subDays, isToday, parseISO, startOfMonth, endOfMonth, 
   eachMonthOfInterval, getYear, isWithinInterval, subMonths, 
-  startOfYear, endOfYear, eachWeekOfInterval, isSameMonth
+  startOfYear, endOfYear, eachWeekOfInterval, isSameMonth, parse
 } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 // --- iOS / MODERN PREMIUM RENK PALETİ ---
 const COLORS = {
@@ -54,18 +55,18 @@ const StatBox = ({ icon: Icon, value, label, subValue, color, trend }: any) => (
   <div className="rounded-3xl p-5 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col justify-between h-full relative overflow-hidden group hover:border-indigo-500/30 transition-all">
     <div className={cn("absolute -right-4 -top-4 w-20 h-20 rounded-full opacity-5 blur-2xl transition-all group-hover:scale-150", `bg-[${color}]`)} />
     <div className="flex items-center justify-between mb-4 relative z-10">
-      <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center", `bg-[${color}]15`)}>
-        <Icon className={cn("w-5 h-5")} style={{ color }} />
+      <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
+        <Icon className="w-5 h-5" style={{ color }} />
       </div>
-      {trend && (
+      {trend !== undefined && (
         <span className={cn("text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1", trend > 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600")}>
           {trend > 0 ? <TrendingUp className="w-3 h-3"/> : <TrendingDown className="w-3 h-3"/>}
-          %{Math.abs(trend)}
+          %{Math.abs(trend).toFixed(0)}
         </span>
       )}
     </div>
     <div className="relative z-10">
-        <p className="text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-none">{value}</p>
+        <p className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-none">{value}</p>
         <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mt-2">{label}</p>
         {subValue && <p className="text-[10px] font-medium text-slate-400 mt-1">{subValue}</p>}
     </div>
@@ -73,6 +74,8 @@ const StatBox = ({ icon: Icon, value, label, subValue, color, trend }: any) => (
 );
 
 // --- MAIN CLIENT ---
+export function BudgetStatsClient() { return null; } // For type safety with earlier components
+
 export default function StatsClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -80,7 +83,6 @@ export default function StatsClient() {
   const { familyMembers } = useAuth();
 
   const [tests, setTests] = React.useState<any[]>([]);
-  const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
   const [loading, setLoading] = React.useState(true);
   
   // States
@@ -96,15 +98,32 @@ export default function StatsClient() {
       setTests(all.filter(t => t.studentId === studentId && t.status === 'Sonuçlandı'));
       setLoading(false);
     });
-    const unsubBooks = onTrackedBooksUpdate(setTrackedBooks);
-    return () => { unsubTests(); unsubBooks(); };
+    return () => { unsubTests(); };
   }, [studentId]);
 
-  // --- DATA PROCESSING ---
+  // --- DATA PROCESSING (FIXED DATE PARSING) ---
   const processedData = React.useMemo(() => {
     const enriched = tests.map(test => {
       const subjectName = getCategoryName(test);
-      const solvedDate = test.updatedAt ? parseISO(test.updatedAt) : new Date(test.assignedDate);
+      
+      // GÜVENLİ TARİH AYRIŞTIRMA (results-client ile senkron)
+      let solvedDate: Date;
+      if (test.updatedAt) {
+          solvedDate = parseISO(test.updatedAt);
+      } else {
+          try {
+              // "15 Ağustos 2024" gibi Türkçe formatları ayrıştır
+              solvedDate = parse(test.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+          } catch (e) {
+              solvedDate = new Date(test.assignedDate);
+          }
+      }
+
+      // Geçersiz tarih kontrolü
+      if (isNaN(solvedDate.getTime())) {
+          solvedDate = new Date();
+      }
+
       const net = (test.correctAnswers || 0) - ((test.incorrectAnswers || 0) / 3);
       
       return {
@@ -174,8 +193,9 @@ export default function StatsClient() {
       });
     }
     else if (activePeriod === 'yearly') {
-       const start = startOfYear(subDays(today, 365 * 2));
-       for(let i=0; i<3; i++) {
+       const yearsCount = 3;
+       const start = startOfYear(subDays(today, 365 * (yearsCount - 1)));
+       for(let i=0; i<yearsCount; i++) {
            const d = addMonths(start, i * 12);
            const key = format(d, 'yyyy');
            dataMap.set(key, { name: key, questions: 0, net: 0, tests: 0 });
@@ -229,6 +249,11 @@ export default function StatsClient() {
     })).sort((a,b) => b.rate - a.rate);
   }, [processedData]);
 
+  const barChartConfig = {
+    questions: { label: "Soru Sayısı", color: COLORS.BLUE },
+    net: { label: "Net Başarısı", color: COLORS.PURPLE },
+  } satisfies ChartConfig;
+
   if (loading) return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-4">
       <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
@@ -250,16 +275,16 @@ export default function StatsClient() {
               <BarChart3 className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-black tracking-tight leading-none">{student?.name}</h1>
+              <h1 className="text-xl md:text-2xl font-black tracking-tight leading-none">{student?.name || "Öğrenci Analizi"}</h1>
               <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-widest">Performans Kokpiti</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
              <div className="hidden md:flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
-                {(['daily', 'weekly', 'monthly', 'yearly'] as Period[]).map(p => (
+                {(['weekly', 'monthly', 'yearly'] as Period[]).map(p => (
                    <button key={p} onClick={() => setActivePeriod(p)} className={cn("px-4 py-1.5 rounded-lg text-xs font-bold transition-all", activePeriod === p ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm" : "text-slate-500 hover:text-slate-700")}>
-                     {p === 'daily' ? 'GÜN' : p === 'weekly' ? 'HAFTA' : p === 'monthly' ? 'AY' : 'YIL'}
+                     {p === 'weekly' ? 'HAFTA' : p === 'monthly' ? 'AY' : 'YIL'}
                    </button>
                 ))}
              </div>
@@ -304,7 +329,7 @@ export default function StatsClient() {
                 </CardHeader>
                 <CardContent className="p-6 md:p-8">
                     <div className="h-[350px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ChartContainer config={barChartConfig} className="h-full w-full">
                             <ComposedChart data={timeSeriesData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
@@ -315,16 +340,14 @@ export default function StatsClient() {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(142,142,147,0.15)" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: COLORS.GRAY }} dy={10} />
                                 <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600, fill: COLORS.GRAY }} />
-                                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} hide />
-                                <Tooltip 
-                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', padding: '12px' }}
-                                    cursor={{ fill: 'rgba(0,0,0,0.02)' }}
+                                <ChartTooltip 
+                                    content={<ChartTooltipContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" />}
                                 />
                                 <Legend verticalAlign="top" align="right" height={36} iconType="circle" />
                                 <Bar yAxisId="left" dataKey="questions" name="Soru Sayısı" fill={COLORS.BLUE} radius={[6, 6, 0, 0]} barSize={activePeriod === 'weekly' ? 30 : 15} />
                                 <Area yAxisId="left" type="monotone" dataKey="net" name="Net Başarısı" stroke={COLORS.PURPLE} strokeWidth={4} fill="url(#colorNet)" dot={{ r: 4, fill: COLORS.PURPLE, strokeWidth: 2, stroke: '#fff' }} />
                             </ComposedChart>
-                        </ResponsiveContainer>
+                        </ChartContainer>
                     </div>
                 </CardContent>
             </Card>
