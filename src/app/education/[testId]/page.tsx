@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, ArrowRight, Play, Pause, Check, X, MinusCircle, LayoutGrid, Loader2, Sparkles, ChevronRight, ChevronLeft, CheckCircle2, XCircle, Send, MessageSquareText, ImageIcon, RotateCcw, FileCode, BookCopy, BarChart3, TrendingUp, Search, Eye } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, Play, Pause, Check, X, MinusCircle, LayoutGrid, Loader2, Sparkles, ChevronRight, ChevronLeft, CheckCircle2, XCircle, Send, MessageSquareText, ImageIcon, RotateCcw, FileCode, BookCopy, BarChart3, TrendingUp, Search, Eye } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -152,6 +152,7 @@ export default function OpticalFormPage() {
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [openSubjectResult, setOpenSubjectResult] = React.useState<string | null>(null);
+    const [revealedSubjectResults, setRevealedSubjectResults] = React.useState<Set<string>>(new Set());
     
     const isInitializedRef = React.useRef(false);
     const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -226,13 +227,6 @@ export default function OpticalFormPage() {
         debouncedSave(updated, textAnswers);
     };
 
-    const handleTextAnswerChange = (questionNumber: number, value: string) => {
-        const qNumStr = questionNumber.toString();
-        const updated = { ...textAnswers, [qNumStr]: value };
-        setTextAnswers(updated);
-        debouncedSave(mcqAnswers, updated);
-    };
-
     const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
         if (!test || !user) return;
         setIsSubmitting(true);
@@ -281,6 +275,15 @@ export default function OpticalFormPage() {
     const isQuestionAnswered = (index: number): boolean => {
         const qNumStr = (index + 1).toString();
         return test?.openEnded ? !!textAnswers[qNumStr] : !!mcqAnswers[qNumStr];
+    };
+
+    const toggleRevealSubject = (subjectId: string) => {
+        setRevealedSubjectResults(prev => {
+            const next = new Set(prev);
+            if (next.has(subjectId)) next.delete(subjectId);
+            else next.add(subjectId);
+            return next;
+        });
     };
 
     if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="w-16 h-16 animate-spin text-indigo-600 mr-4" /><p className="text-slate-500 font-medium animate-pulse">Test Yükleniyor...</p></div>;
@@ -472,30 +475,49 @@ export default function OpticalFormPage() {
                                                     </AccordionTrigger>
                                                     <AccordionContent className="p-4 md:p-8 pt-4 md:pt-6">
                                                         
-                                                        {/* DERS BAZLI ANLIK SONUÇ PANELİ */}
+                                                        {/* DERS BAZLI SONUÇ PANELİ (Sadece "Gör" denilince) */}
                                                         {test.answerKey && (
-                                                            <div className="mb-6 grid grid-cols-3 gap-2 bg-indigo-50/50 p-3 rounded-2xl border border-indigo-100/50 shadow-sm animate-in fade-in zoom-in-95 duration-300">
-                                                                <div className="flex flex-col items-center">
-                                                                    <div className="flex items-center gap-1.5 mb-0.5">
-                                                                        <CheckCircle2 className="w-3 h-3 text-emerald-500"/>
-                                                                        <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-tighter">Doğru</span>
+                                                            <div className="mb-6">
+                                                                {!revealedSubjectResults.has(subject.id) ? (
+                                                                    <Button 
+                                                                        type="button" 
+                                                                        variant="outline" 
+                                                                        className="w-full h-10 rounded-xl font-bold text-xs gap-2 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                                                                        onClick={() => toggleRevealSubject(subject.id)}
+                                                                    >
+                                                                        <Eye className="w-4 h-4" /> Ders Sonuçlarını Gör
+                                                                    </Button>
+                                                                ) : (
+                                                                    <div className="bg-indigo-50/50 p-3 rounded-2xl border border-indigo-100/50 shadow-sm animate-in fade-in zoom-in-95 duration-300">
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Anlık Başarı Raporu</span>
+                                                                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => toggleRevealSubject(subject.id)}><X className="w-3 h-3"/></Button>
+                                                                        </div>
+                                                                        <div className="grid grid-cols-3 gap-2">
+                                                                            <div className="flex flex-col items-center">
+                                                                                <div className="flex items-center gap-1.5 mb-0.5">
+                                                                                    <CheckCircle2 className="w-3 h-3 text-emerald-500"/>
+                                                                                    <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-tighter">Doğru</span>
+                                                                                </div>
+                                                                                <span className="text-base font-black text-emerald-700">{sCorrect}</span>
+                                                                            </div>
+                                                                            <div className="flex flex-col items-center border-x border-indigo-100/50 px-2">
+                                                                                <div className="flex items-center gap-1.5 mb-0.5">
+                                                                                    <XCircle className="w-3 h-3 text-rose-500"/>
+                                                                                    <span className="text-[9px] font-bold text-rose-600 uppercase tracking-tighter">Yanlış</span>
+                                                                                </div>
+                                                                                <span className="text-base font-black text-rose-700">{sIncorrect}</span>
+                                                                            </div>
+                                                                            <div className="flex flex-col items-center">
+                                                                                <div className="flex items-center gap-1.5 mb-0.5">
+                                                                                    <MinusCircle className="w-3 h-3 text-slate-400"/>
+                                                                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Boş</span>
+                                                                                </div>
+                                                                                <span className="text-base font-black text-slate-600">{sEmpty}</span>
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
-                                                                    <span className="text-base font-black text-emerald-700">{sCorrect}</span>
-                                                                </div>
-                                                                <div className="flex flex-col items-center border-x border-indigo-100/50 px-2">
-                                                                    <div className="flex items-center gap-1.5 mb-0.5">
-                                                                        <XCircle className="w-3 h-3 text-rose-500"/>
-                                                                        <span className="text-[9px] font-bold text-rose-600 uppercase tracking-tighter">Yanlış</span>
-                                                                    </div>
-                                                                    <span className="text-base font-black text-rose-700">{sIncorrect}</span>
-                                                                </div>
-                                                                <div className="flex flex-col items-center">
-                                                                    <div className="flex items-center gap-1.5 mb-0.5">
-                                                                        <MinusCircle className="w-3 h-3 text-slate-400"/>
-                                                                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Boş</span>
-                                                                    </div>
-                                                                    <span className="text-base font-black text-slate-600">{sEmpty}</span>
-                                                                </div>
+                                                                )}
                                                             </div>
                                                         )}
 
