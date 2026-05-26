@@ -11,7 +11,7 @@ import {
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip,
   XAxis, YAxis, Cell, LabelList, PieChart, Pie, LineChart, Line, Area, AreaChart,
-  ComposedChart, Legend
+  ComposedChart, Legend, ReferenceLine
 } from "recharts";
 import { useAuth } from "@/components/auth-provider";
 import { onTestsUpdate } from "@/lib/dataService";
@@ -56,7 +56,7 @@ type Period = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 const StatBox = ({ icon: Icon, value, label, subValue, color, trend }: any) => (
   <div className="rounded-3xl p-5 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col justify-between h-full relative overflow-hidden group hover:border-indigo-500/30 transition-all">
-    <div className={cn("absolute -right-4 -top-4 w-20 h-20 rounded-full opacity-5 blur-2xl transition-all group-hover:scale-150", `bg-[${color}]`)} />
+    <div className="absolute -right-4 -top-4 w-20 h-20 rounded-full opacity-5 blur-2xl transition-all group-hover:scale-150" style={{ backgroundColor: color }} />
     <div className="flex items-center justify-between mb-4 relative z-10">
       <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
         <Icon className="w-5 h-5" style={{ color }} />
@@ -76,9 +76,23 @@ const StatBox = ({ icon: Icon, value, label, subValue, color, trend }: any) => (
   </div>
 );
 
+// Helper: Tür çevirisi
+function translateType(type: string) {
+    const types: any = {
+        'exam': 'Deneme Sınavı',
+        'bank': 'Soru Bankası',
+        'json': 'Yazılı Test',
+        'trackedBook': 'Kitap Takibi',
+        'html': 'HTML Test',
+        'quick': 'Hızlı Test',
+        'mistake': 'Yanlış Havuzu'
+    };
+    return types[type] || type;
+}
+
 // --- MAIN CLIENT ---
 
-export function BudgetStatsClient() {
+export function StatsClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const studentId = searchParams.get('studentId');
@@ -113,7 +127,6 @@ export function BudgetStatsClient() {
           solvedDate = parseISO(test.updatedAt);
       } else {
           try {
-              // "15 Ağustos 2024" formatı için date-fns parse kullanımı
               solvedDate = parse(test.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
           } catch (e) {
               solvedDate = new Date(test.assignedDate);
@@ -142,6 +155,10 @@ export function BudgetStatsClient() {
 
     return filtered;
   }, [tests, selectedSubject, selectedType]);
+
+  const availableSubjects = React.useMemo(() => {
+    return Array.from(new Set(tests.map(t => getCategoryName(t)))).sort();
+  }, [tests]);
 
   // --- KPI CALCULATIONS ---
   const kpis = React.useMemo(() => {
@@ -223,8 +240,8 @@ export function BudgetStatsClient() {
       if (typeTests.length > 0) {
         map.set(type, {
           name: translateType(type),
-          value: typeTests.reduce((acc, t) => acc + t.questionCount, 0),
-          net: typeTests.reduce((acc, t) => acc + t._net, 0) / typeTests.length,
+          value: typeTests.reduce((acc, t) => acc + (t.questionCount || 0), 0),
+          net: typeTests.reduce((acc, t) => acc + (t._net || 0), 0) / typeTests.length,
           fill: CHART_COLORS[idx % CHART_COLORS.length]
         });
       }
@@ -253,6 +270,12 @@ export function BudgetStatsClient() {
     net: { label: "Net Başarısı", color: COLORS.PURPLE },
   } satisfies ChartConfig;
 
+  const pieChartConfig = {
+    Protein: { label: "Protein", color: "#8b5cf6" },
+    Carbs: { label: "Karb.", color: "#3b82f6" },
+    Fat: { label: "Yağ", color: "#f43f5e" },
+  } satisfies ChartConfig;
+
   if (loading) return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-4">
       <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
@@ -278,22 +301,75 @@ export function BudgetStatsClient() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-             <div className="hidden md:flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
-                {(['weekly', 'monthly', 'yearly'] as Period[]).map(p => (
-                   <button key={p} onClick={() => setActivePeriod(p)} className={cn("px-4 py-1.5 rounded-lg text-xs font-bold transition-all", activePeriod === p ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm" : "text-slate-500 hover:text-slate-700")}>
-                     {p === 'weekly' ? 'HAFTA' : p === 'monthly' ? 'AY' : 'YIL'}
-                   </button>
-                ))}
-             </div>
+          <div className="hidden md:flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+            {(['weekly', 'monthly', 'yearly'] as Period[]).map(p => (
+                <button key={p} onClick={() => setActivePeriod(p)} className={cn("px-4 py-1.5 rounded-lg text-xs font-bold transition-all", activePeriod === p ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm" : "text-slate-500 hover:text-slate-700")}>
+                    {p === 'weekly' ? 'HAFTA' : p === 'monthly' ? 'AY' : 'YIL'}
+                </button>
+            ))}
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 md:px-6 pt-8 space-y-8">
 
+        {/* Global Filter Bar */}
+        <section className="flex flex-wrap items-center gap-3 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm animate-in fade-in duration-500">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mr-2">
+                <Filter className="w-4 h-4 text-indigo-500" /> Filtrele:
+            </div>
+            
+            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                <SelectTrigger className="w-full sm:w-44 h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs">
+                    <SelectValue placeholder="Ders Seçin" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                    <SelectItem value="all">Tüm Dersler</SelectItem>
+                    {availableSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+            </Select>
+
+            <Select value={selectedType} onValueChange={setSelectedSourceType}>
+                <SelectTrigger className="w-full sm:w-44 h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs">
+                    <SelectValue placeholder="Sınav Türü" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                    <SelectItem value="all">Tüm Türler</SelectItem>
+                    <SelectItem value="exam">Deneme Sınavı</SelectItem>
+                    <SelectItem value="bank">Soru Bankası</SelectItem>
+                    <SelectItem value="json">Yazılı Test</SelectItem>
+                    <SelectItem value="trackedBook">Kitap Takibi</SelectItem>
+                    <SelectItem value="html">HTML Test</SelectItem>
+                    <SelectItem value="quick">Hızlı Test</SelectItem>
+                    <SelectItem value="mistake">Yanlış Havuzu</SelectItem>
+                </SelectContent>
+            </Select>
+
+            {(selectedSubject !== 'all' || selectedType !== 'all') && (
+                <Button variant="ghost" size="sm" onClick={() => {setSelectedSubject('all'); setSelectedSourceType('all');}} className="h-10 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl font-bold">
+                    <RotateCcw className="w-3.5 h-3.5 mr-1" /> Sıfırla
+                </Button>
+            )}
+
+            <div className="md:hidden w-full h-px bg-slate-100 dark:bg-slate-800 my-1" />
+            
+            <div className="flex md:hidden items-center justify-between w-full">
+                <span className="text-xs font-bold text-slate-500 uppercase">Zaman Dilimi:</span>
+                <Select value={activePeriod} onValueChange={(v: any) => setActivePeriod(v)}>
+                    <SelectTrigger className="w-32 h-9 rounded-xl bg-slate-50 dark:bg-slate-950">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="weekly">Haftalık</SelectItem>
+                        <SelectItem value="monthly">Aylık</SelectItem>
+                        <SelectItem value="yearly">Yıllık</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </section>
+
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatBox icon={BarChart3} value={kpis.totalQ} label="Toplam Soru" subValue="Tüm zamanlar" color={COLORS.BLUE} />
+          <StatBox icon={BarChart3} value={kpis.totalQ} label="Toplam Soru" subValue="Filtrelenmiş veriye göre" color={COLORS.BLUE} />
           <StatBox icon={Calculator} value={kpis.totalNet.toFixed(1)} label="Toplam Net" subValue="3 Yanlış -1 Doğru" color={COLORS.PURPLE} />
           <StatBox icon={Percent} value={`%${kpis.successRate.toFixed(0)}`} label="Başarı Oranı" subValue="Doğru/Toplam" color={COLORS.GREEN} />
           <StatBox icon={Layers} value={kpis.testCount} label="Çözülen Sınav" subValue="Adet bazında" color={COLORS.ORANGE} />
@@ -308,18 +384,6 @@ export function BudgetStatsClient() {
                             Gelişim Grafiği
                         </CardTitle>
                         <CardDescription>Soru hacmi ve net başarısı korelasyonu</CardDescription>
-                    </div>
-                    <div className="md:hidden">
-                        <Select value={activePeriod} onValueChange={(v: any) => setActivePeriod(v)}>
-                            <SelectTrigger className="w-32 h-9 rounded-xl">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="weekly">Haftalık</SelectItem>
-                                <SelectItem value="monthly">Aylık</SelectItem>
-                                <SelectItem value="yearly">Yıllık</SelectItem>
-                            </SelectContent>
-                        </Select>
                     </div>
                 </CardHeader>
                 <CardContent className="p-6 md:p-8">
@@ -470,18 +534,4 @@ export function BudgetStatsClient() {
   );
 }
 
-// Helper: Tür çevirisi
-function translateType(type: string) {
-    const types: any = {
-        'exam': 'Deneme Sınavı',
-        'bank': 'Soru Bankası',
-        'json': 'Yazılı Test',
-        'trackedBook': 'Kitap Takibi',
-        'html': 'HTML Test',
-        'quick': 'Hızlı Test',
-        'mistake': 'Yanlış Havuzu'
-    };
-    return types[type] || type;
-}
-
-export default BudgetStatsClient;
+export default StatsClient;
