@@ -2,25 +2,24 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
-import { Test, QuickTestQuestion } from "@/lib/data";
+import { Test, JsonTestQuestion } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft, ChevronRight, CheckCircle2, ImageIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckCircle2, FileJson } from "lucide-react";
 import { QuestionPalette } from "./shared-components";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-interface MCQSolverProps {
+interface JSONSolverProps {
     test: Test;
-    questions: QuickTestQuestion[];
+    questions: JsonTestQuestion[];
     onAnswer: (qNum: string, answer: string) => void;
     onFinish: () => void;
     studentAnswers: { [key: string]: string | null };
 }
 
-export function MCQSolver({ test, questions, onAnswer, onFinish, studentAnswers }: MCQSolverProps) {
+export function JSONSolver({ test, questions, onAnswer, onFinish, studentAnswers }: JSONSolverProps) {
     const [currentIndex, setCurrentIndex] = React.useState(0);
     const currentQuestion = questions[currentIndex];
     const qNumStr = (currentIndex + 1).toString();
@@ -31,33 +30,38 @@ export function MCQSolver({ test, questions, onAnswer, onFinish, studentAnswers 
             <div className="lg:col-span-8 space-y-6">
                 <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
                     <div className="bg-indigo-600 p-4 text-white flex justify-between items-center font-bold">
-                        <span>SORU {currentIndex + 1} / {questions.length}</span>
+                        <span>YAZILI SORU {currentIndex + 1} / {questions.length}</span>
                     </div>
                     <div className="p-6 md:p-10 space-y-8">
-                        <div className="relative aspect-video w-full rounded-3xl overflow-hidden bg-slate-50 border border-slate-100 flex items-center justify-center">
-                            {currentQuestion?.imageUrl ? (
-                                <Image src={currentQuestion.imageUrl} alt="Soru" fill className="object-contain p-4" />
-                            ) : <ImageIcon className="w-16 h-16 text-slate-200" />}
+                        <div className="p-8 rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 shadow-inner">
+                            <p className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 leading-relaxed text-center">
+                                {currentQuestion?.text || "Soru yüklenemedi."}
+                            </p>
                         </div>
 
-                        <div className="max-w-md mx-auto">
-                            <RadioGroup value={currentAnswer} onValueChange={(v) => onAnswer(qNumStr, v)} className="grid grid-cols-5 gap-3">
-                                {['A', 'B', 'C', 'D', 'E'].map(opt => (
-                                    <div key={opt} className="flex flex-col items-center gap-2">
-                                        <RadioGroupItem value={opt} id={`q-opt-${opt}`} className="sr-only peer" />
-                                        <Label 
-                                            htmlFor={`q-opt-${opt}`}
-                                            className={cn(
-                                                "w-12 h-12 rounded-2xl border-2 flex items-center justify-center text-lg font-black cursor-pointer transition-all",
-                                                currentAnswer === opt 
-                                                    ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/30 scale-110" 
-                                                    : "bg-white border-slate-200 text-slate-400 hover:border-indigo-400 hover:text-indigo-600"
-                                            )}
-                                        >
-                                            {opt}
-                                        </Label>
-                                    </div>
-                                ))}
+                        <div className="space-y-3 max-w-2xl mx-auto">
+                            <RadioGroup value={currentAnswer} onValueChange={(v) => onAnswer(qNumStr, v)} className="grid grid-cols-1 gap-3">
+                                {currentQuestion?.options.map((opt, idx) => {
+                                    const label = String.fromCharCode(65 + idx);
+                                    const isActive = currentAnswer === label;
+                                    return (
+                                        <div key={label}>
+                                            <RadioGroupItem value={label} id={`q-opt-${label}`} className="sr-only peer" />
+                                            <Label 
+                                                htmlFor={`q-opt-${label}`}
+                                                className={cn(
+                                                    "flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all active:scale-[0.98]",
+                                                    isActive 
+                                                        ? "bg-indigo-600 border-indigo-600 text-white shadow-lg" 
+                                                        : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400"
+                                                )}
+                                            >
+                                                <span className={cn("w-8 h-8 rounded-lg flex items-center justify-center font-black", isActive ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800")}>{label}</span>
+                                                <span className="font-bold text-sm md:text-base">{opt}</span>
+                                            </Label>
+                                        </div>
+                                    );
+                                })}
                             </RadioGroup>
                         </div>
                     </div>
@@ -73,7 +77,7 @@ export function MCQSolver({ test, questions, onAnswer, onFinish, studentAnswers 
                         </Button>
                     ) : (
                         <Button size="lg" className="flex-1 h-14 rounded-2xl font-bold bg-emerald-600 text-white" onClick={onFinish}>
-                            <CheckCircle2 className="mr-2 h-6 w-6"/> Testi Bitir
+                            <CheckCircle2 className="mr-2 h-6 w-6"/> Sınavı Bitir
                         </Button>
                     )}
                 </div>

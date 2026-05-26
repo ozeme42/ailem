@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Check, X, Clock, Play, Pause } from "lucide-react";
 import { EvaluationStatus } from "@/lib/data";
 
-// --- QUESTION PALETTE ---
+// --- SORU GEZGİNİ (PALETTE) ---
 export const QuestionPalette = ({ 
     total, 
     currentIndex, 
@@ -36,10 +36,11 @@ export const QuestionPalette = ({
                         variant={active ? "default" : answered ? "secondary" : "outline"}
                         className={cn(
                             "h-10 w-10 p-0 font-bold rounded-xl transition-all relative",
-                            active && "bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300 ring-offset-2",
+                            active && "bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300 ring-offset-2 scale-105",
                             answered && !active && "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200",
                             status === 'correct' && "border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
                             status === 'incorrect' && "border-rose-500 bg-rose-50 text-rose-700 hover:bg-rose-100",
+                            status === 'empty' && "border-slate-300 bg-slate-100 text-slate-400",
                         )}
                         onClick={() => onNavigate(i)}
                     >
@@ -53,7 +54,7 @@ export const QuestionPalette = ({
     );
 };
 
-// --- TIMER ---
+// --- SAYAÇ (TIMER) ---
 function formatTime(seconds: number) {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
