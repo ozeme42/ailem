@@ -3,17 +3,18 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Test, QuickTestQuestion, EvaluationStatus } from "@/lib/data";
+import { Test, EvaluationStatus } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, XCircle, MinusCircle, ChevronLeft, ChevronRight, Save, ImageIcon, MessageSquareText } from "lucide-react";
+import { CheckCircle2, XCircle, MinusCircle, ChevronLeft, ChevronRight, Save, ImageIcon, MessageSquareText, LayoutGrid } from "lucide-react";
 import { QuestionPalette } from "./shared-components";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 interface EvaluationScreenProps {
     test: Test;
-    questions: any[]; // Can be QuickTestQuestion or JsonTestQuestion
+    questions: any[]; 
     evaluations: { [key: string]: EvaluationStatus };
     feedbacks: { [key: string]: string };
     onEvaluate: (qNum: string, status: EvaluationStatus) => void;
@@ -23,9 +24,10 @@ interface EvaluationScreenProps {
 
 export function EvaluationScreen({ test, questions, evaluations, feedbacks, onEvaluate, onFeedback, onFinish }: EvaluationScreenProps) {
     const [currentIndex, setCurrentIndex] = React.useState(0);
+    const [isPaletteOpen, setIsPaletteOpen] = React.useState(false);
+
     const currentQuestion = questions[currentIndex];
     const qNumStr = (currentIndex + 1).toString();
-    
     const currentEval = evaluations[qNumStr] || 'unevaluated';
     const currentFeedback = feedbacks[qNumStr] || "";
     const studentAnswer = test.studentTextAnswers?.[qNumStr] || "Cevap verilmemiş.";
@@ -61,7 +63,7 @@ export function EvaluationScreen({ test, questions, evaluations, feedbacks, onEv
                                 <Button 
                                     variant="outline" 
                                     type="button"
-                                    className={cn("h-14 rounded-2xl font-bold border-2 transition-all", currentEval === 'correct' ? "bg-emerald-50 border-emerald-500 text-emerald-700" : "border-slate-100 dark:border-slate-800")}
+                                    className={cn("h-14 rounded-2xl font-bold border-2 transition-all", currentEval === 'correct' ? "bg-emerald-50 border-emerald-500 text-emerald-700 shadow-md" : "border-slate-100 dark:border-slate-800")}
                                     onClick={() => onEvaluate(qNumStr, 'correct')}
                                 >
                                     <CheckCircle2 className="mr-2 w-5 h-5"/> Doğru
@@ -69,7 +71,7 @@ export function EvaluationScreen({ test, questions, evaluations, feedbacks, onEv
                                 <Button 
                                     variant="outline" 
                                     type="button"
-                                    className={cn("h-14 rounded-2xl font-bold border-2 transition-all", currentEval === 'incorrect' ? "bg-rose-50 border-rose-500 text-rose-700" : "border-slate-100 dark:border-slate-800")}
+                                    className={cn("h-14 rounded-2xl font-bold border-2 transition-all", currentEval === 'incorrect' ? "bg-rose-50 border-rose-500 text-rose-700 shadow-md" : "border-slate-100 dark:border-slate-800")}
                                     onClick={() => onEvaluate(qNumStr, 'incorrect')}
                                 >
                                     <XCircle className="mr-2 w-5 h-5"/> Yanlış
@@ -77,7 +79,7 @@ export function EvaluationScreen({ test, questions, evaluations, feedbacks, onEv
                                 <Button 
                                     variant="outline" 
                                     type="button"
-                                    className={cn("h-14 rounded-2xl font-bold border-2 transition-all", currentEval === 'empty' ? "bg-slate-100 border-slate-400 text-slate-600" : "border-slate-100 dark:border-slate-800")}
+                                    className={cn("h-14 rounded-2xl font-bold border-2 transition-all", currentEval === 'empty' ? "bg-slate-100 border-slate-400 text-slate-600 shadow-md" : "border-slate-100 dark:border-slate-800")}
                                     onClick={() => onEvaluate(qNumStr, 'empty')}
                                 >
                                     <MinusCircle className="mr-2 w-5 h-5"/> Boş
@@ -106,12 +108,13 @@ export function EvaluationScreen({ test, questions, evaluations, feedbacks, onEv
                         </Button>
                     ) : (
                         <Button size="lg" className="flex-1 h-14 rounded-2xl font-bold bg-emerald-600 text-white" onClick={onFinish}>
-                            <Save className="mr-2 h-6 w-6"/> Değerlendirmeyi Bitir
+                            <Save className="mr-2 h-6 w-6"/> Puanlamayı Bitir
                         </Button>
                     )}
                 </div>
             </div>
 
+            {/* Palette - Desktop */}
             <div className="lg:col-span-4 hidden lg:block sticky top-28">
                 <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
                     <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center font-bold text-slate-800 text-sm uppercase tracking-wider">Durum Paneli</div>
@@ -125,6 +128,37 @@ export function EvaluationScreen({ test, questions, evaluations, feedbacks, onEv
                         />
                     </ScrollArea>
                 </div>
+            </div>
+
+            {/* Palette - Mobile FAB */}
+            <div className="lg:hidden">
+                 <Button 
+                    type="button"
+                    onClick={() => setIsPaletteOpen(true)}
+                    className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-slate-900 text-white shadow-2xl z-40 border border-white/10"
+                >
+                    <LayoutGrid className="w-6 h-6" />
+                </Button>
+
+                <Dialog open={isPaletteOpen} onOpenChange={setIsPaletteOpen}>
+                    <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-0 overflow-hidden">
+                        <DialogHeader className="p-6 pb-2">
+                            <DialogTitle>Soru Gezgini</DialogTitle>
+                        </DialogHeader>
+                        <ScrollArea className="max-h-[60vh] p-4">
+                            <QuestionPalette 
+                                total={questions.length} 
+                                currentIndex={currentIndex} 
+                                onNavigate={(idx) => { setCurrentIndex(idx); setIsPaletteOpen(false); }} 
+                                isAnswered={(idx) => evaluations[(idx + 1).toString()] !== 'unevaluated' && !!evaluations[(idx + 1).toString()]} 
+                                evaluationMap={evaluations}
+                            />
+                        </ScrollArea>
+                        <DialogFooter className="p-4 bg-slate-50 dark:bg-slate-800/50">
+                            <Button type="button" className="w-full h-12 rounded-xl" onClick={() => setIsPaletteOpen(false)}>Kapat</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     );

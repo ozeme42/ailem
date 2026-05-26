@@ -3,12 +3,13 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Test } from "@/lib/data";
+import { Test, EvaluationStatus } from "@/lib/data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, MinusCircle, ChevronRight, LayoutGrid, ImageIcon, MessageSquareText, Target, AlertCircle, Check, X } from "lucide-react";
 import { QuestionPalette } from "./shared-components";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 interface ResultScreenProps {
@@ -18,10 +19,11 @@ interface ResultScreenProps {
 
 export function ResultScreen({ test, questions }: ResultScreenProps) {
     const [selectedIdx, setSelectedIdx] = React.useState(0);
+    const [isPaletteOpen, setIsPaletteOpen] = React.useState(false);
     
     // --- EVALUATION LOGIC ---
     const evaluationMap = React.useMemo(() => {
-        const map: { [key: string]: any } = {};
+        const map: { [key: string]: EvaluationStatus } = {};
         
         for (let i = 1; i <= questions.length; i++) {
             const qNum = i.toString();
@@ -54,14 +56,15 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
     const studentAnswer = test.openEnded ? (test.studentTextAnswers?.[qNum] || null) : (test.studentAnswers?.[qNum] || null);
     const feedback = test.studentTextAnswersFeedback?.[qNum];
 
-    // Doğru cevabı bulma (Harf olarak)
-    const correctAnswerLabel = React.useMemo(() => {
+    const getCorrectAnswerLabel = React.useCallback(() => {
         if (test.sourceType === 'json') {
             const foundIdx = currentQuestion.options.findIndex((opt: string) => opt.trim() === currentQuestion.answer?.trim());
             return foundIdx !== -1 ? String.fromCharCode(65 + foundIdx) : null;
         }
         return test.answerKey?.[qNum] || null;
     }, [test, currentQuestion, qNum]);
+
+    const cAnsLabel = getCorrectAnswerLabel();
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full items-start pb-20">
@@ -97,7 +100,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                         status === 'correct' ? "bg-emerald-600" : status === 'incorrect' ? "bg-rose-600" : "bg-slate-600"
                     )}>
                         <span className="uppercase text-xs tracking-widest">Soru {selectedIdx + 1} Analizi</span>
-                        <Badge className="bg-white/20 text-white border-none uppercase font-black">
+                        <Badge className="bg-white/20 text-white border-none uppercase font-black px-3 py-1">
                             {status === 'correct' ? 'DOĞRU' : status === 'incorrect' ? 'YANLIŞ' : 'BOŞ'}
                         </Badge>
                     </div>
@@ -115,7 +118,6 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                             </div>
                         )}
 
-                        {/* SEÇENEKLER VEYA AÇIK UÇLU CEVAP */}
                         {test.openEnded ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
@@ -124,7 +126,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                                 </div>
                                 <div className="space-y-2 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50">
                                     <label className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">Doğru Cevap Anahtarı</label>
-                                    <p className="text-lg font-black text-emerald-700 dark:text-emerald-300">{test.answerKey?.[qNum] || "Belirtilmemiş"}</p>
+                                    <p className="text-lg font-black text-emerald-700 dark:text-emerald-300">{test.answerKey?.[qNum] || "—"}</p>
                                 </div>
                             </div>
                         ) : (
@@ -135,7 +137,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                                         const label = test.sourceType === 'json' ? String.fromCharCode(65 + i) : opt;
                                         const text = test.sourceType === 'json' ? opt : '';
                                         
-                                        const isCorrect = label === correctAnswerLabel;
+                                        const isCorrect = label === cAnsLabel;
                                         const isStudentChoice = label === studentAnswer;
                                         const isWrongChoice = isStudentChoice && !isCorrect;
 
@@ -181,6 +183,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                 </div>
             </div>
 
+            {/* Soru Gezgini - Desktop */}
             <div className="lg:col-span-4 hidden lg:block sticky top-28">
                 <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
                     <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center font-bold text-slate-800 text-xs uppercase tracking-widest">Soru Detayları</div>
@@ -194,6 +197,37 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                         />
                     </ScrollArea>
                 </div>
+            </div>
+
+            {/* Soru Gezgini - Mobile FAB */}
+            <div className="lg:hidden">
+                 <Button 
+                    type="button"
+                    onClick={() => setIsPaletteOpen(true)}
+                    className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-slate-900 text-white shadow-2xl z-40 border border-white/10"
+                >
+                    <LayoutGrid className="w-6 h-6" />
+                </Button>
+
+                <Dialog open={isPaletteOpen} onOpenChange={setIsPaletteOpen}>
+                    <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-0 overflow-hidden">
+                        <DialogHeader className="p-6 pb-2">
+                            <DialogTitle>Soru Gezgini</DialogTitle>
+                        </DialogHeader>
+                        <ScrollArea className="max-h-[60vh] p-4">
+                            <QuestionPalette 
+                                total={questions.length} 
+                                currentIndex={selectedIdx} 
+                                onNavigate={(idx) => { setSelectedIdx(idx); setIsPaletteOpen(false); }} 
+                                isAnswered={() => true} 
+                                evaluationMap={evaluationMap}
+                            />
+                        </ScrollArea>
+                        <DialogFooter className="p-4 bg-slate-50 dark:bg-slate-800/50">
+                            <Button type="button" className="w-full h-12 rounded-xl" onClick={() => setIsPaletteOpen(false)}>Kapat</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     );
