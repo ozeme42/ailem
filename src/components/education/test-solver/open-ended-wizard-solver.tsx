@@ -32,7 +32,7 @@ export function OpenEndedWizardSolver({ test, questions, studentTextAnswers, onA
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full items-start pb-20 animate-in fade-in duration-500">
             <div className="lg:col-span-8 space-y-6">
                 <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-                    <div className="bg-indigo-600 p-4 text-white flex justify-between items-center font-bold">
+                    <div className="bg-indigo-600 p-4 text-white flex justify-between items-center font-bold shrink-0">
                         <span className="uppercase text-xs tracking-widest">Soru {currentIndex + 1} / {questions.length}</span>
                         {currentAnswer.length > 0 && <Badge className="bg-emerald-500 text-white border-none">CEVAPLANDI</Badge>}
                     </div>
@@ -71,15 +71,20 @@ export function OpenEndedWizardSolver({ test, questions, studentTextAnswers, onA
                 </div>
             </div>
 
-            {/* Soru Gezgini - Desktop: Scrollable list */}
+            {/* Soru Gezgini - Desktop: Fixed and Scrollable */}
             <div className="lg:col-span-4 hidden lg:block sticky top-28">
-                <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
+                <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col h-[calc(100vh-180px)] max-h-[700px]">
                     <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center font-bold text-slate-800 dark:text-slate-100 text-xs uppercase tracking-widest shrink-0">
-                        Soru Gezgini
-                        <Badge variant="outline" className="bg-white dark:bg-slate-800">{questions.length}</Badge>
+                        Soru Listesi
+                        <Badge variant="outline" className="bg-white dark:bg-slate-800">{questions.length} Soru</Badge>
                     </div>
-                    <ScrollArea className="flex-1">
-                        <QuestionPalette total={questions.length} currentIndex={currentIndex} onNavigate={setCurrentIndex} isAnswered={(idx) => !!studentTextAnswers[(idx + 1).toString()]} />
+                    <ScrollArea className="flex-1 w-full">
+                        <QuestionPalette 
+                            total={questions.length} 
+                            currentIndex={currentIndex} 
+                            onNavigate={setCurrentIndex} 
+                            isAnswered={(idx) => !!studentTextAnswers[(idx + 1).toString()]} 
+                        />
                     </ScrollArea>
                 </div>
             </div>

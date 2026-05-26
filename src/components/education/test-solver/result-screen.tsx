@@ -62,6 +62,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
         return map;
     }, [test, questions]);
 
+    const totalQuestions = questions.length || test.questionCount;
     const qNum = (selectedIdx + 1).toString();
     const status = evaluationMap[qNum];
     const studentAnswer = test.openEnded ? (test.studentTextAnswers?.[qNum] || null) : (test.studentAnswers?.[qNum] || null);
@@ -154,7 +155,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                                         </div>
                                         <div>
                                             <h4 className="font-bold text-slate-800 dark:text-slate-100 leading-tight">{subj.name}</h4>
-                                            <p className="text-[10px] text-slate-500 font-bold uppercase">{subj.questions.length} Soru</p>
+                                            <p className="text-[10px] font-bold text-slate-500 uppercase">{subj.questions.length} Soru</p>
                                         </div>
                                     </div>
                                     
@@ -171,7 +172,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                                             <p className="text-slate-500 font-black text-sm">{subj.stats.empty}</p>
                                             <p className="text-[8px] font-bold text-slate-400 uppercase">B</p>
                                         </div>
-                                        <div className="h-8 w-px bg-slate-100 dark:bg-slate-800 mx-2" />
+                                        <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 mx-2" />
                                         <div className="text-right">
                                             <p className="text-indigo-600 dark:text-indigo-400 font-black text-lg">%{Math.round((subj.stats.correct / subj.questions.length) * 100)}</p>
                                             <p className="text-[8px] font-bold text-slate-400 uppercase">Başarı</p>
@@ -185,7 +186,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
 
                 {/* SORU ANALİZ DETAYI */}
                 <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-                    <div className={cn("p-4 text-white flex justify-between items-center font-bold transition-colors", 
+                    <div className={cn("p-4 text-white flex justify-between items-center font-bold transition-colors shrink-0", 
                         status === 'correct' ? "bg-emerald-600" : status === 'incorrect' ? "bg-rose-600" : "bg-slate-600"
                     )}>
                         <span className="uppercase text-xs tracking-widest">Soru {selectedIdx + 1} Analizi</span>
@@ -272,14 +273,14 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                 </div>
             </div>
 
-            {/* SAĞ PANEL: SORU GEZGİNİ - Desktop: Fixed scroll area with better sizing */}
+            {/* SAĞ PANEL: SORU GEZGİNİ - Fixed and Scrollable */}
             <div className="lg:col-span-4 hidden lg:block sticky top-28">
-                <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
+                <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col h-[calc(100vh-180px)] max-h-[700px]">
                     <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center font-bold text-slate-800 dark:text-slate-100 text-xs uppercase tracking-widest shrink-0">
                         Soru Detayları
-                        <Badge className="bg-white dark:bg-slate-800">{questions.length || test.questionCount} Soru</Badge>
+                        <Badge variant="outline" className="bg-white dark:bg-slate-800">{totalQuestions} Soru</Badge>
                     </div>
-                    <ScrollArea className="flex-1">
+                    <ScrollArea className="flex-1 w-full">
                         {test.sourceType === 'exam' && subjectAnalysis ? (
                             <div className="p-4 space-y-6">
                                 {subjectAnalysis.map(subj => (
@@ -308,7 +309,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                             </div>
                         ) : (
                             <QuestionPalette 
-                                total={questions.length || test.questionCount} 
+                                total={totalQuestions} 
                                 currentIndex={selectedIdx} 
                                 onNavigate={setSelectedIdx} 
                                 isAnswered={() => true} 
@@ -362,7 +363,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                                 </div>
                             ) : (
                                 <QuestionPalette 
-                                    total={questions.length || test.questionCount} 
+                                    total={totalQuestions} 
                                     currentIndex={selectedIdx} 
                                     onNavigate={(idx) => { setSelectedIdx(idx); setIsPaletteOpen(false); }} 
                                     isAnswered={() => true} 
