@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -21,6 +22,7 @@ import { ExamOpticalSolver } from "@/components/education/test-solver/exam-optic
 import { HTMLDocumentSolver } from "@/components/education/test-solver/html-document-solver";
 import { TrackedBookSolver } from "@/components/education/test-solver/tracked-book-solver";
 import { EvaluationScreen } from "@/components/education/test-solver/evaluation-screen";
+import { TrackedBookEvaluationScreen } from "@/components/education/test-solver/tracked-book-evaluation-screen";
 import { ResultScreen } from "@/components/education/test-solver/result-screen";
 import { TestTimer } from "@/components/education/test-solver/shared-components";
 
@@ -245,15 +247,27 @@ export default function UnifiedTestPage() {
             <main className="max-w-7xl mx-auto w-full flex-1">
                 {test.status === 'Değerlendirme Bekliyor' ? (
                     isEvaluationMode ? (
-                        <EvaluationScreen 
-                            test={test} 
-                            questions={questions} 
-                            evaluations={evaluations} 
-                            feedbacks={feedbacks} 
-                            onEvaluate={(q, s) => setEvaluations(prev => ({...prev, [q]: s}))} 
-                            onFeedback={(q, f) => setFeedbacks(prev => ({...prev, [q]: f}))} 
-                            onFinish={handleFinishTest} 
-                        />
+                        test.sourceType === 'trackedBook' ? (
+                            <TrackedBookEvaluationScreen
+                                test={test}
+                                questions={questions}
+                                evaluations={evaluations}
+                                feedbacks={feedbacks}
+                                onEvaluate={(q, s) => setEvaluations(prev => ({...prev, [q]: s}))}
+                                onFeedback={(q, f) => setFeedbacks(prev => ({...prev, [q]: f}))}
+                                onFinish={handleFinishTest}
+                            />
+                        ) : (
+                            <EvaluationScreen 
+                                test={test} 
+                                questions={questions} 
+                                evaluations={evaluations} 
+                                feedbacks={feedbacks} 
+                                onEvaluate={(q, s) => setEvaluations(prev => ({...prev, [q]: s}))} 
+                                onFeedback={(q, f) => setFeedbacks(prev => ({...prev, [q]: f}))} 
+                                onFinish={handleFinishTest} 
+                            />
+                        )
                     ) : (
                         <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
                             <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center shadow-inner"><GraduationCap className="w-10 h-10 text-amber-600" /></div>
