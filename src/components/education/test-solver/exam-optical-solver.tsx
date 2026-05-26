@@ -130,7 +130,19 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                     }
                     
                     const stats = getSubjectStats(subject, offset);
-                    const isRevealed = revealedSubjects.has(subject.id);
+                    
+                    // İşaretlenen soru sayısı
+                    const answeredInSubject = Object.keys(studentAnswers).filter(k => {
+                        const n = parseInt(k);
+                        return n > offset && n <= offset + subject.questionCount && studentAnswers[k];
+                    }).length;
+
+                    // %90 barajı kontrolü
+                    const threshold = Math.ceil(subject.questionCount * 0.9);
+                    const isThresholdReached = answeredInSubject >= threshold;
+
+                    // Sonuçlar açık mı? (İnceleme modundaysa her zaman açık, değilse butona basılmış olmalı)
+                    const isRevealed = isReviewMode || revealedSubjects.has(subject.id);
 
                     return (
                         <AccordionItem key={subject.id} value={subject.id} className="border-none rounded-[2rem] overflow-hidden bg-white dark:bg-slate-900 shadow-md border border-slate-200 dark:border-slate-800">
@@ -142,24 +154,24 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                         </div>
                                         <div>
                                             <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">{subject.name}</h3>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{subject.questionCount} Soru • {Object.keys(studentAnswers).filter(k => {
-                                                const n = parseInt(k);
-                                                return n > offset && n <= offset + subject.questionCount;
-                                            }).length} İşaretlendi</p>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{subject.questionCount} Soru • {answeredInSubject} / {subject.questionCount} İşaretlendi</p>
                                         </div>
                                     </div>
                                 </AccordionTrigger>
                                 
                                 <div className="flex items-center gap-3 shrink-0 mr-4">
                                     {!isRevealed ? (
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm" 
-                                            onClick={(e) => toggleReveal(e, subject.id)}
-                                            className="h-10 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-white dark:bg-slate-800 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 shadow-sm relative z-10"
-                                        >
-                                            <BarChart3 className="w-4 h-4 mr-2" /> Ders Sonuçlarını Gör
-                                        </Button>
+                                        // Buton sadece %90 işaretlenince ortaya çıkar
+                                        (isReviewMode || isThresholdReached) && (
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                onClick={(e) => toggleReveal(e, subject.id)}
+                                                className="h-10 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-white dark:bg-slate-800 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 shadow-sm relative z-10 animate-in zoom-in-95"
+                                            >
+                                                <BarChart3 className="w-4 h-4 mr-2" /> Ders Sonuçlarını Gör
+                                            </Button>
+                                        )
                                     ) : (
                                         <div className="flex items-center gap-2 md:gap-4 bg-white/80 dark:bg-black/40 p-2 px-4 rounded-2xl border-2 border-indigo-500/30 animate-in zoom-in-95 shadow-lg relative z-10">
                                             <div className="flex items-center gap-3">
@@ -188,12 +200,14 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                                 <p className="text-[8px] font-bold text-slate-400 uppercase">Başarı</p>
                                             </div>
 
-                                            <button 
-                                                onClick={(e) => toggleReveal(e, subject.id)}
-                                                className="ml-2 text-slate-400 hover:text-rose-500 transition-colors"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
+                                            {!isReviewMode && (
+                                                <button 
+                                                    onClick={(e) => toggleReveal(e, subject.id)}
+                                                    className="ml-2 text-slate-400 hover:text-rose-500 transition-colors"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -208,8 +222,8 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                         const isWrong = sAns && sAns !== cAns;
                                         const isCorrect = sAns && sAns === cAns;
 
-                                        // KRİTİK DEĞİŞİKLİK: Sonuçlar sadece isRevealed (butona basıldı) veya isReviewMode (sınav bitti) ise gösterilsin
-                                        const showResult = isRevealed || isReviewMode;
+                                        // Sonuçlar butona basıldığında veya inceleme modunda görünür
+                                        const showResult = isRevealed;
 
                                         return (
                                             <div key={qNum} className={cn(
