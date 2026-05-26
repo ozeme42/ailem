@@ -162,6 +162,10 @@ export default function OpticalFormPage() {
     const [revealedSubjectResults, setRevealedSubjectResults] = React.useState<Set<string>>(new Set());
     const [openSubjectStats, setOpenSubjectStats] = React.useState<Set<string>>(new Set());
     
+    // UI Navigation States
+    const [showMobilePalette, setShowMobilePalette] = React.useState(false);
+    const [showMobileOptical, setShowMobileOptical] = React.useState(false);
+
     const isInitializedRef = React.useRef(false);
     const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -437,8 +441,24 @@ export default function OpticalFormPage() {
                              <div className="lg:col-span-9 bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden h-[500px] lg:h-[85vh]">
                                 <iframe srcDoc={getIframeDocument(test.htmlContent || "")} className="w-full h-full border-none" title={test.title} sandbox="allow-scripts allow-same-origin" />
                              </div>
-                             <div className="lg:col-span-3">
-                                <Card className="rounded-3xl border-slate-200 shadow-xl h-[500px] lg:h-[85vh] flex flex-col overflow-hidden">
+                             
+                             {/* Mobile Toggle Button for HTML */}
+                             <div className="fixed bottom-24 right-4 lg:hidden z-50">
+                                <Button type="button" onClick={() => setShowMobileOptical(!showMobileOptical)} className="rounded-full shadow-2xl bg-indigo-600 h-14 w-14 p-0 active:scale-95 transition-transform">
+                                    {showMobileOptical ? <ChevronDown className="w-8 h-8" /> : <LayoutGrid className="w-7 h-7" />}
+                                </Button>
+                             </div>
+
+                             <div className={cn(
+                                "lg:col-span-3 transition-all duration-300",
+                                showMobileOptical ? "fixed inset-0 z-[60] bg-slate-50/95 backdrop-blur-xl p-4 flex flex-col" : "hidden lg:flex lg:flex-col"
+                             )}>
+                                <div className="flex justify-between items-center mb-4 lg:hidden">
+                                    <h3 className="font-black text-slate-800 text-lg">Cevap Formu</h3>
+                                    <Button variant="ghost" size="icon" onClick={() => setShowMobileOptical(false)} className="rounded-full"><X className="w-6 h-6"/></Button>
+                                </div>
+
+                                <Card className="rounded-3xl border-slate-200 shadow-xl flex-1 flex flex-col overflow-hidden">
                                     <div className="p-4 border-b bg-slate-50/50 flex justify-between items-center"><h3 className="font-black text-slate-800 text-sm flex items-center gap-2"><LayoutGrid className="w-4 h-4 text-indigo-600" /> Cevap Formu</h3></div>
                                     <ScrollArea className="flex-1">
                                         <div className="p-4 space-y-3">
@@ -460,7 +480,7 @@ export default function OpticalFormPage() {
                                             })}
                                         </div>
                                     </ScrollArea>
-                                    <div className="p-4 border-t"><Button onClick={() => handleSubmit(false)} className="w-full h-12 rounded-xl bg-indigo-600 text-white font-black">Bitir</Button></div>
+                                    <div className="p-4 border-t"><Button type="button" onClick={() => { if(showMobileOptical) setShowMobileOptical(false); handleSubmit(false); }} className="w-full h-12 rounded-xl bg-indigo-600 text-white font-black">Bitir</Button></div>
                                 </Card>
                              </div>
                         </main>
@@ -591,12 +611,32 @@ export default function OpticalFormPage() {
                                     )}
                                 </div>
                              </div>
+                             
+                             {/* Mobile Toggle Button for Palette (Wizard / Written) */}
+                             <div className="fixed bottom-24 right-4 lg:hidden z-50">
+                                <Button type="button" onClick={() => setShowMobilePalette(!showMobilePalette)} className="rounded-full shadow-2xl bg-indigo-600 h-14 w-14 p-0 active:scale-95 transition-transform">
+                                    {showMobilePalette ? <ChevronDown className="w-8 h-8" /> : <LayoutGrid className="w-7 h-7" />}
+                                </Button>
+                             </div>
 
-                             <div className="hidden lg:block lg:col-span-4">
-                                <div className="sticky top-28 rounded-[2rem] border border-slate-200 bg-white shadow-xl flex flex-col h-[70vh]">
+                             <div className={cn(
+                                "lg:col-span-4 transition-all duration-300",
+                                showMobilePalette ? "fixed inset-0 z-[60] bg-slate-50/95 backdrop-blur-xl p-4 flex flex-col" : "hidden lg:flex lg:flex-col"
+                             )}>
+                                <div className="flex justify-between items-center mb-4 lg:hidden">
+                                    <h3 className="font-black text-slate-800 text-lg">Soru Gezgini</h3>
+                                    <Button variant="ghost" size="icon" onClick={() => setShowMobilePalette(false)} className="rounded-full"><X className="w-6 h-6"/></Button>
+                                </div>
+
+                                <div className="sticky top-28 rounded-[2rem] border border-slate-200 bg-white shadow-xl flex-1 flex flex-col overflow-hidden max-h-[85vh] lg:h-[70vh]">
                                     <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center"><h3 className="font-black text-slate-800 flex items-center gap-2"><LayoutGrid className="w-5 h-5 text-indigo-600" /> Soru Gezgini</h3></div>
                                     <ScrollArea className="flex-1">
-                                        <QuestionPalette total={totalQuestions} currentIndex={currentQuestionIndex} onNavigate={setCurrentQuestionIndex} isAnswered={isQuestionAnswered} />
+                                        <QuestionPalette 
+                                            total={totalQuestions} 
+                                            currentIndex={currentQuestionIndex} 
+                                            onNavigate={(idx) => { if(showMobilePalette) setShowMobilePalette(false); setCurrentQuestionIndex(idx); }} 
+                                            isAnswered={isQuestionAnswered} 
+                                        />
                                     </ScrollArea>
                                 </div>
                              </div>
