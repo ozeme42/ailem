@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -132,10 +131,10 @@ export default function UnifiedTestPage() {
                     Object.values(evaluations).forEach(val => {
                         if (val === 'correct') correct++;
                         else if (val === 'incorrect') incorrect++;
-                        else if (val === 'empty') empty++;
+                        else if (val === 'empty' || val === 'unevaluated') empty++;
                     });
                 } else {
-                    // Otomatik Değerlendirme (MCQ)
+                    // Otomatik Değerlendirme (MCQ & JSON)
                     const finalAnswerKey: Record<string, string> = { ...test.answerKey };
                     if (test.sourceType === 'json' && test.jsonQuestions) {
                         test.jsonQuestions.forEach((q, i) => {
@@ -155,9 +154,14 @@ export default function UnifiedTestPage() {
                             if (foundIdx !== -1) cAns = String.fromCharCode(65 + foundIdx);
                         }
 
-                        if (!sAns) empty++;
-                        else if (sAns === cAns) correct++;
-                        else incorrect++;
+                        // BOŞ KONTROLÜ GÜÇLENDİRİLDİ
+                        if (!sAns || sAns.trim() === "") {
+                            empty++;
+                        } else if (sAns === cAns) {
+                            correct++;
+                        } else {
+                            incorrect++;
+                        }
                     }
                 }
 

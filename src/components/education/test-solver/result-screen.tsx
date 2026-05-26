@@ -55,7 +55,8 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                     if (foundIdx !== -1) cAns = String.fromCharCode(65 + foundIdx);
                 }
 
-                if (!sAns) map[qNum] = 'empty';
+                // BOŞ KONTROLÜ DÜZELTİLDİ
+                if (!sAns || sAns.trim() === "") map[qNum] = 'empty';
                 else if (sAns === cAns) map[qNum] = 'correct';
                 else map[qNum] = 'incorrect';
             }
