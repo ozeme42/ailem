@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -7,7 +8,7 @@ import {
   Layers, PieChart, GraduationCap, AlertCircle, Timer, 
   BookOpen, ChevronDown, ChevronRight, Check, Sparkles, TrendingUp, 
   TrendingDown, PlayCircle, CalendarClock, Target, BarChart,
-  User, Settings, ScrollText, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, FileText, ClipboardList
+  User, Settings, ScrollText, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, FileText, ClipboardList, ListTree
 } from "lucide-react";
 
 import { Test, StudyAssignment, StudyPlan, TrackedBook } from "@/lib/data";
@@ -362,49 +363,76 @@ export default function EducationPage() {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Link href="/education/summaries" className="group">
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
+                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-4 md:p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
-                            <ScrollText className="w-8 h-8" />
+                        <div className="p-2 md:p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                            <ScrollText className="w-6 h-6 md:w-8 md:h-8" />
                         </div>
-                        <div>
-                            <h3 className="text-xl font-black">Ders Özetleri</h3>
-                            <p className="text-emerald-100 text-sm font-medium">Hızlı konu tekrarları</p>
+                        <div className="hidden sm:block">
+                            <h3 className="text-lg font-black leading-none">Ders Özetleri</h3>
+                            <p className="text-emerald-100 text-[10px] font-medium mt-1">Konu tekrarları</p>
+                        </div>
+                        <div className="sm:hidden">
+                             <h3 className="text-sm font-black leading-tight">Özetler</h3>
                         </div>
                     </div>
-                    <ChevronRight className="w-6 h-6 opacity-50 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform" />
                 </div>
             </Link>
             
-            <Link href="/education/study" className="group">
-                <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
+            <Link href="/education/results" className="group">
+                <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-4 md:p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
-                            <BookOpen className="w-8 h-8" />
+                        <div className="p-2 md:p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                            <ListTree className="w-6 h-6 md:w-8 md:h-8" />
                         </div>
-                        <div>
-                            <h3 className="text-xl font-black">Konu Çalışma</h3>
-                            <p className="text-indigo-100 text-sm font-medium">Atanan konuları incele</p>
+                        <div className="hidden sm:block">
+                            <h3 className="text-lg font-black leading-none">Sonuçlarım</h3>
+                            <p className="text-indigo-100 text-[10px] font-medium mt-1">Tüm sınav raporları</p>
+                        </div>
+                        <div className="sm:hidden">
+                             <h3 className="text-sm font-black leading-tight">Sonuçlar</h3>
                         </div>
                     </div>
-                    <ChevronRight className="w-6 h-6 opacity-50 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform" />
+                </div>
+            </Link>
+
+            <Link href="/education/study" className="group">
+                <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-4 md:p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
+                    <div className="flex items-center gap-4">
+                        <div className="p-2 md:p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                            <BookOpen className="w-6 h-6 md:w-8 md:h-8" />
+                        </div>
+                        <div className="hidden sm:block">
+                            <h3 className="text-lg font-black leading-none">Konu Çalışma</h3>
+                            <p className="text-indigo-100 text-[10px] font-medium mt-1">Ders görevlerin</p>
+                        </div>
+                         <div className="sm:hidden">
+                             <h3 className="text-sm font-black leading-tight">Çalışma</h3>
+                        </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform" />
                 </div>
             </Link>
 
             <Link href="/education/mistakes" className="group">
-                <div className="bg-gradient-to-br from-rose-500 to-pink-600 p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
+                <div className="bg-gradient-to-br from-rose-500 to-pink-600 p-4 md:p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
-                            <AlertCircle className="w-8 h-8" />
+                        <div className="p-2 md:p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                            <AlertCircle className="w-6 h-6 md:w-8 md:h-8" />
                         </div>
-                        <div>
-                            <h3 className="text-xl font-black">Yanlışlarım</h3>
-                            <p className="text-rose-100 text-sm font-medium">Hataları incele ve öğren</p>
+                        <div className="hidden sm:block">
+                            <h3 className="text-lg font-black leading-none">Yanlışlarım</h3>
+                            <p className="text-rose-100 text-[10px] font-medium mt-1">Hata havuzun</p>
+                        </div>
+                         <div className="sm:hidden">
+                             <h3 className="text-sm font-black leading-tight">Hatalar</h3>
                         </div>
                     </div>
-                    <ChevronRight className="w-6 h-6 opacity-50 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform" />
                 </div>
             </Link>
         </section>

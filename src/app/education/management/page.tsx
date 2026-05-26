@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -6,7 +7,7 @@ import {
   PlusCircle, ArrowLeft, BookCopy, ClipboardList,
   Settings, CheckCircle2, CircleDashed, PieChart,
   FileText, BookMarked, Library, Ruler, TestTube2, Globe,
-  MessageSquare, Gamepad2, FileJson, Layers, BookHeart, AlertTriangle, Lock, KeyRound, ChevronRight, BookOpen, ScrollText, Code
+  MessageSquare, Gamepad2, FileJson, Layers, BookHeart, AlertTriangle, Lock, KeyRound, ChevronRight, BookOpen, ScrollText, Code, ListTree
 } from "lucide-react";
 import { Test } from "@/lib/data";
 import { onTestsUpdate } from "@/lib/dataService";
@@ -221,6 +222,7 @@ export default function EducationManagementPage() {
              <p className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Tanımlamalar ve Araçlar</p>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3 md:gap-4">
+            <ToolCard href="/education/results"                    icon={ListTree}     label="Sonuçlar"      theme={toolTheme.indigo} />
             <ToolCard href="/education/all-tests"                   icon={Library}      label="Ödevler"       theme={toolTheme.indigo} />
             <ToolCard href="/education/management/questions"        icon={PlusCircle}   label="Soru Bankası"  theme={toolTheme.emerald}  />
             <ToolCard href="/education/management/practice-exams"   icon={ClipboardList}label="Denemeler"     theme={toolTheme.orange} />
@@ -306,3 +308,4 @@ export default function EducationManagementPage() {
     </div>
   );
 }
+
