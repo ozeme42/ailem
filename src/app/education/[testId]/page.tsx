@@ -14,14 +14,9 @@ import {
     LayoutGrid, Loader2, Sparkles, ChevronRight, ChevronLeft, 
     CheckCircle2, XCircle, Send, MessageSquareText, ImageIcon, 
     RotateCcw, FileCode, BookCopy, BarChart3, TrendingUp, Search, Eye, 
-    ChevronUp,
-    ListTodo,
-    ChevronDown,
-    Maximize2,
-    Minimize2
+    ChevronUp, ListTodo, ChevronDown, Maximize2, Minimize2, CheckSquare, Save
 } from "lucide-react";
 import Link from "next/link";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { doc, getDocs, collection, onSnapshot, query, orderBy, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -150,7 +145,7 @@ export default function OpticalFormPage() {
     const { user } = useAuth();
     
     const testId = params.testId as string;
-    const isEvaluateMode = searchParams.get('mode') === 'evaluate';
+    const isEvaluationMode = searchParams.get('mode') === 'evaluate';
 
     const [test, setTest] = React.useState<TestType | null>(null);
     const [practiceExamData, setPracticeExamData] = React.useState<PracticeExam | null>(null);
@@ -161,7 +156,6 @@ export default function OpticalFormPage() {
     const [textFeedback, setTextFeedback] = React.useState<{ [key: string]: string }>({});
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
-    const [revealedSubjectResults, setRevealedSubjectResults] = React.useState<Set<string>>(new Set());
     const [openSubjectStats, setOpenSubjectStats] = React.useState<Set<string>>(new Set());
     
     // UI Navigation States
@@ -218,8 +212,10 @@ export default function OpticalFormPage() {
         return () => unsubTest();
     }, [testId, fetchQuestions]);
 
+    const isReviewMode = test?.status === 'Sonuçlandı' && !isEvaluationMode;
+
     const handleSavePartial = React.useCallback(async (latestMcq: any, latestText: any) => {
-        if (!test) return;
+        if (!test || isReviewMode || isEvaluationMode) return;
         try {
             await updateTest(test.id, {
                 studentAnswers: latestMcq,
@@ -228,7 +224,7 @@ export default function OpticalFormPage() {
         } catch (e) {
             console.error("Partial save error:", e);
         }
-    }, [test]);
+    }, [test, isReviewMode, isEvaluationMode]);
 
     const debouncedSave = (newMcq: any, newText: any) => {
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -238,19 +234,62 @@ export default function OpticalFormPage() {
     };
 
     const handleMcqAnswerChange = (questionNumber: string, value: string) => {
+        if(isReviewMode || isEvaluationMode) return;
         const updated = { ...mcqAnswers, [questionNumber]: value };
         setMcqAnswers(updated);
         debouncedSave(updated, textAnswers);
     };
 
     const handleTextAnswerChange = (questionNumber: string, value: string) => {
+        if(isReviewMode || isEvaluationMode) return;
         const updated = { ...textAnswers, [questionNumber]: value };
         setTextAnswers(updated);
         debouncedSave(mcqAnswers, updated);
     };
 
-    const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
+    const handleEvaluationChange = (questionNumber: string, status: EvaluationStatus) => {
+        setManualEvaluation(prev => ({ ...prev, [questionNumber]: status }));
+    };
+
+    const handleFeedbackChange = (questionNumber: string, feedback: string) => {
+        setTextFeedback(prev => ({ ...prev, [questionNumber]: feedback }));
+    };
+
+    const handleSubmitEvaluation = async () => {
         if (!test || !user) return;
+        setIsSubmitting(true);
+        try {
+            const questionCount = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
+            let correct = 0, incorrect = 0, empty = 0;
+            for (let i = 1; i <= questionCount; i++) {
+                const status = manualEvaluation[i.toString()] || 'unevaluated';
+                if (status === 'correct') correct++;
+                else if (status === 'incorrect') incorrect++;
+                else empty++;
+            }
+            const score = (correct / questionCount) * 100;
+            
+            await updateTest(test.id, {
+                status: 'Sonuçlandı',
+                correctAnswers: correct,
+                incorrectAnswers: incorrect,
+                emptyAnswers: empty,
+                score,
+                studentTextAnswersEvaluation: manualEvaluation,
+                studentTextAnswersFeedback: textFeedback
+            });
+            
+            toast({ title: "Değerlendirme Kaydedildi!", className: "bg-indigo-600 text-white" });
+            router.push('/education');
+        } catch (e) {
+            toast({ variant: "destructive", title: "Hata!" });
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
+    const handleSubmit = React.useCallback(async (isFinishedByTimer = false) => {
+        if (!test || !user || isReviewMode || isEvaluationMode) return;
         setIsSubmitting(true);
         try {
             let updatedData: Partial<TestType> = { 
@@ -292,20 +331,11 @@ export default function OpticalFormPage() {
         } finally {
             setIsSubmitting(false);
         }
-    }, [test, mcqAnswers, textAnswers, toast, user, router]);
+    }, [test, mcqAnswers, textAnswers, toast, user, router, isReviewMode, isEvaluationMode]);
 
     const isQuestionAnswered = (index: number): boolean => {
         const qNumStr = (index + 1).toString();
         return test?.openEnded ? !!textAnswers[qNumStr] : !!mcqAnswers[qNumStr];
-    };
-
-    const toggleSubjectResults = (subjectId: string) => {
-        setRevealedSubjectResults(prev => {
-            const next = new Set(prev);
-            if (next.has(subjectId)) next.delete(subjectId);
-            else next.add(subjectId);
-            return next;
-        });
     };
 
     const toggleSubjectStats = (subjectId: string) => {
@@ -331,17 +361,19 @@ export default function OpticalFormPage() {
                         <Button type="button" variant="ghost" onClick={() => router.push('/education')} className="text-slate-500 hover:text-slate-900 rounded-lg md:rounded-2xl h-9 md:h-10 px-2 md:px-4"><ArrowLeft className="md:mr-2 h-5 w-5" /> <span className="hidden md:inline">Çıkış</span></Button>
                         <div className="text-center">
                             <h1 className="text-sm md:text-lg font-black text-slate-900 tracking-tight truncate max-w-[120px] md:max-w-full">{test.title}</h1>
-                            <p className="text-[8px] md:text-[10px] font-black uppercase text-slate-500 tracking-widest">{test.subject}</p>
+                            {isReviewMode && <Badge className="bg-emerald-600">İnceleme Modu</Badge>}
+                            {isEvaluationMode && <Badge className="bg-indigo-600">Değerlendirme Modu</Badge>}
+                            {!isReviewMode && !isEvaluationMode && <p className="text-[8px] md:text-[10px] font-black uppercase text-slate-500 tracking-widest">{test.subject}</p>}
                         </div>
                         <div className="flex items-center gap-3">
-                            <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
-                            <Button type="button" className="hidden md:flex bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl" onClick={() => handleSubmit(false)}>Bitir</Button>
+                            {!isReviewMode && !isEvaluationMode && <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />}
+                            {isSolveMode && <Button type="button" className="hidden md:flex bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl" onClick={() => handleSubmit(false)}>Bitir</Button>}
+                            {isEvaluationMode && <Button type="button" className="bg-indigo-600 text-white font-black rounded-xl" onClick={handleSubmitEvaluation} disabled={isSubmitting}>{isSubmitting ? "Kaydediliyor..." : "Değerlendirmeyi Bitir"}</Button>}
                         </div>
                     </header>
 
-                    {/* TEST TÜRÜNE GÖRE İÇERİK */}
+                    {/* DERS BAZLI GÖRÜNÜM (Deneme Sınavı) */}
                     {test.sourceType === 'exam' ? (
-                        /* DENEME SINAVI ÇÖZÜM MODU */
                         <main className="flex-1 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 pb-32">
                              <div className="lg:col-span-8 space-y-4">
                                 <Accordion type="multiple" className="space-y-4">
@@ -368,56 +400,37 @@ export default function OpticalFormPage() {
                                                     </div>
                                                 </AccordionTrigger>
                                                 <AccordionContent className="p-4 md:p-6 space-y-6">
-                                                    {/* Ders Sonuç Kontrolü */}
-                                                    <div className="space-y-3">
-                                                        <Button 
-                                                            type="button" 
-                                                            variant="outline" 
-                                                            className="w-full h-11 rounded-xl font-black text-xs border-indigo-200 text-indigo-600 hover:bg-indigo-50"
-                                                            onClick={() => toggleSubjectStats(subject.id)}
-                                                        >
-                                                            {openSubjectStats.has(subject.id) ? "Özeti Gizle" : "Ders Sonuçlarını Gör"}
-                                                        </Button>
+                                                    {(isReviewMode || isEvaluationMode) && (
+                                                         <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 shadow-inner">
+                                                            <div className="text-center">
+                                                                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Doğru</p>
+                                                                <p className="text-xl font-black text-emerald-700">{correctInSubject}</p>
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest">Yanlış</p>
+                                                                <p className="text-xl font-black text-rose-700">{incorrectInSubject}</p>
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Boş</p>
+                                                                <p className="text-xl font-black text-slate-600">{emptyInSubject}</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
 
-                                                        <AnimatePresence>
-                                                            {openSubjectStats.has(subject.id) && (
-                                                                <motion.div 
-                                                                    initial={{ opacity: 0, height: 0 }} 
-                                                                    animate={{ opacity: 1, height: 'auto' }} 
-                                                                    exit={{ opacity: 0, height: 0 }}
-                                                                    className="overflow-hidden"
-                                                                >
-                                                                    <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 shadow-inner">
-                                                                        <div className="text-center">
-                                                                            <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Doğru</p>
-                                                                            <p className="text-xl font-black text-emerald-700">{correctInSubject}</p>
-                                                                        </div>
-                                                                        <div className="text-center">
-                                                                            <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest">Yanlış</p>
-                                                                            <p className="text-xl font-black text-rose-700">{incorrectInSubject}</p>
-                                                                        </div>
-                                                                        <div className="text-center">
-                                                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Boş</p>
-                                                                            <p className="text-xl font-black text-slate-600">{emptyInSubject}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                </motion.div>
-                                                            )}
-                                                        </AnimatePresence>
-                                                    </div>
-
-                                                    {/* Kompakt Optik Liste */}
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                         {Array.from({ length: subject.questionCount }).map((_, i) => {
                                                             const qNum = (questionOffset + i + 1).toString();
+                                                            const sAns = mcqAnswers[qNum];
+                                                            const cAns = test.answerKey?.[qNum];
+                                                            const isCorrect = sAns === cAns;
                                                             return (
-                                                                <div key={qNum} className="flex items-center gap-3 p-2 rounded-xl bg-slate-50 border border-slate-100 group">
-                                                                    <Badge className="w-8 h-8 rounded-lg flex items-center justify-center font-black bg-white border border-slate-200 text-slate-600 shrink-0 shadow-sm">{i + 1}</Badge>
-                                                                    <RadioGroup value={mcqAnswers[qNum] || ""} onValueChange={(v) => handleMcqAnswerChange(qNum, v)} className="flex gap-1">
+                                                                <div key={qNum} className={cn("flex items-center gap-3 p-2 rounded-xl border group", isReviewMode ? (isCorrect ? "bg-emerald-50 border-emerald-100" : (sAns ? "bg-rose-50 border-rose-100" : "bg-slate-50 border-slate-100")) : "bg-slate-50 border-slate-100")}>
+                                                                    <Badge className={cn("w-8 h-8 rounded-lg flex items-center justify-center font-black shrink-0", isReviewMode ? (isCorrect ? "bg-emerald-600" : (sAns ? "bg-rose-600" : "bg-slate-400")) : "bg-white border border-slate-200 text-slate-600")}>{i + 1}</Badge>
+                                                                    <RadioGroup value={sAns || ""} onValueChange={(v) => handleMcqAnswerChange(qNum, v)} disabled={isReviewMode || isEvaluationMode} className="flex gap-1">
                                                                         {['A', 'B', 'C', 'D', 'E'].map(opt => (
                                                                             <div key={opt} className="flex items-center">
                                                                                 <RadioGroupItem value={opt} id={`q${qNum}-${opt}`} className="peer sr-only" />
-                                                                                <Label htmlFor={`q${qNum}-${opt}`} className={cn(glassColors.OPTION_BUTTON, "w-8 h-8 text-[10px] md:w-9 md:h-9 md:text-xs")}>{opt}</Label>
+                                                                                <Label htmlFor={`q${qNum}-${opt}`} className={cn(glassColors.OPTION_BUTTON, "w-8 h-8", isReviewMode && opt === cAns && "border-emerald-600 bg-emerald-100 text-emerald-800", isReviewMode && sAns === opt && !isCorrect && "border-rose-600 bg-rose-100 text-rose-800")}>{opt}</Label>
                                                                             </div>
                                                                         ))}
                                                                     </RadioGroup>
@@ -437,79 +450,44 @@ export default function OpticalFormPage() {
                                     <ScrollArea className="flex-1">
                                         <QuestionPalette total={totalQuestions} currentIndex={-1} onNavigate={() => {}} isAnswered={isQuestionAnswered} />
                                     </ScrollArea>
-                                    <div className="p-4 border-t"><Button type="button" className="w-full h-14 rounded-2xl bg-indigo-600 text-white font-black" onClick={() => handleSubmit(false)}>Sınavı Bitir</Button></div>
+                                    {!isReviewMode && !isEvaluationMode && <div className="p-4 border-t"><Button type="button" className="w-full h-14 rounded-2xl bg-indigo-600 text-white font-black" onClick={() => handleSubmit(false)}>Sınavı Bitir</Button></div>}
                                 </div>
                              </div>
-                             <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-[95%] lg:hidden z-50"><Button type="button" onClick={() => handleSubmit(false)} className="w-full h-14 rounded-xl bg-indigo-600 text-white font-black shadow-lg">Sınavı Bitir</Button></div>
                         </main>
                     ) : test.sourceType === 'html' ? (
-                        /* HTML TEST ÇÖZÜM MODU - Genişletilmiş Görünüm */
+                        /* HTML GÖRÜNÜMÜ (Döküman Tabanlı) */
                         <main className="flex-1 max-w-[1600px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-4 pb-32">
                              <div className={cn(
-                                "transition-all duration-500 bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden relative",
+                                "bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden relative",
                                 showDesktopOptical ? "lg:col-span-9" : "lg:col-span-12",
                                 "min-h-[600px] lg:h-[88vh]",
                                 isHtmlFullScreen && "fixed inset-0 z-[100] h-screen w-screen rounded-none m-0"
                              )}>
-                                <div className="absolute top-4 right-4 z-10 flex gap-2">
-                                    <Button 
-                                        type="button" 
-                                        variant="secondary" 
-                                        size="sm"
-                                        onClick={() => setIsHtmlFullScreen(!isHtmlFullScreen)}
-                                        className="rounded-xl shadow-lg bg-white/80 backdrop-blur-md border-slate-200"
-                                    >
-                                        {isHtmlFullScreen ? <><Minimize2 className="mr-2 h-4 w-4" /> Kapat</> : <><Maximize2 className="mr-2 h-4 w-4" /> Tam Ekran</>}
-                                    </Button>
-                                </div>
                                 <iframe srcDoc={getIframeDocument(test.htmlContent || "")} className="w-full h-full border-none" title={test.title} sandbox="allow-scripts allow-same-origin" />
                              </div>
                              
-                             {/* Desktop Toggle Button for HTML */}
-                             {!isHtmlFullScreen && (
-                                <div className="hidden lg:block fixed left-6 bottom-24 z-50">
-                                    <Button 
-                                        type="button" 
-                                        variant="outline"
-                                        onClick={() => setShowDesktopOptical(!showDesktopOptical)} 
-                                        className="rounded-full shadow-2xl bg-white h-14 w-14 p-0 border-slate-200 hover:bg-slate-50 transition-all hover:scale-105 active:scale-95"
-                                    >
-                                        {showDesktopOptical ? <ChevronRight className="w-8 h-8 text-slate-600" /> : <LayoutGrid className="w-8 h-8 text-indigo-600" />}
-                                    </Button>
-                                </div>
-                             )}
-
-                             {/* Mobile Toggle Button for HTML */}
-                             <div className="fixed bottom-24 right-4 lg:hidden z-50">
-                                <Button type="button" onClick={() => setShowMobileOptical(!showMobileOptical)} className="rounded-full shadow-2xl bg-indigo-600 h-14 w-14 p-0 active:scale-95 transition-transform">
-                                    {showMobileOptical ? <ChevronDown className="w-8 h-8" /> : <LayoutGrid className="w-7 h-7" />}
-                                </Button>
-                             </div>
-
                              <div className={cn(
                                 "transition-all duration-300",
                                 showMobileOptical ? "fixed inset-0 z-[110] bg-slate-50/95 backdrop-blur-xl p-4 flex flex-col" : 
                                 (showDesktopOptical && !isHtmlFullScreen ? "lg:col-span-3 lg:flex lg:flex-col" : "hidden")
                              )}>
-                                <div className="flex justify-between items-center mb-4 lg:hidden">
-                                    <h3 className="font-black text-slate-800 text-lg">Cevap Formu</h3>
-                                    <Button type="button" variant="ghost" size="icon" onClick={() => setShowMobileOptical(false)} className="rounded-full"><X className="w-6 h-6"/></Button>
-                                </div>
-
                                 <Card className="rounded-3xl border-slate-200 shadow-xl flex-1 flex flex-col overflow-hidden h-full">
                                     <div className="p-4 border-b bg-slate-50/50 flex justify-between items-center"><h3 className="font-black text-slate-800 text-sm flex items-center gap-2"><LayoutGrid className="w-4 h-4 text-indigo-600" /> Cevap Formu</h3></div>
                                     <ScrollArea className="flex-1">
                                         <div className="p-4 space-y-3">
                                             {Array.from({ length: test.questionCount }).map((_, i) => {
                                                 const qNum = (i + 1).toString();
+                                                const sAns = mcqAnswers[qNum];
+                                                const cAns = test.answerKey?.[qNum];
+                                                const isCorrect = sAns === cAns;
                                                 return (
-                                                    <div key={qNum} className="flex items-center gap-3 p-2 rounded-xl bg-slate-50 border border-slate-100 group">
-                                                        <Badge className="w-7 h-7 rounded-lg flex items-center justify-center font-black bg-indigo-600 text-white p-0 text-[10px] shrink-0">{i + 1}</Badge>
-                                                        <RadioGroup value={mcqAnswers[qNum] || ""} onValueChange={(v) => handleMcqAnswerChange(qNum, v)} className="flex gap-1">
+                                                    <div key={qNum} className={cn("flex items-center gap-3 p-2 rounded-xl border transition-all", isReviewMode ? (isCorrect ? "bg-emerald-50 border-emerald-100" : (sAns ? "bg-rose-50 border-rose-100" : "bg-slate-50")) : "bg-slate-50 border-slate-100")}>
+                                                        <Badge className={cn("w-7 h-7 rounded-lg flex items-center justify-center font-black p-0 text-[10px] shrink-0", isReviewMode ? (isCorrect ? "bg-emerald-600" : (sAns ? "bg-rose-600" : "bg-slate-400")) : "bg-indigo-600 text-white")}>{i + 1}</Badge>
+                                                        <RadioGroup value={sAns || ""} onValueChange={(v) => handleMcqAnswerChange(qNum, v)} disabled={isReviewMode || isEvaluationMode} className="flex gap-1">
                                                             {['A', 'B', 'C', 'D', 'E'].map(opt => (
                                                                 <div key={opt} className="flex items-center">
                                                                     <RadioGroupItem value={opt} id={`q${qNum}-${opt}`} className="peer sr-only" />
-                                                                    <Label htmlFor={`q${qNum}-${opt}`} className="w-7 h-7 text-[10px] flex items-center justify-center rounded-lg border border-slate-200 bg-white cursor-pointer transition-all peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white">{opt}</Label>
+                                                                    <Label htmlFor={`q${qNum}-${opt}`} className={cn("w-7 h-7 text-[10px] flex items-center justify-center rounded-lg border border-slate-200 bg-white cursor-pointer transition-all peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white", isReviewMode && opt === cAns && "border-emerald-600 bg-emerald-100", isReviewMode && sAns === opt && !isCorrect && "border-rose-600 bg-rose-100")}>{opt}</Label>
                                                                 </div>
                                                             ))}
                                                         </RadioGroup>
@@ -518,44 +496,62 @@ export default function OpticalFormPage() {
                                             })}
                                         </div>
                                     </ScrollArea>
-                                    <div className="p-4 border-t"><Button type="button" onClick={() => { setShowMobileOptical(false); setShowDesktopOptical(false); }} className="w-full h-12 rounded-xl bg-indigo-600 text-white font-black">Kapat</Button></div>
                                 </Card>
                              </div>
                         </main>
                     ) : test.sourceType === 'trackedBook' ? (
-                        /* KİTAP TAKİBİ (LİSTE) MODU */
+                        /* LİSTE GÖRÜNÜMÜ (Kitap Takibi) */
                         <main className="flex-1 max-w-2xl mx-auto w-full bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden mb-24">
-                            <div className="p-6 border-b bg-slate-50/50 flex items-center gap-3">
-                                <div className="p-2 bg-indigo-600 text-white rounded-xl"><ListTodo className="w-5 h-5"/></div>
-                                <div>
-                                    <h2 className="font-black text-slate-800">{test.openEnded ? 'Açık Uçlu Cevap Girişi' : 'Cevap Anahtarı Girişi'}</h2>
-                                    <p className="text-xs text-slate-500">{test.openEnded ? 'Soruların cevaplarını buraya yazabilirsin.' : 'Kitabındaki cevapları buraya işle.'}</p>
-                                </div>
-                            </div>
-                            <ScrollArea className="h-[60vh] md:h-[70vh]">
+                            <ScrollArea className="h-[75vh]">
                                 <div className="p-6 space-y-6">
                                     {Array.from({ length: test.questionCount }).map((_, i) => {
                                         const qNum = (i + 1).toString();
+                                        const evalStatus = manualEvaluation[qNum];
                                         return (
                                             <div key={qNum} className={cn("flex flex-col gap-3 p-4 rounded-2xl border transition-all", test.openEnded ? "bg-white border-slate-200 shadow-sm" : "bg-slate-50 border-slate-100 items-center justify-between flex-row")}>
-                                                <div className="flex items-center gap-3">
-                                                    <Badge className="w-9 h-9 rounded-xl flex items-center justify-center font-black bg-indigo-600 text-white shrink-0 shadow-md">{i + 1}</Badge>
-                                                    {test.openEnded && <span className="font-bold text-slate-600 text-sm">Soru {i + 1}</span>}
+                                                <div className="flex items-center justify-between w-full">
+                                                    <div className="flex items-center gap-3">
+                                                        <Badge className={cn("w-9 h-9 rounded-xl flex items-center justify-center font-black shrink-0", isReviewMode && test.openEnded ? (evalStatus === 'correct' ? "bg-emerald-600" : (evalStatus === 'incorrect' ? "bg-rose-600" : "bg-slate-400")) : "bg-indigo-600 text-white shadow-md")}>{i + 1}</Badge>
+                                                        {test.openEnded && <span className="font-bold text-slate-600 text-sm">Soru {i + 1}</span>}
+                                                    </div>
+                                                    {isEvaluationMode && test.openEnded && (
+                                                        <div className="flex gap-1">
+                                                            <Button size="sm" variant={evalStatus === 'correct' ? "default" : "outline"} className={cn("h-8 rounded-lg", evalStatus === 'correct' && "bg-emerald-600")} onClick={() => handleEvaluationChange(qNum, 'correct')}><Check className="w-4 h-4 mr-1"/> Doğru</Button>
+                                                            <Button size="sm" variant={evalStatus === 'incorrect' ? "default" : "outline"} className={cn("h-8 rounded-lg", evalStatus === 'incorrect' && "bg-rose-600")} onClick={() => handleEvaluationChange(qNum, 'incorrect')}><X className="w-4 h-4 mr-1"/> Yanlış</Button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 
                                                 {test.openEnded ? (
-                                                    <Textarea 
-                                                        placeholder="Cevabını buraya yaz..."
-                                                        className="min-h-[100px] rounded-xl bg-slate-50/50 focus:bg-white transition-all border-slate-200 text-sm leading-relaxed"
-                                                        value={textAnswers[qNum] || ""}
-                                                        onChange={(e) => handleTextAnswerChange(qNum, e.target.value)}
-                                                    />
+                                                    <div className="w-full space-y-3">
+                                                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Öğrenci Cevabı</p>
+                                                            <p className="text-sm text-slate-700 whitespace-pre-wrap">{textAnswers[qNum] || "Cevap verilmedi."}</p>
+                                                        </div>
+                                                        {(isReviewMode || isEvaluationMode) && (
+                                                            <Textarea 
+                                                                placeholder="Öğretmen geri bildirimi..."
+                                                                className="min-h-[60px] rounded-xl text-xs"
+                                                                value={textFeedback[qNum] || ""}
+                                                                onChange={(e) => handleFeedbackChange(qNum, e.target.value)}
+                                                                disabled={isReviewMode}
+                                                            />
+                                                        )}
+                                                        {!isReviewMode && !isEvaluationMode && (
+                                                            <Textarea 
+                                                                placeholder="Cevabını yaz..."
+                                                                className="min-h-[100px] rounded-xl"
+                                                                value={textAnswers[qNum] || ""}
+                                                                onChange={(e) => handleTextAnswerChange(qNum, e.target.value)}
+                                                            />
+                                                        )}
+                                                    </div>
                                                 ) : (
-                                                    <RadioGroup value={mcqAnswers[qNum] || ""} onValueChange={(v) => handleMcqAnswerChange(qNum, v)} className="flex gap-2">
+                                                    <RadioGroup value={mcqAnswers[qNum] || ""} onValueChange={(v) => handleMcqAnswerChange(qNum, v)} disabled={isReviewMode || isEvaluationMode} className="flex gap-2">
                                                         {['A', 'B', 'C', 'D', 'E'].map(opt => (
                                                             <div key={opt} className="flex items-center">
                                                                 <RadioGroupItem value={opt} id={`q${qNum}-${opt}`} className="peer sr-only" />
-                                                                <Label htmlFor={`q${qNum}-${opt}`} className={cn(glassColors.OPTION_BUTTON, "w-9 h-9")}>{opt}</Label>
+                                                                <Label htmlFor={`q${qNum}-${opt}`} className={cn(glassColors.OPTION_BUTTON, "w-9 h-9", isReviewMode && opt === test.answerKey?.[qNum] && "border-emerald-600 bg-emerald-100", isReviewMode && mcqAnswers[qNum] === opt && mcqAnswers[qNum] !== test.answerKey?.[qNum] && "border-rose-600 bg-rose-100")}>{opt}</Label>
                                                             </div>
                                                         ))}
                                                     </RadioGroup>
@@ -565,10 +561,9 @@ export default function OpticalFormPage() {
                                     })}
                                 </div>
                             </ScrollArea>
-                            <div className="p-6 border-t"><Button type="button" onClick={() => handleSubmit(false)} className="w-full h-14 rounded-2xl bg-indigo-600 text-white font-black text-lg shadow-lg">Tamamla ve Gönder</Button></div>
                         </main>
                     ) : (
-                        /* STANDART SİHİRBAZ (WIZARD) MODU - Bank, Quick, Mistake, JSON */
+                        /* SİHİRBAZ GÖRÜNÜMÜ (Soru Bankası, Yazılı) */
                         <main className="flex-1 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 pb-32">
                              <div className="lg:col-span-8 space-y-6">
                                 <AnimatePresence mode="wait">
@@ -582,6 +577,11 @@ export default function OpticalFormPage() {
                                         <Card className="rounded-[2rem] border-slate-200 shadow-xl overflow-hidden">
                                             <div className="bg-indigo-600 p-4 text-white flex justify-between items-center">
                                                 <Badge className="bg-white/20 text-white border-none font-black px-4">Soru {currentQuestionIndex + 1} / {totalQuestions}</Badge>
+                                                {isReviewMode && test.openEnded && (
+                                                    <Badge className={cn(manualEvaluation[(currentQuestionIndex + 1).toString()] === 'correct' ? "bg-emerald-500" : "bg-rose-500")}>
+                                                        {manualEvaluation[(currentQuestionIndex + 1).toString()] === 'correct' ? "DOĞRU" : "YANLIŞ"}
+                                                    </Badge>
+                                                )}
                                             </div>
                                             <CardContent className="p-6 md:p-10 space-y-8">
                                                 {test.sourceType === 'json' ? (
@@ -597,29 +597,78 @@ export default function OpticalFormPage() {
                                                 )}
 
                                                 {test.openEnded ? (
-                                                    <div className="space-y-4">
-                                                        <Label className="text-xs font-black uppercase text-slate-400 tracking-widest pl-1">Senin Cevabın</Label>
-                                                        <Textarea 
-                                                            placeholder="Cevabını buraya yazabilirsin..."
-                                                            className="min-h-[200px] text-lg p-5 rounded-2xl bg-slate-50/50 border-slate-200 focus:border-indigo-500 focus:bg-white transition-all leading-relaxed shadow-inner"
-                                                            value={textAnswers[(currentQuestionIndex + 1).toString()] || ""}
-                                                            onChange={(e) => handleTextAnswerChange((currentQuestionIndex + 1).toString(), e.target.value)}
-                                                        />
+                                                    <div className="space-y-6">
+                                                        <div className="space-y-3">
+                                                            <Label className="text-xs font-black uppercase text-slate-400 tracking-widest pl-1">Öğrenci Cevabı</Label>
+                                                            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 min-h-[100px] text-lg text-slate-700">
+                                                                {textAnswers[(currentQuestionIndex + 1).toString()] || "Cevap verilmemiş."}
+                                                            </div>
+                                                        </div>
+
+                                                        {isEvaluationMode && (
+                                                            <div className="space-y-4 pt-4 border-t border-slate-100">
+                                                                <Label className="text-xs font-black uppercase text-indigo-600 tracking-widest">Değerlendirme</Label>
+                                                                <div className="grid grid-cols-2 gap-3">
+                                                                    <Button 
+                                                                        variant={manualEvaluation[(currentQuestionIndex+1).toString()] === 'correct' ? "default" : "outline"}
+                                                                        className={cn("h-14 rounded-2xl font-bold", manualEvaluation[(currentQuestionIndex+1).toString()] === 'correct' && "bg-emerald-600")}
+                                                                        onClick={() => handleEvaluationChange((currentQuestionIndex+1).toString(), 'correct')}
+                                                                    >
+                                                                        <CheckCircle2 className="mr-2 w-5 h-5"/> Doğru
+                                                                    </Button>
+                                                                    <Button 
+                                                                        variant={manualEvaluation[(currentQuestionIndex+1).toString()] === 'incorrect' ? "default" : "outline"}
+                                                                        className={cn("h-14 rounded-2xl font-bold", manualEvaluation[(currentQuestionIndex+1).toString()] === 'incorrect' && "bg-rose-600")}
+                                                                        onClick={() => handleEvaluationChange((currentQuestionIndex+1).toString(), 'incorrect')}
+                                                                    >
+                                                                        <XCircle className="mr-2 w-5 h-5"/> Yanlış
+                                                                    </Button>
+                                                                </div>
+                                                                <Textarea 
+                                                                    placeholder="Geri bildirim veya çözüm notu ekle..."
+                                                                    className="min-h-[100px] rounded-2xl"
+                                                                    value={textFeedback[(currentQuestionIndex+1).toString()] || ""}
+                                                                    onChange={(e) => handleFeedbackChange((currentQuestionIndex+1).toString(), e.target.value)}
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        {!isReviewMode && !isEvaluationMode && (
+                                                            <Textarea 
+                                                                placeholder="Cevabını buraya yazabilirsin..."
+                                                                className="min-h-[200px] text-lg p-5 rounded-2xl bg-slate-50/50 border-slate-200 focus:border-indigo-500 focus:bg-white transition-all leading-relaxed shadow-inner"
+                                                                value={textAnswers[(currentQuestionIndex + 1).toString()] || ""}
+                                                                onChange={(e) => handleTextAnswerChange((currentQuestionIndex + 1).toString(), e.target.value)}
+                                                            />
+                                                        )}
+
+                                                        {isReviewMode && textFeedback[(currentQuestionIndex+1).toString()] && (
+                                                            <div className="p-5 rounded-2xl bg-indigo-50 border border-indigo-100">
+                                                                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1 flex items-center gap-1"><MessageSquareText className="w-3 h-3"/> Öğretmen Notu</p>
+                                                                <p className="text-sm text-indigo-900 italic">"{textFeedback[(currentQuestionIndex+1).toString()]}"</p>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ) : (
                                                     <RadioGroup 
                                                         value={mcqAnswers[(currentQuestionIndex + 1).toString()] || ""} 
                                                         onValueChange={(v) => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), v)} 
+                                                        disabled={isReviewMode || isEvaluationMode}
                                                         className={cn("grid gap-3", test.sourceType === 'json' ? "grid-cols-1" : "grid-cols-5 md:grid-cols-5 justify-center max-w-md mx-auto")}
                                                     >
                                                         {test.sourceType === 'json' ? (
                                                             test.jsonQuestions?.[currentQuestionIndex]?.options.map((option, idx) => {
                                                                 const label = String.fromCharCode(65 + idx);
+                                                                const isCorrect = option === test.jsonQuestions![currentQuestionIndex].answer;
+                                                                const isSelected = mcqAnswers[(currentQuestionIndex + 1).toString()] === label;
                                                                 return (
                                                                     <div key={idx} className="flex items-center">
                                                                         <RadioGroupItem value={label} id={`q-opt-${idx}`} className="peer sr-only" />
-                                                                        <Label htmlFor={`q-opt-${idx}`} className="flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 border-slate-100 bg-white cursor-pointer transition-all peer-data-[state=checked]:border-indigo-600 peer-data-[state=checked]:bg-indigo-50">
-                                                                            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-500 peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white">{label}</div>
+                                                                        <Label htmlFor={`q-opt-${idx}`} className={cn(
+                                                                            "flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 transition-all cursor-pointer",
+                                                                            isReviewMode ? (isCorrect ? "border-emerald-500 bg-emerald-50" : (isSelected ? "border-rose-500 bg-rose-50" : "border-slate-100 bg-white")) : "border-slate-100 bg-white peer-data-[state=checked]:border-indigo-600 peer-data-[state=checked]:bg-indigo-50"
+                                                                        )}>
+                                                                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center font-black", isReviewMode ? (isCorrect ? "bg-emerald-600 text-white" : (isSelected ? "bg-rose-600 text-white" : "bg-slate-100 text-slate-500")) : "bg-slate-100 text-slate-500 peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white")}>{label}</div>
                                                                             <span className="font-semibold text-slate-700">{option}</span>
                                                                         </Label>
                                                                     </div>
@@ -629,7 +678,7 @@ export default function OpticalFormPage() {
                                                             ['A', 'B', 'C', 'D', 'E'].map(opt => (
                                                                 <div key={opt} className="flex items-center justify-center">
                                                                     <RadioGroupItem value={opt} id={`q-opt-${opt}`} className="peer sr-only" />
-                                                                    <Label htmlFor={`q-opt-${opt}`} className={cn(glassColors.OPTION_BUTTON, "w-12 h-12 text-lg")}>{opt}</Label>
+                                                                    <Label htmlFor={`q-opt-${opt}`} className={cn(glassColors.OPTION_BUTTON, "w-12 h-12 text-lg", isReviewMode && opt === test.answerKey?.[(currentQuestionIndex+1).toString()] && "border-emerald-600 bg-emerald-100 text-emerald-800", isReviewMode && mcqAnswers[(currentQuestionIndex+1).toString()] === opt && mcqAnswers[(currentQuestionIndex+1).toString()] !== test.answerKey?.[(currentQuestionIndex+1).toString()] && "border-rose-600 bg-rose-100 text-rose-800")}>{opt}</Label>
                                                                 </div>
                                                             ))
                                                         )}
@@ -645,35 +694,21 @@ export default function OpticalFormPage() {
                                     {currentQuestionIndex < totalQuestions - 1 ? (
                                         <Button type="button" size="lg" className="flex-1 h-14 rounded-2xl font-black bg-indigo-600 text-white" onClick={() => setCurrentQuestionIndex(prev => prev + 1)}>Sonraki <ChevronRight className="ml-2 h-6 w-6"/></Button>
                                     ) : (
-                                        <Button type="button" size="lg" className="flex-1 h-14 rounded-2xl font-black bg-emerald-600 text-white" onClick={() => handleSubmit(false)}><CheckCircle className="mr-2 h-6 w-6"/> Testi Bitir</Button>
+                                        !isReviewMode && !isEvaluationMode && <Button type="button" size="lg" className="flex-1 h-14 rounded-2xl font-black bg-emerald-600 text-white" onClick={() => handleSubmit(false)}><CheckCircle className="mr-2 h-6 w-6"/> Testi Bitir</Button>
                                     )}
                                 </div>
                              </div>
                              
-                             {/* Mobile Toggle Button for Palette (Wizard / Written) */}
-                             <div className="fixed bottom-24 right-4 lg:hidden z-50">
-                                <Button type="button" onClick={() => setShowMobilePalette(!showMobilePalette)} className="rounded-full shadow-2xl bg-indigo-600 h-14 w-14 p-0 active:scale-95 transition-transform">
-                                    {showMobilePalette ? <ChevronDown className="w-8 h-8" /> : <LayoutGrid className="w-7 h-7" />}
-                                </Button>
-                             </div>
-
-                             <div className={cn(
-                                "lg:col-span-4 transition-all duration-300",
-                                showMobilePalette ? "fixed inset-0 z-[60] bg-slate-50/95 backdrop-blur-xl p-4 flex flex-col" : "hidden lg:flex lg:flex-col"
-                             )}>
-                                <div className="flex justify-between items-center mb-4 lg:hidden">
-                                    <h3 className="font-black text-slate-800 text-lg">Soru Gezgini</h3>
-                                    <Button type="button" variant="ghost" size="icon" onClick={() => setShowMobilePalette(false)} className="rounded-full"><X className="w-6 h-6"/></Button>
-                                </div>
-
+                             <div className="lg:col-span-4 transition-all duration-300">
                                 <div className="sticky top-28 rounded-[2rem] border border-slate-200 bg-white shadow-xl flex-1 flex flex-col overflow-hidden max-h-[85vh] lg:h-[70vh]">
                                     <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center"><h3 className="font-black text-slate-800 flex items-center gap-2"><LayoutGrid className="w-5 h-5 text-indigo-600" /> Soru Gezgini</h3></div>
                                     <ScrollArea className="flex-1">
                                         <QuestionPalette 
                                             total={totalQuestions} 
                                             currentIndex={currentQuestionIndex} 
-                                            onNavigate={(idx) => { if(showMobilePalette) setShowMobilePalette(false); setCurrentQuestionIndex(idx); }} 
+                                            onNavigate={(idx) => setCurrentQuestionIndex(idx)} 
                                             isAnswered={isQuestionAnswered} 
+                                            evaluationMap={test.openEnded ? manualEvaluation : {}}
                                         />
                                     </ScrollArea>
                                 </div>
