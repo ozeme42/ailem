@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -108,6 +109,11 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                             <div>
                                 <p className="text-2xl font-black text-rose-400">{test.incorrectAnswers || 0}</p>
                                 <p className="text-[10px] font-bold text-white/60 uppercase">Y</p>
+                            </div>
+                            <div className="w-px h-8 bg-white/10" />
+                            <div>
+                                <p className="text-2xl font-black text-slate-300">{test.emptyAnswers || 0}</p>
+                                <p className="text-[10px] font-bold text-white/60 uppercase">B</p>
                             </div>
                             <div className="w-px h-8 bg-white/10" />
                             <div className="text-center">

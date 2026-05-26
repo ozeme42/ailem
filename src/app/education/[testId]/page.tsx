@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -5,7 +6,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Test, QuickTestQuestion, EvaluationStatus } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, GraduationCap } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { doc, getDocs, collection, onSnapshot, query, orderBy } from "firebase/firestore";
@@ -111,7 +112,7 @@ export default function UnifiedTestPage() {
             };
 
             // Otomatik puanlama (Yazılı ve MCQ türleri için kesin zorlama)
-            if (!isManualEvaluation || test.sourceType === 'json' || test.sourceType === 'exam') {
+            if (!isManualEvaluation || test.sourceType === 'json' || test.sourceType === 'exam' || test.sourceType === 'html') {
                 let correct = 0, incorrect = 0, empty = 0;
                 const finalAnswerKey: Record<string, string> = { ...test.answerKey };
                 
@@ -147,11 +148,19 @@ export default function UnifiedTestPage() {
             }
 
             await updateTest(test.id, updatedData);
-            if (updatedData.status === 'Sonuçlandı') await checkAndAwardBadges(test.studentId, familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
-            
-            toast({ title: updatedData.status === 'Sonuçlandı' ? "Ödev Bitti! 🎉" : "Cevaplar Gönderildi! ✅" });
-            router.push('/education');
-        } catch (e) { toast({ title: "Hata", variant: "destructive" }); } finally { setIsSubmitting(false); }
+            if (updatedData.status === 'Sonuçlandı') {
+                await checkAndAwardBadges(test.studentId, familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
+                toast({ title: "Ödev Bitti! 🎉 Sonuçlarını inceleyebilirsin." });
+                // NOT: Burada router.push YAPILMAZ. Öğrenci sayfada kalıp sonuçlarını görür.
+            } else {
+                toast({ title: "Cevaplar Gönderildi! ✅ Değerlendirme bekleniyor." });
+                router.push('/education');
+            }
+        } catch (e) { 
+            toast({ title: "Hata", variant: "destructive" }); 
+        } finally { 
+            setIsSubmitting(false); 
+        }
     };
 
     if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-950"><Loader2 className="w-12 h-12 animate-spin text-indigo-600" /></div>;
