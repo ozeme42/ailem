@@ -31,7 +31,7 @@ const glassColors = {
     PAGE_BG: "bg-slate-50", 
     HEADER_BG: "bg-white/80 backdrop-blur-xl border-b border-slate-200",
     CARD_BG: "bg-white border border-slate-200 shadow-sm", 
-    OPTION_BUTTON: "flex items-center justify-center w-12 h-12 rounded-xl border border-slate-200 bg-white cursor-pointer transition-all duration-200 font-bold text-lg text-slate-600 hover:bg-slate-50 hover:border-indigo-400 hover:text-indigo-600 peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white peer-data-[state=checked]:border-indigo-600 peer-data-[state=checked]:shadow-lg peer-data-[state=checked]:scale-110",
+    OPTION_BUTTON: "flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 bg-white cursor-pointer transition-all duration-200 font-bold text-xs text-slate-600 hover:bg-slate-50 hover:border-indigo-400 hover:text-indigo-600 peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white peer-data-[state=checked]:border-indigo-600 peer-data-[state=checked]:shadow-lg",
 };
 
 const getIframeDocument = (htmlContent: string) => `
@@ -444,7 +444,7 @@ export default function OpticalFormPage() {
                                                                     const isCorrect = sAns === cAns;
                                                                     return (
                                                                         <div key={qNum} className={cn("flex flex-col items-center p-1 rounded-lg border text-[10px]", isCorrect ? "bg-emerald-50 border-emerald-200 text-emerald-700" : sAns ? "bg-rose-50 border-rose-200 text-rose-700" : "bg-slate-50 border-slate-200 text-slate-400")}>
-                                                                            <span className="font-bold mb-0.5">{currentOffset + qIdx + 1}</span>
+                                                                            <span className="font-bold mb-0.5">{qIdx + 1}</span>
                                                                             <span className="font-black text-xs">{sAns || "-"}</span>
                                                                         </div>
                                                                     )
@@ -745,7 +745,7 @@ export default function OpticalFormPage() {
                                                             const qNum = (currentOffset + i + 1).toString();
                                                             return (
                                                                 <div key={qNum} className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-slate-50/50 border border-slate-100 hover:bg-white hover:border-indigo-200 transition-all group">
-                                                                    <Badge className="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-indigo-600 text-white p-0 text-sm shadow-md shrink-0">{qNum}</Badge>
+                                                                    <Badge className="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-indigo-600 text-white p-0 text-sm shadow-md shrink-0">{i + 1}</Badge>
                                                                     <RadioGroup 
                                                                         value={mcqAnswers[qNum] || ""} 
                                                                         onValueChange={(v) => handleMcqAnswerChange(qNum, v)} 
@@ -754,7 +754,7 @@ export default function OpticalFormPage() {
                                                                         {['A', 'B', 'C', 'D', 'E'].map(opt => (
                                                                             <div key={opt} className="flex items-center">
                                                                                 <RadioGroupItem value={opt} id={`q${qNum}-${opt}`} className="peer sr-only" />
-                                                                                <Label htmlFor={`q${qNum}-${opt}`} className={cn(glassColors.OPTION_BUTTON, "w-10 h-10 text-xs")}>
+                                                                                <Label htmlFor={`q${qNum}-${opt}`} className={cn(glassColors.OPTION_BUTTON)}>
                                                                                     {opt}
                                                                                 </Label>
                                                                             </div>
@@ -1029,3 +1029,4 @@ export default function OpticalFormPage() {
         </Form>
     );
 }
+
