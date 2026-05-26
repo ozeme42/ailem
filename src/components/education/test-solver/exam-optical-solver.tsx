@@ -1,15 +1,14 @@
-
 "use client";
 
 import * as React from "react";
-import { Test, PracticeExam, AnswerKey, EvaluationStatus } from "@/lib/data";
+import { Test, PracticeExam, AnswerKey } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { onSinglePracticeExamUpdate } from "@/lib/dataService";
-import { CheckCircle2, ChevronRight, LayoutGrid, Info, BarChart3, Check, X, MinusCircle, Trophy, Target } from "lucide-react";
+import { CheckCircle2, BarChart3, Check, X, MinusCircle, Trophy, Target, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ExamOpticalSolverProps {
@@ -49,12 +48,18 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
             else if (sAns === cAns) correct++;
             else incorrect++;
         }
-        return { correct, incorrect, empty, total: subject.questionCount };
+        return { 
+            correct, 
+            incorrect, 
+            empty, 
+            total: subject.questionCount,
+            rate: subject.questionCount > 0 ? Math.round((correct / subject.questionCount) * 100) : 0
+        };
     };
 
     return (
         <div className="space-y-6 pb-20 max-w-5xl mx-auto w-full">
-            {/* ÜST ÖZET PANELİ */}
+            {/* ÜST GENEL ÖZET PANELİ */}
             <div className={cn(
                 "rounded-[2.5rem] p-6 border shadow-xl flex flex-col md:flex-row items-center justify-between gap-6",
                 isReviewMode ? "bg-gradient-to-br from-indigo-600 to-purple-700 text-white border-none" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
@@ -103,7 +108,7 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                 </div>
             </div>
 
-            {/* DERS LİSTESİ */}
+            {/* DERS LİSTESİ VE DERS BAZLI SONUÇLAR */}
             <Accordion type="single" collapsible className="space-y-4" value={openSubject || undefined} onValueChange={setOpenSubject}>
                 {examDetails.subjects.map((subject, sIdx) => {
                     let offset = 0;
@@ -129,20 +134,21 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                     </div>
                                     
                                     <div className="flex items-center gap-4">
-                                        {isReviewMode && (
-                                             <div className="hidden sm:flex gap-3 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-full shadow-inner border border-slate-100 dark:border-slate-800">
-                                                <div className="flex items-center gap-1.5 text-emerald-600 font-black text-xs"><Check className="w-3 h-3"/> {stats.correct}</div>
-                                                <div className="flex items-center gap-1.5 text-rose-600 font-black text-xs"><X className="w-3 h-3"/> {stats.incorrect}</div>
-                                                <div className="flex items-center gap-1.5 text-slate-400 font-black text-xs"><MinusCircle className="w-3 h-3"/> {stats.empty}</div>
-                                            </div>
+                                        {isReviewMode ? (
+                                            <Badge className={cn("px-4 h-7 rounded-full font-bold", stats.rate >= 70 ? "bg-emerald-500 text-white" : "bg-rose-500 text-white")}>
+                                                %{stats.rate} Başarı
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="secondary" className={cn("px-4 h-7 rounded-full font-bold", isAllAnswered ? "bg-emerald-500 text-white" : "bg-indigo-600/10 text-indigo-600")}>
+                                                {stats.correct + stats.incorrect} / {subject.questionCount} İşaretlendi
+                                            </Badge>
                                         )}
-                                        <Badge variant="secondary" className={cn("px-4 h-7 rounded-full font-bold", isAllAnswered ? "bg-emerald-500 text-white" : "bg-indigo-600/10 text-indigo-600")}>
-                                            {isReviewMode ? `%${Math.round((stats.correct / stats.total) * 100)} Başarı` : `${stats.correct + stats.incorrect} / ${subject.questionCount} İşaretlendi`}
-                                        </Badge>
                                     </div>
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent className="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+                                
+                                {/* DERS BAZLI ANALİZ PANELİ (İnceleme Modunda Gözükür) */}
                                 {isReviewMode && (
                                      <div className="mb-8 grid grid-cols-3 gap-3">
                                         <div className="bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/50 text-center">
@@ -160,6 +166,7 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                     </div>
                                 )}
 
+                                {/* OPTİK FORM IZGARASI */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
                                     {Array.from({ length: subject.questionCount }).map((_, i) => {
                                         const qNum = (offset + i + 1).toString();
@@ -200,7 +207,7 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                                                                 ? "bg-indigo-600 border-indigo-600 text-white shadow-md scale-105" 
                                                                                 : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 hover:border-indigo-400"
                                                                         ) : (
-                                                                            isCorrectOpt ? "bg-emerald-600 border-emerald-600 text-white shadow-md scale-110 z-10" :
+                                                                            isCorrectOpt ? "bg-emerald-600 border-emerald-600 text-white shadow-md scale-110 z-10 ring-2 ring-emerald-300 ring-offset-2" :
                                                                             isStudentWrongOpt ? "bg-rose-600 border-rose-600 text-white shadow-md" :
                                                                             "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-300 opacity-50"
                                                                         )

@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -187,7 +186,6 @@ export default function UnifiedTestPage() {
     if (!test) return <div className="flex flex-col items-center justify-center h-screen space-y-4"><h1>Ödev Bulunamadı</h1><Link href="/education"><Button>Geri Dön</Button></Link></div>;
 
     // --- ÖZEL YÖNLENDİRME: DENEME SINAVI (EXAM) ---
-    // Deneme sınavı tipindeyse her şeyi tek dosyadan yönetiyoruz
     if (test.sourceType === 'exam') {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col p-4 md:p-8">
