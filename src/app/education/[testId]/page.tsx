@@ -101,7 +101,7 @@ export default function UnifiedTestPage() {
         if (!test || !familyId) return;
         setIsSubmitting(true);
         try {
-            // YALNIZCA AÇIK UÇLU SORU BANKASI VE KİTAPLAR MANUEL PUANLAMAYA GİDER
+            // YAZILI (JSON) VE MCQ TESTLERİ HER ZAMAN OTOMATİK PUANLAMAYA GİDER
             const isManualEvaluation = (test.sourceType === 'bank' || test.sourceType === 'trackedBook' || test.sourceType === 'mistake') && test.openEnded;
             let status: Test['status'] = isManualEvaluation ? 'Değerlendirme Bekliyor' : 'Sonuçlandı';
             
@@ -111,7 +111,7 @@ export default function UnifiedTestPage() {
                 status: status
             };
 
-            // Otomatik puanlama gerektirenler (Yazılı, Deneme, Optikli Soru Bankası)
+            // Otomatik puanlama gerektirenler (Deneme, Soru Bankası Optikli, Yazılı)
             if (!isManualEvaluation) {
                 let correct = 0, incorrect = 0, empty = 0;
                 const finalAnswerKey: Record<string, string> = { ...test.answerKey };
@@ -122,15 +122,15 @@ export default function UnifiedTestPage() {
                     });
                 }
 
-                const totalQ = (test.sourceType === 'json' ? questions.length : test.questionCount);
+                const totalQ = (test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount);
                 for (let i = 1; i <= totalQ; i++) {
                     const qNum = i.toString();
                     const sAns = studentAnswers[qNum];
                     let cAns = finalAnswerKey[qNum];
 
-                    // JSON Testi Harf Eşleştirme
-                    if (test.sourceType === 'json' && questions[i-1]) {
-                        const q = questions[i-1];
+                    // JSON Testi Harf Eşleştirme (Cevap metin olarak tutuluyorsa)
+                    if (test.sourceType === 'json' && test.jsonQuestions?.[i-1]) {
+                        const q = test.jsonQuestions[i-1];
                         const foundIdx = q.options.findIndex((o:string) => o.trim() === q.answer?.trim());
                         if (foundIdx !== -1) cAns = String.fromCharCode(65 + foundIdx);
                     }
@@ -188,14 +188,17 @@ export default function UnifiedTestPage() {
     if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-950"><Loader2 className="w-12 h-12 animate-spin text-indigo-600" /></div>;
     if (!test) return <div className="flex flex-col items-center justify-center h-screen space-y-4"><h1>Ödev Bulunamadı</h1><Link href="/education"><Button>Geri Dön</Button></Link></div>;
 
-    // --- İNCELEME MODU ÖNCELİĞİ ---
+    // --- İNCELEME MODU ---
     if (test.status === 'Sonuçlandı') {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col p-4 md:p-8">
                 <header className="max-w-7xl mx-auto w-full mb-8 flex justify-between items-center bg-white dark:bg-slate-900/50 backdrop-blur-xl p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div className="flex items-center gap-4">
                         <Button variant="ghost" size="icon" onClick={() => router.push('/education')} className="rounded-full hover:bg-slate-100"><ArrowLeft/></Button>
-                        <div><h1 className="text-lg font-black leading-none text-slate-800 dark:text-slate-100">{test.title}</h1><p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">SINAV ANALİZİ</p></div>
+                        <div>
+                            <h1 className="text-lg font-black leading-none text-slate-800 dark:text-slate-100">{test.title}</h1>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">Sınav Analizi</p>
+                        </div>
                     </div>
                     <Badge className="bg-emerald-600 px-4 py-1 rounded-full font-black text-white">BİTTİ</Badge>
                 </header>
@@ -216,14 +219,17 @@ export default function UnifiedTestPage() {
         );
     }
 
-    // --- ÖZEL YÖNLENDİRME: DENEME SINAVI (EXAM) ---
+    // --- ÖZEL MODÜL: DENEME SINAVI ---
     if (test.sourceType === 'exam') {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col p-4 md:p-8">
                 <header className="max-w-5xl mx-auto w-full mb-8 flex justify-between items-center bg-white dark:bg-slate-900/50 backdrop-blur-xl p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div className="flex items-center gap-4">
                         <Button variant="ghost" size="icon" onClick={() => router.push('/education')} className="rounded-full hover:bg-slate-100"><ArrowLeft/></Button>
-                        <div><h1 className="text-lg font-black leading-none text-slate-800 dark:text-slate-100">{test.title}</h1><p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">DENEME SINAVI</p></div>
+                        <div>
+                            <h1 className="text-lg font-black leading-none text-slate-800 dark:text-slate-100">{test.title}</h1>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">DENEME SINAVI</p>
+                        </div>
                     </div>
                     <div className="flex items-center gap-4">
                         <TestTimer durationMinutes={test.durationMinutes || 120} onTimeUp={handleFinishTest} />
@@ -241,7 +247,7 @@ export default function UnifiedTestPage() {
         );
     }
 
-    // --- DİĞER TESTLERİN MODLARI ---
+    // --- DİĞER MODÜLLER ---
     const isAwaitingEvaluation = test.status === 'Değerlendirme Bekliyor';
 
     return (
@@ -249,11 +255,15 @@ export default function UnifiedTestPage() {
             <header className="max-w-7xl mx-auto w-full mb-8 flex justify-between items-center bg-white dark:bg-slate-900/50 backdrop-blur-xl p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" onClick={() => router.push('/education')} className="rounded-full hover:bg-slate-100"><ArrowLeft/></Button>
-                    <div><h1 className="text-lg font-black leading-none text-slate-800 dark:text-slate-100">{test.title}</h1><p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">{test.subject}</p></div>
+                    <div>
+                        <h1 className="text-lg font-black leading-none text-slate-800 dark:text-slate-100">{test.title}</h1>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">{test.subject}</p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-4">
                     {test.status === 'Atandı' && test.durationMinutes && <TestTimer durationMinutes={test.durationMinutes} onTimeUp={handleFinishTest} />}
                     {test.status === 'Değerlendirme Bekliyor' && <Badge className="bg-amber-600 px-4 py-1 rounded-full font-black text-white">DEĞERLENDİRİLİYOR</Badge>}
+                    {test.status === 'Sonuçlandı' && <Badge className="bg-emerald-600 px-4 py-1 rounded-full font-black text-white">BİTTİ</Badge>}
                 </div>
             </header>
 
