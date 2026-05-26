@@ -32,7 +32,7 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
 
     const toggleReveal = (e: React.MouseEvent, subjectId: string) => {
         e.preventDefault();
-        e.stopPropagation(); // Accordion'u tetiklemesin
+        e.stopPropagation();
         setRevealedSubjects(prev => {
             const next = new Set(prev);
             if (next.has(subjectId)) next.delete(subjectId);
@@ -134,8 +134,6 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
 
                     return (
                         <AccordionItem key={subject.id} value={subject.id} className="border-none rounded-[2rem] overflow-hidden bg-white dark:bg-slate-900 shadow-md border border-slate-200 dark:border-slate-800">
-                            {/* DÜZELTME: AccordionTrigger bir butondur, içine Button (başka bir buton) koyamazsınız. 
-                                Bu yüzden Trigger'ı bir div içine aldık ve sonuç butonunu Trigger'ın dışına (onunla yan yana) yerleştirdik. */}
                             <div className="flex items-center justify-between pr-4 bg-slate-50/50 dark:bg-slate-950/50 hover:bg-slate-100 transition-colors border-b border-slate-100 dark:border-slate-800">
                                 <AccordionTrigger className="flex-1 px-6 py-5 hover:no-underline">
                                     <div className="flex items-center gap-4 text-left">
@@ -152,7 +150,6 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                     </div>
                                 </AccordionTrigger>
                                 
-                                {/* Aksiyon Alanı - Trigger'ın Dışında (Hata Çözümü) */}
                                 <div className="flex items-center gap-3 shrink-0 mr-4">
                                     {!isRevealed ? (
                                         <Button 
@@ -182,7 +179,7 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                                 </div>
                                             </div>
                                             
-                                            <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1 md:mx-2" />
+                                            <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2" />
                                             
                                             <div className="text-right">
                                                 <p className={cn("font-black text-lg leading-none", stats.rate >= 70 ? "text-emerald-600" : stats.rate >= 40 ? "text-amber-500" : "text-rose-600")}>
@@ -211,25 +208,28 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                         const isWrong = sAns && sAns !== cAns;
                                         const isCorrect = sAns && sAns === cAns;
 
+                                        // KRİTİK DEĞİŞİKLİK: Sonuçlar sadece isRevealed (butona basıldı) veya isReviewMode (sınav bitti) ise gösterilsin
+                                        const showResult = isRevealed || isReviewMode;
+
                                         return (
                                             <div key={qNum} className={cn(
                                                 "flex flex-col gap-3 p-4 rounded-2xl border transition-all",
-                                                (isReviewMode || sAns) ? (
+                                                (showResult && sAns) ? (
                                                     isCorrect ? "bg-emerald-50/30 border-emerald-200 shadow-sm" :
                                                     isWrong ? "bg-rose-50/30 border-rose-200 shadow-sm" :
                                                     "bg-slate-50 border-slate-100"
-                                                ) : "bg-slate-50 dark:bg-black/20 border-slate-100 dark:border-slate-800"
+                                                ) : (sAns ? "bg-indigo-50/20 border-indigo-100" : "bg-slate-50 dark:bg-black/20 border-slate-100 dark:border-slate-800")
                                             )}>
                                                 <div className="flex justify-between items-center px-1">
-                                                    <span className={cn("text-[10px] font-black uppercase tracking-widest", (isReviewMode || sAns) && isCorrect ? "text-emerald-600" : (isReviewMode || sAns) && isWrong ? "text-rose-600" : "text-slate-400")}>Soru {qNum}</span>
-                                                    {(isReviewMode || sAns) && isCorrect && <Check className="w-3.5 h-3.5 text-emerald-500" strokeWidth={4} />}
-                                                    {(isReviewMode || sAns) && isWrong && <X className="w-3.5 h-3.5 text-rose-500" strokeWidth={4} />}
+                                                    <span className={cn("text-[10px] font-black uppercase tracking-widest", (showResult && sAns) && isCorrect ? "text-emerald-600" : (showResult && sAns) && isWrong ? "text-rose-600" : "text-slate-400")}>Soru {qNum}</span>
+                                                    {showResult && sAns && isCorrect && <Check className="w-3.5 h-3.5 text-emerald-500" strokeWidth={4} />}
+                                                    {showResult && sAns && isWrong && <X className="w-3.5 h-3.5 text-rose-500" strokeWidth={4} />}
                                                 </div>
 
                                                 <RadioGroup value={sAns} onValueChange={(v) => !isReviewMode && onAnswer(qNum, v)} className="flex justify-between items-center gap-1.5">
                                                     {['A', 'B', 'C', 'D', 'E'].map(opt => {
-                                                        const isCorrectOpt = (isReviewMode || sAns) && opt === cAns;
-                                                        const isStudentWrongOpt = (isReviewMode || sAns) && opt === sAns && opt !== cAns;
+                                                        const isCorrectOpt = showResult && opt === cAns;
+                                                        const isStudentWrongOpt = showResult && opt === sAns && opt !== cAns;
 
                                                         return (
                                                             <div key={opt} className="flex-1">
@@ -238,9 +238,9 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                                                     htmlFor={`q${qNum}-opt-${opt}`}
                                                                     className={cn(
                                                                         "flex items-center justify-center h-10 w-full rounded-xl border transition-all text-xs font-black cursor-pointer",
-                                                                        !isReviewMode ? (
+                                                                        !showResult ? (
                                                                             sAns === opt 
-                                                                                ? (isCorrectOpt ? "bg-emerald-600 border-emerald-600 text-white shadow-md scale-105" : "bg-rose-600 border-rose-600 text-white shadow-md scale-105")
+                                                                                ? "bg-indigo-600 border-indigo-600 text-white shadow-md scale-105"
                                                                                 : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 hover:border-indigo-400"
                                                                         ) : (
                                                                             isCorrectOpt ? "bg-emerald-600 border-emerald-600 text-white shadow-md scale-110 z-10 ring-2 ring-emerald-300 ring-offset-2" :
