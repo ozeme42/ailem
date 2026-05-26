@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { onSinglePracticeExamUpdate } from "@/lib/dataService";
-import { Check, X, Trophy, ListChecks, ChevronRight, AlertCircle, HelpCircle } from "lucide-react";
+import { Check, X, Trophy, ListChecks, ChevronRight, AlertCircle, HelpCircle, BarChart3, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ExamOpticalSolverProps {
@@ -22,12 +22,23 @@ interface ExamOpticalSolverProps {
 export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, isReviewMode = false }: ExamOpticalSolverProps) {
     const [examDetails, setExamDetails] = React.useState<PracticeExam | null>(null);
     const [openSubject, setOpenSubject] = React.useState<string | null>(null);
+    const [revealedSubjects, setRevealedSubjects] = React.useState<Set<string>>(new Set());
 
     React.useEffect(() => {
         if (test.sourceId) {
             return onSinglePracticeExamUpdate(test.sourceId, setExamDetails);
         }
     }, [test.sourceId]);
+
+    const toggleReveal = (e: React.MouseEvent, subjectId: string) => {
+        e.stopPropagation(); // Accordion'u tetiklemesin
+        setRevealedSubjects(prev => {
+            const next = new Set(prev);
+            if (next.has(subjectId)) next.delete(subjectId);
+            else next.add(subjectId);
+            return next;
+        });
+    };
 
     if (!examDetails) return (
         <div className="flex flex-col items-center justify-center p-20 space-y-4">
@@ -36,7 +47,6 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
         </div>
     );
 
-    // Ders bazlı istatistikleri hesaplayan yardımcı fonksiyon (Anlık çalışır)
     const getSubjectStats = (subject: any, offset: number) => {
         let correct = 0, incorrect = 0, empty = 0;
         const total = subject.questionCount;
@@ -119,6 +129,7 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                     }
                     
                     const stats = getSubjectStats(subject, offset);
+                    const isRevealed = revealedSubjects.has(subject.id);
 
                     return (
                         <AccordionItem key={subject.id} value={subject.id} className="border-none rounded-[2rem] overflow-hidden bg-white dark:bg-slate-900 shadow-md border border-slate-200 dark:border-slate-800">
@@ -130,37 +141,57 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                         </div>
                                         <div className="text-left">
                                             <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">{subject.name}</h3>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{subject.questionCount} Soru Tanımlı</p>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{subject.questionCount} Soru</p>
                                         </div>
                                     </div>
                                     
-                                    {/* CANLI DERS SONUÇLARI - HER ZAMAN GÖRÜNÜR */}
-                                    <div className="flex items-center gap-2 md:gap-4 bg-white/40 dark:bg-black/20 p-2 px-4 rounded-2xl border border-slate-100 dark:border-white/5">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex flex-col items-center">
-                                                <span className="text-emerald-600 dark:text-emerald-400 font-black text-sm">{stats.correct}</span>
-                                                <span className="text-[8px] font-bold text-slate-400 uppercase">Doğru</span>
+                                    {/* DERS SONUÇLARINI GÖR BUTONU VEYA SONUÇLAR */}
+                                    <div className="flex items-center gap-3">
+                                        {!isRevealed ? (
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                onClick={(e) => toggleReveal(e, subject.id)}
+                                                className="h-10 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-white dark:bg-slate-800 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 shadow-sm"
+                                            >
+                                                <BarChart3 className="w-4 h-4 mr-2" /> Ders Sonuçlarını Gör
+                                            </Button>
+                                        ) : (
+                                            <div className="flex items-center gap-2 md:gap-4 bg-white/60 dark:bg-black/40 p-2 px-4 rounded-2xl border-2 border-indigo-500/30 animate-in zoom-in-95 shadow-lg">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-emerald-600 dark:text-emerald-400 font-black text-sm">{stats.correct}</span>
+                                                        <span className="text-[8px] font-bold text-slate-400 uppercase">D</span>
+                                                    </div>
+                                                    <div className="w-px h-6 bg-slate-200 dark:bg-slate-700" />
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-rose-600 dark:text-rose-400 font-black text-sm">{stats.incorrect}</span>
+                                                        <span className="text-[8px] font-bold text-slate-400 uppercase">Y</span>
+                                                    </div>
+                                                    <div className="w-px h-6 bg-slate-200 dark:bg-slate-700" />
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-slate-500 dark:text-slate-400 font-black text-sm">{stats.empty}</span>
+                                                        <span className="text-[8px] font-bold text-slate-400 uppercase">B</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1 md:mx-2" />
+                                                
+                                                <div className="text-right">
+                                                    <p className={cn("font-black text-lg leading-none", stats.rate >= 70 ? "text-emerald-600" : stats.rate >= 40 ? "text-amber-500" : "text-rose-600")}>
+                                                        %{stats.rate}
+                                                    </p>
+                                                    <p className="text-[8px] font-bold text-slate-400 uppercase">Başarı</p>
+                                                </div>
+
+                                                <button 
+                                                    onClick={(e) => toggleReveal(e, subject.id)}
+                                                    className="ml-2 text-slate-400 hover:text-rose-500 transition-colors"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
                                             </div>
-                                            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700" />
-                                            <div className="flex flex-col items-center">
-                                                <span className="text-rose-600 dark:text-rose-400 font-black text-sm">{stats.incorrect}</span>
-                                                <span className="text-[8px] font-bold text-slate-400 uppercase">Yanlış</span>
-                                            </div>
-                                            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700" />
-                                            <div className="flex flex-col items-center">
-                                                <span className="text-slate-500 dark:text-slate-400 font-black text-sm">{stats.empty}</span>
-                                                <span className="text-[8px] font-bold text-slate-400 uppercase">Boş</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1 md:mx-2" />
-                                        
-                                        <div className="text-right">
-                                            <p className={cn("font-black text-lg leading-none", stats.rate >= 70 ? "text-emerald-600" : stats.rate >= 40 ? "text-amber-500" : "text-rose-600")}>
-                                                %{stats.rate}
-                                            </p>
-                                            <p className="text-[8px] font-bold text-slate-400 uppercase">Başarı</p>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             </AccordionTrigger>
