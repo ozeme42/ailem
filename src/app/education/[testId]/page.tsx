@@ -16,7 +16,9 @@ import {
     RotateCcw, FileCode, BookCopy, BarChart3, TrendingUp, Search, Eye, 
     ChevronUp,
     ListTodo,
-    ChevronDown
+    ChevronDown,
+    Maximize2,
+    Minimize2
 } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -166,6 +168,7 @@ export default function OpticalFormPage() {
     const [showMobilePalette, setShowMobilePalette] = React.useState(false);
     const [showMobileOptical, setShowMobileOptical] = React.useState(false);
     const [showDesktopOptical, setShowDesktopOptical] = React.useState(true);
+    const [isHtmlFullScreen, setIsHtmlFullScreen] = React.useState(false);
 
     const isInitializedRef = React.useRef(false);
     const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -443,24 +446,38 @@ export default function OpticalFormPage() {
                         /* HTML TEST ÇÖZÜM MODU - Genişletilmiş Görünüm */
                         <main className="flex-1 max-w-[1600px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-4 pb-32">
                              <div className={cn(
-                                "transition-all duration-500 bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden",
+                                "transition-all duration-500 bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden relative",
                                 showDesktopOptical ? "lg:col-span-9" : "lg:col-span-12",
-                                "min-h-[600px] lg:h-[88vh]"
+                                "min-h-[600px] lg:h-[88vh]",
+                                isHtmlFullScreen && "fixed inset-0 z-[100] h-screen w-screen rounded-none m-0"
                              )}>
+                                <div className="absolute top-4 right-4 z-10 flex gap-2">
+                                    <Button 
+                                        type="button" 
+                                        variant="secondary" 
+                                        size="sm"
+                                        onClick={() => setIsHtmlFullScreen(!isHtmlFullScreen)}
+                                        className="rounded-xl shadow-lg bg-white/80 backdrop-blur-md border-slate-200"
+                                    >
+                                        {isHtmlFullScreen ? <><Minimize2 className="mr-2 h-4 w-4" /> Kapat</> : <><Maximize2 className="mr-2 h-4 w-4" /> Tam Ekran</>}
+                                    </Button>
+                                </div>
                                 <iframe srcDoc={getIframeDocument(test.htmlContent || "")} className="w-full h-full border-none" title={test.title} sandbox="allow-scripts allow-same-origin" />
                              </div>
                              
                              {/* Desktop Toggle Button for HTML */}
-                             <div className="hidden lg:block fixed left-6 bottom-24 z-50">
-                                <Button 
-                                    type="button" 
-                                    variant="outline"
-                                    onClick={() => setShowDesktopOptical(!showDesktopOptical)} 
-                                    className="rounded-full shadow-2xl bg-white h-14 w-14 p-0 border-slate-200 hover:bg-slate-50 transition-all hover:scale-105 active:scale-95"
-                                >
-                                    {showDesktopOptical ? <ChevronRight className="w-8 h-8 text-slate-600" /> : <LayoutGrid className="w-8 h-8 text-indigo-600" />}
-                                </Button>
-                             </div>
+                             {!isHtmlFullScreen && (
+                                <div className="hidden lg:block fixed left-6 bottom-24 z-50">
+                                    <Button 
+                                        type="button" 
+                                        variant="outline"
+                                        onClick={() => setShowDesktopOptical(!showDesktopOptical)} 
+                                        className="rounded-full shadow-2xl bg-white h-14 w-14 p-0 border-slate-200 hover:bg-slate-50 transition-all hover:scale-105 active:scale-95"
+                                    >
+                                        {showDesktopOptical ? <ChevronRight className="w-8 h-8 text-slate-600" /> : <LayoutGrid className="w-8 h-8 text-indigo-600" />}
+                                    </Button>
+                                </div>
+                             )}
 
                              {/* Mobile Toggle Button for HTML */}
                              <div className="fixed bottom-24 right-4 lg:hidden z-50">
@@ -471,8 +488,8 @@ export default function OpticalFormPage() {
 
                              <div className={cn(
                                 "transition-all duration-300",
-                                showMobileOptical ? "fixed inset-0 z-[60] bg-slate-50/95 backdrop-blur-xl p-4 flex flex-col" : 
-                                (showDesktopOptical ? "lg:col-span-3 lg:flex lg:flex-col" : "hidden")
+                                showMobileOptical ? "fixed inset-0 z-[110] bg-slate-50/95 backdrop-blur-xl p-4 flex flex-col" : 
+                                (showDesktopOptical && !isHtmlFullScreen ? "lg:col-span-3 lg:flex lg:flex-col" : "hidden")
                              )}>
                                 <div className="flex justify-between items-center mb-4 lg:hidden">
                                     <h3 className="font-black text-slate-800 text-lg">Cevap Formu</h3>
