@@ -5,7 +5,11 @@ import { Test, AnswerKey } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, HelpCircle, Save, BookOpen, AlertCircle, Trophy, MinusCircle, User, CheckCircle2 } from "lucide-react";
+import { 
+    Check, X, HelpCircle, Save, BookOpen, 
+    AlertCircle, Trophy, MinusCircle, User, 
+    CheckCircle2, XCircle 
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TrackedBookSolverProps {
@@ -165,7 +169,7 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
                                                                 <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest ml-1">Doğru Cevap</span>
                                                                 <div className="flex items-center gap-2 px-3 py-2 rounded-2xl border-2 border-emerald-500/40 bg-emerald-500/20 text-emerald-800 text-sm font-black shadow-sm">
                                                                     <Check className="w-4 h-4" strokeWidth={4} />
-                                                                    <span className="text-base">{cAns || "Tanımlanmamış"}</span>
+                                                                    <span className="text-base font-black">{cAns || "Tanımlanmamış"}</span>
                                                                 </div>
                                                             </div>
                                                         )}
