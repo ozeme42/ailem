@@ -5,6 +5,7 @@ import * as React from "react";
 import Image from "next/image";
 import { Test, EvaluationStatus } from "@/lib/data";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, XCircle, MinusCircle, ChevronLeft, ChevronRight, Save, ImageIcon, MessageSquareText, LayoutGrid } from "lucide-react";
 import { QuestionPalette } from "./shared-components";
@@ -163,3 +164,4 @@ export function EvaluationScreen({ test, questions, evaluations, feedbacks, onEv
         </div>
     );
 }
+

@@ -4,6 +4,7 @@
 import * as React from "react";
 import { Test, AnswerKey } from "@/lib/data";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Maximize2, Minimize2, CheckCircle2, LayoutGrid, X, ChevronRight } from "lucide-react";
@@ -133,3 +134,4 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish }:
         </div>
     );
 }
+

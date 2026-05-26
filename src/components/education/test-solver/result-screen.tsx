@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Test, EvaluationStatus, PracticeExam } from "@/lib/data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, MinusCircle, ChevronRight, LayoutGrid, ImageIcon, MessageSquareText, Target, AlertCircle, Check, X, BookOpen, BarChart3, ChevronDown } from "lucide-react";
 import { QuestionPalette } from "./shared-components";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -376,3 +377,4 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
         </div>
     );
 }
+
