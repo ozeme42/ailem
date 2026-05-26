@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -27,6 +26,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { format, isToday, isPast, differenceInDays, parse, addDays, compareDesc } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
@@ -146,7 +146,6 @@ export default function AllTestsPage() {
                 if (foundTopic) topicName = foundTopic.name;
             } else if ((test as any).topic) { topicName = (test as any).topic; }
             
-            // Sıralama tarihi mantığı: Çözüldüyse çözüm tarihi, değilse son teslim tarihi
             let sortableDate = new Date();
             if (test.status === 'Sonuçlandı' && (test as any).updatedAt) {
                 sortableDate = new Date((test as any).updatedAt);
@@ -305,7 +304,6 @@ function TestsListOrGrid({ tests, viewMode, familyMembers, onDelete, onReassign,
                             const isCompleted = test.status === 'Sonuçlandı';
                             const colors = categoryThemeColors[categoryName] || categoryThemeColors['Diğer'];
                             
-                            // Tarih Bilgileri
                             const dueDateStr = test.dueDate;
                             const solvedDateStr = isCompleted && test.updatedAt ? format(new Date(test.updatedAt), 'dd.MM.yyyy HH:mm', { locale: tr }) : "-";
 
@@ -383,7 +381,7 @@ function TestCard({ test, student, onDelete, onReassign }: any) {
             <CardFooter className="p-4 pt-0">
                 {isPendingEvaluation ? (
                     <Link href={`/education/${test.id}?mode=evaluate`} className="w-full">
-                        <Button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold h-10 rounded-xl shadow-lg shadow-blue-600/20">Değerlendir</Button>
+                        <Button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold h-10 rounded-xl shadow-lg shadow-blue-500/20">Değerlendir</Button>
                     </Link>
                 ) : (
                     <Link href={`/education/${test.id}`} className="w-full">
@@ -415,7 +413,7 @@ function ReassignTestDialog({ test, isOpen, onOpenChange, familyMembers }: { tes
                 dueDate: format(dueDate, 'dd MMMM yyyy', { locale: tr }), 
                 status: 'Atandı', 
                 isArchived: false,
-                updatedAt: null // Yeni atamada çözüm tarihini sıfırla
+                updatedAt: null 
             };
             delete newTestData.id;
             
