@@ -14,15 +14,15 @@ import {
   ComposedChart, Legend
 } from "recharts";
 import { useAuth } from "@/components/auth-provider";
-import { onTestsUpdate, onBankQuestionsUpdate, onPracticeExamsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
-import { Test, BankQuestion, PracticeExam, TrackedBook, FamilyMember } from "@/lib/data";
+import { onTestsUpdate } from "@/lib/dataService";
+import { FamilyMember } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { getCategoryName } from "@/app/education/page";
 import { 
-  format, startOfWeek, endOfWeek, eachDayOfInterval, 
+  format, startOfWeek, eachDayOfInterval, 
   subDays, isToday, parseISO, startOfMonth, endOfMonth, 
   eachMonthOfInterval, getYear, isWithinInterval, subMonths, 
-  startOfYear, endOfYear, eachWeekOfInterval, isSameMonth, parse
+  startOfYear, parse, addMonths
 } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Badge } from "@/components/ui/badge";
@@ -78,11 +78,11 @@ const StatBox = ({ icon: Icon, value, label, subValue, color, trend }: any) => (
 
 // --- MAIN CLIENT ---
 
-export default function StatsClient() {
+export function BudgetStatsClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const studentId = searchParams.get('studentId');
-  const { familyMembers } = useAuth();
+  const { familyMembers, familyId } = useAuth();
 
   const [tests, setTests] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -95,25 +95,25 @@ export default function StatsClient() {
   const student = React.useMemo(() => familyMembers.find(m => m.id === studentId), [familyMembers, studentId]);
 
   React.useEffect(() => {
-    if (!studentId) { setLoading(false); return; }
+    if (!studentId || !familyId) { setLoading(false); return; }
     const unsubTests = onTestsUpdate(all => {
       setTests(all.filter(t => t.studentId === studentId && t.status === 'Sonuçlandı'));
       setLoading(false);
     });
     return () => { unsubTests(); };
-  }, [studentId]);
+  }, [studentId, familyId]);
 
   // --- DATA PROCESSING (FIXED DATE PARSING) ---
   const processedData = React.useMemo(() => {
     const enriched = tests.map(test => {
       const subjectName = getCategoryName(test);
       
-      // GÜVENLİ TARİH AYRIŞTIRMA
       let solvedDate: Date;
       if (test.updatedAt) {
           solvedDate = parseISO(test.updatedAt);
       } else {
           try {
+              // "15 Ağustos 2024" formatı için date-fns parse kullanımı
               solvedDate = parse(test.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
           } catch (e) {
               solvedDate = new Date(test.assignedDate);
@@ -147,11 +147,10 @@ export default function StatsClient() {
   const kpis = React.useMemo(() => {
     const totalQ = processedData.reduce((acc, t) => acc + (t.questionCount || 0), 0);
     const totalC = processedData.reduce((acc, t) => acc + (t.correctAnswers || 0), 0);
-    const totalW = processedData.reduce((acc, t) => acc + (t.incorrectAnswers || 0), 0);
     const totalNet = processedData.reduce((acc, t) => acc + (t._net || 0), 0);
     const successRate = totalQ > 0 ? (totalC / totalQ) * 100 : 0;
 
-    return { totalQ, totalC, totalW, totalNet, successRate, testCount: processedData.length };
+    return { totalQ, totalC, totalNet, successRate, testCount: processedData.length };
   }, [processedData]);
 
   // --- MAIN TIME SERIES CHART DATA ---
@@ -267,7 +266,7 @@ export default function StatsClient() {
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+            <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => router.back()}>
               <ArrowLeft className="w-6 h-6" />
             </Button>
             <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5 rounded-2xl shadow-lg shadow-indigo-500/20 text-white">
@@ -334,8 +333,8 @@ export default function StatsClient() {
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(142,142,147,0.15)" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontBold: 700, fill: COLORS.GRAY }} dy={10} />
-                                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontBold: 600, fill: COLORS.GRAY }} />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: COLORS.GRAY }} dy={10} />
+                                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600, fill: COLORS.GRAY }} />
                                 <ChartTooltip 
                                     content={<ChartTooltipContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" />}
                                 />
@@ -434,7 +433,10 @@ export default function StatsClient() {
                      {Array.from({ length: 28 }).map((_, i) => {
                          const d = subDays(new Date(), 27 - i);
                          const key = format(d, 'yyyy-MM-dd');
-                         const dayTests = processedData.filter(t => format(t._solvedDate, 'yyyy-MM-dd') === key);
+                         const dayTests = processedData.filter(t => {
+                             const tDate = t._solvedDate;
+                             return format(tDate, 'yyyy-MM-dd') === key;
+                         });
                          const count = dayTests.reduce((acc, t) => acc + (t.questionCount || 0), 0);
                          
                          let intensity = "bg-slate-100 dark:bg-slate-800";
@@ -481,3 +483,5 @@ function translateType(type: string) {
     };
     return types[type] || type;
 }
+
+export default BudgetStatsClient;
