@@ -1,9 +1,9 @@
-
 "use client";
 
 import * as React from "react";
 import { Test, JsonTestQuestion } from "@/lib/data";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { ChevronLeft, ChevronRight, CheckCircle2, LayoutGrid } from "lucide-react";
@@ -34,6 +34,7 @@ export function JSONWizardSolver({ test, questions, studentAnswers, onAnswer, on
                 <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
                     <div className="bg-indigo-600 p-4 text-white flex justify-between items-center font-bold">
                         <span>YAZILI SORU {currentIndex + 1} / {questions.length}</span>
+                        {currentAnswer && <Badge className="bg-emerald-500 text-white border-none">CEVAPLANDI</Badge>}
                     </div>
                     <div className="p-6 md:p-10 space-y-8">
                         <div className="p-8 rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 shadow-inner">

@@ -1,10 +1,10 @@
-
 "use client";
 
 import * as React from "react";
 import Image from "next/image";
 import { Test, QuickTestQuestion } from "@/lib/data";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { ChevronLeft, ChevronRight, CheckCircle2, ImageIcon, LayoutGrid } from "lucide-react";
 import { QuestionPalette } from "./shared-components";
@@ -34,7 +34,7 @@ export function MCQWizardSolver({ test, questions, studentAnswers, onAnswer, onF
                 <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
                     <div className="bg-indigo-600 p-4 text-white flex justify-between items-center font-bold">
                         <span className="uppercase text-xs tracking-widest">Soru {currentIndex + 1} / {questions.length}</span>
-                        {currentAnswer && <Badge className="bg-emerald-500">İŞARETLENDİ</Badge>}
+                        {currentAnswer && <Badge className="bg-emerald-500 text-white border-none">İŞARETLENDİ</Badge>}
                     </div>
                     <div className="p-6 md:p-8 space-y-8">
                         <div className="relative aspect-video w-full rounded-3xl overflow-hidden bg-slate-50 border border-slate-100 flex items-center justify-center group">
