@@ -406,7 +406,6 @@ export default function OpticalFormPage() {
                 </div>
             );
         }
-        // ... Diğer test tipleri inceleme görünümleri (Soru Bankası, Yazılı vb.)
     }
 
     // --- ÖĞRENCİ ÇÖZÜM GÖRÜNÜMÜ ---
@@ -436,10 +435,21 @@ export default function OpticalFormPage() {
                                             const currentOffset = questionOffset;
                                             questionOffset += subject.questionCount;
                                             
-                                            // Bu dersin kaç sorusu çözülmüş?
-                                            let solvedInSubject = 0;
+                                            // Bu dersin kaç sorusu çözülmüş? Anlık analiz için veriler
+                                            let sCorrect = 0, sIncorrect = 0, sEmpty = 0, solvedInSubject = 0;
                                             for(let i=1; i<=subject.questionCount; i++) {
-                                                if(mcqAnswers[(currentOffset + i).toString()]) solvedInSubject++;
+                                                const qNum = (currentOffset + i).toString();
+                                                const sAns = mcqAnswers[qNum];
+                                                const cAns = test.answerKey?.[qNum];
+                                                if(sAns) {
+                                                    solvedInSubject++;
+                                                    if(cAns) {
+                                                        if(sAns === cAns) sCorrect++;
+                                                        else sIncorrect++;
+                                                    }
+                                                } else {
+                                                    sEmpty++;
+                                                }
                                             }
 
                                             return (
@@ -461,6 +471,34 @@ export default function OpticalFormPage() {
                                                         </div>
                                                     </AccordionTrigger>
                                                     <AccordionContent className="p-4 md:p-8 pt-4 md:pt-6">
+                                                        
+                                                        {/* DERS BAZLI ANLIK SONUÇ PANELİ */}
+                                                        {test.answerKey && (
+                                                            <div className="mb-6 grid grid-cols-3 gap-2 bg-indigo-50/50 p-3 rounded-2xl border border-indigo-100/50 shadow-sm animate-in fade-in zoom-in-95 duration-300">
+                                                                <div className="flex flex-col items-center">
+                                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                                        <CheckCircle2 className="w-3 h-3 text-emerald-500"/>
+                                                                        <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-tighter">Doğru</span>
+                                                                    </div>
+                                                                    <span className="text-base font-black text-emerald-700">{sCorrect}</span>
+                                                                </div>
+                                                                <div className="flex flex-col items-center border-x border-indigo-100/50 px-2">
+                                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                                        <XCircle className="w-3 h-3 text-rose-500"/>
+                                                                        <span className="text-[9px] font-bold text-rose-600 uppercase tracking-tighter">Yanlış</span>
+                                                                    </div>
+                                                                    <span className="text-base font-black text-rose-700">{sIncorrect}</span>
+                                                                </div>
+                                                                <div className="flex flex-col items-center">
+                                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                                        <MinusCircle className="w-3 h-3 text-slate-400"/>
+                                                                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Boş</span>
+                                                                    </div>
+                                                                    <span className="text-base font-black text-slate-600">{sEmpty}</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-2 md:gap-3">
                                                             {Array.from({ length: subject.questionCount }).map((_, i) => {
                                                                 const qNum = (currentOffset + i + 1).toString();
@@ -544,7 +582,6 @@ export default function OpticalFormPage() {
                             </div>
 
                             {/* MOBİL ALT ÇUBUK (FİNAL BUTONU) */}
-                            {/* DÜZELTME: bottom-24 yapıldı ki alt menünün üzerinde kalsın */}
                             <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-[95%] lg:hidden z-50">
                                 <Card className="rounded-[1.5rem] bg-white/80 backdrop-blur-md border-slate-200 shadow-2xl p-2 flex gap-2">
                                     <AlertDialog>
@@ -561,10 +598,109 @@ export default function OpticalFormPage() {
                                 </Card>
                             </div>
                         </main>
+                    ) : test.sourceType === 'json' ? (
+                        /* YAZILI (JSON) TEST ÇÖZÜM MODU */
+                        <main className="flex-1 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 pb-32 animate-in fade-in duration-500">
+                             {/* Yazılı testler için mevcut yapı korunuyor */}
+                             <div className="lg:col-span-8 space-y-6">
+                                {test.jsonQuestions?.map((question, index) => {
+                                    const qNum = (index + 1).toString();
+                                    return (
+                                        <Card key={question.id} className="rounded-3xl border-slate-200 shadow-xl overflow-hidden">
+                                            <div className="bg-indigo-600 p-4 text-white flex items-center justify-between">
+                                                <Badge className="bg-white/20 text-white border-none font-black px-4">Soru {index + 1}</Badge>
+                                            </div>
+                                            <CardContent className="p-6 md:p-8 space-y-8">
+                                                <div className="text-lg md:text-xl font-medium leading-relaxed text-slate-800 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                                    {question.text}
+                                                </div>
+                                                <RadioGroup 
+                                                    value={mcqAnswers[qNum] || ""} 
+                                                    onValueChange={(v) => handleMcqAnswerChange(qNum, v)} 
+                                                    className="grid grid-cols-1 gap-3"
+                                                >
+                                                    {question.options.map((option, optIdx) => {
+                                                        const label = String.fromCharCode(65 + optIdx);
+                                                        return (
+                                                            <div key={optIdx} className="flex items-center">
+                                                                <RadioGroupItem value={label} id={`q${qNum}-${label}`} className="peer sr-only" />
+                                                                <Label 
+                                                                    htmlFor={`q${qNum}-${label}`}
+                                                                    className="flex-1 flex items-center gap-4 p-4 rounded-2xl border-2 border-slate-100 bg-white cursor-pointer transition-all hover:bg-slate-50 peer-data-[state=checked]:border-indigo-600 peer-data-[state=checked]:bg-indigo-50 peer-data-[state=checked]:shadow-md"
+                                                                >
+                                                                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-500 peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white">
+                                                                        {label}
+                                                                    </div>
+                                                                    <span className="font-semibold text-slate-700">{option}</span>
+                                                                </Label>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </RadioGroup>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
+                             </div>
+                             {/* ... Soru Gezgini ve Bitirme butonu ... */}
+                        </main>
+                    ) : test.sourceType === 'html' ? (
+                        /* HTML TEST ÇÖZÜM MODU */
+                        <main className="flex-1 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-4 pb-32 animate-in fade-in duration-500">
+                             <div className="lg:col-span-9 bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden h-[500px] lg:h-[85vh]">
+                                <iframe 
+                                    srcDoc={getIframeDocument(test.htmlContent || "")}
+                                    className="w-full h-full border-none"
+                                    title={test.title}
+                                    sandbox="allow-scripts allow-same-origin"
+                                />
+                             </div>
+                             <div className="lg:col-span-3">
+                                <Card className="rounded-3xl border-slate-200 shadow-xl h-[500px] lg:h-[85vh] flex flex-col overflow-hidden">
+                                    <div className="p-4 border-b bg-slate-50/50 flex justify-between items-center shrink-0">
+                                        <h3 className="font-black text-slate-800 text-sm flex items-center gap-2">
+                                            <LayoutGrid className="w-4 h-4 text-indigo-600" /> Cevap Formu
+                                        </h3>
+                                        <Badge className="bg-indigo-600 text-white font-bold">{Object.keys(mcqAnswers).length} / {test.questionCount}</Badge>
+                                    </div>
+                                    <ScrollArea className="flex-1">
+                                        <div className="p-4 space-y-3">
+                                            {Array.from({ length: test.questionCount }).map((_, i) => {
+                                                const qNum = (i + 1).toString();
+                                                return (
+                                                    <div key={qNum} className="flex items-center gap-3 p-2 rounded-xl bg-slate-50/50 border border-slate-100 hover:bg-white hover:border-indigo-200 transition-all group">
+                                                        <Badge className="w-7 h-7 rounded-lg flex items-center justify-center font-black bg-indigo-600 text-white p-0 text-[10px] shadow-sm shrink-0">{i + 1}</Badge>
+                                                        <RadioGroup 
+                                                            value={mcqAnswers[qNum] || ""} 
+                                                            onValueChange={(v) => handleMcqAnswerChange(qNum, v)} 
+                                                            className="flex flex-wrap gap-1"
+                                                        >
+                                                            {['A', 'B', 'C', 'D', 'E'].map(opt => (
+                                                                <div key={opt} className="flex items-center">
+                                                                    <RadioGroupItem value={opt} id={`q${qNum}-${opt}`} className="peer sr-only" />
+                                                                    <Label htmlFor={`q${qNum}-${opt}`} className="w-7 h-7 text-[10px] flex items-center justify-center rounded-lg border border-slate-200 bg-white cursor-pointer transition-all hover:bg-indigo-50 peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white peer-data-[state=checked]:border-indigo-600">
+                                                                        {opt}
+                                                                    </Label>
+                                                                </div>
+                                                            ))}
+                                                        </RadioGroup>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </ScrollArea>
+                                    <div className="p-4 border-t bg-slate-50/50">
+                                        <Button onClick={() => handleSubmit(false)} className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-lg shadow-indigo-500/20 transition-transform active:scale-95">
+                                            Sınavı Bitir
+                                        </Button>
+                                    </div>
+                                </Card>
+                             </div>
+                        </main>
                     ) : (
-                        /* DİĞER TEST TÜRLERİ (Soru Bankası, Kitap Takibi vb.) */
+                        /* STANDART GÖRSELLİ TEST ÇÖZÜM MODU */
                         <main className="flex-1 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 pb-32">
-                           {/* ... Orijinal diğer test görünümleri ... */}
+                             {/* Orijinal diğer test görünümleri ... */}
                         </main>
                     )}
                 </div>
@@ -572,4 +708,3 @@ export default function OpticalFormPage() {
         </Form>
     );
 }
-
