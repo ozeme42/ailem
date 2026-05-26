@@ -1,14 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Test, AnswerKey } from "@/lib/data";
+import { Test, AnswerKey, EvaluationStatus } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
     Check, X, HelpCircle, Save, BookOpen, 
-    AlertCircle, Trophy, MinusCircle, User, 
-    CheckCircle2, XCircle 
+    Trophy, MinusCircle, CheckCircle2, XCircle, 
+    MessageSquareText 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -77,7 +77,7 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
             <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
                 <div className="bg-slate-50 dark:bg-slate-950 px-8 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
                     <span>SORU NO</span>
-                    <span>{isMCQ ? "İŞARETLEME & ANALİZ" : "CEVAP GİRİŞİ"}</span>
+                    <span>DURUM & CEVAP</span>
                 </div>
 
                 <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -86,27 +86,41 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
                         const sAns = studentAnswers[qNum] || "";
                         const sText = studentTextAnswers[qNum] || "";
                         const cAns = test.answerKey?.[qNum];
+                        const evalStatus: EvaluationStatus = test.studentTextAnswersEvaluation?.[qNum] || 'unevaluated';
                         
-                        const isCorrect = isReviewMode && isMCQ && sAns === cAns;
-                        const isWrong = isReviewMode && isMCQ && sAns && sAns !== cAns;
-                        const isEmpty = isReviewMode && isMCQ && !sAns;
+                        let isCorrect = false;
+                        let isWrong = false;
+                        let isEmpty = false;
+
+                        if (isReviewMode) {
+                            if (isMCQ) {
+                                isCorrect = sAns === cAns;
+                                isWrong = sAns !== "" && sAns !== cAns;
+                                isEmpty = sAns === "";
+                            } else {
+                                isCorrect = evalStatus === 'correct';
+                                isWrong = evalStatus === 'incorrect';
+                                isEmpty = evalStatus === 'empty' || evalStatus === 'unevaluated';
+                            }
+                        }
 
                         return (
                             <div key={qNum} className={cn(
                                 "flex flex-col gap-4 px-8 py-6 transition-all",
-                                isCorrect ? "bg-emerald-500/5 dark:bg-emerald-500/[0.03]" : isWrong ? "bg-rose-500/5 dark:bg-rose-500/[0.03]" : isEmpty ? "bg-slate-50 dark:bg-white/[0.02]" : "hover:bg-slate-50/50 dark:hover:bg-slate-800/20"
+                                isCorrect ? "bg-emerald-500/[0.04] dark:bg-emerald-500/[0.02]" : 
+                                isWrong ? "bg-rose-500/[0.04] dark:bg-rose-500/[0.02]" : "hover:bg-slate-50/50 dark:hover:bg-slate-800/20"
                             )}>
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-6">
                                     {/* Soru No ve Durum İkonu */}
                                     <div className="flex items-center gap-4 w-24 shrink-0">
                                         <span className="text-sm font-black text-slate-400">{qNum}.</span>
-                                        {isReviewMode && isMCQ && (
+                                        {isReviewMode && (
                                             isCorrect ? (
-                                                <div className="bg-emerald-500 text-white p-1 rounded-full shadow-lg shadow-emerald-500/40"><Check className="w-3 h-3 stroke-[4]" /></div>
+                                                <div className="bg-emerald-500 text-white p-1 rounded-full shadow-lg shadow-emerald-500/40"><CheckCircle2 className="w-4 h-4" strokeWidth={3} /></div>
                                             ) : isWrong ? (
-                                                <div className="bg-rose-500 text-white p-1 rounded-full shadow-lg shadow-rose-500/40"><X className="w-3 h-3 stroke-[4]" /></div>
+                                                <div className="bg-rose-500 text-white p-1 rounded-full shadow-lg shadow-rose-500/40"><XCircle className="w-4 h-4" strokeWidth={3} /></div>
                                             ) : (
-                                                <div className="bg-slate-400 text-white p-1 rounded-full shadow-md"><HelpCircle className="w-3 h-3" /></div>
+                                                <div className="bg-slate-300 text-white p-1 rounded-full shadow-sm"><MinusCircle className="w-4 h-4" /></div>
                                             )
                                         )}
                                     </div>
@@ -115,7 +129,6 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
                                     <div className="flex-1 w-full">
                                         {isMCQ ? (
                                             <div className="flex flex-col gap-4">
-                                                {/* Harf Butonları - RENKLİ SONUÇ DURUMLARI BURADA */}
                                                 <div className="flex gap-2.5">
                                                     {['A', 'B', 'C', 'D', 'E'].map(opt => {
                                                         const isActive = sAns === opt;
@@ -136,11 +149,11 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
                                                                     "w-11 h-11 md:w-12 md:h-12 rounded-xl border-2 flex items-center justify-center font-black text-base transition-all",
                                                                     !isReviewMode ? (
                                                                         isActive 
-                                                                            ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/30 scale-105 z-10" 
+                                                                            ? "bg-indigo-600 border-indigo-600 text-white shadow-lg scale-105 z-10" 
                                                                             : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-400 hover:border-indigo-400"
                                                                     ) : (
                                                                         isCorrectOpt ? "bg-emerald-600 border-emerald-600 text-white shadow-lg scale-110 z-10 ring-2 ring-emerald-300 dark:ring-emerald-700" :
-                                                                        isStudentWrongOpt ? "bg-rose-600 border-rose-600 text-white shadow-md scale-100 opacity-100" :
+                                                                        isStudentWrongOpt ? "bg-rose-600 border-rose-600 text-white shadow-md" :
                                                                         "bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-300 opacity-30"
                                                                     )
                                                                 )}
@@ -154,7 +167,6 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
                                         ) : (
                                             <div className="flex flex-col gap-3">
                                                 <div className="space-y-1">
-                                                     {isReviewMode && <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Öğrenci Cevabı</label>}
                                                      <Input
                                                         disabled={isReviewMode}
                                                         value={sText}
@@ -162,18 +174,19 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
                                                         placeholder="Cevabı buraya yazın..."
                                                         className={cn(
                                                             "bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 h-12 rounded-xl focus:ring-indigo-500 font-medium transition-all",
-                                                            isReviewMode && "bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-100 dark:border-indigo-900/50 text-indigo-900 dark:text-indigo-200 font-bold"
+                                                            isReviewMode && (
+                                                                isCorrect ? "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 text-emerald-900 dark:text-emerald-100 font-bold" :
+                                                                isWrong ? "bg-rose-50 dark:bg-rose-900/10 border-rose-200 text-rose-900 dark:text-rose-100 font-bold" :
+                                                                "bg-slate-50 dark:bg-slate-800 border-slate-200 text-slate-500"
+                                                            )
                                                         )}
                                                     />
                                                 </div>
                                                 
-                                                {isReviewMode && test.answerKey?.[qNum] && (
-                                                    <div className="p-4 rounded-2xl bg-emerald-500/10 dark:bg-emerald-950/30 border-2 border-emerald-500/20 text-sm font-bold text-emerald-700 dark:text-emerald-400 shadow-inner">
-                                                        <div className="flex items-center gap-2 mb-1.5 opacity-60">
-                                                            <Check className="w-4 h-4" strokeWidth={3} />
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">Doğru Cevap Şablonu</span>
-                                                        </div>
-                                                        {test.answerKey[qNum]}
+                                                {isReviewMode && test.studentTextAnswersFeedback?.[qNum] && (
+                                                    <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-start gap-2">
+                                                        <MessageSquareText className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                                                        <p>"{test.studentTextAnswersFeedback[qNum]}"</p>
                                                     </div>
                                                 )}
                                             </div>

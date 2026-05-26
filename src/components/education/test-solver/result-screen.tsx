@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -28,7 +27,6 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
     const [isPaletteOpen, setIsPaletteOpen] = React.useState(false);
     const [examDetails, setExamDetails] = React.useState<PracticeExam | null>(null);
     
-    // Deneme sınavı ise şablonu çek
     React.useEffect(() => {
         if (test.sourceType === 'exam' && test.sourceId) {
             const unsub = onSinglePracticeExamUpdate(test.sourceId, setExamDetails);
@@ -36,7 +34,6 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
         }
     }, [test]);
 
-    // --- DEĞERLENDİRME HARİTASI ---
     const evaluationMap = React.useMemo(() => {
         const map: { [key: string]: EvaluationStatus } = {};
         const totalQ = questions.length || test.questionCount;
@@ -51,7 +48,6 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                 const sAns = test.studentAnswers?.[qNum];
                 let cAns = test.answerKey?.[qNum];
                 
-                // JSON Testleri için metin cevabı harfe çevir
                 if (test.sourceType === 'json' && questions[i-1]) {
                     const q = questions[i-1];
                     const foundIdx = q.options.findIndex((opt: string) => opt.trim() === q.answer?.trim());
@@ -82,7 +78,6 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
 
     const cAnsLabel = getCorrectAnswerLabel();
 
-    // --- DERS BAZLI GRUPLAMA (SADECE DENEMELER İÇİN) ---
     const subjectAnalysis = React.useMemo(() => {
         if (!examDetails) return null;
         
@@ -118,7 +113,6 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full items-start pb-20">
             <div className="lg:col-span-8 space-y-6">
-                {/* GENEL SKOR KARTI */}
                 <Card className="rounded-[2.5rem] border-none shadow-xl bg-gradient-to-br from-indigo-600 to-purple-700 text-white overflow-hidden relative">
                     <div className="absolute top-0 right-0 p-8 opacity-10"><Target className="w-32 h-32" /></div>
                     <CardContent className="p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
@@ -143,7 +137,6 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                     </CardContent>
                 </Card>
 
-                {/* DERS BAZLI ANALİZ (SADECE DENEME İÇİN) */}
                 {test.sourceType === 'exam' && subjectAnalysis && (
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 px-2">
@@ -188,7 +181,6 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                     </div>
                 )}
 
-                {/* SORU ANALİZ DETAYI */}
                 <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
                     <div className={cn("p-4 text-white flex justify-between items-center font-bold transition-colors shrink-0", 
                         status === 'correct' ? "bg-emerald-600" : status === 'incorrect' ? "bg-rose-600" : "bg-slate-600"
@@ -213,14 +205,10 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                         )}
 
                         {test.openEnded ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
-                                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Senin Cevabın</label>
-                                    <p className={cn("text-lg font-black", status === 'correct' ? "text-emerald-600" : status === 'incorrect' ? "text-rose-600" : "text-slate-400")}>{studentAnswer || "Boş"}</p>
-                                </div>
-                                <div className="space-y-2 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50">
-                                    <label className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">Doğru Cevap Anahtarı</label>
-                                    <p className="text-lg font-black text-emerald-700 dark:text-emerald-300">{test.answerKey?.[qNum] || "—"}</p>
+                            <div className="space-y-4">
+                                <div className="space-y-2 p-5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/20 border-2 border-indigo-100 dark:border-indigo-900/50">
+                                    <label className="text-[10px] font-black uppercase text-indigo-400 tracking-widest">Senin Cevabın</label>
+                                    <p className={cn("text-lg font-black whitespace-pre-wrap", status === 'correct' ? "text-emerald-700 dark:text-emerald-300" : status === 'incorrect' ? "text-rose-700 dark:text-rose-300" : "text-slate-400")}>{studentAnswer || "Boş"}</p>
                                 </div>
                             </div>
                         ) : (
@@ -268,16 +256,18 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                         )}
 
                         {feedback && (
-                            <div className="p-5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50">
-                                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2 flex items-center gap-1.5"><MessageSquareText className="w-3.5 h-3.5"/> Öğretmen Notu</p>
-                                <p className="text-sm text-indigo-900 dark:text-indigo-200 italic font-bold">"{feedback}"</p>
+                            <div className="p-5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 flex items-start gap-3">
+                                <MessageSquareText className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Öğretmen Notu</p>
+                                    <p className="text-sm text-indigo-900 dark:text-indigo-200 italic font-bold">"{feedback}"</p>
+                                </div>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
 
-            {/* SAĞ PANEL: SORU GEZGİNİ - Fixed and Scrollable */}
             <div className="lg:col-span-4 hidden lg:block sticky top-28">
                 <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col h-[calc(100vh-180px)] max-h-[700px]">
                     <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center font-bold text-slate-800 dark:text-slate-100 text-xs uppercase tracking-widest shrink-0">
@@ -324,7 +314,6 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                 </div>
             </div>
 
-            {/* MOBİL FAB: SORU GEZGİNİ */}
             <div className="lg:hidden">
                  <Button 
                     type="button"
