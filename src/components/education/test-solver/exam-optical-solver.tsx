@@ -3,13 +3,11 @@
 import * as React from "react";
 import { Test, PracticeExam, AnswerKey } from "@/lib/data";
 import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { onSinglePracticeExamUpdate } from "@/lib/dataService";
 import { Check, X, Trophy, ListChecks, ChevronRight, AlertCircle, HelpCircle, BarChart3, Eye, EyeOff, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface ExamOpticalSolverProps {
     test: Test;
@@ -131,17 +129,13 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                     
                     const stats = getSubjectStats(subject, offset);
                     
-                    // İşaretlenen soru sayısı
                     const answeredInSubject = Object.keys(studentAnswers).filter(k => {
                         const n = parseInt(k);
                         return n > offset && n <= offset + subject.questionCount && studentAnswers[k];
                     }).length;
 
-                    // %90 barajı kontrolü
                     const threshold = Math.ceil(subject.questionCount * 0.9);
                     const isThresholdReached = answeredInSubject >= threshold;
-
-                    // Sonuçlar açık mı? (İnceleme modundaysa her zaman açık, değilse butona basılmış olmalı)
                     const isRevealed = isReviewMode || revealedSubjects.has(subject.id);
 
                     return (
@@ -161,7 +155,6 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                 
                                 <div className="flex items-center gap-3 shrink-0 mr-4">
                                     {!isRevealed ? (
-                                        // Buton sadece %90 işaretlenince ortaya çıkar
                                         (isReviewMode || isThresholdReached) && (
                                             <Button 
                                                 variant="outline" 
@@ -221,8 +214,6 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                         const cAns = test.answerKey?.[qNum];
                                         const isWrong = sAns && sAns !== cAns;
                                         const isCorrect = sAns && sAns === cAns;
-
-                                        // Sonuçlar butona basıldığında veya inceleme modunda görünür
                                         const showResult = isRevealed;
 
                                         return (
@@ -240,35 +231,41 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                                     {showResult && sAns && isWrong && <X className="w-3.5 h-3.5 text-rose-500" strokeWidth={4} />}
                                                 </div>
 
-                                                <RadioGroup value={sAns} onValueChange={(v) => !isReviewMode && onAnswer(qNum, v)} className="flex justify-between items-center gap-1.5">
+                                                <div className="flex justify-between items-center gap-1.5">
                                                     {['A', 'B', 'C', 'D', 'E'].map(opt => {
+                                                        const isSelected = sAns === opt;
                                                         const isCorrectOpt = showResult && opt === cAns;
                                                         const isStudentWrongOpt = showResult && opt === sAns && opt !== cAns;
 
                                                         return (
-                                                            <div key={opt} className="flex-1">
-                                                                <RadioGroupItem value={opt} id={`q${qNum}-opt-${opt}`} className="sr-only peer" disabled={isReviewMode} />
-                                                                <Label 
-                                                                    htmlFor={`q${qNum}-opt-${opt}`}
-                                                                    className={cn(
-                                                                        "flex items-center justify-center h-10 w-full rounded-xl border transition-all text-xs font-black cursor-pointer",
-                                                                        !showResult ? (
-                                                                            sAns === opt 
-                                                                                ? "bg-indigo-600 border-indigo-600 text-white shadow-md scale-105"
-                                                                                : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 hover:border-indigo-400"
-                                                                        ) : (
-                                                                            isCorrectOpt ? "bg-emerald-600 border-emerald-600 text-white shadow-md scale-110 z-10 ring-2 ring-emerald-300 ring-offset-2" :
-                                                                            isStudentWrongOpt ? "bg-rose-600 border-rose-600 text-white shadow-md" :
-                                                                            "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-300 opacity-50"
-                                                                        )
-                                                                    )}
-                                                                >
-                                                                    {opt}
-                                                                </Label>
-                                                            </div>
+                                                            <button 
+                                                                key={opt}
+                                                                type="button"
+                                                                disabled={isReviewMode}
+                                                                onClick={() => {
+                                                                    if (isReviewMode) return;
+                                                                    // Eğer zaten seçiliyse temizle (Toggle logic)
+                                                                    const newValue = isSelected ? "" : opt;
+                                                                    onAnswer(qNum, newValue);
+                                                                }}
+                                                                className={cn(
+                                                                    "flex items-center justify-center h-10 flex-1 rounded-xl border transition-all text-xs font-black cursor-pointer",
+                                                                    !showResult ? (
+                                                                        isSelected 
+                                                                            ? "bg-indigo-600 border-indigo-600 text-white shadow-md scale-105"
+                                                                            : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 hover:border-indigo-400"
+                                                                    ) : (
+                                                                        isCorrectOpt ? "bg-emerald-600 border-emerald-600 text-white shadow-md scale-110 z-10 ring-2 ring-emerald-300 ring-offset-2" :
+                                                                        isStudentWrongOpt ? "bg-rose-600 border-rose-600 text-white shadow-md" :
+                                                                        "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-300 opacity-50"
+                                                                    )
+                                                                )}
+                                                            >
+                                                                {opt}
+                                                            </button>
                                                         );
                                                     })}
-                                                </RadioGroup>
+                                                </div>
                                             </div>
                                         );
                                     })}
