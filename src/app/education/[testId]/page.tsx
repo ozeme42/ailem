@@ -98,46 +98,66 @@ export default function UnifiedTestPage() {
         }
     };
 
-    // --- ÖDEVİ BİTİR ---
+    // --- ÖDEVİ BİTİR VE DEĞERLENDİRMEYİ TAMAMLA ---
     const handleFinishTest = async () => {
         if (!test || !familyId) return;
         setIsSubmitting(true);
         try {
-            const isManualEvaluation = test.openEnded === true;
-            let status: Test['status'] = isManualEvaluation ? 'Değerlendirme Bekliyor' : 'Sonuçlandı';
+            const isManualTest = test.openEnded === true;
+            const isEvaluationComplete = test.status === 'Değerlendirme Bekliyor';
+            
+            // Yeni Durum Belirleme
+            let finalStatus: Test['status'] = 'Sonuçlandı';
+            if (!isEvaluationComplete && isManualTest) {
+                finalStatus = 'Değerlendirme Bekliyor';
+            }
             
             let updatedData: Partial<Test> = { 
                 studentAnswers,
                 studentTextAnswers,
-                status: status
+                status: finalStatus,
+                studentTextAnswersEvaluation: evaluations,
+                studentTextAnswersFeedback: feedbacks,
+                updatedAt: new Date().toISOString()
             };
 
-            // Otomatik puanlama (MCQ türleri için)
-            if (!isManualEvaluation) {
+            // Skor Hesaplama (Biten Sınavlar İçin)
+            if (finalStatus === 'Sonuçlandı') {
                 let correct = 0, incorrect = 0, empty = 0;
-                const finalAnswerKey: Record<string, string> = { ...test.answerKey };
-                
-                if (test.sourceType === 'json' && test.jsonQuestions) {
-                    test.jsonQuestions.forEach((q, i) => {
-                        finalAnswerKey[(i+1).toString()] = q.answer;
+                const totalQ = questions.length || test.questionCount;
+
+                if (isManualTest) {
+                    // Manuel Değerlendirmeden Skor Üret
+                    Object.values(evaluations).forEach(val => {
+                        if (val === 'correct') correct++;
+                        else if (val === 'incorrect') incorrect++;
+                        else if (val === 'empty') empty++;
                     });
-                }
-
-                const totalQ = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
-                for (let i = 1; i <= totalQ; i++) {
-                    const qNum = i.toString();
-                    const sAns = studentAnswers[qNum];
-                    let cAns = finalAnswerKey[qNum];
-
-                    if (test.sourceType === 'json' && test.jsonQuestions?.[i-1]) {
-                        const q = test.jsonQuestions[i-1];
-                        const foundIdx = q.options.findIndex((o:string) => o.trim() === q.answer?.trim());
-                        if (foundIdx !== -1) cAns = String.fromCharCode(65 + foundIdx);
+                } else {
+                    // Otomatik Değerlendirme (MCQ)
+                    const finalAnswerKey: Record<string, string> = { ...test.answerKey };
+                    if (test.sourceType === 'json' && test.jsonQuestions) {
+                        test.jsonQuestions.forEach((q, i) => {
+                            finalAnswerKey[(i+1).toString()] = q.answer;
+                        });
                     }
 
-                    if (!sAns) empty++;
-                    else if (sAns === cAns) correct++;
-                    else incorrect++;
+                    for (let i = 1; i <= totalQ; i++) {
+                        const qNum = i.toString();
+                        const sAns = studentAnswers[qNum];
+                        let cAns = finalAnswerKey[qNum];
+
+                        // JSON için metin cevabı harfe dönüştür
+                        if (test.sourceType === 'json' && test.jsonQuestions?.[i-1]) {
+                            const q = test.jsonQuestions[i-1];
+                            const foundIdx = q.options.findIndex((o:string) => o.trim() === q.answer?.trim());
+                            if (foundIdx !== -1) cAns = String.fromCharCode(65 + foundIdx);
+                        }
+
+                        if (!sAns) empty++;
+                        else if (sAns === cAns) correct++;
+                        else incorrect++;
+                    }
                 }
 
                 updatedData.correctAnswers = correct;
@@ -147,14 +167,16 @@ export default function UnifiedTestPage() {
             }
 
             await updateTest(test.id, updatedData);
-            if (updatedData.status === 'Sonuçlandı') {
+            
+            if (finalStatus === 'Sonuçlandı') {
                 await checkAndAwardBadges(test.studentId, familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
-                toast({ title: "Ödev Bitti! 🎉" });
+                toast({ title: isEvaluationComplete ? "Değerlendirme Tamamlandı! 🎓" : "Ödev Bitti! 🎉" });
             } else {
                 toast({ title: "Cevaplar Gönderildi! ✅ Değerlendirme bekleniyor." });
                 router.push('/education');
             }
         } catch (e) { 
+            console.error("Test finish error:", e);
             toast({ title: "Hata", variant: "destructive" }); 
         } finally { 
             setIsSubmitting(false); 
@@ -224,11 +246,20 @@ export default function UnifiedTestPage() {
             <main className="max-w-7xl mx-auto w-full flex-1">
                 {test.status === 'Değerlendirme Bekliyor' ? (
                     isEvaluationMode ? (
-                        <EvaluationScreen test={test} questions={questions} evaluations={evaluations} feedbacks={feedbacks} onEvaluate={(q, s) => setEvaluations(prev => ({...prev, [q]: s}))} onFeedback={(q, f) => setFeedbacks(prev => ({...prev, [q]: f}))} onFinish={handleFinishTest} />
+                        <EvaluationScreen 
+                            test={test} 
+                            questions={questions} 
+                            evaluations={evaluations} 
+                            feedbacks={feedbacks} 
+                            onEvaluate={(q, s) => setEvaluations(prev => ({...prev, [q]: s}))} 
+                            onFeedback={(q, f) => setFeedbacks(prev => ({...prev, [q]: f}))} 
+                            onFinish={handleFinishTest} 
+                        />
                     ) : (
                         <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
                             <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center shadow-inner"><GraduationCap className="w-10 h-10 text-amber-600" /></div>
                             <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100">Değerlendirme Bekliyor</h2>
+                            <p className="text-slate-500 max-w-xs mx-auto">Bu ödevin sonuçlarını görebilmek için öğretmen değerlendirmesi gerekiyor.</p>
                             <Link href="/education"><Button variant="outline" className="rounded-xl px-8 h-12 font-bold">Geri Dön</Button></Link>
                         </div>
                     )

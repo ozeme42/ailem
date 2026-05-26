@@ -38,12 +38,13 @@ export function EvaluationScreen({ test, questions, evaluations, feedbacks, onEv
             <div className="lg:col-span-8 space-y-6">
                 <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
                     <div className="bg-indigo-600 p-4 text-white flex justify-between items-center font-bold">
-                        <span>DEĞERLENDİRME: Soru {currentIndex + 1} / {questions.length}</span>
+                        <span className="uppercase text-xs tracking-widest">DEĞERLENDİRME: Soru {currentIndex + 1} / {questions.length}</span>
+                        {currentEval !== 'unevaluated' && <Badge className="bg-white/20 text-white border-none">PUANLANDI</Badge>}
                     </div>
                     <div className="p-6 md:p-8 space-y-6">
                         {test.sourceType === 'json' ? (
                             <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-center italic text-lg font-bold">
-                                "{currentQuestion.text}"
+                                "{currentQuestion?.text}"
                             </div>
                         ) : (
                             <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 flex items-center justify-center">
@@ -108,7 +109,7 @@ export function EvaluationScreen({ test, questions, evaluations, feedbacks, onEv
                             Sonraki <ChevronRight className="ml-2 h-6 w-6"/>
                         </Button>
                     ) : (
-                        <Button size="lg" className="flex-1 h-14 rounded-2xl font-bold bg-emerald-600 text-white" onClick={onFinish}>
+                        <Button size="lg" className="flex-1 h-14 rounded-2xl font-bold bg-emerald-600 text-white shadow-lg" onClick={onFinish}>
                             <Save className="mr-2 h-6 w-6"/> Puanlamayı Bitir
                         </Button>
                     )}
@@ -118,7 +119,7 @@ export function EvaluationScreen({ test, questions, evaluations, feedbacks, onEv
             {/* Palette - Desktop */}
             <div className="lg:col-span-4 hidden lg:block sticky top-28">
                 <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-                    <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center font-bold text-slate-800 text-sm uppercase tracking-wider">Durum Paneli</div>
+                    <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center font-bold text-slate-800 text-xs uppercase tracking-widest">Soru Listesi</div>
                     <ScrollArea className="max-h-[60vh]">
                         <QuestionPalette 
                             total={questions.length} 
@@ -164,4 +165,3 @@ export function EvaluationScreen({ test, questions, evaluations, feedbacks, onEv
         </div>
     );
 }
-
