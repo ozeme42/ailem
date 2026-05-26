@@ -14,7 +14,7 @@ import { db } from "@/lib/firebase";
 import { updateTest, checkAndAwardBadges } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 
-// --- MODÜLER BİLEŞENLER (TÜMÜ AYRI DOSYADA) ---
+// --- MODÜLER BİLEŞENLER ---
 import { MCQWizardSolver } from "@/components/education/test-solver/mcq-wizard-solver";
 import { OpenEndedWizardSolver } from "@/components/education/test-solver/open-ended-wizard-solver";
 import { JSONWizardSolver } from "@/components/education/test-solver/json-wizard-solver";
@@ -38,7 +38,6 @@ export default function UnifiedTestPage() {
     const [questions, setQuestions] = React.useState<any[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     
-    // Form durumları
     const [studentAnswers, setStudentAnswers] = React.useState<{ [key: string]: string | null }>({});
     const [studentTextAnswers, setStudentTextAnswers] = React.useState<{ [key: string]: string }>({});
     const [evaluations, setEvaluations] = React.useState<{ [key: string]: EvaluationStatus }>({});
@@ -56,16 +55,14 @@ export default function UnifiedTestPage() {
                 const data = { id: docSnap.id, ...docSnap.data() } as Test;
                 setTest(data);
                 
-                // State'leri veritabanı ile eşitle
                 setStudentAnswers(data.studentAnswers || {});
                 setStudentTextAnswers(data.studentTextAnswers || {});
                 setEvaluations(data.studentTextAnswersEvaluation || {});
                 setFeedbacks(data.studentTextAnswersFeedback || {});
 
-                // Soru kaynağına göre soruları çek
                 if (data.sourceType === 'json' && data.jsonQuestions) {
                     setQuestions(data.jsonQuestions);
-                } else {
+                } else if (data.sourceType !== 'exam' && data.sourceType !== 'html') {
                     const qCol = collection(db, 'tests', testId, 'questions');
                     const qSnap = await getDocs(query(qCol, orderBy("questionNumber")));
                     setQuestions(qSnap.docs.map(d => d.data() as QuickTestQuestion));
@@ -100,18 +97,14 @@ export default function UnifiedTestPage() {
         }
     };
 
-    // --- ÖDEVİ BİTİR (ÖĞRENCİ) ---
+    // --- ÖDEVİ BİTİR ---
     const handleFinishTest = async () => {
         if (!test || !familyId) return;
         setIsSubmitting(true);
         try {
-            // Otomatik Puanlama Koşulları:
-            // 1. Tip Yazılı (JSON) ise HER ZAMAN otomatiktir.
-            // 2. Tip Deneme veya HTML ise HER ZAMAN otomatiktir.
-            // 3. Soru Bankası ise ve openEnded DEĞİLSE otomatiktir.
             const isAutoGraded = test.sourceType === 'json' || test.sourceType === 'exam' || test.sourceType === 'html' || !test.openEnded;
-            
             let status: Test['status'] = isAutoGraded ? 'Sonuçlandı' : 'Değerlendirme Bekliyor';
+            
             let updatedData: Partial<Test> = { 
                 studentAnswers,
                 studentTextAnswers,
@@ -120,23 +113,20 @@ export default function UnifiedTestPage() {
 
             if (isAutoGraded) {
                 let correct = 0, incorrect = 0, empty = 0;
-                
-                // Cevap Anahtarını Hazırla
                 const finalAnswerKey: Record<string, string> = { ...test.answerKey };
+                
                 if (test.sourceType === 'json' && test.jsonQuestions) {
                     test.jsonQuestions.forEach((q, i) => {
                         finalAnswerKey[(i+1).toString()] = q.answer;
                     });
                 }
 
-                // Puanla
                 const totalQ = questions.length || test.questionCount;
                 for (let i = 1; i <= totalQ; i++) {
                     const qNum = i.toString();
                     const sAns = studentAnswers[qNum];
                     let cAns = finalAnswerKey[qNum];
 
-                    // JSON için harfe çevir
                     if (test.sourceType === 'json' && questions[i-1]) {
                         const q = questions[i-1];
                         const foundIdx = q.options.findIndex((o:string) => o.trim() === q.answer?.trim());
@@ -153,20 +143,16 @@ export default function UnifiedTestPage() {
                 updatedData.emptyAnswers = empty;
                 updatedData.score = totalQ > 0 ? (correct / totalQ) * 100 : 0;
                 updatedData.answerKey = finalAnswerKey; 
-                
-                await checkAndAwardBadges(test.studentId, familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
             }
 
             await updateTest(test.id, updatedData);
+            if (isAutoGraded) await checkAndAwardBadges(test.studentId, familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
+            
             toast({ title: isAutoGraded ? "Ödev Bitti! 🎉" : "Cevaplar Gönderildi! ✅" });
             router.push('/education');
-        } catch (e) { 
-            console.error(e);
-            toast({ title: "Hata", variant: "destructive" }); 
-        } finally { setIsSubmitting(false); }
+        } catch (e) { toast({ title: "Hata", variant: "destructive" }); } finally { setIsSubmitting(false); }
     };
 
-    // --- DEĞERLENDİRMEYİ KAYDET (EBEVEYN) ---
     const handleFinishEvaluation = async () => {
         if (!test || !familyId) return;
         setIsSubmitting(true);
@@ -192,88 +178,78 @@ export default function UnifiedTestPage() {
 
             await updateTest(test.id, updatedData);
             await checkAndAwardBadges(test.studentId, familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
-            
             toast({ title: "Değerlendirme Tamamlandı! ✨" });
             router.push('/education');
-        } catch (e) { toast({ title: "Hata", variant: "destructive" }); }
-        finally { setIsSubmitting(false); }
+        } catch (e) { toast({ title: "Hata", variant: "destructive" }); } finally { setIsSubmitting(false); }
     };
 
     if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-950"><Loader2 className="w-12 h-12 animate-spin text-indigo-600" /></div>;
     if (!test) return <div className="flex flex-col items-center justify-center h-screen space-y-4"><h1>Ödev Bulunamadı</h1><Link href="/education"><Button>Geri Dön</Button></Link></div>;
 
-    // --- RENDER ROUTER (MANTIKSAL YÖNLENDİRİCİ) ---
-    const isSolveMode = test.status === 'Atandı';
+    // --- ÖZEL YÖNLENDİRME: DENEME SINAVI (EXAM) ---
+    // Deneme sınavı tipindeyse her şeyi tek dosyadan yönetiyoruz
+    if (test.sourceType === 'exam') {
+        return (
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col p-4 md:p-8">
+                <header className="max-w-5xl mx-auto w-full mb-8 flex justify-between items-center bg-white dark:bg-slate-900/50 backdrop-blur-xl p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div className="flex items-center gap-4">
+                        <Button variant="ghost" size="icon" onClick={() => router.push('/education')} className="rounded-full hover:bg-slate-100"><ArrowLeft/></Button>
+                        <div><h1 className="text-lg font-black leading-none text-slate-800 dark:text-slate-100">{test.title}</h1><p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">DENEME SINAVI</p></div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        {test.status === 'Sonuçlandı' ? <Badge className="bg-emerald-600 px-4 py-1 rounded-full font-black text-white">BİTTİ</Badge> : <TestTimer durationMinutes={test.durationMinutes || 120} onTimeUp={handleFinishTest} />}
+                    </div>
+                </header>
+                <main className="max-w-5xl mx-auto w-full flex-1">
+                    <ExamOpticalSolver 
+                        test={test} 
+                        studentAnswers={studentAnswers} 
+                        onAnswer={(q,a) => handleAnswerUpdate(q,a)} 
+                        onFinish={handleFinishTest} 
+                        isReviewMode={test.status === 'Sonuçlandı'}
+                    />
+                </main>
+            </div>
+        );
+    }
+
+    // --- DİĞER TESTLERİN MODLARI ---
     const isReviewMode = test.status === 'Sonuçlandı';
     const isAwaitingEvaluation = test.status === 'Değerlendirme Bekliyor';
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col p-4 md:p-8">
-            {/* GLOBAL HEADER */}
             <header className="max-w-7xl mx-auto w-full mb-8 flex justify-between items-center bg-white dark:bg-slate-900/50 backdrop-blur-xl p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" onClick={() => router.push('/education')} className="rounded-full hover:bg-slate-100"><ArrowLeft/></Button>
-                    <div>
-                        <h1 className="text-lg font-black leading-none text-slate-800 dark:text-slate-100">{test.title}</h1>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">{test.subject}</p>
-                    </div>
+                    <div><h1 className="text-lg font-black leading-none text-slate-800 dark:text-slate-100">{test.title}</h1><p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">{test.subject}</p></div>
                 </div>
-                
                 <div className="flex items-center gap-4">
-                    {isSolveMode && test.durationMinutes && <TestTimer durationMinutes={test.durationMinutes} onTimeUp={handleFinishTest} />}
-                    {isReviewMode && <Badge className="bg-emerald-600 px-4 py-1 rounded-full font-black text-white">BİTTİ</Badge>}
-                    {isAwaitingEvaluation && <Badge className="bg-amber-600 px-4 py-1 rounded-full font-black text-white">DEĞERLENDİRİLİYOR</Badge>}
+                    {test.status === 'Atandı' && test.durationMinutes && <TestTimer durationMinutes={test.durationMinutes} onTimeUp={handleFinishTest} />}
+                    {test.status === 'Sonuçlandı' && <Badge className="bg-emerald-600 px-4 py-1 rounded-full font-black text-white">BİTTİ</Badge>}
+                    {test.status === 'Değerlendirme Bekliyor' && <Badge className="bg-amber-600 px-4 py-1 rounded-full font-black text-white">DEĞERLENDİRİLİYOR</Badge>}
                 </div>
             </header>
 
             <main className="max-w-7xl mx-auto w-full flex-1">
-                {/* 1. MOD: SONUÇ (İnceleme) */}
                 {isReviewMode && <ResultScreen test={test} questions={questions} />}
-
-                {/* 2. MOD: DEĞERLENDİRME (Ebeveyn) */}
                 {isAwaitingEvaluation && (
                     isEvaluationMode ? (
-                        <EvaluationScreen 
-                            test={test} 
-                            questions={questions} 
-                            evaluations={evaluations} 
-                            feedbacks={feedbacks} 
-                            onEvaluate={(q, s) => setEvaluations(prev => ({...prev, [q]: s}))}
-                            onFeedback={(q, f) => setFeedbacks(prev => ({...prev, [q]: f}))}
-                            onFinish={handleFinishEvaluation}
-                        />
+                        <EvaluationScreen test={test} questions={questions} evaluations={evaluations} feedbacks={feedbacks} onEvaluate={(q, s) => setEvaluations(prev => ({...prev, [q]: s}))} onFeedback={(q, f) => setFeedbacks(prev => ({...prev, [q]: f}))} onFinish={handleFinishEvaluation} />
                     ) : (
                         <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
-                            <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center shadow-inner">
-                                <GraduationCap className="w-10 h-10 text-amber-600" />
-                            </div>
-                            <div className="space-y-2">
-                                <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100">Değerlendirme Bekliyor</h2>
-                                <p className="text-slate-500 max-w-sm">Bu ödevin sonuçlarını ebeveynin puanlayınca görebileceksin.</p>
-                            </div>
+                            <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center shadow-inner"><GraduationCap className="w-10 h-10 text-amber-600" /></div>
+                            <div className="space-y-2"><h2 className="text-2xl font-black text-slate-800 dark:text-slate-100">Değerlendirme Bekliyor</h2><p className="text-slate-500 max-w-sm">Sonuçlarını ebeveynin puanlayınca görebileceksin.</p></div>
                             <Link href="/education"><Button variant="outline" className="rounded-xl px-8 h-12 font-bold">Geri Dön</Button></Link>
                         </div>
                     )
                 )}
-
-                {/* 3. MOD: ÇÖZME (Öğrenci) */}
-                {isSolveMode && (
+                {!isReviewMode && !isAwaitingEvaluation && (
                     <>
-                        {test.sourceType === 'json' && (
-                            <JSONWizardSolver test={test} questions={questions} studentAnswers={studentAnswers} onAnswer={(q,a) => handleAnswerUpdate(q,a,false)} onFinish={handleFinishTest} />
-                        )}
-                        {test.sourceType === 'exam' && (
-                            <ExamOpticalSolver test={test} studentAnswers={studentAnswers} onAnswer={(q,a) => handleAnswerUpdate(q,a,false)} onFinish={handleFinishTest} />
-                        )}
-                        {test.sourceType === 'html' && (
-                            <HTMLDocumentSolver test={test} studentAnswers={studentAnswers} onAnswer={(q,a) => handleAnswerUpdate(q,a,false)} onFinish={handleFinishTest} />
-                        )}
-                        {(test.sourceType === 'bank' || test.sourceType === 'quick' || test.sourceType === 'mistake') && (
-                            test.openEnded ? (
-                                <OpenEndedWizardSolver test={test} questions={questions} studentTextAnswers={studentTextAnswers} onAnswer={(q,a) => handleAnswerUpdate(q,a,true)} onFinish={handleFinishTest} />
-                            ) : (
-                                <MCQWizardSolver test={test} questions={questions} studentAnswers={studentAnswers} onAnswer={(q,a) => handleAnswerUpdate(q,a,false)} onFinish={handleFinishTest} />
-                            )
+                        {test.sourceType === 'json' && <JSONWizardSolver test={test} questions={questions} studentAnswers={studentAnswers} onAnswer={(q,a) => handleAnswerUpdate(q,a)} onFinish={handleFinishTest} />}
+                        {test.sourceType === 'html' && <HTMLDocumentSolver test={test} studentAnswers={studentAnswers} onAnswer={(q,a) => handleAnswerUpdate(q,a)} onFinish={handleFinishTest} />}
+                        {(test.sourceType === 'bank' || test.sourceType === 'quick' || test.sourceType === 'mistake' || test.sourceType === 'trackedBook') && (
+                            test.openEnded ? <OpenEndedWizardSolver test={test} questions={questions} studentTextAnswers={studentTextAnswers} onAnswer={(q,a) => handleAnswerUpdate(q,a,true)} onFinish={handleFinishTest} /> : <MCQWizardSolver test={test} questions={questions} studentAnswers={studentAnswers} onAnswer={(q,a) => handleAnswerUpdate(q,a)} onFinish={handleFinishTest} />
                         )}
                     </>
                 )}
