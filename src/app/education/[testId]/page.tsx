@@ -134,7 +134,7 @@ export default function UnifiedTestPage() {
                         else if (val === 'empty' || val === 'unevaluated') empty++;
                     });
                 } else {
-                    // Otomatik Değerlendirme (MCQ & JSON)
+                    // Otomatik Değerlendirme (MCQ & JSON & HTML)
                     const finalAnswerKey: Record<string, string> = { ...test.answerKey };
                     if (test.sourceType === 'json' && test.jsonQuestions) {
                         test.jsonQuestions.forEach((q, i) => {
@@ -154,7 +154,7 @@ export default function UnifiedTestPage() {
                             if (foundIdx !== -1) cAns = String.fromCharCode(65 + foundIdx);
                         }
 
-                        // BOŞ KONTROLÜ GÜÇLENDİRİLDİ
+                        // BOŞ KONTROLÜ
                         if (!sAns || sAns.trim() === "") {
                             empty++;
                         } else if (sAns === cAns) {
@@ -219,6 +219,14 @@ export default function UnifiedTestPage() {
                             test={test}
                             studentAnswers={studentAnswers}
                             studentTextAnswers={studentTextAnswers}
+                            onAnswer={() => {}}
+                            onFinish={() => {}}
+                            isReviewMode={true}
+                        />
+                    ) : test.sourceType === 'html' ? (
+                        <HTMLDocumentSolver
+                            test={test}
+                            studentAnswers={studentAnswers}
                             onAnswer={() => {}}
                             onFinish={() => {}}
                             isReviewMode={true}
