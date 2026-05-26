@@ -5,11 +5,11 @@ import * as React from "react";
 import Image from "next/image";
 import { Test, QuickTestQuestion } from "@/lib/data";
 import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { ChevronLeft, ChevronRight, CheckCircle2, ImageIcon, LayoutGrid } from "lucide-react";
 import { QuestionPalette } from "./shared-components";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 interface MCQWizardSolverProps {
@@ -29,52 +29,55 @@ export function MCQWizardSolver({ test, questions, studentAnswers, onAnswer, onF
     const currentAnswer = studentAnswers[qNumStr] || "";
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full items-start pb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full items-start pb-20 animate-in fade-in duration-500">
             <div className="lg:col-span-8 space-y-6">
                 <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
                     <div className="bg-indigo-600 p-4 text-white flex justify-between items-center font-bold">
-                        <span>SORU {currentIndex + 1} / {questions.length}</span>
+                        <span className="uppercase text-xs tracking-widest">Soru {currentIndex + 1} / {questions.length}</span>
+                        {currentAnswer && <Badge className="bg-emerald-500">İŞARETLENDİ</Badge>}
                     </div>
-                    <div className="p-6 md:p-10 space-y-8">
-                        <div className="relative aspect-video w-full rounded-3xl overflow-hidden bg-slate-50 border border-slate-100 flex items-center justify-center">
+                    <div className="p-6 md:p-8 space-y-8">
+                        <div className="relative aspect-video w-full rounded-3xl overflow-hidden bg-slate-50 border border-slate-100 flex items-center justify-center group">
                             {currentQuestion?.imageUrl ? (
-                                <Image src={currentQuestion.imageUrl} alt="Soru" fill className="object-contain p-4" />
+                                <Image src={currentQuestion.imageUrl} alt="Soru" fill className="object-contain p-4 transition-transform duration-500 group-hover:scale-105" />
                             ) : <ImageIcon className="w-16 h-16 text-slate-200" />}
                         </div>
 
                         <div className="max-w-md mx-auto">
-                            <RadioGroup value={currentAnswer} onValueChange={(v) => onAnswer(qNumStr, v)} className="grid grid-cols-5 gap-3">
-                                {['A', 'B', 'C', 'D', 'E'].map(opt => (
-                                    <div key={opt} className="flex flex-col items-center gap-2">
-                                        <RadioGroupItem value={opt} id={`q-opt-${opt}`} className="sr-only peer" />
-                                        <Label 
-                                            htmlFor={`q-opt-${opt}`}
+                            <div className="flex justify-between items-center gap-2">
+                                {['A', 'B', 'C', 'D', 'E'].map(opt => {
+                                    const isActive = currentAnswer === opt;
+                                    return (
+                                        <button 
+                                            key={opt}
+                                            type="button"
+                                            onClick={() => onAnswer(qNumStr, isActive ? "" : opt)}
                                             className={cn(
-                                                "w-12 h-12 rounded-2xl border-2 flex items-center justify-center text-lg font-black cursor-pointer transition-all",
-                                                currentAnswer === opt 
-                                                    ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/30 scale-110" 
-                                                    : "bg-white border-slate-200 text-slate-400 hover:border-indigo-400 hover:text-indigo-600"
+                                                "w-12 h-12 md:w-16 md:h-16 rounded-2xl border-2 flex items-center justify-center text-lg md:text-xl font-black transition-all active:scale-90",
+                                                isActive 
+                                                    ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/30 scale-110 z-10" 
+                                                    : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-400 hover:border-indigo-400"
                                             )}
                                         >
                                             {opt}
-                                        </Label>
-                                    </div>
-                                ))}
-                            </RadioGroup>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div className="flex justify-between gap-4">
-                    <Button type="button" variant="outline" size="lg" className="flex-1 h-14 rounded-2xl font-bold" onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))} disabled={currentIndex === 0}>
+                    <Button variant="outline" size="lg" className="flex-1 h-14 rounded-2xl font-bold" onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))} disabled={currentIndex === 0}>
                         <ChevronLeft className="mr-2 h-6 w-6"/> Önceki
                     </Button>
                     {currentIndex < questions.length - 1 ? (
-                        <Button type="button" size="lg" className="flex-1 h-14 rounded-2xl font-bold bg-indigo-600 text-white" onClick={() => setCurrentIndex(prev => prev + 1)}>
+                        <Button size="lg" className="flex-1 h-14 rounded-2xl font-bold bg-indigo-600 text-white shadow-lg" onClick={() => setCurrentIndex(prev => prev + 1)}>
                             Sonraki <ChevronRight className="ml-2 h-6 w-6"/>
                         </Button>
                     ) : (
-                        <Button type="button" size="lg" className="flex-1 h-14 rounded-2xl font-bold bg-emerald-600 text-white" onClick={onFinish}>
+                        <Button size="lg" className="flex-1 h-14 rounded-2xl font-bold bg-emerald-600 text-white shadow-lg" onClick={onFinish}>
                             <CheckCircle2 className="mr-2 h-6 w-6"/> Testi Bitir
                         </Button>
                     )}
@@ -84,14 +87,14 @@ export function MCQWizardSolver({ test, questions, studentAnswers, onAnswer, onF
             {/* Soru Gezgini - Desktop */}
             <div className="lg:col-span-4 hidden lg:block sticky top-28">
                 <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-                    <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center font-bold text-slate-800">Soru Gezgini</div>
+                    <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center font-bold text-slate-800 text-xs uppercase tracking-widest">Soru Navigasyonu</div>
                     <ScrollArea className="max-h-[60vh]">
                         <QuestionPalette total={questions.length} currentIndex={currentIndex} onNavigate={setCurrentIndex} isAnswered={(idx) => !!studentAnswers[(idx + 1).toString()]} />
                     </ScrollArea>
                 </div>
             </div>
 
-            {/* Soru Gezgini - Mobile FAB & Modal */}
+            {/* Soru Gezgini - Mobile FAB */}
             <div className="lg:hidden">
                  <Button 
                     type="button"

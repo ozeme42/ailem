@@ -20,6 +20,7 @@ import { OpenEndedWizardSolver } from "@/components/education/test-solver/open-e
 import { JSONWizardSolver } from "@/components/education/test-solver/json-wizard-solver";
 import { ExamOpticalSolver } from "@/components/education/test-solver/exam-optical-solver";
 import { HTMLDocumentSolver } from "@/components/education/test-solver/html-document-solver";
+import { TrackedBookSolver } from "@/components/education/test-solver/tracked-book-solver";
 import { EvaluationScreen } from "@/components/education/test-solver/evaluation-screen";
 import { ResultScreen } from "@/components/education/test-solver/result-screen";
 import { TestTimer } from "@/components/education/test-solver/shared-components";
@@ -62,7 +63,7 @@ export default function UnifiedTestPage() {
 
                 if (data.sourceType === 'json' && data.jsonQuestions) {
                     setQuestions(data.jsonQuestions);
-                } else if (data.sourceType !== 'exam' && data.sourceType !== 'html') {
+                } else if (data.sourceType !== 'exam' && data.sourceType !== 'html' && data.sourceType !== 'trackedBook') {
                     const qCol = collection(db, 'tests', testId, 'questions');
                     const qSnap = await getDocs(query(qCol, orderBy("questionNumber")));
                     setQuestions(qSnap.docs.map(d => d.data() as QuickTestQuestion));
@@ -102,7 +103,7 @@ export default function UnifiedTestPage() {
         if (!test || !familyId) return;
         setIsSubmitting(true);
         try {
-            const isManualEvaluation = (test.sourceType === 'bank' || test.sourceType === 'trackedBook' || test.sourceType === 'mistake') && test.openEnded;
+            const isManualEvaluation = test.openEnded === true;
             let status: Test['status'] = isManualEvaluation ? 'Değerlendirme Bekliyor' : 'Sonuçlandı';
             
             let updatedData: Partial<Test> = { 
@@ -111,8 +112,8 @@ export default function UnifiedTestPage() {
                 status: status
             };
 
-            // Otomatik puanlama (Yazılı ve MCQ türleri için kesin zorlama)
-            if (!isManualEvaluation || test.sourceType === 'json' || test.sourceType === 'exam' || test.sourceType === 'html') {
+            // Otomatik puanlama (MCQ türleri için)
+            if (!isManualEvaluation) {
                 let correct = 0, incorrect = 0, empty = 0;
                 const finalAnswerKey: Record<string, string> = { ...test.answerKey };
                 
@@ -128,7 +129,6 @@ export default function UnifiedTestPage() {
                     const sAns = studentAnswers[qNum];
                     let cAns = finalAnswerKey[qNum];
 
-                    // JSON Testi metin eşleştirme
                     if (test.sourceType === 'json' && test.jsonQuestions?.[i-1]) {
                         const q = test.jsonQuestions[i-1];
                         const foundIdx = q.options.findIndex((o:string) => o.trim() === q.answer?.trim());
@@ -144,14 +144,12 @@ export default function UnifiedTestPage() {
                 updatedData.incorrectAnswers = incorrect;
                 updatedData.emptyAnswers = empty;
                 updatedData.score = totalQ > 0 ? (correct / totalQ) * 100 : 0;
-                updatedData.status = 'Sonuçlandı'; // Kesin bitir
             }
 
             await updateTest(test.id, updatedData);
             if (updatedData.status === 'Sonuçlandı') {
                 await checkAndAwardBadges(test.studentId, familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
-                toast({ title: "Ödev Bitti! 🎉 Sonuçlarını inceleyebilirsin." });
-                // NOT: Burada router.push YAPILMAZ. Öğrenci sayfada kalıp sonuçlarını görür.
+                toast({ title: "Ödev Bitti! 🎉" });
             } else {
                 toast({ title: "Cevaplar Gönderildi! ✅ Değerlendirme bekleniyor." });
                 router.push('/education');
@@ -187,6 +185,15 @@ export default function UnifiedTestPage() {
                             studentAnswers={studentAnswers} 
                             onAnswer={() => {}} 
                             onFinish={() => {}} 
+                            isReviewMode={true}
+                        />
+                    ) : test.sourceType === 'trackedBook' ? (
+                        <TrackedBookSolver
+                            test={test}
+                            studentAnswers={studentAnswers}
+                            studentTextAnswers={studentTextAnswers}
+                            onAnswer={() => {}}
+                            onFinish={() => {}}
                             isReviewMode={true}
                         />
                     ) : (
@@ -230,7 +237,8 @@ export default function UnifiedTestPage() {
                         {test.sourceType === 'exam' && <ExamOpticalSolver test={test} studentAnswers={studentAnswers} onAnswer={handleAnswerUpdate} onFinish={handleFinishTest} />}
                         {test.sourceType === 'json' && <JSONWizardSolver test={test} questions={questions} studentAnswers={studentAnswers} onAnswer={handleAnswerUpdate} onFinish={handleFinishTest} />}
                         {test.sourceType === 'html' && <HTMLDocumentSolver test={test} studentAnswers={studentAnswers} onAnswer={handleAnswerUpdate} onFinish={handleFinishTest} />}
-                        {(test.sourceType === 'bank' || test.sourceType === 'quick' || test.sourceType === 'mistake' || test.sourceType === 'trackedBook') && (
+                        {test.sourceType === 'trackedBook' && <TrackedBookSolver test={test} studentAnswers={studentAnswers} studentTextAnswers={studentTextAnswers} onAnswer={handleAnswerUpdate} onFinish={handleFinishTest} />}
+                        {(test.sourceType === 'bank' || test.sourceType === 'quick' || test.sourceType === 'mistake') && (
                             test.openEnded ? <OpenEndedWizardSolver test={test} questions={questions} studentTextAnswers={studentTextAnswers} onAnswer={(q,a) => handleAnswerUpdate(q,a,true)} onFinish={handleFinishTest} /> : <MCQWizardSolver test={test} questions={questions} studentAnswers={studentAnswers} onAnswer={handleAnswerUpdate} onFinish={handleFinishTest} />
                         )}
                     </>
