@@ -8,7 +8,8 @@ import {
     ArrowLeft, ListTree, Search, Filter, ChevronRight, 
     ChevronLeft, Download, FileSpreadsheet, LayoutGrid, 
     GraduationCap, BookOpen, Clock, CheckCircle2, XCircle, 
-    MinusCircle, Calculator, User, ArrowUpDown, X, RotateCcw
+    MinusCircle, Calculator, User, ArrowUpDown, X, RotateCcw,
+    BarChart3
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { onTestsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
@@ -120,7 +121,6 @@ export function ResultsClient() {
                 sortableDate = new Date(test.updatedAt).getTime();
             } else {
                 try {
-                    // "15 Ağustos 2024" gibi formatları parse et
                     const parsed = parse(test.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
                     sortableDate = parsed.getTime();
                 } catch (e) {
@@ -128,7 +128,6 @@ export function ResultsClient() {
                 }
             }
             
-            // Format date for display
             let dateDisplay = "Değerlendirilmedi";
             if (test.updatedAt) {
                 dateDisplay = format(parseISO(test.updatedAt), 'dd.MM.yyyy HH:mm', { locale: tr });
@@ -174,7 +173,6 @@ export function ResultsClient() {
             return matchesSearch && matchesSubject && matchesTopic && matchesType;
         });
 
-        // --- SORTING LOGIC ---
         data.sort((a: any, b: any) => {
             const valA = a[sortConfig.key];
             const valB = b[sortConfig.key];
@@ -255,7 +253,14 @@ export function ResultsClient() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <div className="hidden sm:flex items-center gap-2">
+                         {selectedStudent && (
+                            <Link href={`/education/stats?studentId=${selectedStudent.id}`}>
+                                <Button variant="outline" className="rounded-xl h-10 font-bold border-indigo-200 text-indigo-600 bg-indigo-50/50 hover:bg-indigo-600 hover:text-white transition-all">
+                                    <BarChart3 className="mr-2 h-4 w-4" /> Grafiksel Analiz
+                                </Button>
+                            </Link>
+                        )}
+                        <div className="hidden sm:flex items-center gap-2 ml-4">
                             {familyMembers.filter(m => m.role.includes('Çocuk')).map(member => (
                                 <button key={member.id} onClick={() => { setSelectedStudent(member); setCurrentPage(1); }} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all border shrink-0", selectedStudent?.id === member.id ? "bg-indigo-600 text-white border-indigo-500 shadow-md" : "bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800")}>
                                     {member.name}
