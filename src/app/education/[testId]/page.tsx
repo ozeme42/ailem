@@ -3,17 +3,17 @@
 
 import * as React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Test as TestType, QuickTestQuestion, EvaluationStatus } from "@/lib/data";
+import { Test as TestType, QuickTestQuestion, EvaluationStatus, PracticeExam } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, Clock, ArrowRight, Play, Pause, Check, X, MinusCircle, LayoutGrid, Loader2, Sparkles, ChevronRight, ChevronLeft, CheckCircle2, XCircle, Send, MessageSquareText, ImageIcon, RotateCcw, FileCode } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, ArrowRight, Play, Pause, Check, X, MinusCircle, LayoutGrid, Loader2, Sparkles, ChevronRight, ChevronLeft, CheckCircle2, XCircle, Send, MessageSquareText, ImageIcon, RotateCcw, FileCode, BookCopy, BarChart3, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { doc, getDocs, collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { doc, getDocs, collection, onSnapshot, query, orderBy, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { updateTest, checkAndAwardBadges } from "@/lib/dataService";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,7 @@ import { useAuth } from "@/components/auth-provider";
 import { useForm } from "react-hook-form";
 import { motion, AnimatePresence } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 // --- DESIGN SYSTEM ---
 const glassColors = {
@@ -142,6 +143,7 @@ export default function OpticalFormPage() {
     const isEvaluateMode = searchParams.get('mode') === 'evaluate';
 
     const [test, setTest] = React.useState<TestType | null>(null);
+    const [practiceExamData, setPracticeExamData] = React.useState<PracticeExam | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [mcqAnswers, setMcqAnswers] = React.useState<{ [key: string]: string | null }>({});
     const [textAnswers, setTextAnswers] = React.useState<{ [key: string]: string }>({});
@@ -169,6 +171,16 @@ export default function OpticalFormPage() {
         const unsubTest = onSnapshot(testDocRef, async (docSnap) => {
             if (docSnap.exists()) {
                 const currentTest = { id: docSnap.id, ...docSnap.data() } as TestType;
+                
+                // If it's an exam, fetch the exam template metadata
+                if (currentTest.sourceType === 'exam' && currentTest.sourceId) {
+                    const examRef = doc(db, 'practiceExams', currentTest.sourceId);
+                    const examSnap = await getDoc(examRef);
+                    if (examSnap.exists()) {
+                        setPracticeExamData({ id: examSnap.id, ...examSnap.data() } as PracticeExam);
+                    }
+                }
+
                 if ((currentTest.sourceType === 'quick' || currentTest.sourceType === 'bank' || currentTest.sourceType === 'mistake' || currentTest.sourceType === 'trackedBook') && (!currentTest.questions || currentTest.questions.length === 0)) {
                   currentTest.questions = await fetchQuestions(testId);
                 }
@@ -338,8 +350,120 @@ export default function OpticalFormPage() {
     const totalQuestions = test.sourceType === 'json' ? (test.jsonQuestions?.length || 0) : test.questionCount;
     const testDurationMinutes = test.durationMinutes || totalQuestions * 1.5;
 
-    // --- SONUÇ İNCELEME GÖRÜNÜMÜ (Sonuçlandı Durumu) ---
+    // --- SONUÇ İNCELEME GÖRÜNÜMÜ ---
     if (test.status === 'Sonuçlandı' && !isEvaluateMode) {
+        // --- DENEME SINAVI SONUÇ İNCELEME (Ders Bazlı) ---
+        if (test.sourceType === 'exam' && practiceExamData) {
+            let questionOffset = 0;
+            return (
+                <div className={cn("min-h-screen text-slate-900 font-sans p-4 sm:p-8", glassColors.PAGE_BG)}>
+                    <div className="max-w-5xl mx-auto w-full space-y-8 pb-32">
+                        <header className="flex justify-between items-center bg-white/50 backdrop-blur-md p-4 rounded-2xl border border-slate-200 sticky top-4 z-50 shadow-sm">
+                            <Button variant="ghost" onClick={() => router.back()} className="text-slate-500 hover:text-slate-900"><ArrowLeft className="mr-2 h-5 w-5" /> Geri</Button>
+                            <div className="text-center">
+                                <h1 className="text-lg font-black">{test.title}</h1>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase">Sınav Sonucu</p>
+                            </div>
+                            <Badge className="bg-indigo-600 text-white font-bold px-4 py-1.5 rounded-xl text-lg">%{test.score?.toFixed(0)} Başarı</Badge>
+                        </header>
+
+                        {/* Genel Özet */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <Card className="rounded-3xl border-slate-200 p-6 flex flex-col items-center justify-center text-center">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Toplam Soru</span>
+                                <span className="text-3xl font-black">{totalQuestions}</span>
+                            </Card>
+                            <Card className="rounded-3xl border-emerald-100 bg-emerald-50/20 p-6 flex flex-col items-center justify-center text-center">
+                                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Doğru</span>
+                                <span className="text-3xl font-black text-emerald-600">{test.correctAnswers}</span>
+                            </Card>
+                            <Card className="rounded-3xl border-rose-100 bg-rose-50/20 p-6 flex flex-col items-center justify-center text-center">
+                                <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-1">Yanlış</span>
+                                <span className="text-3xl font-black text-rose-600">{test.incorrectAnswers}</span>
+                            </Card>
+                            <Card className="rounded-3xl border-slate-100 bg-slate-50/20 p-6 flex flex-col items-center justify-center text-center">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Boş</span>
+                                <span className="text-3xl font-black text-slate-500">{test.emptyAnswers}</span>
+                            </Card>
+                        </div>
+
+                        {/* Ders Bazlı Analiz */}
+                        <div className="space-y-6">
+                            <h2 className="text-xl font-black flex items-center gap-2 px-2"><BarChart3 className="w-6 h-6 text-indigo-600"/> Ders Bazlı Analiz</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {practiceExamData.subjects.map((subject, sIdx) => {
+                                    const currentOffset = questionOffset;
+                                    questionOffset += subject.questionCount;
+                                    
+                                    let sCorrect = 0, sIncorrect = 0, sEmpty = 0;
+                                    for (let i = 1; i <= subject.questionCount; i++) {
+                                        const qNumStr = (currentOffset + i).toString();
+                                        const sAns = mcqAnswers[qNumStr];
+                                        const cAns = test.answerKey?.[qNumStr];
+                                        if (!sAns) sEmpty++;
+                                        else if (sAns === cAns) sCorrect++;
+                                        else sIncorrect++;
+                                    }
+                                    const sSuccessRate = (sCorrect / subject.questionCount) * 100;
+
+                                    return (
+                                        <Card key={subject.id} className="rounded-[2rem] overflow-hidden border-slate-200 shadow-xl group hover:shadow-2xl transition-all">
+                                            <CardHeader className="bg-slate-50/80 p-5 border-b flex flex-row items-center justify-between">
+                                                <div>
+                                                    <CardTitle className="text-base font-black text-slate-800">{subject.name}</CardTitle>
+                                                    <CardDescription className="text-[10px] font-bold uppercase">{subject.questionCount} Soru</CardDescription>
+                                                </div>
+                                                <Badge className={cn("h-10 w-10 rounded-full flex items-center justify-center p-0 text-xs font-black", sSuccessRate >= 70 ? "bg-emerald-600" : sSuccessRate >= 40 ? "bg-amber-500" : "bg-rose-600")}>
+                                                    %{sSuccessRate.toFixed(0)}
+                                                </Badge>
+                                            </CardHeader>
+                                            <CardContent className="p-5 space-y-4">
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <div className="flex flex-col items-center p-2 rounded-xl bg-emerald-50/50 border border-emerald-100">
+                                                        <span className="text-[10px] font-bold text-emerald-600 uppercase">Doğru</span>
+                                                        <span className="text-lg font-black text-emerald-700">{sCorrect}</span>
+                                                    </div>
+                                                    <div className="flex flex-col items-center p-2 rounded-xl bg-rose-50/50 border border-rose-100">
+                                                        <span className="text-[10px] font-bold text-rose-600 uppercase">Yanlış</span>
+                                                        <span className="text-lg font-black text-rose-700">{sIncorrect}</span>
+                                                    </div>
+                                                    <div className="flex flex-col items-center p-2 rounded-xl bg-slate-50/50 border border-slate-100">
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Boş</span>
+                                                        <span className="text-lg font-black text-slate-500">{sEmpty}</span>
+                                                    </div>
+                                                </div>
+                                                <Accordion type="single" collapsible>
+                                                    <AccordionItem value="details" className="border-none">
+                                                        <AccordionTrigger className="h-8 py-0 hover:no-underline text-[10px] font-black uppercase text-indigo-600">Detaylı Cevap Listesi</AccordionTrigger>
+                                                        <AccordionContent className="pt-2">
+                                                            <div className="grid grid-cols-5 gap-1.5">
+                                                                {Array.from({ length: subject.questionCount }).map((_, qIdx) => {
+                                                                    const qNum = (currentOffset + qIdx + 1).toString();
+                                                                    const sAns = mcqAnswers[qNum];
+                                                                    const cAns = test.answerKey?.[qNum];
+                                                                    const isCorrect = sAns === cAns;
+                                                                    return (
+                                                                        <div key={qNum} className={cn("flex flex-col items-center p-1 rounded-lg border text-[10px]", isCorrect ? "bg-emerald-50 border-emerald-200 text-emerald-700" : sAns ? "bg-rose-50 border-rose-200 text-rose-700" : "bg-slate-50 border-slate-200 text-slate-400")}>
+                                                                            <span className="font-bold mb-0.5">{currentOffset + qIdx + 1}</span>
+                                                                            <span className="font-black text-xs">{sAns || "-"}</span>
+                                                                        </div>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                        </AccordionContent>
+                                                    </AccordionItem>
+                                                </Accordion>
+                                            </CardContent>
+                                        </Card>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         return (
             <div className={cn("min-h-screen text-slate-900 font-sans p-4 sm:p-8", glassColors.PAGE_BG)}>
                 <div className="max-w-7xl mx-auto w-full space-y-8 pb-32">
@@ -374,7 +498,7 @@ export default function OpticalFormPage() {
                                                     <div key={qNum} className={cn("flex items-center justify-between p-3 rounded-xl border transition-all", isCorrect ? "bg-emerald-50 border-emerald-100" : sAns ? "bg-rose-50 border-rose-100" : "bg-slate-50 border-slate-100 opacity-60")}>
                                                         <span className="font-bold text-xs shrink-0">{qNum}</span>
                                                         <div className="flex items-center gap-2">
-                                                            <div className="text-[9px] font-bold text-slate-500 uppercase">Sen: <span className={cn("text-sm", isCorrect ? "text-emerald-600" : sAns ? "text-rose-600" : "text-slate-400")}>{sAns || "B"}</span></div>
+                                                            <div className="text-[9px] font-bold text-slate-500 uppercase">Sen: <span className={cn("text-sm", isCorrect ? "text-emerald-600" : sAns ? "text-rose-600" : "text-slate-400")}>{sAns || "-"}</span></div>
                                                             <div className="text-[9px] font-bold text-slate-500 uppercase">D: <span className="text-sm text-emerald-700">{cAns}</span></div>
                                                             {isCorrect ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0"/> : sAns ? <XCircle className="w-4 h-4 text-rose-600 shrink-0"/> : <MinusCircle className="w-4 h-4 text-slate-300 shrink-0" />}
                                                         </div>
@@ -593,7 +717,82 @@ export default function OpticalFormPage() {
                         <Timer durationMinutes={testDurationMinutes} onTimeUp={() => handleSubmit(true)} />
                     </header>
 
-                    {test.sourceType === 'html' ? (
+                    {test.sourceType === 'exam' && practiceExamData ? (
+                        /* DENEME SINAVI ÇÖZÜM MODU (Açılır-Kapanır Dersler) */
+                        <main className="flex-1 max-w-4xl mx-auto w-full space-y-6 pb-32 animate-in fade-in duration-500">
+                            <Accordion type="multiple" defaultValue={practiceExamData.subjects.map(s => s.id)} className="space-y-4">
+                                {(() => {
+                                    let questionOffset = 0;
+                                    return practiceExamData.subjects.map((subject) => {
+                                        const currentOffset = questionOffset;
+                                        questionOffset += subject.questionCount;
+                                        return (
+                                            <AccordionItem key={subject.id} value={subject.id} className="border-none rounded-[2rem] bg-white border border-slate-200 shadow-xl overflow-hidden">
+                                                <AccordionTrigger className="px-8 py-6 hover:no-underline bg-slate-50/50">
+                                                    <div className="flex items-center gap-4 text-left">
+                                                        <div className="h-12 w-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                                                            <BookCopy className="w-6 h-6"/>
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-xl font-black text-slate-800">{subject.name}</h3>
+                                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{subject.questionCount} Soru</p>
+                                                        </div>
+                                                    </div>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="p-8 pt-6">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-4">
+                                                        {Array.from({ length: subject.questionCount }).map((_, i) => {
+                                                            const qNum = (currentOffset + i + 1).toString();
+                                                            return (
+                                                                <div key={qNum} className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-slate-50/50 border border-slate-100 hover:bg-white hover:border-indigo-200 transition-all group">
+                                                                    <Badge className="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-indigo-600 text-white p-0 text-sm shadow-md shrink-0">{qNum}</Badge>
+                                                                    <RadioGroup 
+                                                                        value={mcqAnswers[qNum] || ""} 
+                                                                        onValueChange={(v) => handleMcqAnswerChange(qNum, v)} 
+                                                                        className="flex flex-wrap gap-2 sm:gap-4"
+                                                                    >
+                                                                        {['A', 'B', 'C', 'D', 'E'].map(opt => (
+                                                                            <div key={opt} className="flex items-center">
+                                                                                <RadioGroupItem value={opt} id={`q${qNum}-${opt}`} className="peer sr-only" />
+                                                                                <Label htmlFor={`q${qNum}-${opt}`} className={cn(glassColors.OPTION_BUTTON, "w-10 h-10 text-xs")}>
+                                                                                    {opt}
+                                                                                </Label>
+                                                                            </div>
+                                                                        ))}
+                                                                    </RadioGroup>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        );
+                                    });
+                                })()}
+                            </Accordion>
+                            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4 z-50">
+                                <Card className="rounded-[2.5rem] bg-white border-slate-200 shadow-2xl p-2">
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button type="button" size="lg" className="w-full h-16 rounded-[2rem] bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-black shadow-lg shadow-indigo-500/30 transition-transform active:scale-95">
+                                                <CheckCircle className="mr-3 h-7 w-7" /> Denemeyi Bitir ve Gönder
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent className="bg-white border-slate-200 rounded-[2.5rem] shadow-2xl p-8">
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle className="text-3xl font-black tracking-tight text-slate-900">Emin misin?</AlertDialogTitle>
+                                                <AlertDialogDescription className="text-slate-500 text-lg font-medium leading-relaxed">Tüm derslerdeki cevaplarını işaretlediysen sınavı bitirebilirsin.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter className="mt-8 gap-4 flex-row">
+                                                <AlertDialogCancel className="bg-slate-100 border-none rounded-2xl h-14 font-black flex-1 m-0">Vazgeç</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleSubmit(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl h-14 font-black flex-1 m-0 shadow-lg shadow-emerald-500/20">Evet, Gönder</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </Card>
+                            </div>
+                        </main>
+                    ) : test.sourceType === 'html' ? (
                         /* HTML TEST ÇÖZÜM MODU (IFRAME + OPTİK - 9/3 Oranı) */
                         <main className="flex-1 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 pb-32 animate-in fade-in duration-500">
                              {/* SOL: HTML İÇERİĞİ (Genişletilmiş) */}
