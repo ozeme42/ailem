@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Test } from "@/lib/data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, MinusCircle, ChevronRight, LayoutGrid, ImageIcon, MessageSquareText, Target, AlertCircle } from "lucide-react";
+import { CheckCircle2, XCircle, MinusCircle, ChevronRight, LayoutGrid, ImageIcon, MessageSquareText, Target, AlertCircle, Check, X } from "lucide-react";
 import { QuestionPalette } from "./shared-components";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -19,22 +19,27 @@ interface ResultScreenProps {
 export function ResultScreen({ test, questions }: ResultScreenProps) {
     const [selectedIdx, setSelectedIdx] = React.useState(0);
     
-    // --- EVALUATION LOGIC (KABAK GİBİ ANALİZ) ---
+    // --- EVALUATION LOGIC ---
     const evaluationMap = React.useMemo(() => {
         const map: { [key: string]: any } = {};
         
         for (let i = 1; i <= questions.length; i++) {
             const qNum = i.toString();
             
-            // Eğer ebeveyn tarafından puanlanmış bir açık uçlu testse
             if (test.openEnded && test.studentTextAnswersEvaluation?.[qNum]) {
                 map[qNum] = test.studentTextAnswersEvaluation[qNum];
             } 
-            // Otomatik puanlanan (MCQ veya JSON) testse
             else {
                 const sAns = test.studentAnswers?.[qNum];
-                const cAns = test.answerKey?.[qNum];
+                let cAns = test.answerKey?.[qNum];
                 
+                // JSON Testleri için metin cevabı harfe çevir
+                if (test.sourceType === 'json' && questions[i-1]) {
+                    const q = questions[i-1];
+                    const foundIdx = q.options.findIndex((opt: string) => opt.trim() === q.answer?.trim());
+                    if (foundIdx !== -1) cAns = String.fromCharCode(65 + foundIdx);
+                }
+
                 if (!sAns) map[qNum] = 'empty';
                 else if (sAns === cAns) map[qNum] = 'correct';
                 else map[qNum] = 'incorrect';
@@ -46,9 +51,17 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
     const currentQuestion = questions[selectedIdx];
     const qNum = (selectedIdx + 1).toString();
     const status = evaluationMap[qNum];
-    const studentAnswer = test.openEnded ? (test.studentTextAnswers?.[qNum] || "Boş") : (test.studentAnswers?.[qNum] || "Boş");
-    const correctAnswer = test.answerKey?.[qNum] || "-";
+    const studentAnswer = test.openEnded ? (test.studentTextAnswers?.[qNum] || null) : (test.studentAnswers?.[qNum] || null);
     const feedback = test.studentTextAnswersFeedback?.[qNum];
+
+    // Doğru cevabı bulma (Harf olarak)
+    const correctAnswerLabel = React.useMemo(() => {
+        if (test.sourceType === 'json') {
+            const foundIdx = currentQuestion.options.findIndex((opt: string) => opt.trim() === currentQuestion.answer?.trim());
+            return foundIdx !== -1 ? String.fromCharCode(65 + foundIdx) : null;
+        }
+        return test.answerKey?.[qNum] || null;
+    }, [test, currentQuestion, qNum]);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full items-start pb-20">
@@ -83,7 +96,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                     <div className={cn("p-4 text-white flex justify-between items-center font-bold", 
                         status === 'correct' ? "bg-emerald-600" : status === 'incorrect' ? "bg-rose-600" : "bg-slate-600"
                     )}>
-                        <span className="uppercase text-xs tracking-widest">Soru {selectedIdx + 1} Sonucu</span>
+                        <span className="uppercase text-xs tracking-widest">Soru {selectedIdx + 1} Analizi</span>
                         <Badge className="bg-white/20 text-white border-none uppercase font-black">
                             {status === 'correct' ? 'DOĞRU' : status === 'incorrect' ? 'YANLIŞ' : 'BOŞ'}
                         </Badge>
@@ -102,16 +115,61 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
-                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Senin Cevabın</label>
-                                <p className={cn("text-lg font-black", status === 'correct' ? "text-emerald-600" : status === 'incorrect' ? "text-rose-600" : "text-slate-400")}>{studentAnswer}</p>
+                        {/* SEÇENEKLER VEYA AÇIK UÇLU CEVAP */}
+                        {test.openEnded ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
+                                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Senin Cevabın</label>
+                                    <p className={cn("text-lg font-black", status === 'correct' ? "text-emerald-600" : status === 'incorrect' ? "text-rose-600" : "text-slate-400")}>{studentAnswer || "Boş"}</p>
+                                </div>
+                                <div className="space-y-2 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50">
+                                    <label className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">Doğru Cevap Anahtarı</label>
+                                    <p className="text-lg font-black text-emerald-700 dark:text-emerald-300">{test.answerKey?.[qNum] || "Belirtilmemiş"}</p>
+                                </div>
                             </div>
-                            <div className="space-y-2 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50">
-                                <label className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">Doğru Cevap</label>
-                                <p className="text-lg font-black text-emerald-700 dark:text-emerald-300">{correctAnswer}</p>
+                        ) : (
+                            <div className="space-y-3">
+                                <label className="text-xs font-black uppercase text-slate-400 tracking-widest pl-1">Seçenek Analizi</label>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {(test.sourceType === 'json' ? currentQuestion.options : ['A', 'B', 'C', 'D', 'E']).map((opt, i) => {
+                                        const label = test.sourceType === 'json' ? String.fromCharCode(65 + i) : opt;
+                                        const text = test.sourceType === 'json' ? opt : '';
+                                        
+                                        const isCorrect = label === correctAnswerLabel;
+                                        const isStudentChoice = label === studentAnswer;
+                                        const isWrongChoice = isStudentChoice && !isCorrect;
+
+                                        return (
+                                            <div 
+                                                key={label}
+                                                className={cn(
+                                                    "flex items-center gap-4 p-4 rounded-2xl border-2 transition-all",
+                                                    isCorrect ? "bg-emerald-50 border-emerald-500 dark:bg-emerald-950/30 shadow-md" :
+                                                    isWrongChoice ? "bg-rose-50 border-rose-500 dark:bg-rose-950/30 shadow-md" :
+                                                    "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 opacity-60"
+                                                )}
+                                            >
+                                                <div className={cn(
+                                                    "w-8 h-8 rounded-lg flex items-center justify-center font-black shrink-0",
+                                                    isCorrect ? "bg-emerald-500 text-white" :
+                                                    isWrongChoice ? "bg-rose-500 text-white" :
+                                                    "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                                                )}>
+                                                    {label}
+                                                </div>
+                                                <div className="flex-1 flex items-center justify-between">
+                                                    <span className={cn("font-bold text-sm", isCorrect ? "text-emerald-700 dark:text-emerald-300" : isWrongChoice ? "text-rose-700 dark:text-rose-300" : "text-slate-500")}>
+                                                        {text || "Seçenek " + label}
+                                                    </span>
+                                                    {isCorrect && <Check className="w-5 h-5 text-emerald-600" strokeWidth={3} />}
+                                                    {isWrongChoice && <X className="w-5 h-5 text-rose-600" strokeWidth={3} />}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {feedback && (
                             <div className="p-5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50">
