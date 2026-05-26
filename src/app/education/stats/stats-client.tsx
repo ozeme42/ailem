@@ -4,24 +4,23 @@ import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, Check, X, Percent, Search,
-  Target, TrendingUp, AlertCircle, Award, Filter, RotateCcw, ChevronDown,
+  Target, TrendingUp, AlertCircle, Award, Filter, RotateCcw,
   Flame, Calendar, BarChart3, PieChart as PieIcon, LineChart as LineIcon,
   Calculator, Zap, Layers, ChevronRight, Activity, BookOpen, Loader2
 } from "lucide-react";
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip,
-  XAxis, YAxis, Cell, LabelList, PieChart, Pie, LineChart, Line, Area, AreaChart,
-  ComposedChart, Legend, ReferenceLine
+  XAxis, YAxis, Cell, PieChart, Pie, ComposedChart, Legend, 
+  Area, ReferenceLine
 } from "recharts";
 import { useAuth } from "@/components/auth-provider";
-import { onTestsUpdate } from "@/lib/dataService";
-import { FamilyMember } from "@/lib/data";
+import { onTestsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
 import { cn } from "@/lib/utils";
 import { getCategoryName } from "@/app/education/page";
 import { 
   format, startOfWeek, eachDayOfInterval, 
   subDays, isToday, parseISO, startOfMonth, endOfMonth, 
-  eachMonthOfInterval, getYear, isWithinInterval, subMonths, 
+  eachMonthOfInterval, isWithinInterval, subMonths, 
   startOfYear, parse, addMonths
 } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -32,7 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 // --- iOS / MODERN PREMIUM RENK PALETİ ---
 const COLORS = {
@@ -76,7 +75,6 @@ const StatBox = ({ icon: Icon, value, label, subValue, color, trend }: any) => (
   </div>
 );
 
-// Helper: Tür çevirisi
 function translateType(type: string) {
     const types: any = {
         'exam': 'Deneme Sınavı',
@@ -90,8 +88,6 @@ function translateType(type: string) {
     return types[type] || type;
 }
 
-// --- MAIN CLIENT ---
-
 export function StatsClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -99,12 +95,15 @@ export function StatsClient() {
   const { familyMembers, familyId } = useAuth();
 
   const [tests, setTests] = React.useState<any[]>([]);
+  const [trackedBooks, setTrackedBooks] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   
   // States
   const [activePeriod, setActivePeriod] = React.useState<Period>('monthly');
   const [selectedSubject, setSelectedSubject] = React.useState('all');
+  const [selectedTopic, setSelectedTopic] = React.useState('all');
   const [selectedType, setSelectedSourceType] = React.useState('all');
+  const [searchTerm, setSearchTerm] = React.useState("");
 
   const student = React.useMemo(() => familyMembers.find(m => m.id === studentId), [familyMembers, studentId]);
 
@@ -114,13 +113,22 @@ export function StatsClient() {
       setTests(all.filter(t => t.studentId === studentId && t.status === 'Sonuçlandı'));
       setLoading(false);
     });
-    return () => { unsubTests(); };
+    const unsubBooks = onTrackedBooksUpdate(setTrackedBooks);
+    return () => { unsubTests(); unsubBooks(); };
   }, [studentId, familyId]);
 
-  // --- DATA PROCESSING (FIXED DATE PARSING) ---
-  const processedData = React.useMemo(() => {
-    const enriched = tests.map(test => {
+  // --- DATA ENRICHMENT & FILTERING ---
+  const enrichedBaseData = React.useMemo(() => {
+    const allTopics = trackedBooks.flatMap(b => (b.subjects || []).flatMap((s:any) => (s.topics || []).map((t:any) => ({...t, subjectName: s.name}))));
+
+    return tests.map(test => {
       const subjectName = getCategoryName(test);
+      let topicName = "Genel";
+      if (test.topicId) {
+        topicName = allTopics.find(t => t.id === test.topicId)?.name || "Genel";
+      } else if ((test as any).topic) {
+        topicName = (test as any).topic;
+      }
       
       let solvedDate: Date;
       if (test.updatedAt) {
@@ -142,23 +150,34 @@ export function StatsClient() {
       return {
         ...test,
         _subjectName: subjectName,
+        _topicName: topicName,
         _solvedDate: solvedDate,
         _net: net
       };
     });
-
-    const filtered = enriched.filter(t => {
-      if (selectedSubject !== 'all' && t._subjectName !== selectedSubject) return false;
-      if (selectedType !== 'all' && t.sourceType !== selectedType) return false;
-      return true;
-    });
-
-    return filtered;
-  }, [tests, selectedSubject, selectedType]);
+  }, [tests, trackedBooks]);
 
   const availableSubjects = React.useMemo(() => {
-    return Array.from(new Set(tests.map(t => getCategoryName(t)))).sort();
-  }, [tests]);
+    return Array.from(new Set(enrichedBaseData.map(d => d._subjectName))).sort();
+  }, [enrichedBaseData]);
+
+  const availableTopics = React.useMemo(() => {
+    let data = enrichedBaseData;
+    if (selectedSubject !== 'all') {
+        data = data.filter(d => d._subjectName === selectedSubject);
+    }
+    return Array.from(new Set(data.map(d => d._topicName))).filter(t => t && t !== "Genel").sort();
+  }, [enrichedBaseData, selectedSubject]);
+
+  const processedData = React.useMemo(() => {
+    return enrichedBaseData.filter(t => {
+      if (selectedSubject !== 'all' && t._subjectName !== selectedSubject) return false;
+      if (selectedTopic !== 'all' && t._topicName !== selectedTopic) return false;
+      if (selectedType !== 'all' && t.sourceType !== selectedType) return false;
+      if (searchTerm && !t.title.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      return true;
+    });
+  }, [enrichedBaseData, selectedSubject, selectedTopic, selectedType, searchTerm]);
 
   // --- KPI CALCULATIONS ---
   const kpis = React.useMemo(() => {
@@ -265,15 +284,9 @@ export function StatsClient() {
     })).sort((a,b) => b.rate - a.rate);
   }, [processedData]);
 
-  const barChartConfig = {
+  const chartConfig = {
     questions: { label: "Soru Sayısı", color: COLORS.BLUE },
     net: { label: "Net Başarısı", color: COLORS.PURPLE },
-  } satisfies ChartConfig;
-
-  const pieChartConfig = {
-    Protein: { label: "Protein", color: "#8b5cf6" },
-    Carbs: { label: "Karb.", color: "#3b82f6" },
-    Fat: { label: "Yağ", color: "#f43f5e" },
   } satisfies ChartConfig;
 
   if (loading) return (
@@ -319,13 +332,23 @@ export function StatsClient() {
                 <Filter className="w-4 h-4 text-indigo-500" /> Filtrele:
             </div>
             
-            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+            <Select value={selectedSubject} onValueChange={(val) => { setSelectedSubject(val); setSelectedTopic('all'); }}>
                 <SelectTrigger className="w-full sm:w-44 h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs">
                     <SelectValue placeholder="Ders Seçin" />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                     <SelectItem value="all">Tüm Dersler</SelectItem>
                     {availableSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+            </Select>
+
+            <Select value={selectedTopic} onValueChange={setSelectedTopic} disabled={selectedSubject === 'all' && availableTopics.length === 0}>
+                <SelectTrigger className="w-full sm:w-44 h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs">
+                    <SelectValue placeholder="Konu Seçin" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                    <SelectItem value="all">Tüm Konular</SelectItem>
+                    {availableTopics.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                 </SelectContent>
             </Select>
 
@@ -345,8 +368,8 @@ export function StatsClient() {
                 </SelectContent>
             </Select>
 
-            {(selectedSubject !== 'all' || selectedType !== 'all') && (
-                <Button variant="ghost" size="sm" onClick={() => {setSelectedSubject('all'); setSelectedSourceType('all');}} className="h-10 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl font-bold">
+            {(selectedSubject !== 'all' || selectedTopic !== 'all' || selectedType !== 'all') && (
+                <Button variant="ghost" size="sm" onClick={() => {setSelectedSubject('all'); setSelectedTopic('all'); setSelectedSourceType('all');}} className="h-10 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl font-bold">
                     <RotateCcw className="w-3.5 h-3.5 mr-1" /> Sıfırla
                 </Button>
             )}
@@ -388,7 +411,7 @@ export function StatsClient() {
                 </CardHeader>
                 <CardContent className="p-6 md:p-8">
                     <div className="h-[350px] w-full">
-                        <ChartContainer config={barChartConfig} className="h-full w-full">
+                        <ChartContainer config={chartConfig} className="h-full w-full">
                             <ComposedChart data={timeSeriesData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
@@ -399,9 +422,7 @@ export function StatsClient() {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(142,142,147,0.15)" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: COLORS.GRAY }} dy={10} />
                                 <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600, fill: COLORS.GRAY }} />
-                                <ChartTooltip 
-                                    content={<ChartTooltipContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" />}
-                                />
+                                <Tooltip cursor={{fill: 'rgba(142,142,147,0.05)'}} content={<ChartTooltipContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" />} />
                                 <Legend verticalAlign="top" align="right" height={36} iconType="circle" />
                                 <Bar yAxisId="left" dataKey="questions" name="Soru Sayısı" fill={COLORS.BLUE} radius={[6, 6, 0, 0]} barSize={activePeriod === 'weekly' ? 30 : 15} />
                                 <Area yAxisId="left" type="monotone" dataKey="net" name="Net Başarısı" stroke={COLORS.PURPLE} strokeWidth={4} fill="url(#colorNet)" dot={{ r: 4, fill: COLORS.PURPLE, strokeWidth: 2, stroke: '#fff' }} />
