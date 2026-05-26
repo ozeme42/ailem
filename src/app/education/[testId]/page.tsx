@@ -399,7 +399,7 @@ export default function OpticalFormPage() {
                                     <Card key={qNum} className={cn("rounded-3xl border", status === 'correct' ? 'border-emerald-200 bg-emerald-50/20' : 'border-rose-200 bg-rose-50/20')}>
                                         <CardHeader className="pb-4 border-b flex flex-row items-center justify-between gap-4">
                                             <div className="flex items-center gap-3">
-                                                <Badge className={cn("h-10 w-10 rounded-full flex items-center justify-center p-0 text-base font-black", status === 'correct' ? 'bg-emerald-600' : 'bg-rose-600')}>{qNum}</Badge>
+                                                <Badge className={cn("h-10 w-10 rounded-full flex items-center justify-center p-0 text-base font-black", status === 'correct' ? "bg-emerald-600" : "bg-rose-600")}>{qNum}</Badge>
                                                 <span className="font-bold text-slate-700">Soru Detayı</span>
                                             </div>
                                             {status === 'correct' ? <div className="flex items-center gap-1.5 text-emerald-600 font-bold"><CheckCircle2 className="w-5 h-5"/> Doğru</div> : <div className="flex items-center gap-1.5 text-rose-600 font-bold"><XCircle className="w-5 h-5"/> Yanlış</div>}
@@ -429,15 +429,29 @@ export default function OpticalFormPage() {
                                         <Badge className="h-14 w-14 rounded-3xl flex items-center justify-center p-0 text-2xl font-black bg-indigo-600 text-white shrink-0">{currentQuestionIndex + 1}</Badge>
                                         <div className="flex-grow">
                                             <h2 className="text-lg font-black text-slate-800">Soru İnceleme</h2>
-                                            {manualEvaluation[(currentQuestionIndex + 1).toString()] === 'correct' ? <span className="text-xs font-bold text-emerald-600">✓ Doğru Bildin</span> : <span className="text-xs font-bold text-rose-600">✗ Hatalı Cevap</span>}
+                                            {test.sourceType === 'json' ? (
+                                                mcqAnswers[(currentQuestionIndex + 1).toString()] === test.jsonQuestions?.[currentQuestionIndex]?.answer ? 
+                                                <span className="text-xs font-bold text-emerald-600">✓ Doğru Bildin</span> : 
+                                                <span className="text-xs font-bold text-rose-600">✗ Hatalı Cevap</span>
+                                            ) : (
+                                                manualEvaluation[(currentQuestionIndex + 1).toString()] === 'correct' ? <span className="text-xs font-bold text-emerald-600">✓ Doğru Bildin</span> : <span className="text-xs font-bold text-rose-600">✗ Hatalı Cevap</span>
+                                            )}
                                         </div>
                                     </CardHeader>
                                     <CardContent className="p-0">
-                                        <div className="relative w-full aspect-video bg-slate-50 border-b flex items-center justify-center">
-                                            {test.questions?.[currentQuestionIndex] ? (
-                                                <Image src={test.questions[currentQuestionIndex].imageUrl} alt={`Soru ${currentQuestionIndex + 1}`} fill className="object-contain p-6" />
-                                            ) : <ImageIcon className="w-12 h-12 text-slate-300" />}
-                                        </div>
+                                        {test.sourceType === 'json' ? (
+                                            <div className="p-8 bg-slate-50 border-b">
+                                                <p className="text-xl font-bold text-slate-800 leading-relaxed">
+                                                    {test.jsonQuestions?.[currentQuestionIndex]?.text}
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="relative w-full aspect-video bg-slate-50 border-b flex items-center justify-center">
+                                                {test.questions?.[currentQuestionIndex] ? (
+                                                    <Image src={test.questions[currentQuestionIndex].imageUrl} alt={`Soru ${currentQuestionIndex + 1}`} fill className="object-contain p-6" />
+                                                ) : <ImageIcon className="w-12 h-12 text-slate-300" />}
+                                            </div>
+                                        )}
                                         <div className="p-8">
                                             <div className="space-y-4">
                                                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Cevabın</p>
@@ -447,6 +461,16 @@ export default function OpticalFormPage() {
                                                         : (mcqAnswers[(currentQuestionIndex + 1).toString()] || "— İşaretlenmedi —")
                                                     }
                                                 </div>
+                                                
+                                                {test.sourceType === 'json' && !test.openEnded && (
+                                                    <div className="space-y-2">
+                                                        <p className="text-xs font-black text-emerald-500 uppercase tracking-widest">Doğru Cevap</p>
+                                                        <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-base font-bold text-emerald-700">
+                                                            {test.jsonQuestions?.[currentQuestionIndex]?.answer}
+                                                        </div>
+                                                    </div>
+                                                )}
+
                                                 {textFeedback[(currentQuestionIndex + 1).toString()] && (
                                                     <div className="mt-6 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl">
                                                          <p className="text-[10px] font-black text-indigo-400 uppercase mb-2">ÖĞRETMEN NOTU</p>
@@ -496,6 +520,7 @@ export default function OpticalFormPage() {
                             const studentAns = textAnswers[qNum];
                             const status = manualEvaluation[qNum];
                             const questionImage = test.questions?.[i]?.imageUrl;
+                            const jsonQuestion = test.jsonQuestions?.[i];
 
                             return (
                                 <Card key={qNum} className={cn("rounded-3xl border transition-all", status === 'correct' ? 'border-emerald-200 bg-emerald-50/30' : status === 'incorrect' ? 'border-rose-200 bg-rose-50/30' : status === 'empty' ? 'border-slate-300 bg-slate-100/50' : 'border-slate-200 bg-white shadow-sm')}>
@@ -508,10 +533,18 @@ export default function OpticalFormPage() {
                                         </div>
                                     </CardHeader>
                                     <CardContent className="p-0">
-                                        {!isBookTracked && questionImage && (
-                                            <div className="relative w-full aspect-video bg-slate-100 border-b flex items-center justify-center overflow-hidden">
-                                                <Image src={questionImage} alt={`Soru ${qNum}`} fill className="object-contain p-4" />
+                                        {test.sourceType === 'json' ? (
+                                            <div className="p-6 bg-slate-50 border-b">
+                                                <p className="text-lg font-bold text-slate-800 leading-relaxed">
+                                                    {jsonQuestion?.text}
+                                                </p>
                                             </div>
+                                        ) : (
+                                            !isBookTracked && questionImage && (
+                                                <div className="relative w-full aspect-video bg-slate-100 border-b flex items-center justify-center overflow-hidden">
+                                                    <Image src={questionImage} alt={`Soru ${qNum}`} fill className="object-contain p-4" />
+                                                </div>
+                                            )
                                         )}
                                         <div className="p-6 space-y-6">
                                             <div className="space-y-4">
@@ -679,11 +712,19 @@ export default function OpticalFormPage() {
                                                 </div>
                                             </CardHeader>
                                             <CardContent className="p-0">
-                                                <div className="relative w-full aspect-video bg-slate-50 border-b flex items-center justify-center">
-                                                    {test.questions?.[currentQuestionIndex] ? (
-                                                        <Image src={test.questions[currentQuestionIndex].imageUrl} alt={`Soru ${currentQuestionIndex + 1}`} fill className="object-contain p-6" />
-                                                    ) : <ImageIcon className="w-12 h-12 text-slate-300" />}
-                                                </div>
+                                                {test.sourceType === 'json' ? (
+                                                    <div className="p-8 bg-slate-50 border-b">
+                                                        <p className="text-xl font-bold text-slate-800 leading-relaxed">
+                                                            {test.jsonQuestions?.[currentQuestionIndex]?.text}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="relative w-full aspect-video bg-slate-50 border-b flex items-center justify-center">
+                                                        {test.questions?.[currentQuestionIndex] ? (
+                                                            <Image src={test.questions[currentQuestionIndex].imageUrl} alt={`Soru ${currentQuestionIndex + 1}`} fill className="object-contain p-6" />
+                                                        ) : <ImageIcon className="w-12 h-12 text-slate-300" />}
+                                                    </div>
+                                                )}
                                                 <div className="p-8 md:p-10 bg-white">
                                                     {test.openEnded ? (
                                                         <div className="space-y-4">
@@ -698,14 +739,38 @@ export default function OpticalFormPage() {
                                                     ) : (
                                                         <div className="space-y-6">
                                                             <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Seçeneğinizi İşaretleyin</p>
-                                                            <RadioGroup value={mcqAnswers[(currentQuestionIndex + 1).toString()] || ""} onValueChange={(v) => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), v)} className="flex flex-wrap gap-5 justify-center sm:justify-start">
-                                                                {['A', 'B', 'C', 'D', 'E'].map(opt => (
-                                                                    <div key={opt} className="flex items-center">
-                                                                        <RadioGroupItem value={opt} id={`opt-${opt}`} className="peer sr-only" />
-                                                                        <Label htmlFor={`opt-${opt}`} className={cn(glassColors.OPTION_BUTTON, "w-16 h-16 text-2xl rounded-2xl shadow-sm")}>{opt}</Label>
-                                                                    </div>
-                                                                ))}
-                                                            </RadioGroup>
+                                                            {test.sourceType === 'json' ? (
+                                                                <RadioGroup 
+                                                                    value={mcqAnswers[(currentQuestionIndex + 1).toString()] || ""} 
+                                                                    onValueChange={(v) => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), v)} 
+                                                                    className="flex flex-col gap-3"
+                                                                >
+                                                                    {test.jsonQuestions?.[currentQuestionIndex]?.options.map((optText, idx) => {
+                                                                        const optLabel = ['A', 'B', 'C', 'D', 'E'][idx];
+                                                                        return (
+                                                                            <div key={optLabel} className="flex items-center">
+                                                                                <RadioGroupItem value={optLabel} id={`opt-${optLabel}`} className="peer sr-only" />
+                                                                                <Label 
+                                                                                    htmlFor={`opt-${optLabel}`} 
+                                                                                    className="flex items-center w-full p-4 rounded-2xl border-2 border-slate-100 bg-white cursor-pointer transition-all peer-data-[state=checked]:border-indigo-600 peer-data-[state=checked]:bg-indigo-50/50 hover:bg-slate-50"
+                                                                                >
+                                                                                    <span className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-600 mr-4 shrink-0 peer-data-[state=checked]:bg-indigo-600 peer-data-[state=checked]:text-white transition-colors">{optLabel}</span>
+                                                                                    <span className="text-slate-700 font-medium">{optText}</span>
+                                                                                </Label>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </RadioGroup>
+                                                            ) : (
+                                                                <RadioGroup value={mcqAnswers[(currentQuestionIndex + 1).toString()] || ""} onValueChange={(v) => handleMcqAnswerChange((currentQuestionIndex + 1).toString(), v)} className="flex flex-wrap gap-5 justify-center sm:justify-start">
+                                                                    {['A', 'B', 'C', 'D', 'E'].map(opt => (
+                                                                        <div key={opt} className="flex items-center">
+                                                                            <RadioGroupItem value={opt} id={`opt-${opt}`} className="peer sr-only" />
+                                                                            <Label htmlFor={`opt-${opt}`} className={cn(glassColors.OPTION_BUTTON, "w-16 h-16 text-2xl rounded-2xl shadow-sm")}>{opt}</Label>
+                                                                        </div>
+                                                                    ))}
+                                                                </RadioGroup>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
