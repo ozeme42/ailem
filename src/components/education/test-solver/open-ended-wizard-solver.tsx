@@ -71,11 +71,14 @@ export function OpenEndedWizardSolver({ test, questions, studentTextAnswers, onA
                 </div>
             </div>
 
-            {/* Soru Gezgini - Desktop */}
+            {/* Soru Gezgini - Desktop: Scrollable list */}
             <div className="lg:col-span-4 hidden lg:block sticky top-28">
-                <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-                    <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center font-bold text-slate-800 text-xs uppercase tracking-widest">Soru Navigasyonu</div>
-                    <ScrollArea className="max-h-[60vh]">
+                <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
+                    <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center font-bold text-slate-800 dark:text-slate-100 text-xs uppercase tracking-widest shrink-0">
+                        Soru Gezgini
+                        <Badge variant="outline" className="bg-white dark:bg-slate-800">{questions.length}</Badge>
+                    </div>
+                    <ScrollArea className="flex-1">
                         <QuestionPalette total={questions.length} currentIndex={currentIndex} onNavigate={setCurrentIndex} isAnswered={(idx) => !!studentTextAnswers[(idx + 1).toString()]} />
                     </ScrollArea>
                 </div>
@@ -92,11 +95,11 @@ export function OpenEndedWizardSolver({ test, questions, studentTextAnswers, onA
                 </Button>
 
                 <Dialog open={isPaletteOpen} onOpenChange={setIsPaletteOpen}>
-                    <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-0 overflow-hidden">
-                        <DialogHeader className="p-6 pb-2">
+                    <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-0 overflow-hidden flex flex-col max-h-[85vh]">
+                        <DialogHeader className="p-6 pb-2 shrink-0">
                             <DialogTitle>Soru Gezgini</DialogTitle>
                         </DialogHeader>
-                        <ScrollArea className="max-h-[60vh] p-4">
+                        <ScrollArea className="flex-1 p-4">
                             <QuestionPalette 
                                 total={questions.length} 
                                 currentIndex={currentIndex} 
@@ -104,7 +107,7 @@ export function OpenEndedWizardSolver({ test, questions, studentTextAnswers, onA
                                 isAnswered={(idx) => !!studentTextAnswers[(idx + 1).toString()]} 
                             />
                         </ScrollArea>
-                        <DialogFooter className="p-4 bg-slate-50 dark:bg-slate-800/50">
+                        <DialogFooter className="p-4 bg-slate-50 dark:bg-slate-800/50 shrink-0">
                             <Button type="button" className="w-full h-12 rounded-xl" onClick={() => setIsPaletteOpen(false)}>Kapat</Button>
                         </DialogFooter>
                     </DialogContent>

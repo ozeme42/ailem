@@ -33,7 +33,7 @@ export function JSONWizardSolver({ test, questions, studentAnswers, onAnswer, on
             <div className="lg:col-span-8 space-y-6">
                 <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
                     <div className="bg-indigo-600 p-4 text-white flex justify-between items-center font-bold">
-                        <span>YAZILI SORU {currentIndex + 1} / {questions.length}</span>
+                        <span className="uppercase text-xs tracking-widest">YAZILI SORU {currentIndex + 1} / {questions.length}</span>
                         {currentAnswer && <Badge className="bg-emerald-500 text-white border-none">CEVAPLANDI</Badge>}
                     </div>
                     <div className="p-6 md:p-10 space-y-8">
@@ -87,11 +87,14 @@ export function JSONWizardSolver({ test, questions, studentAnswers, onAnswer, on
                 </div>
             </div>
 
-            {/* Soru Gezgini - Desktop */}
+            {/* Soru Gezgini - Desktop: Increased max-height and ensured scrolling */}
             <div className="lg:col-span-4 hidden lg:block sticky top-28">
-                <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-                    <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center font-bold text-slate-800">Soru Gezgini</div>
-                    <ScrollArea className="max-h-[60vh]">
+                <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
+                    <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center font-bold text-slate-800 dark:text-slate-100 text-xs uppercase tracking-widest shrink-0">
+                        Soru Gezgini
+                        <Badge variant="outline" className="bg-white dark:bg-slate-800">{questions.length} Soru</Badge>
+                    </div>
+                    <ScrollArea className="flex-1">
                         <QuestionPalette total={questions.length} currentIndex={currentIndex} onNavigate={setCurrentIndex} isAnswered={(idx) => !!studentAnswers[(idx + 1).toString()]} />
                     </ScrollArea>
                 </div>
@@ -108,11 +111,11 @@ export function JSONWizardSolver({ test, questions, studentAnswers, onAnswer, on
                 </Button>
 
                 <Dialog open={isPaletteOpen} onOpenChange={setIsPaletteOpen}>
-                    <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-0 overflow-hidden">
-                        <DialogHeader className="p-6 pb-2">
+                    <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-0 overflow-hidden flex flex-col max-h-[85vh]">
+                        <DialogHeader className="p-6 pb-2 shrink-0">
                             <DialogTitle>Soru Gezgini</DialogTitle>
                         </DialogHeader>
-                        <ScrollArea className="max-h-[60vh] p-4">
+                        <ScrollArea className="flex-1 p-4">
                             <QuestionPalette 
                                 total={questions.length} 
                                 currentIndex={currentIndex} 
@@ -120,7 +123,7 @@ export function JSONWizardSolver({ test, questions, studentAnswers, onAnswer, on
                                 isAnswered={(idx) => !!studentAnswers[(idx + 1).toString()]} 
                             />
                         </ScrollArea>
-                        <DialogFooter className="p-4 bg-slate-50 dark:bg-slate-800/50">
+                        <DialogFooter className="p-4 bg-slate-50 dark:bg-slate-800/50 shrink-0">
                             <Button type="button" className="w-full h-12 rounded-xl" onClick={() => setIsPaletteOpen(false)}>Kapat</Button>
                         </DialogFooter>
                     </DialogContent>
