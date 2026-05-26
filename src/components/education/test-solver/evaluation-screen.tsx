@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -90,8 +89,8 @@ export function EvaluationScreen({ test, questions, evaluations, feedbacks, onEv
                             <div className="relative">
                                 <MessageSquareText className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                                 <Textarea 
-                                    placeholder="Öğrenciye not bırak (örn: Çok güzel açıklama ama şu noktaya dikkat et...)"
-                                    className="min-h-[100px] rounded-2xl pl-10 bg-slate-50/50 border-slate-200"
+                                    placeholder="Öğrenciye not bırak..."
+                                    className="min-h-[100px] rounded-2xl pl-10 bg-slate-50/50 border-slate-200 dark:bg-slate-900"
                                     value={currentFeedback}
                                     onChange={(e) => onFeedback(qNumStr, e.target.value)}
                                 />
@@ -119,7 +118,7 @@ export function EvaluationScreen({ test, questions, evaluations, feedbacks, onEv
             {/* Palette - Desktop */}
             <div className="lg:col-span-4 hidden lg:block sticky top-28">
                 <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-                    <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center font-bold text-slate-800 text-xs uppercase tracking-widest">Soru Listesi</div>
+                    <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center font-bold text-slate-800 dark:text-slate-100 text-xs uppercase tracking-widest">Soru Listesi</div>
                     <ScrollArea className="max-h-[60vh]">
                         <QuestionPalette 
                             total={questions.length} 

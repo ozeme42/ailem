@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -104,11 +103,11 @@ export default function UnifiedTestPage() {
         setIsSubmitting(true);
         try {
             const isManualTest = test.openEnded === true;
-            const isEvaluationComplete = test.status === 'Değerlendirme Bekliyor';
+            const isFinishingEvaluation = test.status === 'Değerlendirme Bekliyor';
             
             // Yeni Durum Belirleme
             let finalStatus: Test['status'] = 'Sonuçlandı';
-            if (!isEvaluationComplete && isManualTest) {
+            if (!isFinishingEvaluation && isManualTest) {
                 finalStatus = 'Değerlendirme Bekliyor';
             }
             
@@ -170,7 +169,7 @@ export default function UnifiedTestPage() {
             
             if (finalStatus === 'Sonuçlandı') {
                 await checkAndAwardBadges(test.studentId, familyId, { type: 'test_completed', test: { ...test, ...updatedData } });
-                toast({ title: isEvaluationComplete ? "Değerlendirme Tamamlandı! 🎓" : "Ödev Bitti! 🎉" });
+                toast({ title: isFinishingEvaluation ? "Değerlendirme Tamamlandı! 🎓" : "Ödev Bitti! 🎉" });
             } else {
                 toast({ title: "Cevaplar Gönderildi! ✅ Değerlendirme bekleniyor." });
                 router.push('/education');
