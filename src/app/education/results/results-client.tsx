@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -7,7 +8,7 @@ import {
     ArrowLeft, ListTree, Search, Filter, ChevronRight, 
     ChevronLeft, Download, FileSpreadsheet, LayoutGrid, 
     GraduationCap, BookOpen, Clock, CheckCircle2, XCircle, 
-    MinusCircle, Calculator, User, ArrowUpDown
+    MinusCircle, Calculator, User, ArrowUpDown, X, RotateCcw
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { onTestsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
@@ -26,6 +27,7 @@ import {
     DropdownMenuItem, 
     DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // --- DESIGN SYSTEM ---
 const themeColors = {
@@ -34,9 +36,24 @@ const themeColors = {
     ICON_BOX: "bg-gradient-to-br from-indigo-500 to-blue-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20 text-white",
     TABLE_HEADER: "bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-black h-12 whitespace-nowrap",
     TABLE_ROW: "hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-colors border-b border-slate-100 dark:border-slate-800/50 last:border-0 cursor-pointer",
+    FILTER_SELECT: "w-full sm:w-[160px] h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs",
 };
 
 const ITEMS_PER_PAGE = 25;
+
+// Helper to translate source types
+const translateType = (type: string) => {
+    switch (type) {
+        case 'json': return 'Yazılı Test';
+        case 'exam': return 'Deneme Sınavı';
+        case 'bank': return 'Soru Bankası';
+        case 'quick': return 'Hızlı Test';
+        case 'mistake': return 'Yanlış Havuzu';
+        case 'trackedBook': return 'Kitap Takibi';
+        case 'html': return 'HTML Test';
+        default: return type;
+    }
+};
 
 export function ResultsClient() {
     const router = useRouter();
@@ -50,6 +67,10 @@ export function ResultsClient() {
     const [selectedStudent, setSelectedStudent] = React.useState<FamilyMember | null>(null);
     
     const [searchTerm, setSearchTerm] = React.useState("");
+    const [filterSubject, setFilterSubject] = React.useState("all");
+    const [filterTopic, setFilterTopic] = React.useState("all");
+    const [filterType, setFilterType] = React.useState("all");
+    
     const [currentPage, setCurrentPage] = React.useState(1);
     const [sortConfig, setSortKey] = React.useState<{ key: keyof Test | '_date' | '_net', direction: 'asc' | 'desc' }>({ key: '_date', direction: 'desc' });
 
@@ -91,9 +112,16 @@ export function ResultsClient() {
             const incorrect = test.incorrectAnswers || 0;
             const empty = test.emptyAnswers || 0;
             
-            // 3 Yanlış 1 Doğruyu Götürür (LGS/YKS Standard)
             const net = isCompleted ? (correct - (incorrect / 3)) : 0;
             const sortableDate = test.updatedAt ? new Date(test.updatedAt).getTime() : new Date(test.assignedDate).getTime();
+            
+            // Format date for display
+            let dateDisplay = "Değerlendirilmedi";
+            if (test.updatedAt) {
+                dateDisplay = format(parseISO(test.updatedAt), 'dd.MM.yyyy HH:mm', { locale: tr });
+            } else if (test.assignedDate) {
+                dateDisplay = test.assignedDate;
+            }
 
             return {
                 ...test,
@@ -101,17 +129,37 @@ export function ResultsClient() {
                 _topicName: topicName,
                 _net: net,
                 _date: sortableDate,
-                _dateStr: test.updatedAt ? format(parseISO(test.updatedAt), 'dd.MM.yyyy HH:mm', { locale: tr }) : "Puanlanmadı"
+                _dateStr: dateDisplay,
+                _translatedType: translateType(test.sourceType)
             };
         });
     }, [tests, trackedBooks]);
 
+    // Filter Options
+    const { subjectOptions, topicOptions, typeOptions } = React.useMemo(() => {
+        const subjects = Array.from(new Set(enrichedData.map(d => d._subjectName))).sort();
+        const topics = Array.from(new Set(enrichedData.map(d => d._topicName))).sort();
+        const types = Array.from(new Set(enrichedData.map(d => d.sourceType))).sort();
+        
+        return {
+            subjectOptions: subjects,
+            topicOptions: topics,
+            typeOptions: types.map(t => ({ value: t, label: translateType(t) }))
+        };
+    }, [enrichedData]);
+
     const filteredAndSortedData = React.useMemo(() => {
-        let data = enrichedData.filter(item => 
-            item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item._subjectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item._topicName.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        let data = enrichedData.filter(item => {
+            const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                item._subjectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                item._topicName.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            const matchesSubject = filterSubject === 'all' || item._subjectName === filterSubject;
+            const matchesTopic = filterTopic === 'all' || item._topicName === filterTopic;
+            const matchesType = filterType === 'all' || item.sourceType === filterType;
+
+            return matchesSearch && matchesSubject && matchesTopic && matchesType;
+        });
 
         data.sort((a: any, b: any) => {
             const valA = a[sortConfig.key];
@@ -122,7 +170,7 @@ export function ResultsClient() {
         });
 
         return data;
-    }, [enrichedData, searchTerm, sortConfig]);
+    }, [enrichedData, searchTerm, sortConfig, filterSubject, filterTopic, filterType]);
 
     const paginatedData = React.useMemo(() => {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -143,7 +191,7 @@ export function ResultsClient() {
         const rows = filteredAndSortedData.map(d => [
             d._subjectName,
             d._topicName,
-            d.sourceType,
+            d._translatedType,
             d.title,
             d._dateStr,
             d.correctAnswers || 0,
@@ -160,6 +208,13 @@ export function ResultsClient() {
         link.click();
     };
 
+    const clearFilters = () => {
+        setSearchTerm("");
+        setFilterSubject("all");
+        setFilterTopic("all");
+        setFilterType("all");
+    };
+
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans flex flex-col">
             <header className={themeColors.HEADER_BG}>
@@ -173,7 +228,7 @@ export function ResultsClient() {
                         </div>
                         <div>
                             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 leading-none">Sınav Raporlarım</h1>
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Excel tablosu görünümü</p>
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Detaylı başarı analizi ve geçmiş</p>
                         </div>
                     </div>
 
@@ -199,16 +254,60 @@ export function ResultsClient() {
 
             <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 space-y-6">
                 
-                {/* Filters & Actions */}
-                <div className={cn("rounded-3xl p-4 md:p-5 flex flex-col md:flex-row items-center justify-between gap-4", themeColors.CARD_BG)}>
-                    <div className="relative w-full md:max-w-md">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                        <Input placeholder="Ders, konu veya sınav adı ile ara..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10 h-11 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 focus:bg-white transition-all" />
+                {/* Filters & Actions Panel */}
+                <div className={cn("rounded-3xl p-4 md:p-6 space-y-4", themeColors.CARD_BG)}>
+                    <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+                        <div className="relative w-full lg:max-w-md">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <Input placeholder="Sınav adı ara..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10 h-11 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 focus:bg-white transition-all" />
+                        </div>
+                        <div className="flex flex-wrap gap-2 w-full lg:w-auto justify-end">
+                            <Button variant="outline" className="rounded-xl h-11 font-bold border-slate-200 dark:border-slate-800" onClick={handleDownloadCSV}>
+                                <Download className="mr-2 h-4 w-4" /> CSV İndir
+                            </Button>
+                        </div>
                     </div>
-                    <div className="flex gap-2 w-full md:w-auto">
-                        <Button variant="outline" className="flex-1 md:flex-none rounded-xl h-11 font-bold border-slate-200 dark:border-slate-800" onClick={handleDownloadCSV}>
-                            <Download className="mr-2 h-4 w-4" /> CSV İndir
-                        </Button>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider mr-2">
+                            <Filter className="w-3.5 h-3.5" /> Filtrele:
+                        </div>
+
+                        <Select value={filterSubject} onValueChange={setFilterSubject}>
+                            <SelectTrigger className={themeColors.FILTER_SELECT}>
+                                <SelectValue placeholder="Ders" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white dark:bg-slate-900">
+                                <SelectItem value="all">Tüm Dersler</SelectItem>
+                                {subjectOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={filterTopic} onValueChange={setFilterTopic}>
+                            <SelectTrigger className={themeColors.FILTER_SELECT}>
+                                <SelectValue placeholder="Konu" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white dark:bg-slate-900">
+                                <SelectItem value="all">Tüm Konular</SelectItem>
+                                {topicOptions.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={filterType} onValueChange={setFilterType}>
+                            <SelectTrigger className={themeColors.FILTER_SELECT}>
+                                <SelectValue placeholder="Tür" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white dark:bg-slate-900">
+                                <SelectItem value="all">Tüm Türler</SelectItem>
+                                {typeOptions.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+
+                        {(filterSubject !== 'all' || filterTopic !== 'all' || filterType !== 'all' || searchTerm) && (
+                            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-10 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl font-bold">
+                                <RotateCcw className="mr-1.5 w-3.5 h-3.5" /> Temizle
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -235,7 +334,9 @@ export function ResultsClient() {
                                         <TableCell className="px-4 py-4 font-bold text-slate-800 dark:text-slate-200">{test._subjectName}</TableCell>
                                         <TableCell className="px-4 py-4 text-xs font-semibold text-slate-500">{test._topicName}</TableCell>
                                         <TableCell className="px-4 py-4">
-                                            <Badge variant="outline" className="text-[9px] uppercase font-black px-1.5 py-0 border-slate-200 dark:border-slate-800">{test.sourceType}</Badge>
+                                            <Badge variant="outline" className="text-[9px] uppercase font-black px-1.5 py-0 border-slate-200 dark:border-slate-800">
+                                                {test._translatedType}
+                                            </Badge>
                                         </TableCell>
                                         <TableCell className="px-4 py-4 font-black text-sm text-indigo-700 dark:text-indigo-300 truncate max-w-[250px]">{test.title}</TableCell>
                                         <TableCell className="px-4 py-4 text-xs text-slate-400 font-mono whitespace-nowrap">{test._dateStr}</TableCell>
@@ -250,7 +351,7 @@ export function ResultsClient() {
                                                     {test._net.toFixed(2)}
                                                 </div>
                                             ) : (
-                                                <Badge variant="outline" className="animate-pulse bg-amber-50 text-amber-600 border-amber-200 text-[10px]">Bekleniyor</Badge>
+                                                <Badge variant="outline" className="animate-pulse bg-amber-50 text-amber-600 border-amber-200 text-[10px] font-bold">Değerlendiriliyor</Badge>
                                             )}
                                         </TableCell>
                                     </TableRow>
@@ -260,7 +361,7 @@ export function ResultsClient() {
                         {filteredAndSortedData.length === 0 && (
                             <div className="py-20 flex flex-col items-center justify-center text-center">
                                 <Calculator className="h-12 w-12 text-slate-200 mb-4" />
-                                <h3 className="font-bold text-slate-400">Sonuç bulunamadı.</h3>
+                                <h3 className="font-bold text-slate-400">Aradığınız kriterlere uygun sonuç bulunamadı.</h3>
                             </div>
                         )}
                     </div>
@@ -272,9 +373,9 @@ export function ResultsClient() {
                         <Button variant="ghost" className="rounded-xl h-11" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}>
                             <ChevronLeft className="mr-2 h-5 w-5" /> Önceki
                         </Button>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 overflow-x-auto max-w-[200px] sm:max-w-none scrollbar-hide">
                             {Array.from({ length: totalPages }).map((_, i) => (
-                                <button key={i} onClick={() => setCurrentPage(i + 1)} className={cn("w-10 h-10 rounded-xl font-bold transition-all", currentPage === i + 1 ? "bg-indigo-600 text-white shadow-lg" : "hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500")}>
+                                <button key={i} onClick={() => setCurrentPage(i + 1)} className={cn("w-10 h-10 shrink-0 rounded-xl font-bold transition-all", currentPage === i + 1 ? "bg-indigo-600 text-white shadow-lg" : "hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500")}>
                                     {i + 1}
                                 </button>
                             ))}
