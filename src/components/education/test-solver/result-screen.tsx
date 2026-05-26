@@ -48,6 +48,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                 const sAns = test.studentAnswers?.[qNum];
                 let cAns = test.answerKey?.[qNum];
                 
+                // Yazılı testlerde cevap metni ile şık harfini eşleştir
                 if (test.sourceType === 'json' && questions[i-1]) {
                     const q = questions[i-1];
                     const foundIdx = q.options.findIndex((opt: string) => opt.trim() === q.answer?.trim());
@@ -68,15 +69,15 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
     const studentAnswer = test.openEnded ? (test.studentTextAnswers?.[qNum] || null) : (test.studentAnswers?.[qNum] || null);
     const feedback = test.studentTextAnswersFeedback?.[qNum];
 
-    const getCorrectAnswerLabel = React.useCallback(() => {
+    // Doğru cevabın harf etiketini (A, B, C...) döndüren yardımcı
+    const cAnsLabel = React.useMemo(() => {
         if (test.sourceType === 'json' && questions[selectedIdx]) {
-            const foundIdx = questions[selectedIdx].options.findIndex((opt: string) => opt.trim() === questions[selectedIdx].answer?.trim());
+            const q = questions[selectedIdx];
+            const foundIdx = q.options.findIndex((opt: string) => opt.trim() === q.answer?.trim());
             return foundIdx !== -1 ? String.fromCharCode(65 + foundIdx) : null;
         }
         return test.answerKey?.[qNum] || null;
     }, [test, questions, selectedIdx, qNum]);
-
-    const cAnsLabel = getCorrectAnswerLabel();
 
     const subjectAnalysis = React.useMemo(() => {
         if (!examDetails) return null;
@@ -113,6 +114,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full items-start pb-20">
             <div className="lg:col-span-8 space-y-6">
+                {/* Genel Skor Kartı */}
                 <Card className="rounded-[2.5rem] border-none shadow-xl bg-gradient-to-br from-indigo-600 to-purple-700 text-white overflow-hidden relative">
                     <div className="absolute top-0 right-0 p-8 opacity-10"><Target className="w-32 h-32" /></div>
                     <CardContent className="p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
@@ -137,6 +139,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                     </CardContent>
                 </Card>
 
+                {/* Ders Bazlı Analiz (Sadece Denemeler İçin) */}
                 {test.sourceType === 'exam' && subjectAnalysis && (
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 px-2">
@@ -181,6 +184,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                     </div>
                 )}
 
+                {/* Soru Detay Paneli */}
                 <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
                     <div className={cn("p-4 text-white flex justify-between items-center font-bold transition-colors shrink-0", 
                         status === 'correct' ? "bg-emerald-600" : status === 'incorrect' ? "bg-rose-600" : "bg-slate-600"
@@ -217,7 +221,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                                 <div className="grid grid-cols-1 gap-2">
                                     {(test.sourceType === 'json' && questions[selectedIdx] ? questions[selectedIdx].options : ['A', 'B', 'C', 'D', 'E']).map((opt: string, i: number) => {
                                         const label = test.sourceType === 'json' ? String.fromCharCode(65 + i) : opt;
-                                        const text = test.sourceType === 'json' ? opt : '';
+                                        const text = test.sourceType === 'json' ? opt : `Seçenek ${label}`;
                                         
                                         const isCorrect = label === cAnsLabel;
                                         const isStudentChoice = label === studentAnswer;
@@ -228,8 +232,8 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                                                 key={label}
                                                 className={cn(
                                                     "flex items-center gap-4 p-4 rounded-2xl border-2 transition-all",
-                                                    isCorrect ? "bg-emerald-50 border-emerald-500 dark:bg-emerald-950/30 shadow-md" :
-                                                    isWrongChoice ? "bg-rose-50 border-rose-500 dark:bg-rose-950/30 shadow-md" :
+                                                    isCorrect ? "bg-emerald-50 border-emerald-500 dark:bg-emerald-950/30 shadow-md border-opacity-100" :
+                                                    isWrongChoice ? "bg-rose-50 border-rose-500 dark:bg-rose-950/30 shadow-md border-opacity-100" :
                                                     "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 opacity-60"
                                                 )}
                                             >
@@ -243,7 +247,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                                                 </div>
                                                 <div className="flex-1 flex items-center justify-between">
                                                     <span className={cn("font-bold text-sm", isCorrect ? "text-emerald-700 dark:text-emerald-300" : isWrongChoice ? "text-rose-700 dark:text-rose-300" : "text-slate-500")}>
-                                                        {text || "Seçenek " + label}
+                                                        {text}
                                                     </span>
                                                     {isCorrect && <Check className="w-5 h-5 text-emerald-600" strokeWidth={3} />}
                                                     {isWrongChoice && <X className="w-5 h-5 text-rose-600" strokeWidth={3} />}
@@ -268,10 +272,11 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                 </div>
             </div>
 
+            {/* Sağ Soru Listesi (Desktop) */}
             <div className="lg:col-span-4 hidden lg:block sticky top-28">
                 <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col h-[calc(100vh-180px)] max-h-[700px]">
                     <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center font-bold text-slate-800 dark:text-slate-100 text-xs uppercase tracking-widest shrink-0">
-                        Soru Detayları
+                        Soru Listesi
                         <Badge variant="outline" className="bg-white dark:bg-slate-800">{totalQuestions} Soru</Badge>
                     </div>
                     <ScrollArea className="flex-1 w-full">
@@ -314,6 +319,7 @@ export function ResultScreen({ test, questions }: ResultScreenProps) {
                 </div>
             </div>
 
+            {/* Mobil FAB: Soru Gezgini */}
             <div className="lg:hidden">
                  <Button 
                     type="button"
