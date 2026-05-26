@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { format, parse } from "date-fns";
 import { tr } from "date-fns/locale";
-import { CalendarIcon, Loader2, Code, FileJson, User, BookOpen, Calendar as CalendarLucide, Copy, Check } from "lucide-react";
+import { CalendarIcon, Loader2, Code, FileJson, User, BookOpen, Calendar as CalendarLucide, Copy, Check, Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { FamilyMember, Test } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "./ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 
 // --- DESIGN SYSTEM: Glassmorphism ---
 const glassColors = {
@@ -79,19 +80,18 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
       title: initialData?.title || "",
       subject: initialData?.subject || "",
       assigneeId: initialData?.studentId || undefined,
-      dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
+      dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       jsonContent: initialData?.jsonQuestions ? JSON.stringify(initialData.jsonQuestions, null, 2) : "",
     },
   });
 
-  // Re-sync when initialData changes (for editing)
   React.useEffect(() => {
     if (initialData) {
       form.reset({
         title: initialData.title,
         subject: initialData.subject,
-        assigneeId: initialData.studentId,
-        dueDate: initialData.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
+        assigneeId: undefined, // Atama yaparken öğrenciyi her seferinde seçtir
+        dueDate: initialData.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         jsonContent: initialData.jsonQuestions ? JSON.stringify(initialData.jsonQuestions, null, 2) : "",
       });
     }
@@ -122,16 +122,16 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
         subject: values.subject,
         studentId: values.assigneeId,
         questionCount: parsedQuestions.length,
-        assignedDate: initialData?.assignedDate || format(new Date(), 'dd MMMM yyyy', { locale: tr }),
+        assignedDate: format(new Date(), 'dd MMMM yyyy', { locale: tr }),
         dueDate: format(values.dueDate, 'dd MMMM yyyy', { locale: tr }),
         sourceType: 'json' as const,
-        status: initialData?.status || 'Atandı' as const,
-        isArchived: initialData?.isArchived || false,
+        status: 'Atandı' as const,
+        isArchived: false,
         jsonQuestions: parsedQuestions,
       };
       onFormSubmit(testData);
     } catch (err: any) {
-      toast({ title: 'Hata', description: 'Test oluşturulurken bir sorun oluştu.', variant: 'destructive' });
+      toast({ title: 'Hata', description: 'İşlem sırasında bir sorun oluştu.', variant: 'destructive' });
       console.error(err);
     } finally {
       setLoading(false);
@@ -142,8 +142,15 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col h-full overflow-hidden">
         <ScrollArea className="flex-1 -mx-6 px-6">
-            <div className="space-y-5 py-4 pt-2">
+            <div className="space-y-6 py-4 pt-2">
                 
+                <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 flex items-start gap-3">
+                    <Info className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                        Yazılı testler metin tabanlı sorulardan oluşur. Soru metnini, şıkları ve doğru cevabı JSON formatında girerek atama yapabilirsiniz.
+                    </p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <FormField control={form.control} name="title" render={({ field }) => (
                         <FormItem>
@@ -165,11 +172,11 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <FormField control={form.control} name="assigneeId" render={({ field }) => (
                         <FormItem>
-                            <FormLabel className={glassColors.LABEL}><User className="w-3.5 h-3.5 text-emerald-400"/> Sorumlu Kişi</FormLabel>
+                            <FormLabel className={glassColors.LABEL}><User className="w-3.5 h-3.5 text-emerald-400"/> Öğrenci Seçin</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                     <SelectTrigger className={glassColors.INPUT_BG}>
-                                        <SelectValue placeholder="Birini seçin" />
+                                        <SelectValue placeholder="Atanacak öğrenci..." />
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent className={glassColors.POPOVER_BG}>
@@ -186,7 +193,7 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <FormControl>
-                                        <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground", glassColors.INPUT_BG)}>
+                                        <Button variant={"outline"} className={cn("w-full h-10 pl-3 text-left font-normal", !field.value && "text-muted-foreground", glassColors.INPUT_BG)}>
                                             {field.value ? format(field.value, "d MMMM yyyy", { locale: tr }) : <span>Tarih seçin</span>}
                                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                         </Button>
@@ -197,7 +204,7 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
                                         mode="single" 
                                         selected={field.value} 
                                         onSelect={field.onChange} 
-                                        disabled={(date) => date < new Date() && !initialData} 
+                                        disabled={(date) => date < new Date()} 
                                         initialFocus 
                                         className="bg-slate-950 text-slate-200 rounded-md border border-white/10"
                                     />
@@ -240,13 +247,13 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
         </ScrollArea>
         
         <div className="pt-6 border-t border-white/5 mt-auto">
-            <Button type="submit" className={cn("w-full h-12 text-base font-semibold", glassColors.BUTTON_PRIMARY)} disabled={loading}>
+            <Button type="submit" className={cn("w-full h-12 text-base font-bold", glassColors.BUTTON_PRIMARY)} disabled={loading}>
             {loading ? (
                 <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Kaydediliyor...
                 </>
             ) : (
-                initialData ? 'Değişiklikleri Kaydet' : 'Testi Oluştur ve Ata'
+                initialData ? 'Ödevi Onayla ve Ata' : 'Yazılı Ödevini Oluştur'
             )}
             </Button>
         </div>

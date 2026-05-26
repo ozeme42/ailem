@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from 'next/link';
-import { ArrowLeft, FileJson, PlusCircle, Trash2, Edit, Send, Repeat, Loader2, MoreVertical, BookOpen, User, Calendar as CalendarLucide } from "lucide-react";
+import { ArrowLeft, FileJson, PlusCircle, Trash2, Edit, Send, Repeat, Loader2, MoreVertical, BookOpen, User, Calendar as CalendarLucide, ClipboardCheck, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { onTestsUpdate, deleteTest, addTest, updateTest } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
@@ -37,6 +37,7 @@ export function JsonTestsClient() {
   React.useEffect(() => {
     if (!familyId) return;
     const unsub = onTestsUpdate((allTests) => {
+      // Sadece yazılı (json) tipindeki testleri filtrele
       setJsonTests(allTests.filter(t => t.sourceType === 'json'));
       setLoading(false);
     });
@@ -51,13 +52,13 @@ export function JsonTestsClient() {
   const handleFormSubmit = async (data: Omit<Test, 'id' | 'familyId'>) => {
     try {
       if (editingTest && !reassigningTest) {
-        // Update existing
+        // Mevcut olanı güncelle
         await updateTest(editingTest.id, data);
         toast({ title: "✅ Yazılı Test Güncellendi" });
       } else {
-        // Create new or Clone
+        // Yeni oluştur veya Klonla (Atama yap)
         await addTest(data);
-        toast({ title: reassigningTest ? "✅ Test Yeni Görev Olarak Atandı" : "✅ Yazılı Test Oluşturuldu" });
+        toast({ title: reassigningTest ? "✅ Ödev Başarıyla Atandı" : "✅ Yazılı Test Oluşturuldu" });
       }
       setIsFormOpen(false);
       setEditingTest(null);
@@ -100,11 +101,11 @@ export function JsonTestsClient() {
                     </div>
                     <div>
                         <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-100 leading-none">Yazılı Testler</h1>
-                        <p className="text-xs font-medium text-slate-400 mt-1">Yönetim Paneli</p>
+                        <p className="text-xs font-medium text-slate-400 mt-1">Ödev Atama ve Yönetim</p>
                     </div>
                 </div>
                 <Button onClick={() => { setReassigningTest(null); handleOpenForm(null); }} className={cn("rounded-xl h-11 px-5 font-bold", themeColors.BUTTON_PRIMARY)}>
-                    <PlusCircle className="mr-2 h-5 w-5" /> <span className="hidden sm:inline">Yeni Yazılı</span>
+                    <PlusCircle className="mr-2 h-5 w-5" /> <span className="hidden sm:inline">Yeni Yazılı Oluştur</span>
                 </Button>
             </div>
         </header>
@@ -122,41 +123,43 @@ export function JsonTestsClient() {
                                         <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5">
                                             {test.subject}
                                         </Badge>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white hover:bg-slate-800 rounded-lg">
-                                                    <MoreVertical className="w-4 h-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-100 w-48 rounded-xl p-1">
-                                                <DropdownMenuItem onClick={() => { setReassigningTest(test); handleOpenForm(test); }} className="cursor-pointer hover:bg-slate-800 rounded-lg py-2.5">
-                                                    <Repeat className="mr-2 h-4 w-4 text-indigo-400" /> Tekrar Ata / Klonla
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => { setReassigningTest(null); handleOpenForm(test); }} className="cursor-pointer hover:bg-slate-800 rounded-lg py-2.5">
-                                                    <Edit className="mr-2 h-4 w-4 text-blue-400" /> Düzenle
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator className="bg-slate-800" />
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 cursor-pointer focus:text-rose-400 focus:bg-rose-500/10 rounded-lg py-2.5">
-                                                            <Trash2 className="mr-2 h-4 w-4" /> Testi Sil
-                                                        </DropdownMenuItem>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>Testi Sil?</AlertDialogTitle>
-                                                            <AlertDialogDescription className="text-slate-400">
-                                                                "{test.title}" yazılı testi kalıcı olarak silinecektir.
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDeleteTest(test.id)} className="bg-rose-600 hover:bg-rose-700 border-none">Evet, Sil</AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        <div className="flex items-center gap-1">
+                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white" onClick={() => { setReassigningTest(null); handleOpenForm(test); }}>
+                                                <Edit className="w-4 h-4" />
+                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white hover:bg-slate-800 rounded-lg">
+                                                        <MoreVertical className="w-4 h-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-100 w-48 rounded-xl p-1">
+                                                    <DropdownMenuItem onClick={() => router.push(`/education/${test.id}`)} className="cursor-pointer hover:bg-slate-800 rounded-lg py-2.5">
+                                                        <BookOpen className="mr-2 h-4 w-4 text-indigo-400" /> Sınavı İncele
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator className="bg-slate-800" />
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 cursor-pointer focus:text-rose-400 focus:bg-rose-50 rounded-lg py-2.5">
+                                                                <Trash2 className="mr-2 h-4 w-4" /> Testi Sil
+                                                            </DropdownMenuItem>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Testi Sil?</AlertDialogTitle>
+                                                                <AlertDialogDescription className="text-slate-400">
+                                                                    "{test.title}" yazılı testi kalıcı olarak silinecektir.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleDeleteTest(test.id)} className="bg-rose-600 hover:bg-rose-700 border-none">Evet, Sil</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     </div>
                                     <CardTitle className="text-lg font-bold text-slate-100 group-hover:text-indigo-400 transition-colors line-clamp-2">{test.title}</CardTitle>
                                 </CardHeader>
@@ -181,7 +184,7 @@ export function JsonTestsClient() {
                                                 {student.name.charAt(0)}
                                             </div>
                                             <div className="min-w-0">
-                                                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest leading-none">Atanan</p>
+                                                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest leading-none">Son Atanan</p>
                                                 <p className="text-sm font-semibold text-slate-200 truncate mt-1">{student.name}</p>
                                             </div>
                                         </div>
@@ -189,11 +192,12 @@ export function JsonTestsClient() {
                                 </CardContent>
                                 
                                 <CardFooter className="p-4 pt-0 mt-auto">
-                                    <Link href={`/education/${test.id}`} className="w-full">
-                                        <Button variant="secondary" className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border-none font-bold h-10 rounded-xl">
-                                            {isCompleted ? 'İncele' : 'Testi Çöz'}
-                                        </Button>
-                                    </Link>
+                                    <Button 
+                                        onClick={() => { setReassigningTest(test); handleOpenForm(test); }} 
+                                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black h-11 rounded-xl shadow-lg shadow-indigo-500/20"
+                                    >
+                                        <Repeat className="mr-2 h-4 w-4" /> Ödevi Ata
+                                    </Button>
                                 </CardFooter>
                             </Card>
                         );
@@ -205,7 +209,7 @@ export function JsonTestsClient() {
                         <FileJson className="h-10 w-10 text-slate-500" />
                     </div>
                     <h3 className="text-xl font-bold text-slate-200">Yazılı Test Bulunamadı</h3>
-                    <p className="text-slate-400 mt-2 text-sm max-w-xs mx-auto">Yeni bir test oluşturarak başlayın.</p>
+                    <p className="text-slate-400 mt-2 text-sm max-w-xs mx-auto">Henüz bir yazılı ödevi oluşturmamışsınız. Yeni bir tane ekleyerek başlayın.</p>
                     <Button onClick={() => handleOpenForm(null)} className="mt-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold px-8 shadow-lg shadow-indigo-500/20">
                         <PlusCircle className="mr-2 h-5 w-5" /> İlk Testi Oluştur
                     </Button>
@@ -218,8 +222,11 @@ export function JsonTestsClient() {
                 <DialogHeader className="p-6 pb-2 border-b border-white/5 bg-white/5">
                     <DialogTitle className="text-xl font-bold flex items-center gap-2">
                         {reassigningTest ? <Repeat className="w-5 h-5 text-indigo-400" /> : editingTest ? <Edit className="w-5 h-5 text-blue-400" /> : <PlusCircle className="w-5 h-5 text-emerald-400" />}
-                        {reassigningTest ? 'Testi Tekrar Ata' : editingTest ? 'Yazılıyı Düzenle' : 'Yeni Yazılı Oluştur'}
+                        {reassigningTest ? 'Yazılıyı Ödev Olarak Ata' : editingTest ? 'Yazılıyı Düzenle' : 'Yeni Yazılı Ödevi Oluştur'}
                     </DialogTitle>
+                    <DialogDescription className="text-slate-400">
+                        {reassigningTest ? 'Bu yazılı içeriğini yeni bir öğrenciye atayın.' : 'Soru metinlerini ve doğru cevapları belirleyin.'}
+                    </DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 overflow-hidden p-6 pt-0">
                     <NewJsonTestForm
