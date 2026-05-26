@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -21,6 +20,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getCategoryName } from "@/app/education/page";
 import { format, parseISO } from "date-fns";
 import { tr } from 'date-fns/locale';
+import { 
+    DropdownMenu, 
+    DropdownMenuContent, 
+    DropdownMenuItem, 
+    DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 
 // --- DESIGN SYSTEM ---
 const themeColors = {
