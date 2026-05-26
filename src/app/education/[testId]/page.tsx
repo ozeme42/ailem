@@ -101,7 +101,7 @@ export default function UnifiedTestPage() {
         if (!test || !familyId) return;
         setIsSubmitting(true);
         try {
-            // YAZILI (JSON) VE MCQ TESTLERİ HER ZAMAN OTOMATİK PUANLAMAYA GİDER
+            // Yazılı (JSON) ve MCQ testler her zaman otomatik puanlanır
             const isManualEvaluation = (test.sourceType === 'bank' || test.sourceType === 'trackedBook' || test.sourceType === 'mistake') && test.openEnded;
             let status: Test['status'] = isManualEvaluation ? 'Değerlendirme Bekliyor' : 'Sonuçlandı';
             
@@ -111,7 +111,7 @@ export default function UnifiedTestPage() {
                 status: status
             };
 
-            // Otomatik puanlama gerektirenler (Deneme, Soru Bankası Optikli, Yazılı)
+            // Otomatik puanlama (Deneme, Yazılı, Soru Bankası Optik)
             if (!isManualEvaluation) {
                 let correct = 0, incorrect = 0, empty = 0;
                 const finalAnswerKey: Record<string, string> = { ...test.answerKey };
@@ -128,7 +128,7 @@ export default function UnifiedTestPage() {
                     const sAns = studentAnswers[qNum];
                     let cAns = finalAnswerKey[qNum];
 
-                    // JSON Testi Harf Eşleştirme (Cevap metin olarak tutuluyorsa)
+                    // JSON Testi için harf eşleştirme
                     if (test.sourceType === 'json' && test.jsonQuestions?.[i-1]) {
                         const q = test.jsonQuestions[i-1];
                         const foundIdx = q.options.findIndex((o:string) => o.trim() === q.answer?.trim());
@@ -188,7 +188,7 @@ export default function UnifiedTestPage() {
     if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-950"><Loader2 className="w-12 h-12 animate-spin text-indigo-600" /></div>;
     if (!test) return <div className="flex flex-col items-center justify-center h-screen space-y-4"><h1>Ödev Bulunamadı</h1><Link href="/education"><Button>Geri Dön</Button></Link></div>;
 
-    // --- İNCELEME MODU ---
+    // --- İNCELEME MODU (SONUÇLANANLAR) ---
     if (test.status === 'Sonuçlandı') {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col p-4 md:p-8">
@@ -219,7 +219,7 @@ export default function UnifiedTestPage() {
         );
     }
 
-    // --- ÖZEL MODÜL: DENEME SINAVI ---
+    // --- DENEME SINAVI MODU ---
     if (test.sourceType === 'exam') {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col p-4 md:p-8">
@@ -263,7 +263,6 @@ export default function UnifiedTestPage() {
                 <div className="flex items-center gap-4">
                     {test.status === 'Atandı' && test.durationMinutes && <TestTimer durationMinutes={test.durationMinutes} onTimeUp={handleFinishTest} />}
                     {test.status === 'Değerlendirme Bekliyor' && <Badge className="bg-amber-600 px-4 py-1 rounded-full font-black text-white">DEĞERLENDİRİLİYOR</Badge>}
-                    {test.status === 'Sonuçlandı' && <Badge className="bg-emerald-600 px-4 py-1 rounded-full font-black text-white">BİTTİ</Badge>}
                 </div>
             </header>
 
