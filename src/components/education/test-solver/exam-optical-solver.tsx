@@ -1,14 +1,24 @@
-
 "use client";
 
 import * as React from "react";
 import { Test, PracticeExam, AnswerKey } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { onSinglePracticeExamUpdate } from "@/lib/dataService";
+import { onSinglePracticeExamUpdate, updateTest } from "@/lib/dataService";
 import { Check, X, Trophy, ListChecks, ChevronRight, AlertCircle, HelpCircle, BarChart3, Eye, EyeOff, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { 
+    AlertDialog, 
+    AlertDialogAction, 
+    AlertDialogCancel, 
+    AlertDialogContent, 
+    AlertDialogDescription, 
+    AlertDialogFooter, 
+    AlertDialogHeader, 
+    AlertDialogTitle, 
+    AlertDialogTrigger 
+} from "@/components/ui/alert-dialog";
 
 interface ExamOpticalSolverProps {
     test: Test;
@@ -21,7 +31,6 @@ interface ExamOpticalSolverProps {
 export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, isReviewMode = false }: ExamOpticalSolverProps) {
     const [examDetails, setExamDetails] = React.useState<PracticeExam | null>(null);
     const [openSubject, setOpenSubject] = React.useState<string | null>(null);
-    const [revealedSubjects, setRevealedSubjects] = React.useState<Set<string>>(new Set());
 
     React.useEffect(() => {
         if (test.sourceId) {
@@ -29,15 +38,12 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
         }
     }, [test.sourceId]);
 
-    const toggleReveal = (e: React.MouseEvent, subjectId: string) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setRevealedSubjects(prev => {
-            const next = new Set(prev);
-            if (next.has(subjectId)) next.delete(subjectId);
-            else next.add(subjectId);
-            return next;
-        });
+    const handleConfirmReveal = async (subjectId: string) => {
+        const revealedIds = test.revealedSubjectIds || [];
+        if (!revealedIds.includes(subjectId)) {
+            const updatedRevealedIds = [...revealedIds, subjectId];
+            await updateTest(test.id, { revealedSubjectIds: updatedRevealedIds });
+        }
     };
 
     if (!examDetails) return (
@@ -87,7 +93,7 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                     </div>
                     <div>
                         <h2 className={cn("text-2xl font-black tracking-tight", isReviewMode ? "text-white" : "text-slate-800 dark:text-slate-100")}>{examDetails.name}</h2>
-                        <p className={cn("text-sm font-bold opacity-70 uppercase tracking-widest", isReviewMode ? "text-indigo-100" : "text-slate-500")}>
+                        <p className={cn("text-sm font-bold opacity-70 uppercase tracking-widest", isReviewMode ? "text-indigo-100" : "text-slate-50")}>
                             {isReviewMode ? "SINAV ANALİZİ" : `${examDetails.subjects?.length} Ders • ${test.questionCount} Soru`}
                         </p>
                     </div>
@@ -142,7 +148,7 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
 
                     const threshold = Math.ceil(subject.questionCount * 0.9);
                     const isThresholdReached = answeredInSubject >= threshold;
-                    const isRevealed = isReviewMode || revealedSubjects.has(subject.id);
+                    const isRevealed = isReviewMode || (test.revealedSubjectIds || []).includes(subject.id);
 
                     return (
                         <AccordionItem key={subject.id} value={subject.id} className="border-none rounded-[2rem] overflow-hidden bg-white dark:bg-slate-900 shadow-md border border-slate-200 dark:border-slate-800">
@@ -162,14 +168,34 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                 <div className="flex items-center gap-3 shrink-0 mr-4">
                                     {!isRevealed ? (
                                         (isReviewMode || isThresholdReached) && (
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
-                                                onClick={(e) => toggleReveal(e, subject.id)}
-                                                className="h-10 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-white dark:bg-slate-800 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 shadow-sm relative z-10 animate-in zoom-in-95"
-                                            >
-                                                <BarChart3 className="w-4 h-4 mr-2" /> Ders Sonuçlarını Gör
-                                            </Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button 
+                                                        variant="outline" 
+                                                        size="sm" 
+                                                        className="h-10 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-white dark:bg-slate-800 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 shadow-sm relative z-10 animate-in zoom-in-95"
+                                                    >
+                                                        <BarChart3 className="w-4 h-4 mr-2" /> Ders Sonuçlarını Gör
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl">
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle className="text-xl font-black text-slate-900 dark:text-white">Sonuçları Gör?</AlertDialogTitle>
+                                                        <AlertDialogDescription className="text-slate-500 dark:text-slate-400">
+                                                            Bu dersin sonuçlarını açtığınızda cevaplarınız kilitlenecek ve <strong>artık geri dönüşü olmayacaktır.</strong> Devam etmek istiyor musunuz?
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter className="mt-4 gap-2">
+                                                        <AlertDialogCancel className="rounded-xl h-11 bg-slate-100 dark:bg-slate-800 border-none hover:bg-slate-200 dark:hover:bg-slate-700 font-bold m-0">Vazgeç</AlertDialogCancel>
+                                                        <AlertDialogAction 
+                                                            onClick={() => handleConfirmReveal(subject.id)}
+                                                            className="rounded-xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-bold m-0 shadow-lg shadow-indigo-500/20"
+                                                        >
+                                                            Onayla ve Gör
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
                                         )
                                     ) : (
                                         <div className="flex items-center gap-2 md:gap-4 bg-white/80 dark:bg-black/40 p-2 px-4 rounded-2xl border-2 border-indigo-500/30 animate-in zoom-in-95 shadow-lg relative z-10">
@@ -198,15 +224,6 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                                 </p>
                                                 <p className="text-[8px] font-bold text-slate-400 uppercase">Başarı</p>
                                             </div>
-
-                                            {!isReviewMode && (
-                                                <button 
-                                                    onClick={(e) => toggleReveal(e, subject.id)}
-                                                    className="ml-2 text-slate-400 hover:text-rose-500 transition-colors"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </button>
-                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -247,9 +264,9 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                                             <button 
                                                                 key={opt}
                                                                 type="button"
-                                                                disabled={isReviewMode}
+                                                                disabled={isReviewMode || showResult}
                                                                 onClick={() => {
-                                                                    if (isReviewMode) return;
+                                                                    if (isReviewMode || showResult) return;
                                                                     // Eğer zaten seçiliyse temizle (Toggle logic)
                                                                     const newValue = isSelected ? "" : opt;
                                                                     onAnswer(qNum, newValue);

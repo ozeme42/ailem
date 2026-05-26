@@ -464,6 +464,7 @@ export interface Test {
   topicId?: string;
   jsonQuestions?: JsonTestQuestion[]; // For text-based questions
   htmlContent?: string; // HTML content for the test
+  revealedSubjectIds?: string[]; // TRACK REVEALED SUBJECTS FOR EXAMS
 }
 
 export interface ShoppingItem {
