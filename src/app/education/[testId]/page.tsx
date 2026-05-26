@@ -165,6 +165,7 @@ export default function OpticalFormPage() {
     // UI Navigation States
     const [showMobilePalette, setShowMobilePalette] = React.useState(false);
     const [showMobileOptical, setShowMobileOptical] = React.useState(false);
+    const [showDesktopOptical, setShowDesktopOptical] = React.useState(true);
 
     const isInitializedRef = React.useRef(false);
     const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -439,12 +440,28 @@ export default function OpticalFormPage() {
                              <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-[95%] lg:hidden z-50"><Button type="button" onClick={() => handleSubmit(false)} className="w-full h-14 rounded-xl bg-indigo-600 text-white font-black shadow-lg">Sınavı Bitir</Button></div>
                         </main>
                     ) : test.sourceType === 'html' ? (
-                        /* HTML TEST ÇÖZÜM MODU */
-                        <main className="flex-1 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-4 pb-32">
-                             <div className="lg:col-span-9 bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden h-[500px] lg:h-[85vh]">
+                        /* HTML TEST ÇÖZÜM MODU - Genişletilmiş Görünüm */
+                        <main className="flex-1 max-w-[1600px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-4 pb-32">
+                             <div className={cn(
+                                "transition-all duration-500 bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden",
+                                showDesktopOptical ? "lg:col-span-9" : "lg:col-span-12",
+                                "min-h-[600px] lg:h-[88vh]"
+                             )}>
                                 <iframe srcDoc={getIframeDocument(test.htmlContent || "")} className="w-full h-full border-none" title={test.title} sandbox="allow-scripts allow-same-origin" />
                              </div>
                              
+                             {/* Desktop Toggle Button for HTML */}
+                             <div className="hidden lg:block fixed left-6 bottom-24 z-50">
+                                <Button 
+                                    type="button" 
+                                    variant="outline"
+                                    onClick={() => setShowDesktopOptical(!showDesktopOptical)} 
+                                    className="rounded-full shadow-2xl bg-white h-14 w-14 p-0 border-slate-200 hover:bg-slate-50 transition-all hover:scale-105 active:scale-95"
+                                >
+                                    {showDesktopOptical ? <ChevronRight className="w-8 h-8 text-slate-600" /> : <LayoutGrid className="w-8 h-8 text-indigo-600" />}
+                                </Button>
+                             </div>
+
                              {/* Mobile Toggle Button for HTML */}
                              <div className="fixed bottom-24 right-4 lg:hidden z-50">
                                 <Button type="button" onClick={() => setShowMobileOptical(!showMobileOptical)} className="rounded-full shadow-2xl bg-indigo-600 h-14 w-14 p-0 active:scale-95 transition-transform">
@@ -453,15 +470,16 @@ export default function OpticalFormPage() {
                              </div>
 
                              <div className={cn(
-                                "lg:col-span-3 transition-all duration-300",
-                                showMobileOptical ? "fixed inset-0 z-[60] bg-slate-50/95 backdrop-blur-xl p-4 flex flex-col" : "hidden lg:flex lg:flex-col"
+                                "transition-all duration-300",
+                                showMobileOptical ? "fixed inset-0 z-[60] bg-slate-50/95 backdrop-blur-xl p-4 flex flex-col" : 
+                                (showDesktopOptical ? "lg:col-span-3 lg:flex lg:flex-col" : "hidden")
                              )}>
                                 <div className="flex justify-between items-center mb-4 lg:hidden">
                                     <h3 className="font-black text-slate-800 text-lg">Cevap Formu</h3>
                                     <Button type="button" variant="ghost" size="icon" onClick={() => setShowMobileOptical(false)} className="rounded-full"><X className="w-6 h-6"/></Button>
                                 </div>
 
-                                <Card className="rounded-3xl border-slate-200 shadow-xl flex-1 flex flex-col overflow-hidden">
+                                <Card className="rounded-3xl border-slate-200 shadow-xl flex-1 flex flex-col overflow-hidden h-full">
                                     <div className="p-4 border-b bg-slate-50/50 flex justify-between items-center"><h3 className="font-black text-slate-800 text-sm flex items-center gap-2"><LayoutGrid className="w-4 h-4 text-indigo-600" /> Cevap Formu</h3></div>
                                     <ScrollArea className="flex-1">
                                         <div className="p-4 space-y-3">
@@ -483,7 +501,7 @@ export default function OpticalFormPage() {
                                             })}
                                         </div>
                                     </ScrollArea>
-                                    <div className="p-4 border-t"><Button type="button" onClick={() => setShowMobileOptical(false)} className="w-full h-12 rounded-xl bg-indigo-600 text-white font-black">Kapat</Button></div>
+                                    <div className="p-4 border-t"><Button type="button" onClick={() => { setShowMobileOptical(false); setShowDesktopOptical(false); }} className="w-full h-12 rounded-xl bg-indigo-600 text-white font-black">Kapat</Button></div>
                                 </Card>
                              </div>
                         </main>
