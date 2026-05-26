@@ -30,6 +30,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { motion } from "framer-motion";
 
@@ -333,8 +334,8 @@ export default function StatsClient() {
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(142,142,147,0.15)" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: COLORS.GRAY }} dy={10} />
-                                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600, fill: COLORS.GRAY }} />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontBold: 700, fill: COLORS.GRAY }} dy={10} />
+                                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontBold: 600, fill: COLORS.GRAY }} />
                                 <ChartTooltip 
                                     content={<ChartTooltipContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" />}
                                 />
@@ -439,7 +440,7 @@ export default function StatsClient() {
                          let intensity = "bg-slate-100 dark:bg-slate-800";
                          if (count > 0) intensity = "bg-emerald-200 dark:bg-emerald-900/30";
                          if (count > 50) intensity = "bg-emerald-400 dark:bg-emerald-700/60";
-                         if (count > 100) intensity = "bg-emerald-600 dark:bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]";
+                         if (count > 100) intensity = "bg-emerald-600 dark:bg-emerald-50 shadow-[0_0_10px_rgba(16,185,129,0.4)]";
 
                          return (
                              <div key={i} className="flex flex-col items-center gap-1.5">
