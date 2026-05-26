@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -7,7 +6,7 @@ import {
   ArrowLeft, Check, X, Percent, Search,
   Target, TrendingUp, AlertCircle, Award, Filter, RotateCcw, ChevronDown,
   Flame, Calendar, BarChart3, PieChart as PieIcon, LineChart as LineIcon,
-  Calculator, Zap, Layers, ChevronRight, Activity, BookOpen
+  Calculator, Zap, Layers, ChevronRight, Activity, BookOpen, Loader2
 } from "lucide-react";
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip,
@@ -470,4 +469,3 @@ function translateType(type: string) {
     };
     return types[type] || type;
 }
-
