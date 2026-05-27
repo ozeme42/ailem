@@ -17,7 +17,7 @@ import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip,
   XAxis, YAxis, Cell, PieChart, Pie, ComposedChart, Legend,
   Area, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  LineChart as RechartsLineChart, Line, LabelList
+  RechartsLineChart, Line, LabelList
 } from "recharts";
 import { useAuth } from "@/components/auth-provider";
 import { 
@@ -26,7 +26,6 @@ import {
   addPerformanceGoal, deletePerformanceGoal 
 } from "@/lib/dataService";
 import { cn } from "@/lib/utils";
-import { getCategoryName } from "@/app/education/page";
 import {
   format, startOfWeek, eachDayOfInterval,
   subDays, parseISO, eachMonthOfInterval, subMonths,
@@ -52,6 +51,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { PerformanceGoals } from "@/components/education/performance-goals";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import type { Test } from "@/lib/data";
 
 // --- RENK SİSTEMİ ---
 const C = {
@@ -73,6 +73,12 @@ type SortKey = 'subject' | 'total' | 'correct' | 'incorrect' | 'blank' | 'net' |
 type SortDir = 'asc' | 'desc';
 
 // --- UTILS ---
+const getCategoryName = (test: Test): string => {
+  if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
+  if (test.sourceType === 'mistake') return 'Yanlışlarım';
+  return test.subject || 'Diğer';
+};
+
 function translateType(type: string) {
   const map: Record<string, string> = {
     exam: 'Deneme', bank: 'Soru Bankası', json: 'Yazılı',
@@ -84,25 +90,6 @@ function rateColor(r: number) {
   if (r >= 75) return C.EMERALD;
   if (r >= 50) return C.AMBER;
   return C.ROSE;
-}
-function rateLabel(r: number) {
-  if (r >= 80) return 'Mükemmel';
-  if (r >= 65) return 'İyi';
-  if (r >= 50) return 'Orta';
-  if (r >= 35) return 'Zayıf';
-  return 'Kritik';
-}
-function exportCSV(rows: any[], filename: string) {
-  if (!rows.length) return;
-  const headers = Object.keys(rows[0]);
-  const lines = [
-    headers.join(','),
-    ...rows.map(r => headers.map(h => `"${String(r[h]).replace(/"/g, '""')}"`).join(','))
-  ];
-  const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
 }
 
 // --- ALT BİLEŞENLER ---
@@ -347,12 +334,6 @@ export function StatsClient() {
     };
   }, [enrichedBaseData]);
 
-  const filteredWorstList = React.useMemo(() =>
-    improvementModalFilter === 'all' ? topicStats.allToImprove
-      : topicStats.allToImprove.filter(t => t.subject === improvementModalFilter),
-    [topicStats.allToImprove, improvementModalFilter]
-  );
-
   const timeSeriesData = React.useMemo(() => {
     const today = new Date();
     const dataMap = new Map<string, { name: string; questions: number; net: number; tests: number; correct: number; incorrect: number }>();
@@ -417,37 +398,6 @@ export function StatsClient() {
       .filter(t => t._subjectName === drawerSubject)
       .sort((a, b) => b._solvedDate.getTime() - a._solvedDate.getTime());
   }, [processedData, drawerSubject]);
-
-  const top3SubjectNames = React.useMemo(() => [...subjectDetailedStats].sort((a, b) => b.total - a.total).slice(0, 3).map(s => s.subject), [subjectDetailedStats]);
-
-  const subjectTrendData = React.useMemo(() => {
-    const today = new Date();
-    const dataMap = new Map<string, any>();
-    eachMonthOfInterval({ start: subMonths(today, 5), end: today }).forEach(m => {
-      const key = format(m, 'yyyy-MM');
-      const entry: any = { name: format(m, 'MMM', { locale: tr }) };
-      top3SubjectNames.forEach(s => (entry[s] = { total: 0, correct: 0 }));
-      dataMap.set(key, entry);
-    });
-    processedData.forEach(t => {
-      if (!top3SubjectNames.includes(t._subjectName)) return;
-      const key = format(t._solvedDate, 'yyyy-MM');
-      if (dataMap.has(key)) { dataMap.get(key)[t._subjectName].total += t._totalQ; dataMap.get(key)[t._subjectName].correct += t._correct; }
-    });
-    return Array.from(dataMap.values()).map(entry => {
-      const row: any = { name: entry.name };
-      top3SubjectNames.forEach(s => { row[s] = entry[s].total > 0 ? parseFloat(((entry[s].correct / entry[s].total) * 100).toFixed(1)) : null; });
-      return row;
-    });
-  }, [processedData, top3SubjectNames]);
-
-  const dayOfWeekData = React.useMemo(() => {
-    const days = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
-    const map = Array(7).fill(0).map((_, i) => ({ name: days[i], total: 0, correct: 0 }));
-    processedData.forEach(t => { const d = t._solvedDate.getDay(); map[d].total += t._totalQ; map[d].correct += t._correct; });
-    const sorted = [map[1], map[2], map[3], map[4], map[5], map[6], map[0]];
-    return sorted.map(d => ({ ...d, rate: d.total > 0 ? parseFloat(((d.correct / d.total) * 100).toFixed(1)) : 0 }));
-  }, [processedData]);
 
   const typeBreakdown = React.useMemo(() => {
     const types = ['exam', 'bank', 'json', 'trackedBook', 'html', 'quick', 'mistake'];
@@ -977,8 +927,18 @@ export function StatsClient() {
             <DialogTitle>Tüm Konu Analizi</DialogTitle>
           </DialogHeader>
           <ScrollArea className="flex-1 p-5">
-              {filteredWorstList.map((t, i) => (
-                  <TopicRow key={i} rank={i+1} subject={t.subject} topic={t.topic} total={t.total} successRate={t.successRate} />
+              {topicStats.allToImprove.map((t, i) => (
+                  <div key={i} className="flex items-center gap-4 p-4 border-b border-slate-100 dark:border-slate-800">
+                      <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-xs text-slate-400">{i+1}</div>
+                      <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-bold text-indigo-500 uppercase">{t.subject}</p>
+                          <p className="font-bold text-slate-800 dark:text-slate-100 truncate">{t.topic}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                          <p className={cn("font-black text-lg", t.successRate >= 70 ? "text-emerald-500" : "text-rose-500")}>%{t.successRate.toFixed(0)}</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase">{t.total} Soru</p>
+                      </div>
+                  </div>
               ))}
           </ScrollArea>
         </DialogContent>
@@ -986,9 +946,3 @@ export function StatsClient() {
     </div>
   );
 }
-
-const getCategoryName = (test: Test): string => {
-  if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
-  if (test.sourceType === 'mistake') return 'Yanlışlarım';
-  return test.subject || 'Diğer';
-};

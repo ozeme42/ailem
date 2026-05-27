@@ -310,6 +310,7 @@ export const addPomodoroProject = async (data: any) => { const familyId = await 
 export const deletePomodoroProject = (id: string) => deleteDoc(doc(db, 'pomodoroProjects', id));
 export const addPomodoroSession = async (data: any) => { const familyId = await getCurrentFamilyId(); return addDoc(collection(db, 'pomodoroSessions'), { ...data, familyId }); };
 export const updatePrayerProgress = (uid: string, c: any) => setDoc(doc(db, 'prayerProgress', uid), { completions: c }, { merge: true });
+export const onSinglePrayerProgressUpdate = (mid: string, cb: (p: PrayerProgress | null) => void) => onSnapshot(doc(db, 'prayerProgress', mid), d => cb(d.exists() ? {id:d.id, ...d.data()} as any : null));
 export const updateMemorizationProgress = (itemId: string, memberId: string, completed: boolean) => setDoc(doc(db, 'memorizationProgress', `${itemId}_${memberId}`), { completed, itemId, memberId, completedAt: completed ? new Date().toISOString() : null }, { merge: true });
 export const removeMemorizationProgress = (itemId: string, memberId: string) => deleteDoc(doc(db, 'memorizationProgress', `${itemId}_${memberId}`));
 export const resetAllMemorizationProgress = () => { /* logic */ };
@@ -358,7 +359,6 @@ export const updateFamilyMemberInFamily = async (fid: string, mid: string, data:
         await updateDoc(familyRef, { members });
     }
 };
-export const onSinglePrayerProgressUpdate = (mid: string, cb: (p: PrayerProgress | null) => void) => onSnapshot(doc(db, 'prayerProgress', mid), d => cb(d.exists() ? {id:d.id, ...d.data()} as any : null));
 export const onRecipesUpdate = (cb: (r: Recipe[]) => void) => onFamilyDataUpdate<Recipe>('recipes', cb);
 export const addRecipe = async (data: any) => { const familyId = await getCurrentFamilyId(); return addDoc(collection(db, 'recipes'), { ...data, familyId }); };
 export const updateRecipe = (id: string, data: any) => updateDoc(doc(db, 'recipes', id), data);
