@@ -3,93 +3,142 @@
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  ArrowLeft, Check, X, Percent, Search,
-  Target, TrendingUp, AlertCircle, Award, Filter, RotateCcw,
+  ArrowLeft, Check, Percent, Filter, RotateCcw,
   Flame, Calendar, BarChart3, PieChart as PieIcon, LineChart as LineIcon,
-  Calculator, Zap, Layers, ChevronRight, Activity, BookOpen, Loader2,
-  TrendingDown, Star, CheckCircle2, MinusCircle, ListX, Clock
+  Calculator, Layers, ChevronRight, Activity, BookOpen, Loader2,
+  TrendingDown, Trophy, Sparkles, GraduationCap,
+  ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Target, Clock,
+  ChevronsUpDown, ChevronUp, ChevronDown, Download, X, ListX,
+  TrendingUp, SlidersHorizontal, Search,
+  GitCompareArrows, Crosshair, Plus, Edit3, Trash2, CheckCircle2,
+  Flag, Bell, Lock, Unlock
 } from "lucide-react";
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip,
-  XAxis, YAxis, Cell, PieChart, Pie, ComposedChart, Legend, 
+  XAxis, YAxis, Cell, PieChart, Pie, ComposedChart, Legend,
   Area, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  ScatterChart, Scatter, ZAxis, LineChart, Line
+  LineChart as RechartsLineChart, Line, LabelList
 } from "recharts";
 import { useAuth } from "@/components/auth-provider";
-import { onTestsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
+import { onTestsUpdate, onTrackedBooksUpdate, onPerformanceGoalsUpdate, updatePerformanceGoal, addPerformanceGoal, deletePerformanceGoal } from "@/lib/dataService";
 import { cn } from "@/lib/utils";
 import { getCategoryName } from "@/app/education/page";
-import { 
-  format, startOfWeek, eachDayOfInterval, 
-  subDays, isToday, parseISO, startOfMonth, endOfMonth, 
-  eachMonthOfInterval, isWithinInterval, subMonths, 
-  startOfYear, parse, addMonths, differenceInDays
+import {
+  format, startOfWeek, eachDayOfInterval,
+  subDays, parseISO, eachMonthOfInterval, subMonths,
+  startOfYear, parse, addMonths, differenceInDays, isWithinInterval,
+  startOfDay, endOfDay
 } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Slider } from "@/components/ui/slider";
 import { motion } from "framer-motion";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { PerformanceGoals } from "@/components/education/performance-goals";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-// --- iOS / MODERN PREMIUM RENK PALETİ ---
-const COLORS = {
-  BLUE:   '#007AFF',
-  GREEN:  '#34C759',
-  ORANGE: '#FF9500',
-  RED:    '#FF3B30',
-  PURPLE: '#AF52DE',
-  TEAL:   '#5AC8FA',
-  INDIGO: '#5856D6',
-  PINK:   '#FF2D55',
-  GRAY:   '#8E8E93',
-  SLATE:  '#64748B'
+// --- RENK SİSTEMİ ---
+const C = {
+  BLUE:    '#3B82F6',
+  INDIGO:  '#6366F1',
+  PURPLE:  '#8B5CF6',
+  EMERALD: '#10B981',
+  AMBER:   '#F59E0B',
+  ROSE:    '#F43F5E',
+  CYAN:    '#06B6D4',
+  ORANGE:  '#F97316',
+  SLATE:   '#94A3B8',
+  VIOLET:  '#7C3AED',
 };
 
-const CHART_COLORS = [COLORS.BLUE, COLORS.PURPLE, COLORS.TEAL, COLORS.ORANGE, COLORS.PINK, COLORS.GREEN, COLORS.INDIGO];
-
-type Period = 'daily' | 'weekly' | 'monthly' | 'yearly';
-
-// --- HELPER COMPONENTS ---
-const StatBox = ({ icon: Icon, value, label, subValue, color, trend }: any) => (
-  <div className="rounded-3xl p-5 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col justify-between h-full relative overflow-hidden group hover:border-indigo-500/30 transition-all">
-    <div className="absolute -right-4 -top-4 w-20 h-20 rounded-full opacity-5 blur-2xl transition-all group-hover:scale-150" style={{ backgroundColor: color }} />
-    <div className="flex items-center justify-between mb-4 relative z-10">
-      <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
+// --- ALT BİLEŞENLER ---
+const KpiCard = ({ icon: Icon, value, label, sub, color, trend }: {
+  icon: any; value: string | number; label: string; sub?: string; color: string; trend?: number;
+}) => (
+  <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+    className="relative rounded-2xl p-5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden group h-full">
+    <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+      style={{ background: `radial-gradient(160px at 10% 20%, ${color}18, transparent)` }} />
+    <div className="flex items-start justify-between mb-4">
+      <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: `${color}18` }}>
         <Icon className="w-5 h-5" style={{ color }} />
       </div>
       {trend !== undefined && (
-        <span className={cn("text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1", trend > 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600")}>
-          {trend > 0 ? <TrendingUp className="w-3 h-3"/> : <TrendingDown className="w-3 h-3"/>}
-          {trend}%
+        <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5",
+          trend > 0 ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400"
+          : trend < 0 ? "bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400"
+          : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400")}>
+          {trend > 0 ? <ArrowUpRight className="w-3 h-3" /> : trend < 0 ? <ArrowDownRight className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+          {Math.abs(trend)}%
         </span>
       )}
     </div>
-    <div className="relative z-10">
-        <p className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-none">{value}</p>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mt-2">{label}</p>
-        {subValue && <p className="text-[10px] font-medium text-slate-400 mt-1">{subValue}</p>}
+    <p className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none">{value}</p>
+    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-2 uppercase tracking-wider">{label}</p>
+    {sub && <p className="text-[10px] text-slate-400 mt-1">{sub}</p>}
+  </motion.div>
+);
+
+const SectionHeader = ({ icon: Icon, title, desc, color = C.INDIGO }: any) => (
+  <div className="flex items-center gap-3 mb-5">
+    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}18` }}>
+      <Icon className="w-[18px] h-[18px]" style={{ color }} />
+    </div>
+    <div>
+      <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-100 leading-tight">{title}</h3>
+      {desc && <p className="text-[11px] text-slate-400 leading-tight mt-0.5">{desc}</p>}
     </div>
   </div>
 );
 
-function translateType(type: string) {
-    const types: any = {
-        'exam': 'Deneme Sınavı',
-        'bank': 'Soru Bankası',
-        'json': 'Yazılı Test',
-        'trackedBook': 'Kitap Takibi',
-        'html': 'HTML Test',
-        'quick': 'Hızlı Test',
-        'mistake': 'Yanlış Havuzu'
-    };
-    return types[type] || type;
-}
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 shadow-xl text-xs">
+      <p className="font-extrabold text-slate-700 dark:text-slate-200 mb-2">{label}</p>
+      {payload.map((p: any, i: number) => (
+        <div key={i} className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.color || p.fill }} />
+          <span className="text-slate-500">{p.name}:</span>
+          <span className="font-bold text-slate-800 dark:text-slate-100">{typeof p.value === 'number' ? p.value.toFixed(1) : p.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
-export default function StatsClient() {
+const SortTh = ({ col, label, sortKey, sortDir, onSort }: {
+  col: any; label: string; sortKey: any; sortDir: any; onSort: (c: any) => void;
+}) => {
+  const active = sortKey === col;
+  return (
+    <th
+      className="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest text-left cursor-pointer select-none hover:text-slate-600 dark:hover:text-slate-200 transition-colors whitespace-nowrap"
+      onClick={() => onSort(col)}
+    >
+      <span className="flex items-center gap-1">
+        {label}
+        {active
+          ? (sortDir === 'asc' ? <ChevronUp className="w-3 h-3 text-indigo-500" /> : <ChevronDown className="w-3 h-3 text-indigo-500" />)
+          : <ChevronsUpDown className="w-3 h-3 opacity-30" />}
+      </span>
+    </th>
+  );
+};
+
+export function StatsClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const studentId = searchParams.get('studentId');
@@ -98,22 +147,26 @@ export default function StatsClient() {
   const [tests, setTests] = React.useState<any[]>([]);
   const [trackedBooks, setTrackedBooks] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
-  
-  // States
-  const [activePeriod, setActivePeriod] = React.useState<Period>('monthly');
-  const [selectedSubject, setSelectedSubject] = React.useState('all');
-  const [selectedTopic, setSelectedTopic] = React.useState('all');
-  const [selectedType, setSelectedSourceType] = React.useState('all');
 
-  // Modal States
-  const [isImprovementModalOpen, setIsImprovementModalOpen] = React.useState(false);
-  const [improvementModalFilter, setImprovementModalFilter] = React.useState("all");
+  // Filters
+  const [activePeriod, setActivePeriod] = React.useState<any>('monthly');
+  const [selectedSubject, setSelectedSubject] = React.useState('all');
+  const [selectedType, setSelectedSourceType] = React.useState('all');
+  const [dateFrom, setDateFrom] = React.useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = React.useState<Date | undefined>(undefined);
+
+  // Tabs & Drawers
+  const [activeTab, setActiveTab] = React.useState('overview');
+  const [tableSortKey, setTableSortKey] = React.useState<any>('total');
+  const [tableSortDir, setTableSortDir] = React.useState<any>('desc');
+  const [tableSearch, setTableSearch] = React.useState('');
+  const [drawerSubject, setDrawerSubject] = React.useState<string | null>(null);
 
   const student = React.useMemo(() => familyMembers.find(m => m.id === studentId), [familyMembers, studentId]);
 
   React.useEffect(() => {
     if (!studentId || !familyId) { setLoading(false); return; }
-    const unsubTests = onTestsUpdate(all => {
+    const unsubTests = onTestsUpdate((all: any[]) => {
       setTests(all.filter(t => t.studentId === studentId && t.status === 'Sonuçlandı'));
       setLoading(false);
     });
@@ -121,652 +174,404 @@ export default function StatsClient() {
     return () => { unsubTests(); unsubBooks(); };
   }, [studentId, familyId]);
 
-  // --- DATA ENRICHMENT ---
   const enrichedBaseData = React.useMemo(() => {
-    const allTopics = trackedBooks.flatMap(b => (b.subjects || []).flatMap((s:any) => (s.topics || []).map((t:any) => ({...t, subjectName: s.name}))));
-
+    const allTopics = trackedBooks.flatMap(b =>
+      (b.subjects || []).flatMap((s: any) =>
+        (s.topics || []).map((t: any) => ({ ...t, subjectName: s.name }))
+      )
+    );
     return tests.map(test => {
       const subjectName = getCategoryName(test);
-      let topicName = "Genel";
-      if (test.topicId) {
-        topicName = allTopics.find(t => t.id === test.topicId)?.name || "Genel";
-      } else if ((test as any).topic) {
-        topicName = (test as any).topic;
-      }
-      
+      let topicName = 'Genel';
+      if (test.topicId) topicName = allTopics.find((t: any) => t.id === test.topicId)?.name || 'Genel';
+      else if (test.topic) topicName = test.topic;
+
       let solvedDate: Date;
-      if (test.updatedAt) {
-          solvedDate = parseISO(test.updatedAt);
-      } else {
-          try { solvedDate = parse(test.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }); } 
-          catch (e) { solvedDate = new Date(test.assignedDate); }
+      if (test.updatedAt) solvedDate = parseISO(test.updatedAt);
+      else {
+        try { solvedDate = parse(test.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }); }
+        catch { solvedDate = new Date(test.assignedDate); }
       }
       if (isNaN(solvedDate.getTime())) solvedDate = new Date();
 
       const correct = test.correctAnswers || 0;
       const incorrect = test.incorrectAnswers || 0;
       const totalQ = test.questionCount || 0;
-      let blank = totalQ - (correct + incorrect);
-      if (blank < 0) blank = 0; 
-      const net = correct - (incorrect / 3);
-      
-      return {
-        ...test,
-        _subjectName: subjectName,
-        _topicName: topicName,
-        _solvedDate: solvedDate,
-        _correct: correct,
-        _incorrect: incorrect,
-        _blank: blank,
-        _totalQ: totalQ,
-        _net: net
-      };
+      const blank = Math.max(0, totalQ - correct - incorrect);
+      const net = correct - incorrect / 3;
+
+      return { ...test, _subjectName: subjectName, _topicName: topicName, _solvedDate: solvedDate, _correct: correct, _incorrect: incorrect, _blank: blank, _totalQ: totalQ, _net: net };
     });
   }, [tests, trackedBooks]);
 
   const availableSubjects = React.useMemo(() => Array.from(new Set(enrichedBaseData.map(d => d._subjectName))).sort(), [enrichedBaseData]);
-  const availableTopics = React.useMemo(() => {
-    let data = enrichedBaseData;
-    if (selectedSubject !== 'all') data = data.filter(d => d._subjectName === selectedSubject);
-    return Array.from(new Set(data.map(d => d._topicName))).filter(t => t && t !== "Genel").sort();
-  }, [enrichedBaseData, selectedSubject]);
 
-  const processedData = React.useMemo(() => {
-    return enrichedBaseData.filter(t => {
-      if (selectedSubject !== 'all' && t._subjectName !== selectedSubject) return false;
-      if (selectedTopic !== 'all' && t._topicName !== selectedTopic) return false;
-      if (selectedType !== 'all' && t.sourceType !== selectedType) return false;
-      return true;
-    });
-  }, [enrichedBaseData, selectedSubject, selectedTopic, selectedType]);
+  const processedData = React.useMemo(() => enrichedBaseData.filter(t => {
+    if (selectedSubject !== 'all' && t._subjectName !== selectedSubject) return false;
+    if (selectedType !== 'all' && t.sourceType !== selectedType) return false;
+    if (dateFrom && t._solvedDate < startOfDay(dateFrom)) return false;
+    if (dateTo && t._solvedDate > endOfDay(dateTo)) return false;
+    return true;
+  }), [enrichedBaseData, selectedSubject, selectedType, dateFrom, dateTo]);
 
-  // --- STREAK CALCULATION (İSTİKRAR) ---
   const streakData = React.useMemo(() => {
-      const uniqueDays = Array.from(new Set(enrichedBaseData.map(t => format(t._solvedDate, 'yyyy-MM-dd')))).sort((a,b) => b.localeCompare(a));
-      if (uniqueDays.length === 0) return { current: 0, longest: 0 };
-
-      let currentStreak = 0;
-      let longestStreak = 0;
-      let tempStreak = 0;
-      
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
-
-      // Calculate current streak
-      if (uniqueDays[0] === today || uniqueDays[0] === yesterday) {
-          currentStreak = 1;
-          for (let i = 0; i < uniqueDays.length - 1; i++) {
-              const d1 = parseISO(uniqueDays[i]);
-              const d2 = parseISO(uniqueDays[i+1]);
-              if (differenceInDays(d1, d2) === 1) {
-                  currentStreak++;
-              } else break;
-          }
-      }
-
-      // Calculate longest streak
-      if (uniqueDays.length > 0) tempStreak = 1;
-      longestStreak = tempStreak;
+    const uniqueDays = Array.from(new Set(enrichedBaseData.map(t => format(t._solvedDate, 'yyyy-MM-dd')))).sort((a, b) => b.localeCompare(a));
+    if (!uniqueDays.length) return { current: 0, longest: 0 };
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+    let currentStreak = 0;
+    if (uniqueDays[0] === today || uniqueDays[0] === yesterday) {
+      currentStreak = 1;
       for (let i = 0; i < uniqueDays.length - 1; i++) {
-          const d1 = parseISO(uniqueDays[i]);
-          const d2 = parseISO(uniqueDays[i+1]);
-          if (differenceInDays(d1, d2) === 1) {
-              tempStreak++;
-              if (tempStreak > longestStreak) longestStreak = tempStreak;
-          } else {
-              tempStreak = 1;
-          }
+        if (differenceInDays(parseISO(uniqueDays[i]), parseISO(uniqueDays[i + 1])) === 1) currentStreak++;
+        else break;
       }
-
-      return { current: currentStreak, longest: longestStreak };
+    }
+    let tempStreak = 1, longestStreak = 1;
+    for (let i = 0; i < uniqueDays.length - 1; i++) {
+      if (differenceInDays(parseISO(uniqueDays[i]), parseISO(uniqueDays[i + 1])) === 1) { tempStreak++; if (tempStreak > longestStreak) longestStreak = tempStreak; }
+      else tempStreak = 1;
+    }
+    return { current: currentStreak, longest: longestStreak };
   }, [enrichedBaseData]);
 
-  // --- KPIS ---
   const kpis = React.useMemo(() => {
-    const totalQ = processedData.reduce((acc, t) => acc + t._totalQ, 0);
-    const totalC = processedData.reduce((acc, t) => acc + t._correct, 0);
-    const totalNet = processedData.reduce((acc, t) => acc + t._net, 0);
-    const successRate = totalQ > 0 ? (totalC / totalQ) * 100 : 0;
-    return { totalQ, totalC, totalNet, successRate, testCount: processedData.length };
+    const totalQ = processedData.reduce((a, t) => a + t._totalQ, 0);
+    const totalC = processedData.reduce((a, t) => a + t._correct, 0);
+    const totalNet = processedData.reduce((a, t) => a + t._net, 0);
+    return { totalQ, totalC, totalNet, successRate: totalQ > 0 ? (totalC / totalQ) * 100 : 0, testCount: processedData.length };
   }, [processedData]);
 
-  // --- TOP/WORST TOPICS ---
   const topicStats = React.useMemo(() => {
-    const map = new Map<string, { subject: string, topic: string, total: number, correct: number, net: number }>();
+    const map = new Map<string, { subject: string; topic: string; total: number; correct: number; incorrect: number; blank: number; net: number }>();
     enrichedBaseData.forEach(t => {
-        if (!t._topicName || t._topicName === "Genel") return;
-        const key = `${t._subjectName}-${t._topicName}`;
-        const cur = map.get(key) || { subject: t._subjectName, topic: t._topicName, total: 0, correct: 0, net: 0 };
-        cur.total += t._totalQ;
-        cur.correct += t._correct;
-        cur.net += t._net;
-        map.set(key, cur);
+      if (!t._topicName || t._topicName === 'Genel') return;
+      const key = `${t._subjectName}-${t._topicName}`;
+      const cur = map.get(key) || { subject: t._subjectName, topic: t._topicName, total: 0, correct: 0, incorrect: 0, blank: 0, net: 0 };
+      cur.total += t._totalQ; cur.correct += t._correct; cur.incorrect += t._incorrect; cur.blank += t._blank; cur.net += t._net;
+      map.set(key, cur);
     });
-    const list = Array.from(map.values()).map(d => ({ ...d, rate: d.total > 0 ? (d.correct / d.total) * 100 : 0 })).sort((a, b) => b.rate - a.rate);
+    const list = Array.from(map.values()).map(d => ({ ...d, successRate: d.total > 0 ? (d.correct / d.total) * 100 : 0 }));
+    const sorted = [...list].sort((a, b) => b.successRate - a.successRate);
     return {
-        best: list.filter(t => t.total >= 5).slice(0, 5),
-        worst: [...list].filter(t => t.total >= 5).reverse().slice(0, 5),
-        allToImprove: [...list].filter(t => t.total >= 3).sort((a, b) => a.rate - b.rate)
+      best: sorted.filter(t => t.successRate >= 70),
+      worst: sorted.filter(t => t.successRate < 70).reverse(),
     };
   }, [enrichedBaseData]);
 
-  const filteredWorstList = React.useMemo(() => {
-      if (improvementModalFilter === 'all') return topicStats.allToImprove;
-      return topicStats.allToImprove.filter(t => t.subject === improvementModalFilter);
-  }, [topicStats.allToImprove, improvementModalFilter]);
-
-  // --- TIME SERIES (BAR + AREA) ---
   const timeSeriesData = React.useMemo(() => {
     const today = new Date();
-    const dataMap = new Map<string, { name: string, questions: number, net: number, tests: number }>();
-
+    const dataMap = new Map<string, { name: string; questions: number; net: number; tests: number; correct: number; incorrect: number }>();
+    
     if (activePeriod === 'weekly') {
       const start = startOfWeek(today, { weekStartsOn: 1 });
-      const days = eachDayOfInterval({ start, end: today });
-      days.forEach(day => { dataMap.set(format(day, 'yyyy-MM-dd'), { name: format(day, 'EEE', { locale: tr }), questions: 0, net: 0, tests: 0 }); });
+      eachDayOfInterval({ start, end: today }).forEach(day => {
+        dataMap.set(format(day, 'yyyy-MM-dd'), { name: format(day, 'EEE', { locale: tr }), questions: 0, net: 0, tests: 0, correct: 0, incorrect: 0 });
+      });
       processedData.forEach(t => {
         const key = format(t._solvedDate, 'yyyy-MM-dd');
-        if (dataMap.has(key)) {
-          const cur = dataMap.get(key)!;
-          cur.questions += t._totalQ; cur.net += t._net; cur.tests += 1;
-        }
+        if (dataMap.has(key)) { const c = dataMap.get(key)!; c.questions += t._totalQ; c.net += t._net; c.tests++; c.correct += t._correct; c.incorrect += t._incorrect; }
       });
     } else if (activePeriod === 'monthly') {
-      const months = eachMonthOfInterval({ start: subMonths(today, 11), end: today });
-      months.forEach(m => { dataMap.set(format(m, 'yyyy-MM'), { name: format(m, 'MMM', { locale: tr }), questions: 0, net: 0, tests: 0 }); });
+      eachMonthOfInterval({ start: subMonths(today, 11), end: today }).forEach(m => {
+        dataMap.set(format(m, 'yyyy-MM'), { name: format(m, 'MMM yy', { locale: tr }), questions: 0, net: 0, tests: 0, correct: 0, incorrect: 0 });
+      });
       processedData.forEach(t => {
         const key = format(t._solvedDate, 'yyyy-MM');
-        if (dataMap.has(key)) {
-          const cur = dataMap.get(key)!;
-          cur.questions += t._totalQ; cur.net += t._net; cur.tests += 1;
-        }
+        if (dataMap.has(key)) { const c = dataMap.get(key)!; c.questions += t._totalQ; c.net += t._net; c.tests++; c.correct += t._correct; c.incorrect += t._incorrect; }
       });
     } else {
-       const start = startOfYear(subDays(today, 365 * 2));
-       for(let i=0; i<3; i++) {
-           const d = addMonths(start, i * 12);
-           dataMap.set(format(d, 'yyyy'), { name: format(d, 'yyyy'), questions: 0, net: 0, tests: 0 });
-       }
-       processedData.forEach(t => {
-         const key = format(t._solvedDate, 'yyyy');
-         if (dataMap.has(key)) {
-           const cur = dataMap.get(key)!;
-           cur.questions += t._totalQ; cur.net += t._net; cur.tests += 1;
-         }
-       });
+      const start = startOfYear(subDays(today, 365 * 2));
+      for (let i = 0; i < 3; i++) { 
+        const d = addMonths(start, i * 12); 
+        const key = format(d, 'yyyy');
+        dataMap.set(key, { name: key, questions: 0, net: 0, tests: 0, correct: 0, incorrect: 0 }); 
+      }
+      processedData.forEach(t => {
+        const key = format(t._solvedDate, 'yyyy');
+        if (dataMap.has(key)) { const c = dataMap.get(key)!; c.questions += t._totalQ; c.net += t._net; c.tests++; c.correct += t._correct; c.incorrect += t._incorrect; }
+      });
     }
-    return Array.from(dataMap.values());
+    return Array.from(dataMap.values()).map(d => ({ ...d, rate: d.questions > 0 ? parseFloat(((d.correct / d.questions) * 100).toFixed(1)) : 0 }));
   }, [processedData, activePeriod]);
 
-  // --- DAY OF WEEK ANALYSIS ---
-  const dayOfWeekData = React.useMemo(() => {
-    const days = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
-    const map = Array(7).fill(0).map((_, i) => ({ name: days[i], total: 0, correct: 0 }));
-    
-    processedData.forEach(t => {
-        const d = t._solvedDate.getDay();
-        map[d].total += t._totalQ;
-        map[d].correct += t._correct;
-    });
-    
-    // Pazartesiden başlatmak için diziyi kaydırıyoruz
-    const sortedMap = [map[1], map[2], map[3], map[4], map[5], map[6], map[0]];
-    
-    return sortedMap.map(d => ({
-        ...d,
-        rate: d.total > 0 ? (d.correct / d.total) * 100 : 0
-    }));
-  }, [processedData]);
-
-  // --- DETAILED SUBJECT STATS ---
   const subjectDetailedStats = React.useMemo(() => {
-    const map = new Map<string, { subject: string, total: number, correct: number, incorrect: number, blank: number, net: number }>();
+    const map = new Map<string, { subject: string; total: number; correct: number; incorrect: number; blank: number; net: number }>();
     processedData.forEach(t => {
       const cur = map.get(t._subjectName) || { subject: t._subjectName, total: 0, correct: 0, incorrect: 0, blank: 0, net: 0 };
-      cur.total += t._totalQ;
-      cur.correct += t._correct;
-      cur.incorrect += t._incorrect;
-      cur.blank += t._blank;
-      cur.net += t._net;
+      cur.total += t._totalQ; cur.correct += t._correct; cur.incorrect += t._incorrect; cur.blank += t._blank; cur.net += t._net;
       map.set(t._subjectName, cur);
     });
-    return Array.from(map.values()).map(d => ({
-      ...d,
-      successRate: d.total > 0 ? (d.correct / d.total) * 100 : 0
-    })).sort((a,b) => b.total - a.total);
+    return Array.from(map.values()).map(d => ({ ...d, successRate: d.total > 0 ? (d.correct / d.total) * 100 : 0 }));
   }, [processedData]);
 
-  // --- SUBJECT TREND OVER TIME (Line Chart) ---
-  const subjectTrendData = React.useMemo(() => {
-      // En çok soru çözülen ilk 3 dersi bul
-      const top3Subjects = subjectDetailedStats.slice(0, 3).map(s => s.subject);
-      
-      const today = new Date();
-      const dataMap = new Map<string, any>();
-      
-      // Sadece aylık periyotta anlamlı trend çıkarıyoruz
-      const months = eachMonthOfInterval({ start: subMonths(today, 5), end: today }); // Son 6 ay
-      months.forEach(m => {
-          const key = format(m, 'MMM', { locale: tr });
-          const entry: any = { name: key };
-          top3Subjects.forEach(s => entry[s] = { total: 0, correct: 0 });
-          dataMap.set(format(m, 'yyyy-MM'), entry);
-      });
-
-      processedData.forEach(t => {
-          if (!top3Subjects.includes(t._subjectName)) return;
-          const key = format(t._solvedDate, 'yyyy-MM');
-          if (dataMap.has(key)) {
-              const cur = dataMap.get(key);
-              cur[t._subjectName].total += t._totalQ;
-              cur[t._subjectName].correct += t._correct;
-          }
-      });
-
-      return Array.from(dataMap.values()).map(entry => {
-          const finalEntry: any = { name: entry.name };
-          top3Subjects.forEach(s => {
-              if (entry[s].total > 0) {
-                  finalEntry[s] = parseFloat(((entry[s].correct / entry[s].total) * 100).toFixed(1));
-              } else {
-                  finalEntry[s] = null; // Veri yoksa çizgi kopsun
-              }
-          });
-          return finalEntry;
-      });
-  }, [processedData, subjectDetailedStats]);
-
-  const top3SubjectNames = React.useMemo(() => subjectDetailedStats.slice(0, 3).map(s => s.subject), [subjectDetailedStats]);
-
-  // --- TYPE BREAKDOWN ---
-  const typeBreakdown = React.useMemo(() => {
-    const map = new Map<string, { name: string, value: number, fill: string, net: number }>();
-    const types = ['exam', 'bank', 'json', 'trackedBook', 'html', 'quick', 'mistake'];
-    types.forEach((type, idx) => {
-      const typeTests = processedData.filter(t => t.sourceType === type);
-      if (typeTests.length > 0) {
-        map.set(type, {
-          name: translateType(type),
-          value: typeTests.reduce((acc, t) => acc + t._totalQ, 0),
-          net: typeTests.reduce((acc, t) => acc + t._net, 0) / typeTests.length,
-          fill: CHART_COLORS[idx % CHART_COLORS.length]
-        });
-      }
+  const sortedTableData = React.useMemo(() => {
+    let rows = [...subjectDetailedStats];
+    if (tableSearch.trim()) rows = rows.filter(r => r.subject.toLowerCase().includes(tableSearch.toLowerCase()));
+    rows.sort((a, b) => {
+      const av = a[tableSortKey as keyof typeof a] as number | string;
+      const bv = b[tableSortKey as keyof typeof b] as number | string;
+      if (typeof av === 'string' && typeof bv === 'string') return tableSortDir === 'asc' ? av.localeCompare(bv, 'tr') : bv.localeCompare(av, 'tr');
+      return tableSortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number);
     });
-    return Array.from(map.values());
-  }, [processedData]);
+    return rows;
+  }, [subjectDetailedStats, tableSortKey, tableSortDir, tableSearch]);
 
-  const chartConfig = { questions: { label: "Soru Sayısı", color: COLORS.BLUE }, net: { label: "Net Başarısı", color: COLORS.PURPLE } } satisfies ChartConfig;
+  const drawerTests = React.useMemo(() => {
+    if (!drawerSubject) return [];
+    return processedData.filter(t => t._subjectName === drawerSubject).sort((a, b) => b._solvedDate.getTime() - a._solvedDate.getTime());
+  }, [processedData, drawerSubject]);
 
-  if (loading) return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-4">
-      <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
-      <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Veriler Analiz Ediliyor...</p>
-    </div>
-  );
+  if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans pb-28 text-slate-900 dark:text-slate-100">
-      
-      <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => router.back()}>
-              <ArrowLeft className="h-6 w-6" />
-            </Button>
-            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5 rounded-2xl shadow-lg shadow-indigo-500/20 text-white">
-              <BarChart3 className="w-6 h-6" />
-            </div>
+    <div className="min-h-screen bg-[#F7F8FC] dark:bg-slate-950 font-sans pb-24 text-slate-900 dark:text-slate-100">
+      <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 h-[72px] flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="rounded-full w-9 h-9" onClick={() => router.back()}><ArrowLeft className="w-5 h-5" /></Button>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25"><GraduationCap className="w-5 h-5 text-white" /></div>
             <div>
-              <h1 className="text-xl md:text-2xl font-black tracking-tight leading-none">{student?.name || "Öğrenci Analizi"}</h1>
-              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-widest">Performans ve Gelişim Paneli</p>
+              <h1 className="text-lg font-extrabold leading-tight text-slate-900 dark:text-white">{student?.name || 'Öğrenci'}</h1>
+              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Performans Analizi</p>
             </div>
           </div>
-          <div className="hidden md:flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
-            {(['weekly', 'monthly', 'yearly'] as Period[]).map(p => (
-                <button key={p} onClick={() => setActivePeriod(p)} className={cn("px-4 py-1.5 rounded-lg text-xs font-bold transition-all", activePeriod === p ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm" : "text-slate-500 hover:text-slate-700")}>
-                    {p === 'weekly' ? 'HAFTA' : p === 'monthly' ? 'AY' : 'YIL'}
-                </button>
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+            {(['weekly', 'monthly', 'yearly'] as any[]).map(p => (
+              <button key={p} onClick={() => setActivePeriod(p)} className={cn('px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all', activePeriod === p ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300')}>
+                {p === 'weekly' ? 'Hafta' : p === 'monthly' ? 'Ay' : 'Yıl'}
+              </button>
             ))}
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 md:px-6 pt-8 space-y-8">
-
-        {/* Global Filter Bar */}
-        <section className="flex flex-wrap items-center gap-3 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm animate-in fade-in duration-500">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mr-2">
-                <Filter className="w-4 h-4 text-indigo-500" /> Filtreler:
-            </div>
-            <Select value={selectedSubject} onValueChange={(val) => { setSelectedSubject(val); setSelectedTopic('all'); }}>
-                <SelectTrigger className="w-full sm:w-44 h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs">
-                    <SelectValue placeholder="Ders Seçin" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Tüm Dersler</SelectItem>
-                    {availableSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
+      <main className="max-w-7xl mx-auto px-4 md:px-8 pt-8 space-y-8">
+        <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-wrap gap-4 items-center">
+            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                <SelectTrigger className="w-40 h-9 rounded-xl text-xs"><SelectValue placeholder="Ders" /></SelectTrigger>
+                <SelectContent><SelectItem value="all">Tüm Dersler</SelectItem>{availableSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
-
-            <Select value={selectedTopic} onValueChange={setSelectedTopic} disabled={selectedSubject === 'all' && availableTopics.length === 0}>
-                <SelectTrigger className="w-full sm:w-44 h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs">
-                    <SelectValue placeholder="Konu Seçin" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Tüm Konular</SelectItem>
-                    {availableTopics.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                </SelectContent>
-            </Select>
-
             <Select value={selectedType} onValueChange={setSelectedSourceType}>
-                <SelectTrigger className="w-full sm:w-44 h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs">
-                    <SelectValue placeholder="Sınav Türü" />
-                </SelectTrigger>
+                <SelectTrigger className="w-40 h-9 rounded-xl text-xs"><SelectValue placeholder="Tür" /></SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">Tüm Türler</SelectItem>
-                    <SelectItem value="exam">Deneme Sınavı</SelectItem>
-                    <SelectItem value="bank">Soru Bankası</SelectItem>
-                    <SelectItem value="json">Yazılı Test</SelectItem>
-                    <SelectItem value="trackedBook">Kitap Takibi</SelectItem>
-                    <SelectItem value="mistake">Yanlış Havuzu</SelectItem>
+                    <SelectItem value="exam">Deneme</SelectItem><SelectItem value="bank">Soru Bankası</SelectItem><SelectItem value="json">Yazılı</SelectItem>
                 </SelectContent>
             </Select>
-
-            {(selectedSubject !== 'all' || selectedTopic !== 'all' || selectedType !== 'all') && (
-                <Button variant="ghost" size="sm" onClick={() => {setSelectedSubject('all'); setSelectedTopic('all'); setSelectedSourceType('all');}} className="h-10 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl font-bold">
-                    <RotateCcw className="w-3.5 h-3.5 mr-1" /> Sıfırla
-                </Button>
-            )}
+            <Button variant="ghost" size="sm" className="h-9 text-rose-500 rounded-xl font-bold text-xs" onClick={() => { setSelectedSubject('all'); setSelectedSourceType('all'); }}>Sıfırla</Button>
         </section>
 
-        {/* KPIs */}
-        <section className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <StatBox icon={BarChart3} value={kpis.totalQ} label="Toplam Soru" color={COLORS.BLUE} />
-          <StatBox icon={Calculator} value={kpis.totalNet.toFixed(1)} label="Toplam Net" color={COLORS.PURPLE} />
-          <StatBox icon={Percent} value={`%${kpis.successRate.toFixed(0)}`} label="Genel Başarı" color={COLORS.GREEN} />
-          <StatBox icon={Layers} value={kpis.testCount} label="Sınav / Test" color={COLORS.ORANGE} />
-          <div className="col-span-2 lg:col-span-1">
-             <StatBox icon={Flame} value={streakData.current} label="Günlük Seri" subValue={`En İyi: ${streakData.longest} Gün`} color={COLORS.RED} />
-          </div>
+        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <KpiCard icon={BarChart3} value={kpis.totalQ} label="Toplam Soru" color={C.INDIGO} />
+          <KpiCard icon={Check} value={kpis.totalC} label="Doğru" color={C.EMERALD} />
+          <KpiCard icon={Calculator} value={kpis.totalNet.toFixed(1)} label="Net" color={C.PURPLE} />
+          <KpiCard icon={Percent} value={`%${kpis.successRate.toFixed(0)}`} label="Başarı" color={C.CYAN} />
+          <KpiCard icon={Layers} value={kpis.testCount} label="Test" color={C.AMBER} />
+          <KpiCard icon={Flame} value={streakData.current} label="Gün Serisi" sub={`En uzun: ${streakData.longest}`} color={C.ROSE} />
         </section>
 
-        {/* TIME SERIES */}
-        <section>
-            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
-                <CardHeader className="p-8 pb-4 flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle className="text-xl font-black flex items-center gap-3">
-                            <Activity className="w-6 h-6 text-indigo-500" />
-                            Gelişim ve Soru Hacmi (Zaman Serisi)
-                        </CardTitle>
-                        <CardDescription>Zaman içindeki soru çözme hacmi ve net başarısı korelasyonu</CardDescription>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-6 md:p-8">
-                    <div className="h-[350px] w-full">
-                        <ChartContainer config={chartConfig} className="h-full w-full">
-                            <ComposedChart data={timeSeriesData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={COLORS.PURPLE} stopOpacity={0.1}/>
-                                        <stop offset="95%" stopColor={COLORS.PURPLE} stopOpacity={0}/>
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(142,142,147,0.15)" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: COLORS.GRAY }} dy={10} />
-                                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600, fill: COLORS.GRAY }} />
-                                <Tooltip cursor={{fill: 'rgba(142,142,147,0.05)'}} content={<ChartTooltipContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" />} />
-                                <Legend verticalAlign="top" align="right" height={36} iconType="circle" />
-                                <Bar yAxisId="left" dataKey="questions" name="Soru Sayısı" fill={COLORS.BLUE} radius={[6, 6, 0, 0]} barSize={activePeriod === 'weekly' ? 30 : 15} />
-                                <Area yAxisId="left" type="monotone" dataKey="net" name="Net Başarısı" stroke={COLORS.PURPLE} strokeWidth={4} fill="url(#colorNet)" dot={{ r: 4, fill: COLORS.PURPLE, strokeWidth: 2, stroke: '#fff' }} />
-                            </ComposedChart>
-                        </ChartContainer>
-                    </div>
-                </CardContent>
-            </Card>
-        </section>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1 h-auto flex flex-wrap gap-1 shadow-sm">
+            {[
+              { id: 'overview', label: 'Genel Bakış', icon: Activity },
+              { id: 'subjects', label: 'Dersler', icon: BookOpen },
+              { id: 'topics', label: 'Konular', icon: Target },
+              { id: 'goals', label: 'Hedefler', icon: Flag },
+            ].map(tab => (
+              <TabsTrigger key={tab.id} value={tab.id} className={cn('flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all data-[state=active]:bg-indigo-600 data-[state=active]:text-white')}>
+                <tab.icon className="w-3.5 h-3.5" /> {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        {/* NEW: SUBJECT TREND & DAY OF WEEK ANALYSIS */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-             <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden p-6 md:p-8">
-                <div className="flex items-center gap-2 mb-6">
-                    <TrendingUp className="w-6 h-6 text-emerald-500" />
-                    <div>
-                        <CardTitle className="text-lg font-black">Ders Gelişim Trendi</CardTitle>
-                        <CardDescription className="text-xs">En aktif 3 dersin son 6 aydaki başarı değişimi</CardDescription>
-                    </div>
-                </div>
-                <div className="h-[300px] w-full">
-                    {top3SubjectNames.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={subjectTrendData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(142,142,147,0.1)" />
-                                <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700, fill: COLORS.GRAY }} axisLine={false} tickLine={false} dy={10}/>
-                                <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: COLORS.GRAY }} axisLine={false} tickLine={false} />
-                                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} formatter={(value: number) => [`%${value}`, "Başarı"]} />
-                                <Legend verticalAlign="top" iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
-                                {top3SubjectNames.map((subject, idx) => (
-                                     <Line key={subject} type="monotone" dataKey={subject} name={subject} stroke={CHART_COLORS[idx % CHART_COLORS.length]} strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} connectNulls />
-                                ))}
-                            </LineChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <div className="flex items-center justify-center h-full text-sm font-bold text-slate-400">Veri bulunamadı.</div>
-                    )}
-                </div>
-            </Card>
+          <TabsContent value="overview" className="space-y-6 mt-6">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm p-6">
+              <SectionHeader icon={Activity} title="Gelişim Eğrisi" desc="Soru hacmi ve başarı oranı" />
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={timeSeriesData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148,163,184,0.12)" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: '#94A3B8' }} />
+                    <YAxis yAxisId="l" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94A3B8' }} />
+                    <YAxis yAxisId="r" orientation="right" domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94A3B8' }} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: 11, fontWeight: 600 }} />
+                    <Bar yAxisId="l" dataKey="questions" name="Soru Sayısı" fill={C.INDIGO} opacity={0.8} radius={[4, 4, 0, 0]} maxBarSize={40}>
+                         <LabelList dataKey="questions" position="top" style={{ fill: '#94A3B8', fontSize: 10, fontWeight: 700 }} />
+                    </Bar>
+                    <Line yAxisId="r" type="monotone" dataKey="rate" name="Başarı (%)" stroke={C.EMERALD} strokeWidth={3} dot={{ r: 4, fill: C.EMERALD, stroke: '#fff', strokeWidth: 2 }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </TabsContent>
 
-            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden p-6 md:p-8">
-                 <div className="flex items-center gap-2 mb-6">
-                    <Clock className="w-6 h-6 text-indigo-500" />
-                    <div>
-                        <CardTitle className="text-lg font-black">Çalışma Alışkanlıkları</CardTitle>
-                        <CardDescription className="text-xs">Haftanın günlerine göre soru hacmi ve başarı oranı</CardDescription>
-                    </div>
-                </div>
-                <div className="h-[300px] w-full">
-                     <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart data={dayOfWeekData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(142,142,147,0.1)" />
-                            <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700, fill: COLORS.GRAY }} axisLine={false} tickLine={false} dy={10} />
-                            <YAxis yAxisId="left" tick={{ fontSize: 10, fill: COLORS.GRAY }} axisLine={false} tickLine={false} />
-                            <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fontSize: 10, fill: COLORS.GRAY }} axisLine={false} tickLine={false} hide />
-                            <Tooltip cursor={{fill: 'rgba(142,142,147,0.05)'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
-                            <Legend verticalAlign="top" iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
-                            <Bar yAxisId="left" dataKey="total" name="Çözülen Soru" fill={COLORS.BLUE} radius={[4, 4, 0, 0]} barSize={25} />
-                            <Line yAxisId="right" type="monotone" dataKey="rate" name="Başarı (%)" stroke={COLORS.ORANGE} strokeWidth={3} dot={{ r: 4, fill: COLORS.ORANGE, stroke: '#fff', strokeWidth: 2 }} />
-                        </ComposedChart>
-                    </ResponsiveContainer>
-                </div>
-            </Card>
-        </section>
+          <TabsContent value="subjects" className="space-y-6 mt-6">
+             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                  <SectionHeader icon={BookOpen} title="Ders Detay Tablosu" desc="Ders bazında performans verileri" color={C.VIOLET} />
+                  <Button variant="outline" size="sm" className="h-9 rounded-xl text-xs gap-1.5" onClick={() => exportCSV(sortedTableData, 'ders_analizi.csv')}><Download className="w-3.5 h-3.5" /> CSV</Button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-800/50">
+                      <SortTh col="subject" label="Ders" sortKey={tableSortKey} sortDir={tableSortDir} onSort={setTableSortKey} />
+                      <SortTh col="total" label="Toplam" sortKey={tableSortKey} sortDir={tableSortDir} onSort={setTableSortKey} />
+                      <SortTh col="correct" label="Doğru" sortKey={tableSortKey} sortDir={tableSortDir} onSort={setTableSortKey} />
+                      <SortTh col="net" label="Net" sortKey={tableSortKey} sortDir={tableSortDir} onSort={setTableSortKey} />
+                      <SortTh col="successRate" label="Başarı" sortKey={tableSortKey} sortDir={tableSortDir} onSort={setTableSortKey} />
+                      <th className="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest text-left">Durum</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedTableData.map((s, i) => (
+                      <tr key={i} className="border-t border-slate-100 hover:bg-indigo-50/50 cursor-pointer" onClick={() => setDrawerSubject(s.subject)}>
+                        <td className="px-4 py-3.5 font-bold text-slate-800 dark:text-slate-100">{s.subject}</td>
+                        <td className="px-4 py-3.5 text-slate-600 dark:text-slate-300 font-medium">{s.total}</td>
+                        <td className="px-4 py-3.5 font-semibold text-emerald-600">{s.correct}</td>
+                        <td className="px-4 py-3.5 font-bold text-slate-800 dark:text-slate-100">{s.net.toFixed(1)}</td>
+                        <td className="px-4 py-3.5"><span className="font-extrabold text-sm" style={{ color: rateColor(s.successRate) }}>%{s.successRate.toFixed(0)}</span></td>
+                        <td className="px-4 py-3.5"><Badge variant="outline" style={{ color: rateColor(s.successRate), borderColor: `${rateColor(s.successRate)}30`, background: `${rateColor(s.successRate)}10` }}>{rateLabel(s.successRate)}</Badge></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </TabsContent>
 
-        {/* DETAILED EXCEL-LIKE CHARTS: RADAR & STACKED BAR */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden p-6 md:p-8">
-                <div className="flex items-center gap-2 mb-6">
-                    <Target className="w-6 h-6 text-indigo-500" />
-                    <div>
-                        <CardTitle className="text-lg font-black">Ders Yatkınlık Analizi</CardTitle>
-                        <CardDescription className="text-xs">Derslere göre başarı dengesi (Radar)</CardDescription>
-                    </div>
-                </div>
-                <div className="h-[300px] w-full">
-                    {subjectDetailedStats.length > 2 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                            <RadarChart cx="50%" cy="50%" outerRadius="75%" data={subjectDetailedStats}>
-                                <PolarGrid stroke="rgba(142,142,147,0.2)" />
-                                <PolarAngleAxis dataKey="subject" tick={{ fill: COLORS.GRAY, fontSize: 11, fontWeight: 'bold' }} />
-                                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: COLORS.GRAY, fontSize: 10 }} />
-                                <Radar name="Başarı %" dataKey="successRate" stroke={COLORS.INDIGO} fill={COLORS.INDIGO} fillOpacity={0.4} />
-                                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
-                            </RadarChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <div className="flex items-center justify-center h-full text-sm font-bold text-slate-400">
-                            Radar grafiği için en az 3 farklı ders verisi gereklidir.
-                        </div>
-                    )}
-                </div>
-            </Card>
+          <TabsContent value="topics" className="space-y-8 mt-6">
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card className="rounded-[2.5rem] border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
+                        <CardHeader className="bg-rose-50/50 dark:bg-rose-950/20 border-b border-rose-100 dark:border-rose-900/30">
+                            <CardTitle className="text-lg font-black text-rose-700 dark:text-rose-400 flex items-center gap-2">
+                                <ListX className="w-5 h-5" /> Geliştirilmesi Gerekenler
+                            </CardTitle>
+                            <CardDescription>Başarı oranı %70'in altında olan kritik konular.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-6">
+                             <Accordion type="single" collapsible className="space-y-3">
+                                {topicStats.worst.length > 0 ? topicStats.worst.map((t, i) => (
+                                    <AccordionItem key={i} value={`worst-${i}`} className="border-none">
+                                        <AccordionTrigger className="p-0 hover:no-underline group">
+                                            <div className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 group-hover:bg-rose-50/50 transition-all border border-transparent group-hover:border-rose-200">
+                                                <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center text-rose-600 font-black text-xs shrink-0">
+                                                    <AlertCircle className="w-4 h-4" />
+                                                </div>
+                                                <div className="flex-1 min-w-0 text-left">
+                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t.subject}</p>
+                                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{t.topic}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm font-black text-rose-500">%{t.successRate.toFixed(0)}</p>
+                                                    <Progress value={t.successRate} className="w-16 h-1 bg-rose-100 mt-1" indicatorClassName="bg-rose-500" />
+                                                </div>
+                                            </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-3 px-4 pb-1">
+                                             <div className="grid grid-cols-3 gap-2 text-center p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-inner">
+                                                <div><p className="text-[10px] text-slate-400 font-bold uppercase">Doğru</p><p className="text-sm font-black text-emerald-500">{t.correct}</p></div>
+                                                <div><p className="text-[10px] text-slate-400 font-bold uppercase">Yanlış</p><p className="text-sm font-black text-rose-500">{t.incorrect}</p></div>
+                                                <div><p className="text-[10px] text-slate-400 font-bold uppercase">Boş</p><p className="text-sm font-black text-slate-500">{t.blank}</p></div>
+                                             </div>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                )) : <div className="py-10 text-center text-slate-400 text-sm italic">Kritik konu bulunamadı. Harika gidiyorsun!</div>}
+                             </Accordion>
+                        </CardContent>
+                    </Card>
 
-            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden p-6 md:p-8">
-                <div className="flex items-center gap-2 mb-6">
-                    <BarChart3 className="w-6 h-6 text-orange-500" />
-                    <div>
-                        <CardTitle className="text-lg font-black">Soru Dağılım Profili</CardTitle>
-                        <CardDescription className="text-xs">Doğru, Yanlış ve Boş analizi (Yığılmış)</CardDescription>
-                    </div>
-                </div>
-                <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={subjectDetailedStats.slice(0, 8)} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(142,142,147,0.1)" />
-                            <XAxis dataKey="subject" tick={{ fontSize: 10, fontWeight: 700, fill: COLORS.GRAY }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fontSize: 10, fill: COLORS.GRAY }} axisLine={false} tickLine={false} />
-                            <Tooltip cursor={{fill: 'rgba(142,142,147,0.05)'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
-                            <Legend verticalAlign="top" iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
-                            <Bar dataKey="correct" name="Doğru" stackId="a" fill={COLORS.GREEN} radius={[0, 0, 4, 4]} maxBarSize={40} />
-                            <Bar dataKey="incorrect" name="Yanlış" stackId="a" fill={COLORS.RED} maxBarSize={40} />
-                            <Bar dataKey="blank" name="Boş" stackId="a" fill={COLORS.GRAY} radius={[4, 4, 0, 0]} maxBarSize={40} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </Card>
-        </section>
-
-        {/* TOP & WORST & ACTIVITY GRID */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-10">
-             <Card className="lg:col-span-1 rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
-                <CardHeader className="p-6 pb-2">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950 flex items-center justify-center text-rose-600">
-                                <TrendingDown className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-lg font-black text-slate-800 dark:text-slate-100">Kritik Konular</CardTitle>
-                                <CardDescription className="text-[10px]">Başarısı Düşük Olanlar</CardDescription>
-                            </div>
-                        </div>
-                        <Button variant="ghost" size="sm" onClick={() => setIsImprovementModalOpen(true)} className="text-xs font-bold text-rose-600 p-0 hover:bg-transparent">
-                            Tümü <ChevronRight className="w-4 h-4"/>
-                        </Button>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-6 pt-2">
-                    <div className="space-y-3">
-                        {topicStats.worst.length > 0 ? topicStats.worst.map((t, i) => (
-                            <div key={i} className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                                <div className="flex flex-col min-w-0 pr-2">
-                                    <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400 uppercase">{t.subject}</span>
-                                    <p className="font-bold text-xs text-slate-800 dark:text-slate-100 truncate">{t.topic}</p>
-                                </div>
-                                <div className="text-right shrink-0">
-                                    <p className="text-sm font-black text-rose-600">%{t.rate.toFixed(0)}</p>
-                                </div>
-                            </div>
-                        )) : <p className="text-center py-6 text-slate-400 text-xs italic">Henüz kritik bir konu saptanmadı.</p>}
-                    </div>
-                </CardContent>
-             </Card>
-
-             <Card className="lg:col-span-2 rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden p-6 md:p-8">
-                 <div className="flex items-center gap-2 mb-4">
-                    <Flame className="w-5 h-5 text-orange-500" />
-                    <div>
-                        <CardTitle className="text-lg font-black">Isı Haritası (Aktivite)</CardTitle>
-                        <CardDescription className="text-xs">Son 28 gün çalışma frekansı (Koyu renk = Yüksek soru hacmi)</CardDescription>
-                    </div>
-                </div>
-                <div className="grid grid-cols-7 sm:grid-cols-14 gap-2">
-                     {Array.from({ length: 28 }).map((_, i) => {
-                         const d = subDays(new Date(), 27 - i);
-                         const key = format(d, 'yyyy-MM-dd');
-                         const count = enrichedBaseData.filter(t => format(t._solvedDate, 'yyyy-MM-dd') === key).reduce((acc, t) => acc + t._totalQ, 0);
-                         
-                         let intensity = "bg-slate-100 dark:bg-slate-800";
-                         if (count > 0) intensity = "bg-emerald-200 dark:bg-emerald-900/30";
-                         if (count > 50) intensity = "bg-emerald-400 dark:bg-emerald-700/60";
-                         if (count > 100) intensity = "bg-emerald-600 dark:bg-emerald-50 shadow-[0_0_10px_rgba(16,185,129,0.4)]";
-
-                         return (
-                             <div key={i} className="flex flex-col items-center gap-1.5">
-                                 <div className={cn("w-full aspect-square rounded-lg transition-all hover:scale-110 cursor-pointer", intensity)} title={`${format(d, 'dd MMM')}: ${count} soru`} />
-                                 {i % 7 === 0 && <span className="text-[8px] font-bold text-slate-400 uppercase">{format(d, 'd MMM', {locale: tr})}</span>}
+                    <Card className="rounded-[2.5rem] border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
+                        <CardHeader className="bg-emerald-50/50 dark:bg-emerald-950/20 border-b border-emerald-100 dark:border-emerald-900/30">
+                            <CardTitle className="text-lg font-black text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
+                                <Trophy className="w-5 h-5" /> Güçlü Konular
+                            </CardTitle>
+                            <CardDescription>Başarı oranı %70 ve üzeri olan konular.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-6">
+                             <div className="grid gap-3">
+                                {topicStats.best.length > 0 ? topicStats.best.slice(0, 8).map((t, i) => (
+                                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-transparent hover:border-emerald-200 transition-all group">
+                                        <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 font-black text-xs shrink-0">
+                                            <CheckCircle2 className="w-4 h-4" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t.subject}</p>
+                                            <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{t.topic}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm font-black text-emerald-500">%{t.successRate.toFixed(0)}</p>
+                                            <p className="text-[9px] text-slate-400 font-bold uppercase">{t.total} Soru</p>
+                                        </div>
+                                    </div>
+                                )) : <div className="py-10 text-center text-slate-400 text-sm italic">Henüz güçlü bir konu verisi oluşmadı.</div>}
                              </div>
-                         )
-                     })}
-                </div>
-             </Card>
-        </section>
+                        </CardContent>
+                    </Card>
+               </div>
+          </TabsContent>
 
+          <TabsContent value="goals" className="space-y-6 mt-6">
+              <PerformanceGoals member={student!} solvedTests={processedData} availableSubjects={availableSubjects} />
+          </TabsContent>
+        </Tabs>
       </main>
 
-      {/* IMPROVEMENT LIST MODAL */}
-      <Dialog open={isImprovementModalOpen} onOpenChange={setIsImprovementModalOpen}>
-          <DialogContent className="max-w-3xl h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2rem] bg-white dark:bg-slate-950 border-none shadow-2xl">
-              <DialogHeader className="p-6 pb-4 border-b dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex flex-col gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950 flex items-center justify-center text-rose-600 shadow-inner">
-                        <ListX className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <DialogTitle className="text-2xl font-black text-slate-900 dark:text-white">Geliştirilmesi Gerekenler</DialogTitle>
-                        <DialogDescription className="text-sm font-medium">Başarı oranı düşükten yükseğe tüm konuların analizi.</DialogDescription>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 mr-2">
-                        <Filter className="w-3 h-3" /> Ders Filtresi:
+      <Sheet open={!!drawerSubject} onOpenChange={o => !o && setDrawerSubject(null)}>
+        <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col bg-white dark:bg-slate-950">
+          <SheetHeader className="p-6 border-b bg-slate-50 dark:bg-slate-900/50">
+              <SheetTitle className="text-lg font-extrabold">{drawerSubject}</SheetTitle>
+              <SheetDescription>{drawerTests.length} sınav sonucu listeleniyor.</SheetDescription>
+          </SheetHeader>
+          <ScrollArea className="flex-1 p-5 space-y-3">
+              {drawerTests.map((t, i) => {
+                const rate = t._totalQ > 0 ? (t._correct / t._totalQ) * 100 : 0;
+                return (
+                  <div key={i} className="rounded-xl p-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm truncate">{t.title || 'Sınav'}</p>
+                        <p className="text-[10px] text-slate-400">{format(t._solvedDate, 'dd MMM yyyy', {locale: tr})}</p>
                       </div>
-                      <button onClick={() => setImprovementModalFilter('all')} className={cn("px-4 py-2 rounded-xl text-xs font-bold transition-all border", improvementModalFilter === 'all' ? "bg-slate-900 text-white border-slate-900" : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50")}>Tümü</button>
-                      {availableSubjects.map(s => (
-                           <button key={s} onClick={() => setImprovementModalFilter(s)} className={cn("px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0", improvementModalFilter === s ? "bg-indigo-600 text-white border-indigo-600 shadow-md" : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50")}>{s}</button>
-                      ))}
+                      <span className="font-extrabold text-lg" style={{ color: rateColor(rate) }}>%{rate.toFixed(0)}</span>
+                    </div>
+                    <div className="flex gap-4 text-xs font-bold">
+                      <span className="text-emerald-500">{t._correct} D</span><span className="text-rose-500">{t._incorrect} Y</span><span className="text-slate-400">{t._blank} B</span>
+                      <span className="ml-auto text-slate-700 dark:text-slate-200">{t._net.toFixed(1)} Net</span>
+                    </div>
                   </div>
-              </DialogHeader>
-
-              <ScrollArea className="flex-1 bg-white dark:bg-slate-950">
-                  <div className="p-6 space-y-3">
-                      {filteredWorstList.length > 0 ? filteredWorstList.map((t, i) => (
-                           <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-900 transition-all gap-4">
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <Badge variant="outline" className="text-[9px] font-black uppercase bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500">{t.subject}</Badge>
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.total} Soru</span>
-                                    </div>
-                                    <p className="font-bold text-slate-800 dark:text-slate-100 truncate text-base">{t.topic}</p>
-                                </div>
-                                
-                                <div className="flex items-center gap-6 self-end sm:self-center bg-white dark:bg-black/20 p-3 px-4 rounded-xl border border-slate-100 dark:border-white/5 shadow-sm">
-                                    <div className="text-center min-w-[60px]">
-                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Başarı</p>
-                                        <p className={cn("text-lg font-black leading-none", t.rate < 40 ? "text-rose-600" : t.rate < 70 ? "text-amber-500" : "text-emerald-500")}>%{t.rate.toFixed(0)}</p>
-                                    </div>
-                                    <div className="w-px h-8 bg-slate-100 dark:bg-slate-800" />
-                                    <div className="text-center min-w-[60px]">
-                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Net Ort.</p>
-                                        <p className="text-lg font-black text-slate-800 dark:text-slate-100 leading-none">{(t.net / (t.total / 10)).toFixed(1)}</p>
-                                    </div>
-                                </div>
-                           </div>
-                      )) : (
-                          <div className="py-20 text-center opacity-40">
-                              <BookOpen className="w-12 h-12 mx-auto mb-3" />
-                              <p className="font-bold">Kayıt bulunamadı.</p>
-                          </div>
-                      )}
-                  </div>
-              </ScrollArea>
-
-              <DialogFooter className="p-4 border-t dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                  <Button onClick={() => setIsImprovementModalOpen(false)} className="w-full h-12 rounded-xl bg-slate-900 text-white font-bold">Kapat</Button>
-              </DialogFooter>
-          </DialogContent>
-      </Dialog>
+                );
+              })}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </div>
   );
+}
+
+function rateColor(r: number) {
+  if (r >= 75) return C.EMERALD;
+  if (r >= 50) return C.AMBER;
+  return C.ROSE;
+}
+function rateLabel(r: number) {
+  if (r >= 80) return 'Mükemmel';
+  if (r >= 65) return 'İyi';
+  if (r >= 50) return 'Orta';
+  if (r >= 35) return 'Zayıf';
+  return 'Kritik';
+}
+function exportCSV(rows: any[], filename: string) {
+  if (!rows.length) return;
+  const headers = Object.keys(rows[0]);
+  const lines = [
+    headers.join(','),
+    ...rows.map(r => headers.map(h => `"${String(r[h]).replace(/"/g, '""')}"`).join(','))
+  ];
+  const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
 }

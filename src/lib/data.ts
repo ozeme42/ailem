@@ -18,7 +18,7 @@ export interface ReadingGoals {
 }
 
 export interface FamilyMember {
-  id: string; // Using string for ID now
+  id: string; 
   name: string;
   role: 'Baba' | 'Anne' | 'Kız Çocuk' | 'Erkek Çocuk' | 'Bebek';
   avatar: string;
@@ -41,43 +41,39 @@ export interface Subtask {
 
 export interface Task {
   id:string;
-  familyId: string; // To scope tasks to a family
+  familyId: string;
   title: string;
-  assigneeId: string; // Now refers to FamilyMember.id
+  assigneeId: string;
   points: number;
-  dueDate: string; // For one-time tasks, or the start date for recurring tasks
-  completed: boolean; // For one-time tasks or for each instance of a recurring task
+  dueDate: string;
+  completed: boolean;
   category: 'Ev İşleri' | 'Okul' | 'Kişisel' | 'Aile' | 'Görev';
   subtasks?: Subtask[];
   notes?: string;
   photo?: string;
   audioNoteUrl?: string;
-  createdAt: string; // ISO date string
+  createdAt: string;
 
-  // New recurrence fields
   isRecurring?: boolean;
   recurrenceType?: 'daily' | 'weekly' | 'monthly';
-  recurrenceDays?: string[]; // e.g., ['Mon', 'Wed', 'Fri'] for weekly
-  recurrenceEndDate?: string; // Optional end date for recurring tasks
+  recurrenceDays?: string[];
+  recurrenceEndDate?: string;
 
-  // Progress for count-based recurring tasks
   totalOccurrences?: number;
   completedOccurrences?: number;
 
-  // Streak tracking for daily tasks
   streak?: number;
   bestStreak?: number;
-  lastCompletedDate?: string; // For compatibility
-  completedDates?: string[]; // For daily habits, array of 'yyyy-MM-dd'
+  lastCompletedDate?: string;
+  completedDates?: string[];
 }
-
 
 export interface CalendarEvent {
     id: string;
     familyId: string;
     title: string;
-    startDate: string; // ISO 8601 format
-    endDate?: string; // ISO 8601 format
+    startDate: string;
+    endDate?: string;
     recurrence: 'one-time' | 'monthly' | 'yearly';
     location?: string;
 }
@@ -94,7 +90,7 @@ export interface Book {
   description: string;
   pageCount?: number;
   isForChildren?: boolean;
-  readers?: string[]; // Array of member IDs who have this in their library
+  readers?: string[];
   createdAt?: string;
 }
 
@@ -103,14 +99,14 @@ export type BookReadingStatus = 'to-read' | 'reading' | 'finished';
 export interface UserLibraryBook {
     bookId: string;
     status: BookReadingStatus;
-    progress?: number; // 0-100 for 'reading' status
-    addedAt: string; // ISO Date string
-    startedAt?: string; // ISO Date string, set when status becomes 'finished'
-    finishedAt?: string; // ISO Date string, set when status becomes 'finished'
+    progress?: number;
+    addedAt: string;
+    startedAt?: string;
+    finishedAt?: string;
 }
 
 export interface UserLibrary {
-    id: string; // Composite key familyId_memberId
+    id: string;
     familyId: string;
     memberId: string;
     books: UserLibraryBook[];
@@ -121,14 +117,13 @@ export interface ReadingSession {
     familyId: string;
     memberId: string;
     bookId: string;
-    startTime: string; // ISO Date string
-    endTime: string; // ISO Date string
+    startTime: string;
+    endTime: string;
     durationSeconds: number;
     pagesRead: number;
     notes?: string;
     summary?: string;
 }
-
 
 export interface Recipe {
     id: string;
@@ -140,13 +135,13 @@ export interface Recipe {
 }
 
 export type MealPlan = {
-  [day: string]: { // format 'yyyy-MM-dd'
-    [meal: string]: Recipe | null; // "Kahvaltı" | "Akşam Yemeği"
+  [day: string]: {
+    [meal: string]: Recipe | null;
   }
 }
 
 export interface CalorieLog {
-    id: string; // Format: YYYY-MM-DD
+    id: string;
     familyId: string;
     caloriesTaken: number;
     caloriesBurned: number;
@@ -154,7 +149,6 @@ export interface CalorieLog {
     carbs: number;
     fat: number;
 }
-
 
 // Goals / Roadmaps
 export interface GoalTask {
@@ -178,16 +172,32 @@ export interface Goal {
     assigneeId: string;
     title: string;
     description?: string;
-    createdAt: string; // ISO string
+    createdAt: string;
     status: 'in-progress' | 'completed';
     sections: GoalSection[];
-    // Fields for editing
     totalUnits: number;
     unitName: string;
     sectionCount: number;
-    // For video playlists
     videoUrl?: string;
     platform?: 'YouTube' | 'Other';
+}
+
+// --- NEW: Performance Goals ---
+export type PerformanceGoalType = 'questions' | 'successRate' | 'net' | 'streak';
+export type PerformanceGoalPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+
+export interface PerformanceGoal {
+    id: string;
+    familyId: string;
+    memberId: string;
+    type: PerformanceGoalType;
+    subject?: string;
+    target: number;
+    label: string;
+    period: PerformanceGoalPeriod;
+    startDate: string;
+    endDate?: string;
+    createdAt: string;
 }
 
 export interface MemorizationItem {
@@ -199,32 +209,30 @@ export interface MemorizationItem {
 }
 
 export interface MemorizationProgress {
-    id: string; // composite key: `${itemId}_${memberId}`
+    id: string;
     familyId: string;
     itemId: string;
     memberId: string;
     completed: boolean;
-    completedAt?: string; // ISO string
+    completedAt?: string;
 }
 
 export interface PrayerProgress {
-    id: string; // Should be memberId
+    id: string;
     familyId: string;
     memberId: string;
     completions: {
-        [date: string]: string[]; // date is 'YYYY-MM-DD', value is array of prayer names
+        [date: string]: string[];
     };
 }
 
-
-// NOTES FEATURE DATA MODELS
 export type NoteContentType = 'text' | 'handwriting' | 'audio' | 'image' | 'file';
 
 export interface NoteContentBlock {
     id: string;
     type: NoteContentType;
-    data: string; // URL for files/audio/images, base64 for handwriting, text for text
-    textEquivalent?: string; // For OCR or speech-to-text results
+    data: string;
+    textEquivalent?: string;
 }
 
 export interface Note {
@@ -234,9 +242,9 @@ export interface Note {
     familyId: string;
     title: string;
     content: NoteContentBlock[];
-    createdAt: string; // ISO string
-    updatedAt: string; // ISO string
-    color?: string; // e.g. 'bg-yellow-100 border-yellow-200'
+    createdAt: string;
+    updatedAt: string;
+    color?: string;
     tags?: string[];
     imageUrl?: string | null;
     folder?: string;
@@ -253,13 +261,13 @@ export interface NotebookSection {
 export interface Notebook {
     id: string;
     familyId: string;
-    ownerId: string; // The user who created it
+    ownerId: string;
     title: string;
     description?: string;
     icon?: string;
-    color?: string; // e.g., 'from-blue-500 to-indigo-600'
+    color?: string;
     sections: NotebookSection[];
-    createdAt: string; // ISO string
+    createdAt: string;
 }
 
 export interface Video {
@@ -268,9 +276,9 @@ export interface Video {
     title: string;
     url?: string;
     platform: 'YouTube' | 'Other';
-    tags?: string[]; // For categories
+    tags?: string[];
     description?: string;
-    thumbnail?: string; // We can try to auto-fetch this later or let user add it
+    thumbnail?: string;
     createdAt?: string;
     totalVideos: number;
     completedVideos: number;
@@ -279,15 +287,14 @@ export interface Video {
 
 export type TrackableItemType = 'book' | 'video' | 'habit' | 'memorization';
 export interface DailyTracking {
-    id: string; // Composite key: `${date}_${memberId}_${itemId}`
+    id: string;
     familyId: string;
     memberId: string;
     itemId: string;
     itemType: TrackableItemType;
-    date: string; // 'yyyy-MM-dd'
+    date: string;
 }
 
-// Education Models
 export interface Topic {
   id: string;
   name: string;
@@ -305,7 +312,6 @@ export interface StudyPlanSubject {
     topics: StudyTopic[];
 }
 
-
 export interface StudyPlan {
     id: string;
     familyId: string;
@@ -313,7 +319,6 @@ export interface StudyPlan {
     description?: string;
     subjects: StudyPlanSubject[];
 }
-
 
 export interface TrackedBookSubject {
   id: string;
@@ -329,11 +334,9 @@ export interface TrackedBook {
   subjects: TrackedBookSubject[];
   createdAt: string;
   bookType?: 'standard' | 'open_ended';
-  // Denormalized counts for quick display
   subjectCount?: number;
   testCount?: number;
   questionCount?: number;
-  // Solution stats
   solvedTestCount?: number;
   totalCorrectAnswers?: number;
   totalIncorrectAnswers?: number;
@@ -356,33 +359,12 @@ export interface Summary {
   title: string;
   subject: string;
   topic: string;
-  content: string; // HTML content
-  createdAt: string; // ISO date string
+  content: string;
+  createdAt: string;
 }
 
-
-// Static data that doesn't change often can remain here.
-// Data that will be managed by the user is now in Firestore.
-
-export const recentActivities = [
-    { id: 1, user: 'Elif', title: 'Matematik ödevi tamamlandı', time: '5 dakika önce', icon: GraduationCap, color: 'from-purple-500 to-indigo-500', points: 25 },
-    { id: 2, user: 'Zeynep', title: 'Haftalık alışveriş tamamlandı', time: '1 saat önce', icon: ShoppingCart, color: 'from-green-500 to-emerald-500', points: 30 },
-    { id: 3, user: 'Murat', title: '"Küçük Prens" kitabını okudu', time: '3 saat önce', icon: BookOpen, color: 'from-yellow-500 to-amber-500', points: 50 },
-    { id: 4, user: 'Ahmet', title: 'Doktor randevusu eklendi', time: '5 saat önce', icon: Calendar, color: 'from-blue-500 to-sky-500', points: 10 },
-];
-
-export const weeklyPoints = [
-    { name: 'Pzt', points: 300 },
-    { name: 'Sal', points: 450 },
-    { name: 'Çar', points: 200 },
-    { name: 'Per', points: 700 },
-    { name: 'Cum', points: 550 },
-    { name: 'Cmt', points: 900 },
-    { name: 'Paz', points: 600 },
-];
-
 export interface Student {
-  id: string; // Changed to string to match FamilyMember.id
+  id: string;
   name: string;
   grade: string;
   avatar: string;
@@ -393,9 +375,9 @@ export type GradingType = 'auto' | 'manual';
 export type EvaluationStatus = 'correct' | 'incorrect' | 'unevaluated' | 'empty' | 'partial';
 
 export interface QuickTestQuestion {
-  questionId: string; // Corresponds to BankQuestion id
+  questionId: string;
   questionNumber: number;
-  imageUrl: string; // Copied from BankQuestion for the test
+  imageUrl: string;
 }
 
 export interface BankQuestion {
@@ -408,7 +390,7 @@ export interface BankQuestion {
   originalFilename?: string;
   options?: { [key: string]: string };
   correctAnswer: string;
-  createdAt: string; // ISO date string
+  createdAt: string;
   type?: 'mcq' | 'open_ended';
 }
 
@@ -438,7 +420,7 @@ export interface Test {
   familyId: string;
   title: string;
   subject: string;
-  studentId: string; // Changed to string to match FamilyMember.id
+  studentId: string;
   questionCount: number;
   durationMinutes?: number;
   assignedDate: string;
@@ -457,21 +439,21 @@ export interface Test {
   timeSpentSeconds?: number;
   timerStatus?: 'running' | 'paused' | 'finished';
   questions?: QuickTestQuestion[]; 
-  openEnded?: boolean; // New flag for open-ended tests
-  studentTextAnswers?: { [key: string]: string }; // For open-ended questions
-  studentTextAnswersEvaluation?: { [key: string]: EvaluationStatus }; // For manual grading
-  studentTextAnswersFeedback?: { [key: string]: string }; // For manual feedback
+  openEnded?: boolean;
+  studentTextAnswers?: { [key: string]: string };
+  studentTextAnswersEvaluation?: { [key: string]: EvaluationStatus };
+  studentTextAnswersFeedback?: { [key: string]: string };
   topicId?: string;
-  jsonQuestions?: JsonTestQuestion[]; // For text-based questions
-  htmlContent?: string; // HTML content for the test
-  revealedSubjectIds?: string[]; // TRACK REVEALED SUBJECTS FOR EXAMS
+  jsonQuestions?: JsonTestQuestion[];
+  htmlContent?: string;
+  revealedSubjectIds?: string[];
 }
 
 export interface ShoppingItem {
   id: string;
   name: string;
   isBought: boolean;
-  createdAt?: string; // ISO Date String
+  createdAt?: string;
   category?: string;
   quantity?: string;
 }
@@ -488,7 +470,6 @@ export interface ShoppingList {
   order?: number;
 }
 
-// Separate data structure for Needs page
 export interface ShoppingNoteItem {
   id: string;
   name: string;
@@ -502,54 +483,119 @@ export interface ShoppingNoteList {
   items: ShoppingNoteItem[];
 }
 
-
 export interface Mistake {
     id: string;
     familyId: string;
-    creatorId: string; // Member who originally got it wrong
-    testId?: string; // Which test this mistake came from
-    originalQuestionId?: string; // e.g. question number '5' or mistake pool id
-    imageUrl?: string; // Image of the question
-    studentAnswer?: string; // Student's incorrect answer
-    correctAnswer?: string; // Provided by teacher
-    correctImageUrl?: string; // Provided by teacher
-    feedback?: string; // Notes from teacher
+    creatorId: string;
+    testId?: string;
+    originalQuestionId?: string;
+    imageUrl?: string;
+    studentAnswer?: string;
+    correctAnswer?: string;
+    correctImageUrl?: string;
+    feedback?: string;
     subject: string;
     topic: string;
-    createdAt: string; // ISO date string
+    createdAt: string;
     status: 'active' | 'corrected';
     type: 'mcq' | 'open_ended';
 }
+
 export interface AmbientSound {
     id: string;
     familyId: string;
     name: string;
-    url: string; // Public URL to the audio file in Firebase Storage
+    url: string;
     loop: boolean;
 }
+
 export interface PomodoroProject {
     id: string;
     familyId: string;
     memberId: string;
     title: string;
     color: string;
-    targetTimeSeconds: number; // e.g., 3 hours = 10800 seconds
+    targetTimeSeconds: number;
     trackedTimeSeconds: number;
     sourceType?: 'task' | 'habit' | 'book' | 'test' | 'goal' | 'memorization' | 'video' | 'custom';
     sourceId?: string;
     createdAt: string;
 }
+
 export interface PomodoroSession {
     id: string;
     familyId: string;
     projectId: string;
     memberId: string;
-    startTime: string; // ISO string
-    endTime: string; // ISO string
+    startTime: string;
+    endTime: string;
     durationSeconds: number;
 }
-// This data is now only for initial setup
-// ... (rest of the initial data remains the same)
+
+export interface Account {
+    id: string;
+    familyId: string;
+    name: string;
+    type: 'cash' | 'bank' | 'credit-card' | 'other' | 'debt';
+    balance: number;
+    ownerId: string;
+    creditLimit?: number;
+    statementDate?: number;
+    dueDate?: number;
+}
+
+export interface Transaction {
+    id: string;
+    familyId: string;
+    amount: number;
+    type: 'income' | 'expense';
+    accountId: string;
+    ownerId: string;
+    category: string;
+    date: string;
+    isInstallment: boolean;
+    installmentDetails?: {
+        current: number;
+        total: number;
+        originalTransactionId: string;
+    };
+}
+
+export interface BudgetCategory {
+    id: string;
+    familyId: string;
+    name: string;
+    icon: string;
+    type: 'income' | 'expense';
+}
+
+export interface Budget {
+    id: string;
+    familyId: string;
+    categories: {
+        [categoryName: string]: {
+            limit: number;
+            spent: number;
+        };
+    };
+}
+
+export interface StudyAssignment {
+  id: string;
+  familyId: string;
+  studentId: string;
+  studyPlanId: string;
+  subject: string;
+  topic: string;
+  topicId: string;
+  sources: string[];
+  status: 'assigned' | 'completed';
+  startDate: string;
+  dueDate: string;
+  completedAt?: string;
+  durationMinutes?: number;
+}
+
 export const initialRecipes: Omit<Recipe, 'id' | 'familyId'>[] = [
     {
         title: "Menemen",
@@ -565,7 +611,6 @@ export const initialRecipes: Omit<Recipe, 'id' | 'familyId'>[] = [
     }
 ];
 
-// Initial data for Firestore (if needed for a setup script)
 export const initialBooks: Omit<Book, 'id' | 'familyId' | 'createdAt'>[] = [
     { title: "Yerdeniz Büyücüsü", author: "Ursula K. Le Guin", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Fantastik"], rating: 4.5, description: "Ged'in büyücülük yolculuğu.", pageCount: 208, isForChildren: false, readers: [] },
     { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", image: 'https://placehold.co/300x450.png', type: "Kitap", tags: ["Çocuk Klasikleri", "Felsefe"], rating: 4.9, description: "Bir pilot ve küçük bir prensin hikayesi.", pageCount: 96, isForChildren: true, readers: [] },
@@ -594,7 +639,7 @@ export const initialCalendarEvents: Omit<CalendarEvent, 'id' | 'familyId'>[] = [
 ];
 
 export const initialMealPlan: MealPlan = {
-  "2024-08-12": { // This key needs to be dynamic based on current week, but for initial setup it's fine
+  "2024-08-12": {
     "Kahvaltı": initialRecipes[0] as Recipe,
     "Akşam Yemeği": initialRecipes[1] as Recipe,
   },
@@ -625,7 +670,6 @@ export const initialTests: Omit<Test, 'id' | 'status' | 'familyId' | 'studentId'
         }
     ];
 
-
 // Types for AI Coach
 const MediaPartSchema = z.object({
   url: z.string(),
@@ -639,69 +683,3 @@ export const CoachMessageSchema = z.object({
   content: z.array(ContentPartSchema),
 });
 export type CoachMessage = z.infer<typeof CoachMessageSchema>;
-export interface Account {
-    id: string;
-    familyId: string;
-    name: string;
-    type: 'cash' | 'bank' | 'credit-card' | 'other' | 'debt';
-    balance: number;
-    ownerId: string;
-    // For credit cards
-    creditLimit?: number;
-    statementDate?: number; // day of the month
-    dueDate?: number; // day of the month
-}
-
-export interface Transaction {
-    id: string;
-    familyId: string;
-    amount: number;
-    type: 'income' | 'expense';
-    accountId: string;
-    ownerId: string;
-    category: string;
-    date: string; // YYYY-MM-DD
-    isInstallment: boolean;
-    installmentDetails?: {
-        current: number;
-        total: number;
-        originalTransactionId: string;
-    };
-}
-
-export interface BudgetCategory {
-    id: string;
-    familyId: string;
-    name: string;
-    icon: string; // Emoji or icon name
-    type: 'income' | 'expense';
-}
-
-
-export interface Budget {
-    id: string; // YYYY-MM
-    familyId: string;
-    categories: {
-        [categoryName: string]: {
-            limit: number;
-            spent: number;
-        };
-    };
-}
-
-
-export interface StudyAssignment {
-  id: string;
-  familyId: string;
-  studentId: string;
-  studyPlanId: string;
-  subject: string;
-  topic: string;
-  topicId: string;
-  sources: string[];
-  status: 'assigned' | 'completed';
-  startDate: string;
-  dueDate: string;
-  completedAt?: string;
-  durationMinutes?: number;
-}

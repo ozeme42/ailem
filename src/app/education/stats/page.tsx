@@ -1,7 +1,5 @@
-
 import { Suspense } from 'react';
-import StatsClient from './stats-client';
-import { PageHeader } from '@/components/page-header';
+import { StatsClient } from './stats-client';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EducationStatsPage() {
@@ -14,13 +12,10 @@ export default function EducationStatsPage() {
   );
 }
 
-
 function StatsSkeleton() {
   return (
     <div className="space-y-6">
-       <PageHeader title="İstatistikler 📈">
-          <Skeleton className="h-10 w-32" />
-       </PageHeader>
+        <div className="h-20 w-full rounded-2xl bg-white dark:bg-slate-900 animate-pulse" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Skeleton className="h-24 w-full" />
             <Skeleton className="h-24 w-full" />
@@ -35,4 +30,3 @@ function StatsSkeleton() {
     </div>
   );
 }
-
