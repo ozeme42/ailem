@@ -4,7 +4,7 @@ import * as React from "react";
 import { 
     Flag, Plus, Target, CheckCircle2, Trash2, Edit3, 
     BarChart3, Percent, Calculator, Flame, Clock, 
-    ChevronRight, Loader2, BookOpen
+    ChevronRight, Loader2, BookOpen, Sparkles
 } from "lucide-react";
 import { format, startOfDay, endOfDay, isWithinInterval, subDays, subWeeks, subMonths, startOfWeek, startOfMonth, startOfYear } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -19,7 +19,6 @@ import {
     onPerformanceGoalsUpdate 
 } from "@/lib/dataService";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -66,7 +65,6 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
         const now = new Date();
         let startDate = new Date();
         
-        // Periyoda göre başlangıç tarihini belirle
         switch (goal.period) {
             case 'daily': startDate = startOfDay(now); break;
             case 'weekly': startDate = startOfWeek(now, { weekStartsOn: 1 }); break;
@@ -174,7 +172,6 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
                 <div className="bg-white dark:bg-slate-900 rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-slate-800 p-16 text-center">
                     <Target className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-700 mb-4" />
                     <p className="font-bold text-slate-500 dark:text-slate-400">Henüz aktif bir hedef yok.</p>
-                    <p className="text-xs text-slate-400 mt-1">Kendinize meydan okumak için bir hedef belirleyin.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -205,13 +202,13 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
                                         <div>
                                             <h4 className="font-bold text-slate-800 dark:text-slate-100 leading-tight">{goal.label}</h4>
                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                                                {goal.subject === 'all' ? 'Tüm Dersler' : goal.subject} • {goal.period === 'weekly' ? 'Haftalık' : goal.period === 'monthly' ? 'Aylık' : 'Günlük'}
+                                                {goal.subject === 'all' ? 'Tüm Dersler' : goal.subject} • {goal.period}
                                             </p>
                                         </div>
                                     </div>
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => openEdit(goal)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-indigo-600 transition-colors"><Edit3 className="w-3.5 h-3.5"/></button>
-                                        <button onClick={() => handleDeleteGoal(goal.id)} className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950 text-slate-400 hover:text-rose-500 transition-colors"><Trash2 className="w-3.5 h-3.5"/></button>
+                                        <button onClick={() => openEdit(goal)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-indigo-600"><Edit3 className="w-3.5 h-3.5"/></button>
+                                        <button onClick={() => handleDeleteGoal(goal.id)} className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950 text-slate-400 hover:text-rose-500"><Trash2 className="w-3.5 h-3.5"/></button>
                                     </div>
                                 </div>
 
@@ -223,14 +220,6 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">HEDEF: {goal.target}{unit}</span>
                                     </div>
                                     <Progress value={pct} className="h-2 bg-slate-100 dark:bg-slate-800" indicatorClassName={cn(done ? "bg-emerald-500" : "bg-indigo-500")} />
-                                    <div className="flex justify-between items-center text-[10px] font-bold">
-                                        <span className="text-slate-400">%{pct.toFixed(0)} Tamamlandı</span>
-                                        {done ? (
-                                            <span className="text-emerald-500 flex items-center gap-1"><Sparkles className="w-3 h-3" /> Başarıldı!</span>
-                                        ) : (
-                                            <span className="text-indigo-500">{Math.max(0, goal.target - current).toFixed(0)} {unit} kaldı</span>
-                                        )}
-                                    </div>
                                 </div>
                             </motion.div>
                         );
@@ -238,15 +227,10 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
                 </div>
             )}
 
-            {/* MODAL */}
             <Dialog open={isModalOpen} onOpenChange={(o) => { if(!o) setEditingGoal(null); setIsModalOpen(o); }}>
                 <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                            <Target className="w-6 h-6 text-indigo-500" />
-                            {editingGoal ? 'Hedefi Düzenle' : 'Yeni Hedef Belirle'}
-                        </DialogTitle>
-                        <DialogDescription>Kendinize veya öğrenciye bir çalışma hedefi atayın.</DialogDescription>
+                        <DialogTitle>{editingGoal ? 'Hedefi Düzenle' : 'Yeni Hedef Belirle'}</DialogTitle>
                     </DialogHeader>
 
                     <div className="space-y-6 py-4">
@@ -263,7 +247,7 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
                                         onClick={() => setGoalForm({ ...goalForm, type: t.id as any })}
                                         className={cn(
                                             "flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all gap-1.5",
-                                            goalForm.type === t.id ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300" : "border-slate-100 dark:border-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5"
+                                            goalForm.type === t.id ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700" : "border-slate-100 dark:border-slate-800 text-slate-500"
                                         )}
                                     >
                                         <t.icon className="w-5 h-5" />
@@ -275,9 +259,9 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Ders</Label>
+                                <Label>Ders</Label>
                                 <Select value={goalForm.subject} onValueChange={(v) => setGoalForm({ ...goalForm, subject: v })}>
-                                    <SelectTrigger className="rounded-xl h-11 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">Tümü</SelectItem>
                                         {availableSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
@@ -285,9 +269,9 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Periyot</Label>
+                                <Label>Periyot</Label>
                                 <Select value={goalForm.period} onValueChange={(v) => setGoalForm({ ...goalForm, period: v as any })}>
-                                    <SelectTrigger className="rounded-xl h-11 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="daily">Günlük</SelectItem>
                                         <SelectItem value="weekly">Haftalık</SelectItem>
@@ -299,21 +283,20 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Hedef Değeri</Label>
+                            <Label>Hedef Değeri</Label>
                             <Input 
                                 type="number" 
-                                placeholder="Örn: 500" 
-                                className="h-12 rounded-xl text-lg font-bold bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+                                className="h-12 rounded-xl text-lg font-bold"
                                 value={goalForm.target}
                                 onChange={(e) => setGoalForm({ ...goalForm, target: e.target.value })}
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Etiket (Opsiyonel)</Label>
+                            <Label>Etiket (Opsiyonel)</Label>
                             <Input 
-                                placeholder="Örn: Matematik Maratonu" 
-                                className="h-12 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+                                placeholder="Örn: Haftalık Matematik Hedefi" 
+                                className="h-12 rounded-xl"
                                 value={goalForm.label}
                                 onChange={(e) => setGoalForm({ ...goalForm, label: e.target.value })}
                             />
@@ -321,13 +304,9 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
                     </div>
 
                     <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12">İptal</Button>
-                        <Button 
-                            disabled={loading} 
-                            onClick={handleSaveGoal}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 px-8 font-bold shadow-lg shadow-indigo-500/20"
-                        >
-                            {loading ? <Loader2 className="animate-spin w-5 h-5" /> : (editingGoal ? 'Güncelle' : 'Hedefi Kaydet')}
+                        <Button variant="ghost" onClick={() => setIsModalOpen(false)}>İptal</Button>
+                        <Button disabled={loading} onClick={handleSaveGoal} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 px-8 font-bold">
+                            {loading ? <Loader2 className="animate-spin w-5 h-5" /> : 'Kaydet'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -341,4 +320,3 @@ const getCategoryName = (test: Test): string => {
     if (test.sourceType === 'mistake') return 'Yanlışlarım';
     return test.subject || 'Diğer';
 };
-

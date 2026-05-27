@@ -1,4 +1,4 @@
-import { db } from './firebase';
+import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit, Unsubscribe, serverTimestamp } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, PrayerProgress, Video, CalorieLog, DailyTracking, BankQuestion, TrackedBook, TrackedBookTest, BudgetCategory, PomodoroProject, PomodoroSession, Summary, PerformanceGoal } from './data';
@@ -394,3 +394,28 @@ export const onSinglePracticeExamUpdate = (id: string, cb: (e: PracticeExam | nu
 export const addPracticeExam = async (data: any) => { const familyId = await getCurrentFamilyId(); return addDoc(collection(db, 'practiceExams'), { ...data, familyId }); };
 export const updatePracticeExam = (id: string, data: any) => updateDoc(doc(db, 'practiceExams', id), removeUndefined(data));
 export const deletePracticeExam = (id: string) => deleteDoc(doc(db, 'practiceExams', id));
+export const onTagsUpdate = (collectionName: string, callback: (tags: string[]) => void) => {
+    const auth = getAuth();
+    return onAuthStateChanged(auth, (user) => {
+        if (!user) return callback([]);
+        return onSnapshot(doc(db, 'users', user.uid), async (userDoc) => {
+            const familyId = userDoc.data()?.familyId;
+            if (familyId) onSnapshot(doc(db, 'familyManagement', familyId), (doc) => callback(doc.exists() ? doc.data()[collectionName] || [] : []));
+            else callback([]);
+        });
+    });
+};
+export const updateTags = async (collectionName: string, tags: string[]) => {
+    const familyId = await getCurrentFamilyId();
+    if (familyId) await setDoc(doc(db, 'familyManagement', familyId), { [collectionName]: tags }, { merge: true });
+};
+export const deleteTag = async (collectionName: string, tag: string, type: string) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) return;
+    const docRef = doc(db, 'familyManagement', familyId);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+        const currentTags = snap.data()[collectionName] || [];
+        await updateDoc(docRef, { [collectionName]: currentTags.filter((t: string) => t !== tag) });
+    }
+};
