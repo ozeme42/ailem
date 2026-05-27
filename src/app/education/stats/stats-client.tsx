@@ -11,13 +11,13 @@ import {
   ChevronsUpDown, ChevronUp, ChevronDown, Download, X, ListX,
   TrendingUp, SlidersHorizontal, Search,
   GitCompareArrows, Crosshair, Plus, Edit3, Trash2, CheckCircle2,
-  Flag, Bell, Lock, Unlock, Smile, ThumbsUp, ThumbsDown, AlertTriangle, Heart
+  Flag, Bell, Lock, Unlock, Smile, ThumbsUp, ThumbsDown, AlertTriangle, Heart, CalendarIcon
 } from "lucide-react";
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip,
   XAxis, YAxis, Cell, PieChart, Pie, ComposedChart, Legend,
   Area, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  RechartsLineChart, Line, LabelList
+  Line, LabelList
 } from "recharts";
 import { useAuth } from "@/components/auth-provider";
 import { 
@@ -226,7 +226,7 @@ export function StatsClient() {
     return () => { unsubTests(); unsubBooks(); };
   }, [studentId, familyId]);
 
-  // -- ENRİCH --
+  // -- ENRICH --
   const enrichedBaseData = React.useMemo(() => {
     const allTopics = trackedBooks.flatMap(b =>
       (b.subjects || []).flatMap((s: any) =>

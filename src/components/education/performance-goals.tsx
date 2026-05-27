@@ -76,7 +76,15 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
         const periodTests = solvedTests.filter(t => {
             const solvedDate = new Date(t.updatedAt || t.assignedDate);
             const inPeriod = solvedDate >= startDate && solvedDate <= now;
-            const subjectMatch = goal.subject === 'all' || getCategoryName(t) === goal.subject;
+            
+            // Helper function logic used within calculation
+            const getCategory = (test: Test): string => {
+              if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
+              if (test.sourceType === 'mistake') return 'Yanlışlarım';
+              return test.subject || 'Diğer';
+            };
+
+            const subjectMatch = goal.subject === 'all' || getCategory(t) === goal.subject;
             return inPeriod && subjectMatch;
         });
 
@@ -124,7 +132,7 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
             setIsModalOpen(false);
             setEditingGoal(null);
         } catch (e) {
-            toast({ title: "Hata", variant: "destructive" });
+            toast({ title: "Hata", description: "Hedef kaydedilemedi.", variant: "destructive" });
         } finally {
             setLoading(false);
         }
@@ -135,7 +143,7 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
             await deletePerformanceGoal(id);
             toast({ title: "Hedef Silindi" });
         } catch (e) {
-            toast({ title: "Hata", variant: "destructive" });
+            toast({ title: "Hata", description: "Hedef silinemedi.", variant: "destructive" });
         }
     };
 
@@ -231,6 +239,7 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
                 <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>{editingGoal ? 'Hedefi Düzenle' : 'Yeni Hedef Belirle'}</DialogTitle>
+                        <DialogDescription>Gelişim hedeflerinizi belirleyin.</DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-6 py-4">
@@ -314,9 +323,3 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
         </section>
     );
 }
-
-const getCategoryName = (test: Test): string => {
-    if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
-    if (test.sourceType === 'mistake') return 'Yanlışlarım';
-    return test.subject || 'Diğer';
-};
