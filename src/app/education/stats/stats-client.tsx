@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -97,7 +98,7 @@ const KpiCard = ({ icon: Icon, value, label, sub, color, trend }: {
   icon: any; value: string | number; label: string; sub?: string; color: string; trend?: number;
 }) => (
   <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-    className="relative rounded-2xl p-5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden group h-full">
+    className="relative rounded-2xl p-5 bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden group h-full">
     <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
       style={{ background: `radial-gradient(160px at 10% 20%, ${color}18, transparent)` }} />
     <div className="flex items-start justify-between mb-4">
@@ -511,7 +512,7 @@ export function StatsClient() {
                       : 'Tarih Aralığı'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 rounded-2xl shadow-xl border-slate-200 dark:border-slate-700" align="start">
+                <PopoverContent className="w-auto p-0 rounded-2xl shadow-xl border-slate-200 dark:border-slate-800" align="start">
                   <div className="p-4 border-b border-slate-100 dark:border-slate-800">
                     <p className="text-xs font-extrabold text-slate-700 dark:text-slate-200 uppercase tracking-widest mb-3">Tarih Aralığı Seç</p>
                     <div className="flex gap-2 items-center text-xs">
@@ -882,7 +883,7 @@ export function StatsClient() {
           </TabsContent>
 
           <TabsContent value="compare" className="space-y-6 mt-0">
-            {/* Compare Logic */}
+            {/* Karşılaştırma modülü ileride eklenebilir */}
           </TabsContent>
 
           <TabsContent value="goals" className="space-y-6 mt-0">

@@ -1,3 +1,4 @@
+
 import { Suspense } from 'react';
 import { StatsClient } from './stats-client';
 import { Skeleton } from '@/components/ui/skeleton';

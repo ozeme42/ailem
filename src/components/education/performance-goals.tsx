@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -77,7 +78,6 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
             const solvedDate = new Date(t.updatedAt || t.assignedDate);
             const inPeriod = solvedDate >= startDate && solvedDate <= now;
             
-            // Helper function logic used within calculation
             const getCategory = (test: Test): string => {
               if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
               if (test.sourceType === 'mistake') return 'Yanlışlarım';
@@ -177,7 +177,7 @@ export function PerformanceGoals({ member, solvedTests, availableSubjects }: Per
             </div>
 
             {goals.length === 0 ? (
-                <div className="bg-white dark:bg-slate-900 rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-slate-800 p-16 text-center">
+                <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border-2 border-dashed border-slate-200 dark:border-slate-800 p-16 text-center">
                     <Target className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-700 mb-4" />
                     <p className="font-bold text-slate-500 dark:text-slate-400">Henüz aktif bir hedef yok.</p>
                 </div>
