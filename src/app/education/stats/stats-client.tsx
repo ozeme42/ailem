@@ -559,7 +559,7 @@ export function StatsClient() {
                       : `Net: ${netSliderValue[0]} – ${netSliderValue[1]}`}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-72 p-5 rounded-2xl shadow-xl border-slate-200 dark:border-slate-700" align="start">
+                <PopoverContent className="w-72 p-5 rounded-2xl shadow-xl border-slate-200 dark:border-slate-800" align="start">
                   <p className="text-xs font-extrabold text-slate-700 dark:text-slate-200 uppercase tracking-widest mb-1">Net Aralığı</p>
                   <p className="text-[10px] text-slate-400 mb-4">Yalnızca bu net aralığındaki testleri göster</p>
                   <div className="flex items-center justify-between text-sm font-extrabold mb-3">
@@ -640,7 +640,7 @@ export function StatsClient() {
                       </div>
                       <div>
                         <h2 className="text-2xl font-black text-slate-900 dark:text-white">{isExcellent ? "Harika Gidiyorsun!" : isOkay ? "İyi, Ama Daha İyisi Olabilir!" : "Biraz Daha Gayret!"}</h2>
-                        <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mt-2">{isExcellent ? "Öğrencimiz bu dönemi yüksek bir performansla geçiriyor. Aynen devam!" : isOkay ? "Ortalama bir başarı gösteriyor, bazı konularda küçük tekrarlara ihtiyaç var." : "Şu anki başarı oranı beklenenin altında. Eksik konuların üzerinden tekrar geçmeliyiz."}</p>
+                        <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mt-2">{isExcellent ? "Öğrencimiz bu dönemi yüksek bir performansla geçiriyor. Aynen devam!" : isOkay ? "Ortalama bir başarı gösteriyor, bazı konularda küçük tekrarlara ihtiyaç var." : "Şu anki başarı oranı beklenenin altında. Eksik konuların üzerinden tekrar geçmeliviz."}</p>
                       </div>
                     </div>
                   </div>
@@ -682,7 +682,7 @@ export function StatsClient() {
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={timeSeriesData} margin={{ top: 20, right: 10, left: -15, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148,163,184,0.12)" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: '#94A3B8' }} dy={8} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWight: 600, fill: '#94A3B8' }} dy={8} />
                     <YAxis yAxisId="l" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94A3B8' }} />
                     <YAxis yAxisId="r" orientation="right" domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94A3B8' }} />
                     <Tooltip content={<CustomTooltip />} />
