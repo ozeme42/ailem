@@ -1,8 +1,8 @@
-
 "use client";
 
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft, Check, Percent, Filter, RotateCcw,
   Flame, Calendar, BarChart3, PieChart as PieIcon, LineChart as LineIcon,
@@ -31,7 +31,7 @@ import {
   format, startOfWeek, eachDayOfInterval,
   subDays, parseISO, eachMonthOfInterval, subMonths,
   startOfYear, parse, addMonths, differenceInDays, isWithinInterval,
-  startOfDay, endOfDay
+  startOfDay, endOfDay, getDay
 } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Badge } from "@/components/ui/badge";
@@ -69,9 +69,95 @@ const C = {
 };
 const CHART_PALETTE = [C.INDIGO, C.EMERALD, C.AMBER, C.ROSE, C.CYAN, C.ORANGE, C.PURPLE];
 
-type Period = 'weekly' | 'monthly' | 'yearly';
-type SortKey = 'subject' | 'total' | 'correct' | 'incorrect' | 'blank' | 'net' | 'successRate';
-type SortDir = 'asc' | 'desc';
+// --- DAİRESEL HEDEF KARTI BİLEŞENİ ---
+const VisualGoalCard = ({ 
+  title, 
+  current, 
+  target, 
+  unit = "Soru", 
+  icon: Icon, 
+  color = "#6366F1",
+  deadline 
+}: { 
+  title: string; current: number; target: number; unit?: string; icon: any; color?: string; deadline?: string 
+}) => {
+  const rawProgress = target > 0 ? (current / target) * 100 : 0;
+  const progress = Math.min(rawProgress, 100);
+  const isCompleted = progress >= 100;
+
+  const radius = 36;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }} 
+      animate={{ opacity: 1, scale: 1 }}
+      className={cn(
+        "relative rounded-[2.5rem] p-6 border shadow-sm overflow-hidden group transition-all hover:shadow-md",
+        isCompleted ? "bg-emerald-50/30 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+      )}
+    >
+      <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 opacity-10 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: color }} />
+
+      <div className="flex items-center gap-6">
+        <div className="relative w-24 h-24 shrink-0 flex items-center justify-center">
+          <svg className="w-full h-full transform -rotate-90 drop-shadow-sm" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r={radius} stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-100 dark:text-slate-800" />
+            <circle 
+              cx="50" cy="50" r={radius} 
+              stroke={isCompleted ? '#10B981' : color} 
+              strokeWidth="8" 
+              fill="transparent" 
+              strokeDasharray={circumference} 
+              strokeDashoffset={strokeDashoffset} 
+              strokeLinecap="round"
+              className="transition-all duration-1500 ease-out" 
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            {isCompleted ? (
+              <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+            ) : (
+              <span className="text-lg font-black text-slate-700 dark:text-slate-200">
+                %{Math.floor(progress)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-1.5 rounded-lg" style={{ backgroundColor: `${color}15`, color: color }}>
+              <Icon className="w-4 h-4" />
+            </div>
+            <h3 className="font-extrabold text-slate-800 dark:text-slate-100 truncate text-base">{title}</h3>
+          </div>
+          
+          <div className="mt-3 flex items-end gap-1.5">
+            <span className="text-3xl font-black leading-none text-slate-900 dark:text-white">{current}</span>
+            <span className="text-sm font-bold text-slate-400 mb-0.5">/ {target} {unit}</span>
+          </div>
+
+          <div className="mt-3 flex items-center justify-between text-[11px] font-bold">
+            {isCompleted ? (
+              <span className="text-emerald-500 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded-md">Hedef Tamamlandı! 🎉</span>
+            ) : (
+              <span className="text-slate-400">
+                Kalan: <span className="text-slate-700 dark:text-slate-300">{target - current} {unit}</span>
+              </span>
+            )}
+            {deadline && (
+              <span className="text-slate-400 flex items-center gap-1">
+                <Clock className="w-3 h-3" /> {deadline}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 // --- UTILS ---
 const getCategoryName = (test: Test): string => {
@@ -87,6 +173,7 @@ function translateType(type: string) {
   };
   return map[type] || type;
 }
+
 function rateColor(r: number) {
   if (r >= 75) return C.EMERALD;
   if (r >= 50) return C.AMBER;
@@ -136,13 +223,15 @@ const SectionHeader = ({ icon: Icon, title, desc, color = C.INDIGO }: any) => (
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 shadow-xl text-xs">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 shadow-xl text-xs z-50 relative">
       <p className="font-extrabold text-slate-700 dark:text-slate-200 mb-2">{label}</p>
       {payload.map((p: any, i: number) => (
         <div key={i} className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.color || p.fill }} />
           <span className="text-slate-500">{p.name}:</span>
-          <span className="font-bold text-slate-800 dark:text-slate-100">{typeof p.value === 'number' ? p.value.toFixed(1) : p.value}</span>
+          <span className="font-bold text-slate-800 dark:text-slate-100">
+            {typeof p.value === 'number' && !Number.isInteger(p.value) ? p.value.toFixed(1) : p.value}
+          </span>
         </div>
       ))}
     </div>
@@ -205,7 +294,6 @@ export function StatsClient() {
   // -- Sekme & modal --
   const [activeTab, setActiveTab] = React.useState('overview');
   const [isImprovementModalOpen, setIsImprovementModalOpen] = React.useState(false);
-  const [improvementModalFilter, setImprovementModalFilter] = React.useState('all');
 
   // -- Tablo sort --
   const [tableSortKey, setTableSortKey] = React.useState<SortKey>('total');
@@ -227,7 +315,7 @@ export function StatsClient() {
     return () => { unsubTests(); unsubBooks(); };
   }, [studentId, familyId]);
 
-  // -- ENRICH --
+  // -- ENRICH (Veri Zenginleştirme) --
   const enrichedBaseData = React.useMemo(() => {
     const allTopics = trackedBooks.flatMap(b =>
       (b.subjects || []).flatMap((s: any) =>
@@ -415,6 +503,61 @@ export function StatsClient() {
       rate: parseFloat(s.successRate.toFixed(1)), fill: CHART_PALETTE[i % CHART_PALETTE.length]
     })), [subjectDetailedStats]
   );
+
+  // --- KARŞILAŞTIRMA (COMPARE) VERİLERİ ---
+  const compareSourceData = React.useMemo(() => {
+    const map = new Map<string, { type: string; total: number; correct: number; incorrect: number; blank: number }>();
+    processedData.forEach(t => {
+      const type = translateType(t.sourceType);
+      const cur = map.get(type) || { type, total: 0, correct: 0, incorrect: 0, blank: 0 };
+      cur.total += t._totalQ;
+      cur.correct += t._correct;
+      cur.incorrect += t._incorrect;
+      cur.blank += t._blank;
+      map.set(type, cur);
+    });
+    return Array.from(map.values())
+      .map(d => ({ ...d, successRate: d.total > 0 ? (d.correct / d.total) * 100 : 0 }))
+      .sort((a, b) => b.total - a.total); 
+  }, [processedData]);
+
+  // --- ÇALIŞMA ALIŞKANLIKLARI (HABITS) VERİLERİ ---
+  const habitsData = React.useMemo(() => {
+    const daysStr = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+    const shortDaysStr = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+    const counts = new Array(7).fill(0).map((_, i) => ({ 
+      dayIndex: i, 
+      day: shortDaysStr[i], 
+      fullDay: daysStr[i],
+      count: 0, 
+      questions: 0 
+    }));
+    
+    processedData.forEach(t => {
+      if (t._solvedDate) {
+        const d = getDay(t._solvedDate);
+        counts[d].count++;
+        counts[d].questions += t._totalQ;
+      }
+    });
+    
+    const sortedForChart = [...counts.slice(1), counts[0]];
+    return { chartData: sortedForChart, rawCounts: counts };
+  }, [processedData]);
+
+  const habitsSummary = React.useMemo(() => {
+    const { rawCounts } = habitsData;
+    const sortedByQs = [...rawCounts].sort((a, b) => b.questions - a.questions);
+    const bestWorkingDay = sortedByQs[0]?.questions > 0 ? sortedByQs[0] : null;
+    const activeDaysCount = rawCounts.filter(d => d.questions > 0).length;
+    
+    const uniqueDatesSet = new Set(processedData.map(t => format(t._solvedDate, 'yyyy-MM-dd')));
+    const totalActiveDays = uniqueDatesSet.size || 1;
+    const totalQuestions = processedData.reduce((acc, t) => acc + t._totalQ, 0);
+    const dailyAverage = Math.round(totalQuestions / totalActiveDays);
+
+    return { bestWorkingDay, activeDaysCount, dailyAverage };
+  }, [habitsData, processedData]);
 
   if (loading) return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-4">
@@ -609,8 +752,8 @@ export function StatsClient() {
               { id: 'subjects',    label: 'Dersler',     icon: BookOpen },
               { id: 'topics',      label: 'Konular',     icon: Target },
               { id: 'compare',     label: 'Karşılaştır', icon: GitCompareArrows },
-              { id: 'goals',       label: 'Hedefler',    icon: Flag },
               { id: 'habits',      label: 'Çalışma',     icon: Clock },
+              { id: 'goals',       label: 'Hedefler',    icon: Flag },
               { id: 'activity',    label: 'Aktivite',    icon: Flame },
             ].map(tab => (
               <TabsTrigger key={tab.id} value={tab.id} className={cn(
@@ -683,7 +826,7 @@ export function StatsClient() {
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={timeSeriesData} margin={{ top: 20, right: 10, left: -15, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148,163,184,0.12)" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWight: 600, fill: '#94A3B8' }} dy={8} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: '#94A3B8' }} dy={8} />
                     <YAxis yAxisId="l" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94A3B8' }} />
                     <YAxis yAxisId="r" orientation="right" domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94A3B8' }} />
                     <Tooltip content={<CustomTooltip />} />
@@ -883,11 +1026,172 @@ export function StatsClient() {
           </TabsContent>
 
           <TabsContent value="compare" className="space-y-6 mt-0">
-            {/* Karşılaştırma modülü ileride eklenebilir */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-6">
+                <SectionHeader icon={GitCompareArrows} title="Test Türlerine Göre Başarı" desc="Hangi kaynaktan daha çok verim alıyorsun?" color={C.PURPLE} />
+                <div className="h-[320px] mt-4">
+                  {compareSourceData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={compareSourceData} margin={{ top: 20, right: 30, left: -20, bottom: 0 }} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="rgba(148,163,184,0.12)" />
+                        <XAxis type="number" hide />
+                        <YAxis type="category" dataKey="type" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: '#94A3B8' }} width={100} />
+                        <Tooltip cursor={{ fill: 'transparent' }} content={<CustomTooltip />} />
+                        <Legend verticalAlign="top" iconType="circle" wrapperStyle={{ fontSize: 11, fontWeight: 600, paddingBottom: 16 }} />
+                        <Bar dataKey="correct" name="Doğru Sayısı" stackId="a" fill={C.EMERALD} radius={[0, 0, 0, 0]} maxBarSize={30} />
+                        <Bar dataKey="incorrect" name="Yanlış Sayısı" stackId="a" fill={C.ROSE} radius={[0, 0, 0, 0]} maxBarSize={30} />
+                        <Bar dataKey="blank" name="Boş Sayısı" stackId="a" fill={C.SLATE} radius={[0, 4, 4, 0]} maxBarSize={30}>
+                          <LabelList dataKey="successRate" position="right" formatter={(val: number) => `%${val.toFixed(0)}`} style={{ fill: C.INDIGO, fontSize: 10, fontWeight: 'bold' }} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : <div className="h-full flex items-center justify-center text-sm text-slate-400">Karşılaştırma için yeterli veri yok.</div>}
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-6">
+                <SectionHeader icon={Layers} title="En Çok Çözülen Dersler (D/Y Analizi)" desc="En çok vakit ayırdığın derslerin durumu" color={C.CYAN} />
+                <div className="h-[320px] mt-4">
+                  {subjectComparisonData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={subjectComparisonData.slice(0, 5)} margin={{ top: 20, right: 30, left: -20, bottom: 0 }} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="rgba(148,163,184,0.12)" />
+                        <XAxis type="number" hide />
+                        <YAxis type="category" dataKey="subject" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700, fill: '#94A3B8' }} width={100} />
+                        <Tooltip cursor={{ fill: 'transparent' }} content={<CustomTooltip />} />
+                        <Legend verticalAlign="top" iconType="circle" wrapperStyle={{ fontSize: 11, fontWeight: 600, paddingBottom: 16 }} />
+                        <Bar dataKey="correct" name="Doğru Sayısı" stackId="a" fill={C.EMERALD} radius={[0, 0, 0, 0]} maxBarSize={30} />
+                        <Bar dataKey="incorrect" name="Yanlış Sayısı" stackId="a" fill={C.ROSE} radius={[0, 4, 4, 0]} maxBarSize={30}>
+                           <LabelList dataKey="rate" position="right" formatter={(val: number) => `%${val.toFixed(0)}`} style={{ fill: C.CYAN, fontSize: 10, fontWeight: 'bold' }} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : <div className="h-full flex items-center justify-center text-sm text-slate-400">Karşılaştırma için yeterli veri yok.</div>}
+                </div>
+              </div>
+
+            </div>
+          </TabsContent>
+
+          <TabsContent value="habits" className="space-y-6 mt-0">
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-6">
+                <SectionHeader icon={Calendar} title="Günlere Göre Soru Çözüm Dağılımı" desc="Haftanın hangi günleri daha yoğun çalışıyorsun?" color={C.ORANGE} />
+                <div className="h-[280px] mt-4">
+                  {habitsData.chartData.some(d => d.questions > 0) ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={habitsData.chartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148,163,184,0.12)" />
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: '#94A3B8' }} dy={8} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94A3B8' }} />
+                        <Tooltip cursor={{ fill: 'rgba(148,163,184,0.05)' }} content={<CustomTooltip />} />
+                        <Bar dataKey="questions" name="Çözülen Soru" fill={C.AMBER} radius={[6, 6, 0, 0]} maxBarSize={50}>
+                           <LabelList dataKey="questions" position="top" style={{ fill: '#94A3B8', fontSize: 11, fontWeight: 700 }} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : <div className="h-full flex items-center justify-center text-sm text-slate-400">Çalışma verisi bulunamadı.</div>}
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <Card className="rounded-[2rem] border-none shadow-md overflow-hidden bg-gradient-to-br from-orange-500 to-amber-600">
+                  <CardContent className="p-8 text-center text-white relative">
+                    <div className="absolute top-0 right-0 p-4 opacity-20">
+                      <Clock className="w-24 h-24" />
+                    </div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-orange-100 mb-2 relative z-10">En Yoğun Günün</p>
+                    <p className="text-4xl font-black mb-1 relative z-10">{habitsSummary.bestWorkingDay?.fullDay || '-'}</p>
+                    <p className="text-sm font-medium text-orange-100 relative z-10">
+                      {habitsSummary.bestWorkingDay 
+                        ? `Toplam ${habitsSummary.bestWorkingDay.questions} soru çözüldü` 
+                        : 'Henüz veri yok'}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200/70 dark:border-slate-800 shadow-sm p-6">
+                  <SectionHeader icon={Activity} title="Alışkanlık Özeti" color={C.ROSE} />
+                  <ul className="space-y-4 text-sm font-medium text-slate-600 dark:text-slate-300">
+                    <li className="flex items-center justify-between">
+                      <span>Günlük Ortalama Soru:</span>
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        {isNaN(habitsSummary.dailyAverage) ? 0 : habitsSummary.dailyAverage} Soru
+                      </span>
+                    </li>
+                    <li className="flex items-center justify-between">
+                      <span>Aktif Çalışılan Günler:</span>
+                      <span className="font-bold text-emerald-600">
+                         {habitsSummary.activeDaysCount} / 7 Gün
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+             </div>
           </TabsContent>
 
           <TabsContent value="goals" className="space-y-6 mt-0">
-              <PerformanceGoals member={student!} solvedTests={processedData} availableSubjects={availableSubjects} />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-indigo-600 rounded-[2rem] p-8 text-white shadow-lg shadow-indigo-600/20 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+              <div className="relative z-10">
+                <h2 className="text-2xl font-black mb-1">Hedeflerine Odaklan! 🚀</h2>
+                <p className="text-indigo-100 text-sm font-medium">Bu hafta belirlediğin hedeflerin durumunu buradan takip edebilirsin. Küçük adımlar büyük başarılar getirir.</p>
+              </div>
+              <Button className="relative z-10 bg-white text-indigo-600 hover:bg-slate-50 rounded-xl font-bold border-0 shadow-sm">
+                <Plus className="w-4 h-4 mr-2" /> Yeni Hedef Ekle
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <VisualGoalCard 
+                title="Günlük Kitap Okuma" 
+                current={75} 
+                target={100} 
+                unit="Sayfa"
+                icon={BookOpen} 
+                color={C.ORANGE}
+                deadline="Bugün, 23:59"
+              />
+              
+              <VisualGoalCard 
+                title="Haftalık Matematik Soru" 
+                current={420} 
+                target={500} 
+                unit="Soru"
+                icon={Target} 
+                color={C.INDIGO}
+                deadline="Pazar"
+              />
+
+              <VisualGoalCard 
+                title="Fen Bilimleri Deneme Neti" 
+                current={18.5} 
+                target={20} 
+                unit="Net"
+                icon={Sparkles} 
+                color={C.EMERALD}
+              />
+
+              <VisualGoalCard 
+                title="Yanlış Havuzu Temizliği" 
+                current={45} 
+                target={45} 
+                unit="Soru"
+                icon={ListX} 
+                color={C.ROSE}
+              />
+            </div>
+
+            <div className="mt-8">
+              <SectionHeader icon={Layers} title="Tüm Hedefler ve Detaylar" desc="Geçmiş ve mevcut tüm hedeflerin listesi" color={C.SLATE} />
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-2">
+                <PerformanceGoals member={student!} solvedTests={processedData} availableSubjects={availableSubjects} />
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="activity" className="space-y-6 mt-0">
