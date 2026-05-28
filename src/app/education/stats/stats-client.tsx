@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -12,7 +13,7 @@ import {
   ChevronsUpDown, ChevronUp, ChevronDown, X,
   TrendingUp, SlidersHorizontal, Search,
   GitCompareArrows, Plus, Edit3, Trash2, CheckCircle2,
-  Flag, Smile, Heart, CalendarIcon
+  Flag, Smile, Heart, CalendarIcon, ListX, ListTodo
 } from "lucide-react";
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip,
@@ -31,7 +32,7 @@ import {
   format, startOfWeek, eachDayOfInterval,
   subDays, parseISO, eachMonthOfInterval, subMonths,
   startOfYear, parse, addMonths, differenceInDays,
-  startOfDay, endOfDay, getDay
+  startOfDay, endOfDay, getDay, startOfMonth
 } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +50,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import type { Test, PerformanceGoal, PerformanceGoalType, PerformanceGoalPeriod } from "@/lib/data";
+import { PerformanceGoals } from "@/components/education/performance-goals";
 
 // --- RENK SİSTEMİ ---
 const C = {
@@ -63,9 +65,8 @@ const C = {
   SLATE:   '#94A3B8',
   VIOLET:  '#7C3AED',
 };
-const CHART_PALETTE = [C.INDIGO, C.EMERALD, C.AMBER, C.ROSE, C.CYAN, C.ORANGE, C.PURPLE];
 
-// --- 1. DAİRESEL HEDEF KARTI BİLEŞENİ ---
+// 1. Dairesel Hedef Kartı Bileşeni
 const VisualGoalCard = ({ 
   title, 
   current, 
@@ -90,7 +91,7 @@ const VisualGoalCard = ({
       initial={{ opacity: 0, scale: 0.95 }} 
       animate={{ opacity: 1, scale: 1 }}
       className={cn(
-        "relative rounded-[2.5rem] p-6 border shadow-sm overflow-hidden group transition-all hover:shadow-md",
+        "relative rounded-[2rem] p-6 border shadow-sm overflow-hidden group transition-all hover:shadow-md",
         isCompleted ? "bg-emerald-50/30 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
       )}
     >
@@ -143,7 +144,7 @@ const VisualGoalCard = ({
             ) : (
               <span className="text-slate-400">
                 Kalan: <span className="text-slate-700 dark:text-slate-300">
-                    {unit === '%' ? (target - current).toFixed(1) : Math.max(0, Math.round(target - current))} {unit}
+                    {unit === '%' ? Math.max(0, (target - current)).toFixed(1) : Math.max(0, Math.round(target - current))} {unit}
                 </span>
               </span>
             )}
@@ -180,11 +181,6 @@ function rateColor(r: number) {
   return C.ROSE;
 }
 
-// --- TYPES ---
-type Period = 'weekly' | 'monthly' | 'yearly';
-type SortKey = 'subject' | 'total' | 'correct' | 'incorrect' | 'blank' | 'net' | 'successRate';
-type SortDir = 'asc' | 'desc';
-
 // --- MAIN COMPONENT ---
 export function StatsClient() {
   const searchParams = useSearchParams();
@@ -212,7 +208,6 @@ export function StatsClient() {
   const [tableSortKey, setTableSortKey] = React.useState<SortKey>('total');
   const [tableSortDir, setTableSortDir] = React.useState<SortDir>('desc');
   const [tableSearch, setTableSearch] = React.useState('');
-  const [drawerSubject, setDrawerSubject] = React.useState<string | null>(null);
 
   // -- Form States --
   const [goalForm, setGoalForm] = React.useState<{
@@ -323,7 +318,7 @@ export function StatsClient() {
             case 'weekly': startDate = startOfWeek(now, { weekStartsOn: 1 }); break;
             case 'monthly': startDate = startOfMonth(now); break;
             case 'yearly': startDate = startOfYear(now); break;
-            default: startDate = parseISO(goal.startDate);
+            default: startDate = goal.startDate ? parseISO(goal.startDate) : now;
         }
 
         const filtered = enrichedBaseData.filter(t => {
@@ -411,18 +406,6 @@ export function StatsClient() {
     return Array.from(map.values()).map(d => ({ ...d, successRate: d.total > 0 ? (d.correct / d.total) * 100 : 0 }));
   }, [processedData]);
 
-  const sortedTableData = React.useMemo(() => {
-    let rows = [...subjectDetailedStats];
-    if (tableSearch.trim()) rows = rows.filter(r => r.subject.toLowerCase().includes(tableSearch.toLowerCase()));
-    rows.sort((a, b) => {
-      const av = a[tableSortKey as keyof typeof a] as number | string;
-      const bv = b[tableSortKey as keyof typeof b] as number | string;
-      if (typeof av === 'string' && typeof bv === 'string') return tableSortDir === 'asc' ? av.localeCompare(bv, 'tr') : bv.localeCompare(av, 'tr');
-      return tableSortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number);
-    });
-    return rows;
-  }, [subjectDetailedStats, tableSortKey, tableSortDir, tableSearch]);
-
   const availableSubjectsList = Array.from(new Set(enrichedBaseData.map(d => d._subjectName))).sort();
 
   return (
@@ -437,7 +420,7 @@ export function StatsClient() {
               <GraduationCap className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-extrabold leading-tight text-slate-900 dark:white">{student?.name || 'Öğrenci'}</h1>
+              <h1 className="text-lg font-extrabold leading-tight text-slate-900 dark:text-white">{student?.name || 'Öğrenci'}</h1>
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Performans Analizi</p>
             </div>
           </div>
@@ -515,8 +498,8 @@ export function StatsClient() {
             </Card>
           </TabsContent>
 
-          {/* 2. HEDEFLER SEKMESİ İÇERİĞİ */}
-          <TabsContent value="goals" className="space-y-6 mt-6">
+          {/* HEDEFLER SEKMESİ */}
+          <TabsContent value="goals" className="space-y-6 mt-0">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-indigo-600 rounded-[2rem] p-8 text-white shadow-lg shadow-indigo-600/20 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
               <div className="relative z-10">
@@ -554,29 +537,12 @@ export function StatsClient() {
               )}
             </div>
 
-            {performanceGoals.length > 0 && (
-                <div className="mt-8">
-                    <SectionHeader icon={Layers} title="Yönetim" desc="Mevcut hedefleri düzenleyin veya silin" color={C.SLATE} />
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-2">
-                        {performanceGoals.map(goal => (
-                            <div key={goal.id} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                                        <Flag className="w-4 h-4 text-slate-500" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-slate-800 dark:text-slate-100">{goal.label}</p>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{goal.period} • {goal.subject === 'all' ? 'Tüm Dersler' : goal.subject}</p>
-                                    </div>
-                                </div>
-                                <Button variant="ghost" size="icon" className="text-rose-500 hover:bg-rose-50" onClick={() => deletePerformanceGoal(goal.id)}>
-                                    <Trash2 className="w-4 h-4" />
-                                </Button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+            <div className="mt-8">
+              <SectionHeader icon={Layers} title="Tüm Hedefler ve Detaylar" desc="Geçmiş ve mevcut tüm hedeflerin listesi" color={C.SLATE} />
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-2">
+                <PerformanceGoals member={student!} solvedTests={processedData} availableSubjects={availableSubjectsList} />
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="subjects" className="mt-6 space-y-6">
@@ -741,12 +707,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     </div>
   );
 };
-
-function FilterBadge({ label, onRemove }: { label: string; onRemove: () => void }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
-      {label}
-      <button onClick={onRemove} className="hover:text-rose-500 transition-colors"><X className="w-3 h-3" /></button>
-    </span>
-  );
-}
+type Period = 'weekly' | 'monthly' | 'yearly';
+type SortKey = 'subject' | 'total' | 'correct' | 'incorrect' | 'blank' | 'net' | 'successRate';
+type SortDir = 'asc' | 'desc';
