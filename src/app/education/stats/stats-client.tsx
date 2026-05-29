@@ -3,6 +3,7 @@
 
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft, Check, Percent, Filter, RotateCcw,
   Flame, Calendar, BarChart3, PieChart as PieIcon, LineChart as LineIcon,
@@ -115,13 +116,13 @@ const VisualGoalCard = ({
       initial={{ opacity: 0, scale: 0.95 }} 
       animate={{ opacity: 1, scale: 1 }}
       className={cn(
-        "relative rounded-[2rem] p-6 border shadow-sm overflow-hidden group transition-all hover:shadow-md flex flex-col justify-between",
+        "relative rounded-[2rem] p-6 border shadow-sm overflow-hidden group transition-all hover:shadow-md flex flex-col justify-between min-h-[180px]",
         isCompleted ? "bg-emerald-50/30 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
       )}
     >
       <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 opacity-10 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: color }} />
 
-      <div className="flex items-center gap-6 z-10 relative">
+      <div className="flex items-center gap-6 z-10 relative h-full">
         <div className="relative w-24 h-24 shrink-0 flex items-center justify-center">
           <svg className="w-full h-full transform -rotate-90 drop-shadow-sm" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r={radius} stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-100 dark:text-slate-800" />
@@ -147,12 +148,12 @@ const VisualGoalCard = ({
           </div>
         </div>
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
           <div className="flex items-center gap-2 mb-1">
             <div className="p-1.5 rounded-lg" style={{ backgroundColor: `${color}15`, color: color }}>
               <Icon className="w-4 h-4" />
             </div>
-            <h3 className="font-extrabold text-slate-800 dark:text-slate-100 truncate text-base">{title}</h3>
+            <h3 className="font-extrabold text-slate-800 dark:text-slate-100 truncate text-base leading-tight">{title}</h3>
           </div>
           
           <div className="mt-3 flex items-end gap-1.5">
@@ -441,7 +442,6 @@ export function StatsClient() {
 
         const filtered = enrichedBaseData.filter(t => {
             const inPeriod = t._solvedDate >= startDate && t._solvedDate <= now;
-            // "all" (Tümü) seçeneği müfredat yapısındaki bütün dersleri kapsamalı
             const subjectMatch = goal.subject === 'all' || t._subjectName === goal.subject;
             return inPeriod && subjectMatch;
         });
@@ -970,8 +970,7 @@ export function StatsClient() {
 
                   <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-6">
                     <SectionHeader icon={PieIcon} title="Kaynak Dağılımı" desc="Test türlerine göre soru dağılımı" color={C.CYAN} />
-                    <div className="h-[260px] flex items-center gap-4">
-                      <div className="flex-1 h-full">
+                    <div className="h-[260px] flex items-center justify-center">
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                             <Pie data={typeBreakdown} cx="50%" cy="50%" innerRadius="52%" outerRadius="75%" paddingAngle={3} dataKey="value">
@@ -980,7 +979,6 @@ export function StatsClient() {
                             <Tooltip content={<CustomTooltip />} />
                           </PieChart>
                         </ResponsiveContainer>
-                      </div>
                     </div>
                   </div>
                 </div>

@@ -68,6 +68,20 @@ const onFamilyDataUpdate = <T>(
     return () => { authUnsubscribe(); if (unsubscribe) unsubscribe(); };
 };
 
+// --- FAMILY MEMBERS ---
+export const updateFamilyMemberInFamily = async (familyId: string, memberId: string, memberData: Partial<FamilyMember>) => {
+  const familyRef = doc(db, 'families', familyId);
+  const familySnap = await getDoc(familyRef);
+  if (familySnap.exists()) {
+    const members = familySnap.data().members || [];
+    const memberIndex = members.findIndex((m: any) => m.id === memberId);
+    if (memberIndex > -1) {
+      members[memberIndex] = { ...members[memberIndex], ...memberData };
+      await updateDoc(familyRef, { members });
+    }
+  }
+};
+
 // --- PERFORMANCE GOALS ---
 export const onPerformanceGoalsUpdate = (memberId: string, callback: (goals: PerformanceGoal[]) => void) => {
     const q = query(collection(db, 'performanceGoals'), where('memberId', '==', memberId));
@@ -195,6 +209,7 @@ export const deleteGoal = (id: string) => deleteDoc(doc(db, "goals", id));
 
 // --- TRACKED BOOKS ---
 export const onTrackedBooksUpdate = (callback: (books: TrackedBook[]) => void, runOnce = false) => onFamilyDataUpdate<TrackedBook>('trackedBooks', callback, runOnce);
+export const onTrackedBookUpdate = (id: string, cb: (b: TrackedBook | null) => void) => onSnapshot(doc(db, 'trackedBooks', id), d => cb(d.exists() ? {id:d.id, ...d.data()} as any : null));
 export const addTrackedBook = async (data: Pick<TrackedBook, 'title' | 'publisher' | 'bookType'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("Unauthorized");
@@ -408,8 +423,129 @@ export const updateTopics = async (topics: string[]) => {
     if (familyId) await setDoc(doc(db, 'familyManagement', familyId), { educationTopics: topics }, { merge: true });
 };
 
+// --- MEMORIZATION ---
+export const onMemorizationItemsUpdate = (cb: (s: MemorizationItem[]) => void) => onFamilyDataUpdate<MemorizationItem>('memorizationItems', cb);
+export const onMemorizationProgressUpdate = (cb: (s: MemorizationProgress[]) => void) => onFamilyDataUpdate<MemorizationProgress>('memorizationProgress', cb);
+export const addMemorizationItem = async (data: any) => { const familyId = await getCurrentFamilyId(); return addDoc(collection(db, 'memorizationItems'), { ...data, familyId }); };
+export const updateMemorizationItem = (id: string, data: any) => updateDoc(doc(db, 'memorizationItems', id), data);
+export const deleteMemorizationItem = (id: string) => deleteDoc(doc(db, 'memorizationItems', id));
+export const updateMemorizationProgress = async (itemId: string, memberId: string, completed: boolean) => {
+    const familyId = await getCurrentFamilyId();
+    const id = `${memberId}_${itemId}`;
+    await setDoc(doc(db, 'memorizationProgress', id), { familyId, memberId, itemId, completed, completedAt: completed ? new Date().toISOString() : null }, { merge: true });
+};
+export const removeMemorizationProgress = async (itemId: string, memberId: string) => deleteDoc(doc(db, 'memorizationProgress', `${memberId}_${itemId}`));
+export const resetAllMemorizationProgress = async () => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) return;
+    const snap = await getDocs(query(collection(db, 'memorizationProgress'), where('familyId', '==', familyId)));
+    const batch = writeBatch(db);
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+};
+export const deleteAllMemorizationItems = async () => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) return;
+    const batch = writeBatch(db);
+    const snapItems = await getDocs(query(collection(db, 'memorizationItems'), where('familyId', '==', familyId)));
+    snapItems.docs.forEach(d => batch.delete(d.ref));
+    const snapProgress = await getDocs(query(collection(db, 'memorizationProgress'), where('familyId', '==', familyId)));
+    snapProgress.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+};
+
 // --- PRAYER ---
 export const onSinglePrayerProgressUpdate = (mid: string, cb: (p: PrayerProgress | null) => void) => onSnapshot(doc(db, 'prayerProgress', mid), d => cb(d.exists() ? {id:d.id, ...d.data()} as any : null));
+export const onPrayerProgressUpdate = (cb: (p: PrayerProgress[]) => void) => onFamilyDataUpdate<PrayerProgress>('prayerProgress', cb);
+export const updatePrayerProgress = async (memberId: string, completions: any) => {
+    const familyId = await getCurrentFamilyId();
+    await setDoc(doc(db, 'prayerProgress', memberId), { familyId, memberId, completions }, { merge: true });
+};
+
+// --- MEAL PLAN & RECIPES ---
+export const onMealPlanUpdate = (cb: (m: MealPlan) => void) => onFamilyDataUpdate<any>('mealPlans', (docs) => {
+    const plan: MealPlan = {};
+    docs.forEach(d => { plan[d.id] = d; });
+    cb(plan);
+});
+export const updateMealPlan = async (date: string, plan: any) => {
+    const familyId = await getCurrentFamilyId();
+    await setDoc(doc(db, 'mealPlans', date), { ...plan, familyId });
+};
+export const onRecipesUpdate = (cb: (r: Recipe[]) => void) => onFamilyDataUpdate<Recipe>('recipes', cb);
+export const addRecipe = async (data: any) => { 
+    const familyId = await getCurrentFamilyId(); 
+    const ref = await addDoc(collection(db, 'recipes'), { ...data, familyId });
+    return ref.id;
+};
+export const updateRecipe = (id: string, data: any) => updateDoc(doc(db, 'recipes', id), data);
+export const deleteRecipe = (id: string) => deleteDoc(doc(db, 'recipes', id));
+
+// --- CALORIE LOGS ---
+export const onCalorieLogsUpdate = (cb: (l: CalorieLog[]) => void) => onFamilyDataUpdate<CalorieLog>('calorieLogs', cb);
+export const upsertCalorieLog = async (data: any) => {
+    const familyId = await getCurrentFamilyId();
+    await setDoc(doc(db, 'calorieLogs', data.id), { ...data, familyId }, { merge: true });
+};
+
+// --- SHOPPING LISTS ---
+export const onShoppingListsUpdate = (cb: (l: ShoppingList[]) => void) => onFamilyDataUpdate<ShoppingList>('shoppingLists', cb);
+export const addShoppingList = async (name: string, icon: string, colorId?: string) => {
+    const familyId = await getCurrentFamilyId();
+    return addDoc(collection(db, 'shoppingLists'), { name, icon, colorId: colorId || 'ocean', items: [], boughtItems: [], familyId, createdAt: new Date().toISOString() });
+};
+export const updateShoppingList = (id: string, data: any) => updateDoc(doc(db, 'shoppingLists', id), data);
+export const deleteShoppingList = (id: string) => deleteDoc(doc(db, 'shoppingLists', id));
+export const addShoppingListItemToList = async (listId: string, item: any) => {
+    const listRef = doc(db, 'shoppingLists', listId);
+    await updateDoc(listRef, { items: arrayUnion({ ...item, id: Date.now().toString(), isBought: false, createdAt: new Date().toISOString() }) });
+};
+export const toggleShoppingListItemStatusInList = async (listId: string, itemId: string, isBought: boolean) => {
+    const listRef = doc(db, 'shoppingLists', listId);
+    const snap = await getDoc(listRef);
+    if (!snap.exists()) return;
+    const items = snap.data().items || [];
+    const idx = items.findIndex((i: any) => i.id === itemId);
+    if (idx !== -1) {
+        items[idx].isBought = isBought;
+        await updateDoc(listRef, { items });
+    }
+};
+export const moveItemToBought = async (listId: string, itemId: string) => {
+    const listRef = doc(db, 'shoppingLists', listId);
+    const snap = await getDoc(listRef);
+    if (!snap.exists()) return;
+    const items = snap.data().items || [];
+    const item = items.find((i: any) => i.id === itemId);
+    if (item) {
+        await updateDoc(listRef, { 
+            items: arrayRemove(item),
+            boughtItems: arrayUnion({ ...item, isBought: true, boughtAt: new Date().toISOString() })
+        });
+    }
+};
+export const moveItemToPending = async (listId: string, itemId: string) => {
+    const listRef = doc(db, 'shoppingLists', listId);
+    const snap = await getDoc(listRef);
+    if (!snap.exists()) return;
+    const boughtItems = snap.data().boughtItems || [];
+    const item = boughtItems.find((i: any) => i.id === itemId);
+    if (item) {
+        await updateDoc(listRef, { 
+            boughtItems: arrayRemove(item),
+            items: arrayUnion({ ...item, isBought: false, createdAt: new Date().toISOString() })
+        });
+    }
+};
+export const deleteShoppingListItemFromList = async (listId: string, itemId: string, fromBought: boolean) => {
+    const listRef = doc(db, 'shoppingLists', listId);
+    const snap = await getDoc(listRef);
+    if (!snap.exists()) return;
+    const field = fromBought ? 'boughtItems' : 'items';
+    const items = snap.data()[field] || [];
+    const item = items.find((i: any) => i.id === itemId);
+    if (item) await updateDoc(listRef, { [field]: arrayRemove(item) });
+};
 
 // --- TAGS ---
 export const onTagsUpdate = (collectionName: string, callback: (tags: string[]) => void) => {
@@ -438,7 +574,11 @@ export const deleteTag = async (collectionName: string, tag: string, type: strin
     }
 };
 
-// --- SYSTEM ---
+// --- BADGES & SYSTEM ---
+export const checkAndAwardBadges = async (mid: string, fid: string, context: any) => {
+    // Badge logic simplified for MVP
+};
+
 export const initializeDefaultData = async (familyId: string, userId: string) => { 
     const batch = writeBatch(db);
     const familyRef = doc(db, 'families', familyId);
@@ -454,4 +594,21 @@ export const migrateOrphanBooks = async (fid: string) => {
     await batch.commit();
 };
 
-const generateSafeId = () => Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
+export const onReadingSessionsUpdate = (cb: (s: ReadingSession[]) => void) => {
+    const auth = getAuth();
+    return onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            const familyId = userDoc.data()?.familyId;
+            if (familyId) {
+                return onSnapshot(query(collection(db, 'readingSessions'), where('familyId', '==', familyId)), s => cb(s.docs.map(d => ({id:d.id, ...d.data()} as any))));
+            }
+        }
+        cb([]);
+    });
+};
+
+export const addReadingSession = async (data: any) => {
+    const familyId = await getCurrentFamilyId();
+    if (familyId) return addDoc(collection(db, 'readingSessions'), { ...data, familyId });
+};
