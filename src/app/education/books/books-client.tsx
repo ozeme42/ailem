@@ -1,22 +1,24 @@
+
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Trash2, BookMarked, Library, FileText, HelpCircle, CheckCircle, XCircle, Edit } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, BookMarked, Library, FileText, HelpCircle, CheckCircle, XCircle, Edit, MoreVertical, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { onTrackedBooksUpdate, addTrackedBook, deleteTrackedBook, updateTrackedBook } from "@/lib/dataService";
-import type { TrackedBook } from "@/lib/data";
+import { onTrackedBooksUpdate, addTrackedBook, deleteTrackedBook, updateTrackedBook, onAllTrackedBookTestsUpdate, onTestsUpdate } from "@/lib/dataService";
+import type { TrackedBook, TrackedBookTest, Test } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import Link from 'next/link';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 // --- DESIGN SYSTEM: Glassmorphism ---
 const glassColors = {
@@ -40,17 +42,28 @@ export function BooksClient() {
   const router = useRouter();
   const { toast } = useToast();
   const [books, setBooks] = useState<TrackedBook[]>([]);
+  const [allBookTests, setAllBookTests] = useState<TrackedBookTest[]>([]);
+  const [allTests, setAllTests] = useState<Test[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<TrackedBook | null>(null);
   const [newBook, setNewBook] = useState({ title: "", publisher: "", bookType: "standard" as "standard" | "open_ended" });
 
   useEffect(() => {
-    const unsubscribe = onTrackedBooksUpdate((books) => {
+    const unsubBooks = onTrackedBooksUpdate((books) => {
         setBooks(books);
         setIsLoading(false);
     });
-    return () => unsubscribe();
+    const unsubTests = onAllTrackedBookTestsUpdate(setAllBookTests);
+    const unsubAssignments = onTestsUpdate((tests) => {
+        setAllTests(tests.filter(t => t.sourceType === 'trackedBook'));
+    });
+
+    return () => {
+        unsubBooks();
+        unsubTests();
+        unsubAssignments();
+    };
   }, []);
   
   useEffect(() => {
@@ -60,6 +73,32 @@ export function BooksClient() {
         setNewBook({ title: "", publisher: "", bookType: "standard" });
     }
   }, [editingBook])
+
+  const enrichedBooks = useMemo(() => {
+    return books.map(book => {
+        const bookTests = allBookTests.filter(bt => bt.bookId === book.id);
+        const testIds = bookTests.map(bt => bt.id);
+        const associatedTests = allTests.filter(t => testIds.includes(t.sourceId || ''));
+        const solvedTests = associatedTests.filter(t => t.status === 'Sonuçlandı');
+        
+        const subjectCount = new Set(bookTests.map(bt => bt.subjectId)).size;
+        const testCount = bookTests.length;
+        const questionCount = bookTests.reduce((acc, bt) => acc + bt.questionCount, 0);
+        
+        const totalCorrect = solvedTests.reduce((acc, t) => acc + (t.correctAnswers || 0), 0);
+        const totalIncorrect = solvedTests.reduce((acc, t) => acc + (t.incorrectAnswers || 0), 0);
+
+        return {
+            ...book,
+            subjectCount,
+            testCount,
+            questionCount,
+            solvedTestCount: solvedTests.length,
+            totalCorrectAnswers: totalCorrect,
+            totalIncorrectAnswers: totalIncorrect
+        };
+    });
+  }, [books, allBookTests, allTests]);
 
   const handleAddOrUpdateBook = async () => {
     if (!newBook.title.trim() || !newBook.publisher.trim()) {
@@ -162,7 +201,7 @@ export function BooksClient() {
         <div className="flex h-64 items-center justify-center">
              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
         </div>
-      ) : books.length === 0 ? (
+      ) : enrichedBooks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-white/5 rounded-[2.5rem] border border-dashed border-white/10 m-auto max-w-lg w-full">
             <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center">
                 <BookMarked className="h-8 w-8 text-slate-500" />
@@ -175,7 +214,7 @@ export function BooksClient() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {books.map((book, index) => (
+          {enrichedBooks.map((book, index) => (
             <Card key={book.id} className={cn("flex flex-col text-white border-0 bg-gradient-to-br shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group", cardColors[index % cardColors.length])}>
                 {/* Decorative Overlay */}
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
@@ -194,12 +233,12 @@ export function BooksClient() {
                                  </Button>
                              </DropdownMenuTrigger>
                              <DropdownMenuContent align="end" className="bg-slate-900 border-white/10 text-slate-100">
-                                 <DropdownMenuItem onClick={() => openDialog(book)}>
+                                 <DropdownMenuItem onClick={() => openDialog(book)} className="cursor-pointer">
                                      <Edit className="mr-2 h-4 w-4"/> Düzenle
                                  </DropdownMenuItem>
                                  <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                         <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 focus:text-rose-300 focus:bg-rose-500/10">
+                                         <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 focus:text-rose-300 focus:bg-rose-500/10 cursor-pointer">
                                             <Trash2 className="mr-2 h-4 w-4"/> Sil
                                         </DropdownMenuItem>
                                     </AlertDialogTrigger>
@@ -212,7 +251,7 @@ export function BooksClient() {
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteBook(book.id)} className="bg-rose-600 hover:bg-rose-700 text-white">Evet, Sil</AlertDialogAction>
+                                            <AlertDialogAction onClick={() => handleDeleteBook(book.id)} className="bg-rose-600 hover:bg-rose-700 text-white border-none">Evet, Sil</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
@@ -250,7 +289,7 @@ export function BooksClient() {
       </div>
 
        <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!open) setEditingBook(null); setIsDialogOpen(open)}}>
-            <DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl">
+            <DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl shadow-2xl">
                 <DialogHeader>
                     <DialogTitle>{editingBook ? "Kitabı Düzenle" : "Yeni Kitap Ekle"}</DialogTitle>
                     <DialogDescription className="text-slate-400">{editingBook ? "Kitap bilgilerini güncelleyin." : "Takip edilecek yeni bir kitap oluşturun."}</DialogDescription>
@@ -283,11 +322,11 @@ export function BooksClient() {
                             onValueChange={(value: "standard" | "open_ended") => setNewBook({ ...newBook, bookType: value })}
                             className="flex flex-col gap-2"
                         >
-                            <div className="flex items-center space-x-2 p-3 rounded-xl border border-white/10 hover:bg-white/5 cursor-pointer transition-colors">
+                            <div className="flex items-center space-x-2 p-3 rounded-xl border border-white/10 hover:bg-white/5 cursor-pointer transition-colors" onClick={() => setNewBook({ ...newBook, bookType: 'standard' })}>
                                 <RadioGroupItem value="standard" id="standard" className="border-white/30 text-indigo-500" />
                                 <Label htmlFor="standard" className="cursor-pointer flex-1">Standart Soru Bankası</Label>
                             </div>
-                            <div className="flex items-center space-x-2 p-3 rounded-xl border border-white/10 hover:bg-white/5 cursor-pointer transition-colors">
+                            <div className="flex items-center space-x-2 p-3 rounded-xl border border-white/10 hover:bg-white/5 cursor-pointer transition-colors" onClick={() => setNewBook({ ...newBook, bookType: 'open_ended' })}>
                                 <RadioGroupItem value="open_ended" id="open_ended" className="border-white/30 text-indigo-500" />
                                 <Label htmlFor="open_ended" className="cursor-pointer flex-1">Açık Uçlu Kitap</Label>
                             </div>
@@ -295,15 +334,11 @@ export function BooksClient() {
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="text-slate-400 hover:text-white hover:bg-white/10">İptal</Button>
-                    <Button onClick={handleAddOrUpdateBook} className="bg-indigo-600 hover:bg-indigo-500 text-white">{editingBook ? "Güncelle" : "Ekle"}</Button>
+                    <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="text-slate-400 hover:text-white hover:bg-white/10 rounded-xl">İptal</Button>
+                    <Button onClick={handleAddOrUpdateBook} className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl px-6">{editingBook ? "Güncelle" : "Ekle"}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     </div>
   );
 }
-
-// Import MoreVertical, DropdownMenu components manually as they were missing in imports previously used in similar refactors but needed here for the card menu
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ArrowRight, MoreVertical } from "lucide-react";

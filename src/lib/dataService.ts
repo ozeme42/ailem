@@ -213,6 +213,40 @@ export const addTrackedBook = async (data: Pick<TrackedBook, 'title' | 'publishe
 export const updateTrackedBook = (id: string, data: Partial<Omit<TrackedBook, 'id' | 'familyId'>>) => setDoc(doc(db, 'trackedBooks', id), removeUndefined(data), { merge: true });
 export const deleteTrackedBook = (id: string) => deleteDoc(doc(db, "trackedBooks", id));
 
+export const onAllTrackedBookTestsUpdate = (callback: (tests: TrackedBookTest[]) => void) => onFamilyDataUpdate<TrackedBookTest>('trackedBookTests', callback);
+export const onTrackedBookTestsUpdate = (id: string, cb: (t: TrackedBookTest[]) => void) => onSnapshot(query(collection(db, 'trackedBookTests'), where('bookId', '==', id)), s => cb(s.docs.map(d => ({id:d.id, ...d.data()} as any))));
+export const addTrackedBookTest = async (id: string, data: any) => { const familyId = await getCurrentFamilyId(); return addDoc(collection(db, 'trackedBookTests'), { ...data, familyId, bookId: id }); };
+export const updateTrackedBookTest = (id: string, data: any) => updateDoc(doc(db, 'trackedBookTests', id), data);
+export const deleteTrackedBookTest = (id: string) => deleteDoc(doc(db, "trackedBookTests", id));
+export const addBulkTrackedBookTests = async (bid: string, sid: string, tid: string, count: number, qCount: number, prefix: string) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) return;
+    const batch = writeBatch(db);
+    for (let i = 1; i <= count; i++) {
+        const ref = doc(collection(db, 'trackedBookTests'));
+        batch.set(ref, { bookId: bid, subjectId: sid, topicId: tid, familyId, name: `${prefix} ${i}`, questionCount: qCount });
+    }
+    await batch.commit();
+};
+export const deleteTrackedBookTopic = async (bid: string, sid: string, tid: string) => {
+    const bookRef = doc(db, 'trackedBooks', bid);
+    const snap = await getDoc(bookRef);
+    if (!snap.exists()) return;
+    const subjects = snap.data().subjects || [];
+    const sIdx = subjects.findIndex((s: any) => s.id === sid);
+    if (sIdx !== -1) {
+        subjects[sIdx].topics = (subjects[sIdx].topics || []).filter((t: any) => t.id !== tid);
+        await updateDoc(bookRef, { subjects });
+    }
+};
+export const deleteTrackedBookSubject = async (bid: string, sid: string) => {
+    const bookRef = doc(db, 'trackedBooks', bid);
+    const snap = await getDoc(bookRef);
+    if (!snap.exists()) return;
+    const subjects = (snap.data().subjects || []).filter((s: any) => s.id !== sid);
+    await updateDoc(bookRef, { subjects });
+};
+
 // --- STUDY PLANS & ASSIGNMENTS ---
 export const onStudyPlansUpdate = (callback: (plans: StudyPlan[]) => void) => onFamilyDataUpdate<StudyPlan>('studyPlans', callback);
 export const onStudyAssignmentsUpdate = (callback: (assignments: StudyAssignment[]) => void) => onFamilyDataUpdate<StudyAssignment>('studyAssignments', callback);
@@ -439,6 +473,12 @@ export const deleteTrackedBookSubject = async (bid: string, sid: string) => {
     const subjects = (snap.data().subjects || []).filter((s: any) => s.id !== sid);
     await updateDoc(bookRef, { subjects });
 };
+
+export const onStudyPlansUpdate = (cb: (s: StudyPlan[]) => void) => onFamilyDataUpdate<StudyPlan>('studyPlans', cb);
+export const addStudyPlan = async (data: any) => { const familyId = await getCurrentFamilyId(); return addDoc(collection(db, 'studyPlans'), { ...data, familyId, createdAt: new Date().toISOString() }); };
+export const updateStudyPlan = (id: string, data: any) => updateDoc(doc(db, 'studyPlans', id), removeUndefined(data));
+export const deleteStudyPlan = (id: string) => deleteDoc(doc(db, 'studyPlans', id));
+export const onStudyPlanUpdate = (id: string, cb: (p: StudyPlan | null) => void) => onSnapshot(doc(db, 'studyPlans', id), d => cb(d.exists() ? {id:d.id, ...d.data()} as any : null));
 
 export const onSummariesUpdate = (cb: (s: Summary[]) => void) => onFamilyDataUpdate<Summary>('summaries', cb);
 export const addSummary = async (data: any) => { const familyId = await getCurrentFamilyId(); return addDoc(collection(db, 'summaries'), { ...data, familyId, createdAt: new Date().toISOString() }); };
