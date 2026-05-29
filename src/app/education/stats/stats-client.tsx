@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -52,7 +53,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { PerformanceGoals } from "@/components/education/performance-goals";
-import type { Test, PerformanceGoal, PerformanceGoalType, PerformanceGoalPeriod } from "@/lib/data";
+import type { Test, PerformanceGoal, PerformanceGoalType, PerformanceGoalPeriod, Goal, GoalSection } from "@/lib/data";
 
 // --- RENK SİSTEMİ ---
 const C = {
