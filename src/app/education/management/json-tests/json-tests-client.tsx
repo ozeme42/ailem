@@ -143,7 +143,7 @@ export function JsonTestsClient() {
         </header>
 
         <main className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-6 relative z-10">
-            <Tabs value="active" className="w-full space-y-6">
+            <Tabs defaultValue="active" className="w-full space-y-6">
                 <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 flex flex-col gap-4">
                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                         <TabsList className={themeColors.TAB_LIST}>
@@ -291,4 +291,3 @@ export function JsonTestsClient() {
     </div>
   );
 }
-

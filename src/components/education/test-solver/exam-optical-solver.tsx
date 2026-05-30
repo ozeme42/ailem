@@ -107,25 +107,27 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                         </Button>
                     )}
                     {isReviewMode && (
-                         <div className="flex items-center gap-2 sm:gap-6 text-center bg-black/20 p-2 md:p-4 rounded-2xl md:rounded-3xl border border-white/10 backdrop-blur-sm w-full md:w-auto justify-center">
-                             <div className="min-w-[2.2rem] md:min-w-[2.5rem]">
-                                <p className="text-lg md:text-2xl font-black text-emerald-400">{test.correctAnswers || 0}</p>
-                                <p className="text-[8px] md:text-[10px] font-bold text-white/60 uppercase">D</p>
+                         <div className="flex items-center gap-2 md:gap-4 bg-white/80 dark:bg-black/40 p-2 px-4 rounded-2xl border-2 border-indigo-500/30 animate-in zoom-in-95 shadow-lg relative z-10">
+                             <div className="flex items-center gap-1.5 md:gap-3">
+                                 <div className="flex flex-col items-center min-w-[20px] md:min-w-[24px]">
+                                    <p className="text-sm md:text-xl font-black text-emerald-600 dark:text-emerald-400 leading-none">{test.correctAnswers || 0}</p>
+                                    <p className="text-[7px] md:text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">D</p>
+                                </div>
+                                <div className="w-px h-5 md:h-8 bg-slate-200 dark:bg-slate-700" />
+                                <div className="flex flex-col items-center min-w-[20px] md:min-w-[24px]">
+                                    <p className="text-sm md:text-xl font-black text-rose-600 dark:text-rose-400 leading-none">{test.incorrectAnswers || 0}</p>
+                                    <p className="text-[7px] md:text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Y</p>
+                                </div>
+                                <div className="w-px h-5 md:h-8 bg-slate-200 dark:bg-slate-700" />
+                                <div className="flex flex-col items-center min-w-[20px] md:min-w-[24px]">
+                                    <p className="text-sm md:text-xl font-black text-slate-500 dark:text-slate-300 leading-none">{test.emptyAnswers || 0}</p>
+                                    <p className="text-[7px] md:text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">B</p>
+                                </div>
                             </div>
-                            <div className="w-px h-6 md:h-8 bg-white/10" />
-                            <div className="min-w-[2.2rem] md:min-w-[2.5rem]">
-                                <p className="text-lg md:text-2xl font-black text-rose-400">{test.incorrectAnswers || 0}</p>
-                                <p className="text-[8px] md:text-[10px] font-bold text-white/60 uppercase">Y</p>
-                            </div>
-                            <div className="w-px h-6 md:h-8 bg-white/10" />
-                            <div className="min-w-[2.2rem] md:min-w-[2.5rem]">
-                                <p className="text-lg md:text-2xl font-black text-slate-300">{test.emptyAnswers || 0}</p>
-                                <p className="text-[8px] md:text-[10px] font-bold text-white/60 uppercase">B</p>
-                            </div>
-                            <div className="w-px h-6 md:h-8 bg-white/10" />
-                            <div className="text-center min-w-[2.8rem] md:min-w-[3rem]">
-                                <p className="text-lg md:text-2xl font-black text-indigo-200">%{test.score?.toFixed(0) || 0}</p>
-                                <p className="text-[8px] md:text-[10px] font-bold text-white/60 uppercase">SKOR</p>
+                            <div className="h-6 md:h-10 w-px bg-slate-200 dark:bg-slate-700 mx-1 md:mx-2" />
+                            <div className="text-right">
+                                <p className="text-sm md:text-xl font-black text-indigo-600 dark:text-indigo-300 leading-none">%{test.score?.toFixed(0) || 0}</p>
+                                <p className="text-[7px] md:text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">BAŞARI</p>
                             </div>
                         </div>
                     )}

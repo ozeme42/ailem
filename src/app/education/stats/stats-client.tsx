@@ -725,7 +725,7 @@ export function StatsClient() {
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-[72px] flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" className="rounded-full w-9 h-9" onClick={() => router.back()}>
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
               <GraduationCap className="w-5 h-5 text-white" />
@@ -1561,7 +1561,7 @@ export function StatsClient() {
 
       <Dialog open={isImprovementModalOpen} onOpenChange={setIsImprovementModalOpen}>
         <DialogContent className="max-w-2xl h-[88vh] flex flex-col p-0 overflow-hidden rounded-2xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-2xl">
-          <DialogHeader className="p-6 border-b border-slate-100 dark:border-slate-900 bg-slate-50 dark:bg-slate-900 flex flex-col gap-4 space-y-0">
+          <DialogHeader className="p-6 border-b border-slate-100 dark:border-slate-900 bg-slate-50 dark:bg-slate-900 bg-slate-50 dark:bg-slate-900 flex flex-col gap-4 space-y-0">
             <DialogTitle>Tüm Konu Analizi</DialogTitle>
           </DialogHeader>
           <ScrollArea className="flex-1 p-5">

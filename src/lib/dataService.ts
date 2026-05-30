@@ -623,4 +623,3 @@ export const addReadingSession = async (data: any) => {
 };
 
 export const onAmbientSoundsUpdate = (cb: (s: AmbientSound[]) => void) => onFamilyDataUpdate<AmbientSound>('ambientSounds', cb);
-

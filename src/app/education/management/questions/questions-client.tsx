@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { 
     ArrowLeft, Trash2, Plus, X, Edit, AlertTriangle, UploadCloud, Send, 
     Calendar as CalendarIcon, FileQuestion, BookCopy, Search, CheckCircle2, 
-    Maximize2, Database, LayoutGrid, Folder, FolderOpen, ChevronRight 
+    Maximize2, Database, LayoutGrid, Folder, FolderOpen, ChevronRight, Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDropzone } from 'react-dropzone';
@@ -18,7 +18,6 @@ import NextImage from 'next/image';
 import { addBulkBankQuestions, onBankQuestionsUpdate, onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics, deleteBankQuestion, deleteBulkBankQuestions, addTest, onMistakesUpdate, deleteMistake, onTestsUpdate, onTrackedBooksUpdate, onStudyPlansUpdate } from "@/lib/dataService";
 import { BankQuestion, FamilyMember, Test, Mistake, TrackedBook, StudyPlan } from "@/lib/data";
 import { Combobox } from "@/components/ui/combobox";
-import { Loader2 } from "lucide-react";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/components/auth-provider";
 import { Badge } from "@/components/ui/badge";
@@ -240,7 +239,7 @@ export function QuestionsClient() {
                         </div>
                         
                         <div className="relative w-full sm:w-72 shrink-0">
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                             <Input placeholder="Soru veya klasör ara..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-sm focus:bg-white" />
                         </div>
                     </div>
@@ -749,4 +748,3 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
     </Dialog>
   );
 }
-
