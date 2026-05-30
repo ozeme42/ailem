@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -64,7 +63,7 @@ export function QuestionsClient() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Filters & Tabs
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = setSearchQuery("");
   const [filterSubject, setFilterSubject] = useState("all");
   const [filterTopic, setFilterTopic] = useState("all");
   const [activeTab, setActiveTab] = useState("bank"); 
@@ -96,7 +95,6 @@ export function QuestionsClient() {
     return () => { unsubQuestions(); unsubSubjects(); unsubTopics(); unsubMistakes(); unsubBooks(); unsubPlans(); };
   }, []);
 
-  // Grid Görünümü için Düz Filtrelenmiş Veri
   const filteredData = useMemo(() => {
       let data: any[] = activeTab === 'bank' ? bankQuestions : mistakes;
       data = data.filter(item => item.type === activeSubTab);
@@ -114,7 +112,6 @@ export function QuestionsClient() {
       return data;
   }, [bankQuestions, mistakes, activeTab, activeSubTab, searchQuery, filterSubject, filterTopic]);
 
-  // Klasör Görünümü İçin Hiyerarşik Veri Yapısı
   const folderStats = useMemo(() => {
       const source = activeTab === 'bank' ? bankQuestions : mistakes;
       const baseFiltered = source.filter(i => 
@@ -168,8 +165,6 @@ export function QuestionsClient() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans relative flex flex-col">
-
-        {/* Header */}
         <header className={themeColors.HEADER_BG}>
             <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -197,8 +192,6 @@ export function QuestionsClient() {
 
       <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 relative z-10 flex flex-col">
           <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setCurrentFolder({subject: null, topic: null}); }} className="space-y-6 flex flex-col flex-1">
-            
-            {/* Kontrol Paneli */}
             <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm flex flex-col gap-5">
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                     <TabsList className={themeColors.TAB_LIST}>
@@ -215,29 +208,17 @@ export function QuestionsClient() {
                         </TabsList>
                     </Tabs>
                 </div>
-
                 <div className="h-px bg-slate-100 w-full" />
-
-                {/* Alt Kısım: Arama, Görünüm Tipi ve (Grid ise) Filtreler */}
                 <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
                         <div className="bg-slate-100 p-1 rounded-xl flex border border-slate-200 shrink-0">
-                            <Button 
-                                variant="ghost" size="sm" 
-                                onClick={() => { setViewLayout('folder'); setCurrentFolder({subject: null, topic: null}); }} 
-                                className={cn("h-8 rounded-lg px-3 transition-all", viewLayout === 'folder' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-800")}
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => { setViewLayout('folder'); setCurrentFolder({subject: null, topic: null}); }} className={cn("h-8 rounded-lg px-3 transition-all", viewLayout === 'folder' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-800")}>
                                 <Folder className="w-4 h-4 mr-1.5" /> Klasörler
                             </Button>
-                            <Button 
-                                variant="ghost" size="sm" 
-                                onClick={() => setViewLayout('grid')} 
-                                className={cn("h-8 rounded-lg px-3 transition-all", viewLayout === 'grid' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-800")}
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => setViewLayout('grid')} className={cn("h-8 rounded-lg px-3 transition-all", viewLayout === 'grid' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-800")}>
                                 <LayoutGrid className="w-4 h-4 mr-1.5" /> Kartlar
                             </Button>
                         </div>
-                        
                         <div className="relative w-full sm:w-72 shrink-0">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                             <Input placeholder="Soru veya klasör ara..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-sm focus:bg-white" />
@@ -246,10 +227,7 @@ export function QuestionsClient() {
                 </div>
             </div>
 
-            {/* İÇERİK ALANI */}
             <div className="flex-1 pb-24">
-                
-                {/* 1. KART (GRID) GÖRÜNÜMÜ */}
                 {viewLayout === 'grid' && (
                     filteredData.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in">
@@ -259,11 +237,8 @@ export function QuestionsClient() {
                         </div>
                     ) : <EmptyState onClear={() => {setSearchQuery(''); setFilterSubject('all'); setFilterTopic('all');}} hasFilters={!!searchQuery} />
                 )}
-
-                {/* 2. KLASÖR (FOLDER) GÖRÜNÜMÜ */}
                 {viewLayout === 'folder' && (
                     <div className="space-y-4 animate-in fade-in">
-                        
                         <div className="flex items-center gap-2 text-sm font-bold text-slate-500 mb-6 bg-slate-100/50 w-fit px-4 py-2 rounded-2xl flex-wrap">
                             <span className="cursor-pointer hover:text-indigo-600 transition-colors flex items-center" onClick={() => setCurrentFolder({subject: null, topic: null})}>
                                 <Folder className="w-4 h-4 mr-2" /> Havuz
@@ -283,7 +258,6 @@ export function QuestionsClient() {
                                 </>
                             )}
                         </div>
-
                         {!currentFolder.subject && (
                             Object.keys(folderStats).length > 0 ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -301,7 +275,6 @@ export function QuestionsClient() {
                                 </div>
                             ) : <EmptyState onClear={() => setSearchQuery('')} hasFilters={!!searchQuery} />
                         )}
-
                         {currentFolder.subject && !currentFolder.topic && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                 {Object.entries(folderStats[currentFolder.subject]?.topics || {}).map(([topic, items]) => (
@@ -317,7 +290,6 @@ export function QuestionsClient() {
                                 ))}
                             </div>
                         )}
-
                         {currentFolder.subject && currentFolder.topic && (
                             <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
                                 <div className="divide-y divide-slate-100">
@@ -347,36 +319,10 @@ export function QuestionsClient() {
             </div>
           </Tabs>
 
-          <BulkAddImagesDialog 
-            open={isBulkDialogOpen} 
-            onOpenChange={setIsBulkDialogOpen} 
-            onImport={handleBulkImport} 
-            existingSubjects={allSubjects} 
-            existingTopics={allTopics}
-            trackedBooks={trackedBooks}
-            studyPlans={studyPlans}
-            bankQuestions={[...bankQuestions, ...mistakes]}
-            onSubjectCreate={handleCreateSubject} 
-            onTopicCreate={handleCreateTopic} 
-            type={bulkDialogType} 
-          />
+          <BulkAddImagesDialog open={isBulkDialogOpen} onOpenChange={setIsBulkDialogOpen} onImport={handleBulkImport} existingSubjects={allSubjects} existingTopics={allTopics} trackedBooks={trackedBooks} studyPlans={studyPlans} bankQuestions={[...bankQuestions, ...mistakes]} onSubjectCreate={handleCreateSubject} onTopicCreate={handleCreateTopic} type={bulkDialogType} />
           <AssignTestDialog isOpen={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen} allQuestions={bankQuestions} allMistakes={mistakes} selectedIds={selectedIds} type={assignmentType} onAssignmentComplete={() => setSelectedIds([])} />
-
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogContent className="sm:max-w-xl bg-white rounded-3xl p-0 overflow-hidden"><ScrollArea className="max-h-[85vh]"><div className="p-8">
-                <DialogHeader className="mb-6"><DialogTitle className="text-2xl font-black">{editingQuestion ? 'Soruyu Düzenle' : 'Yeni Soru Ekle'}</DialogTitle></DialogHeader>
-                <NewQuestionBankForm availableSubjects={allSubjects} onSubjectCreated={handleCreateSubject} availableTopics={allTopics} onTopicCreated={handleCreateTopic} onQuestionProcessed={() => setIsFormOpen(false)} initialData={editingQuestion} defaultType={defaultQuestionType} />
-            </div></ScrollArea></DialogContent>
-          </Dialog>
-
-          {imagePreview && (
-              <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setImagePreview(null)}>
-                  <div className="relative w-full max-w-6xl h-[85vh] bg-transparent flex items-center justify-center">
-                      <NextImage src={imagePreview} alt="Preview" fill className="object-contain" />
-                      <button onClick={() => setImagePreview(null)} className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-3 rounded-2xl text-white backdrop-blur"><X className="w-6 h-6"/></button>
-                  </div>
-              </div>
-          )}
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}><DialogContent className="sm:max-w-xl bg-white rounded-3xl p-0 overflow-hidden"><ScrollArea className="max-h-[85vh]"><div className="p-8"><DialogHeader className="mb-6"><DialogTitle className="text-2xl font-black">{editingQuestion ? 'Soruyu Düzenle' : 'Yeni Soru Ekle'}</DialogTitle></DialogHeader><NewQuestionBankForm availableSubjects={allSubjects} onSubjectCreated={handleCreateSubject} availableTopics={allTopics} onTopicCreated={handleCreateTopic} onQuestionProcessed={() => setIsFormOpen(false)} initialData={editingQuestion} defaultType={defaultQuestionType} /></div></ScrollArea></DialogContent></Dialog>
+          {imagePreview && (<div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setImagePreview(null)}><div className="relative w-full max-w-6xl h-[85vh] bg-transparent flex items-center justify-center"><NextImage src={imagePreview} alt="Preview" fill className="object-contain" /><button onClick={() => setImagePreview(null)} className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-3 rounded-2xl text-white backdrop-blur"><X className="w-6 h-6"/></button></div></div>)}
         </main>
 
         <AnimatePresence>
@@ -403,7 +349,7 @@ export function QuestionsClient() {
                                         <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100 rounded-3xl">
                                             <AlertDialogHeader><AlertDialogTitle>Seçilenleri Sil?</AlertDialogTitle><AlertDialogDescription>"{selectedIds.length}" adet kayıt kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
                                             <AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 text-white">İptal</AlertDialogCancel><AlertDialogAction onClick={handleDeleteSelected} className="bg-rose-600 hover:bg-rose-700">Hepsini Sil</AlertDialogAction></AlertDialogFooter>
-                                        </AlertDialogContent>
+                                        </AlertDialog>
                                     </AlertDialog>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -424,31 +370,15 @@ function BulkAddImagesDialog({
 }) {
     const [isImporting, setIsImporting] = useState(false);
     const form = useForm<z.infer<typeof bulkAddSchema>>({ resolver: zodResolver(bulkAddSchema), defaultValues: { subject: '', topic: '', images: [] } });
-    
     const selectedSubject = form.watch('subject');
-
     const filteredTopicsOptions = useMemo(() => {
         if (!selectedSubject) return [];
         const topicsSet = new Set<string>();
-        
-        // 1. Kitaplardaki bu derse ait konuları bul
-        trackedBooks.forEach(book => (book.subjects || []).forEach(s => { 
-            if (s.name === selectedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
-        }));
-
-        // 2. Planlardaki bu derse ait konuları bul
-        studyPlans.forEach(plan => (plan.subjects || []).forEach(s => { 
-            if (s.name === selectedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
-        }));
-
-        // 3. Daha önce bu dersle kaydedilmiş soruların konularını bul
-        bankQuestions.forEach(q => {
-            if (q.subject === selectedSubject && q.topic) topicsSet.add(q.topic);
-        });
-
+        trackedBooks.forEach(book => (book.subjects || []).forEach(s => { if (s.name === selectedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); }));
+        studyPlans.forEach(plan => (plan.subjects || []).forEach(s => { if (s.name === selectedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); }));
+        bankQuestions.forEach(q => { if (q.subject === selectedSubject && q.topic) topicsSet.add(q.topic); });
         return Array.from(topicsSet).sort().map(t => ({ label: t, value: t }));
     }, [selectedSubject, trackedBooks, studyPlans, bankQuestions]);
-
     const onDrop = useCallback((acceptedFiles: File[]) => {
         const currentImages = form.getValues('images') || [];
         const filePromises = acceptedFiles.map(file => new Promise<{dataUri: string, filename: string}>((resolve) => {
@@ -459,9 +389,7 @@ function BulkAddImagesDialog({
         );
         Promise.all(filePromises).then(newImages => { form.setValue('images', [...currentImages, ...newImages], { shouldValidate: true }); });
     }, [form]);
-
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.gif'] } });
-    
     const handleImportClick = (values: z.infer<typeof bulkAddSchema>) => {
         setIsImporting(true);
         const questionsToImport = values.images.map((image) => ({ originalFilename: image.filename, subject: values.subject, topic: values.topic, imageUrl: image.dataUri }));
@@ -469,66 +397,18 @@ function BulkAddImagesDialog({
         setIsImporting(false);
         form.reset();
     };
-    
     return (
         <Dialog open={open} onOpenChange={(o) => { if (!o) form.reset(); onOpenChange(o); }}>
             <DialogContent className="sm:max-w-2xl bg-white border-slate-200 text-slate-900 rounded-3xl shadow-2xl p-6 md:p-8">
-                <DialogHeader>
-                    <DialogTitle className="text-2xl font-black flex items-center gap-3">
-                        Toplu İçe Aktar
-                        <Badge className="bg-indigo-100 text-indigo-700 font-bold border-none">{type === 'mcq' ? 'Çoktan Seçmeli' : 'Açık Uçlu'}</Badge>
-                    </DialogTitle>
-                </DialogHeader>
+                <DialogHeader><DialogTitle className="text-2xl font-black flex items-center gap-3">Toplu İçe Aktar <Badge className="bg-indigo-100 text-indigo-700 font-bold border-none">{type === 'mcq' ? 'Çoktan Seçmeli' : 'Açık Uçlu'}</Badge></DialogTitle></DialogHeader>
                 <RhfForm {...form}>
                     <form onSubmit={form.handleSubmit(handleImportClick)} className="space-y-6">
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <FormField control={form.control} name="subject" render={({field}) => (
-                                <FormItem>
-                                    <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Ders</FormLabel>
-                                    <Combobox 
-                                        options={existingSubjects.map(s=>({label:s,value:s}))} 
-                                        value={field.value} 
-                                        onChange={(v) => { field.onChange(v); form.setValue('topic', ''); }} 
-                                        onCreate={onSubjectCreate} 
-                                        className="bg-slate-50 border-slate-200 h-11 rounded-xl"
-                                    />
-                                    <FormMessage/>
-                                </FormItem>
-                            )}/>
-                            <FormField control={form.control} name="topic" render={({field}) => (
-                                <FormItem>
-                                    <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Konu</FormLabel>
-                                    <Combobox 
-                                        options={filteredTopicsOptions} 
-                                        value={field.value} 
-                                        onChange={field.onChange} 
-                                        onCreate={onTopicCreate} 
-                                        placeholder={selectedSubject ? "Konu seçin..." : "Önce ders seçin..."}
-                                        className="bg-slate-50 border-slate-200 h-11 rounded-xl"
-                                    />
-                                    <FormMessage/>
-                                </FormItem>
-                            )}/>
+                            <FormField control={form.control} name="subject" render={({field}) => (<FormItem><FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Ders</FormLabel><Combobox options={existingSubjects.map(s=>({label:s,value:s}))} value={field.value} onChange={(v) => { field.onChange(v); form.setValue('topic', ''); }} onCreate={onSubjectCreate} className="bg-slate-50 border-slate-200 h-11 rounded-xl"/><FormMessage/></FormItem>)}/>
+                            <FormField control={form.control} name="topic" render={({field}) => (<FormItem><FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Konu</FormLabel><Combobox options={filteredTopicsOptions} value={field.value} onChange={field.onChange} onCreate={onTopicCreate} placeholder={selectedSubject ? "Konu seçin..." : "Önce ders seçin..."} className="bg-slate-50 border-slate-200 h-11 rounded-xl"/><FormMessage/></FormItem>)}/>
                          </div>
-                         
-                         <div {...getRootProps()} className={cn(
-                             "w-full aspect-[21/9] border-2 border-dashed rounded-3xl flex flex-col items-center justify-center transition-all cursor-pointer",
-                             isDragActive ? "border-indigo-500 bg-indigo-50/50 text-indigo-600 scale-[1.02]" : "border-slate-300 text-slate-500 hover:border-indigo-400 hover:bg-slate-50"
-                         )}>
-                              <input {...getInputProps()} />
-                              <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm border border-slate-100">
-                                  <UploadCloud className="h-6 w-6 text-indigo-500"/>
-                              </div>
-                              <p className="font-bold text-slate-700">Görselleri sürükleyip bırakın</p>
-                              <p className="text-sm text-slate-500 mt-1">veya cihazdan seçin</p>
-                         </div>
-
-                        <DialogFooter className="pt-6 mt-4">
-                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl text-slate-600 hover:bg-slate-100 font-bold px-6">İptal</Button>
-                            <Button type="submit" disabled={isImporting || form.watch('images')?.length === 0} className="h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 shadow-lg w-full sm:w-auto">
-                                {isImporting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 'Görselleri Aktar'}
-                            </Button>
-                        </DialogFooter>
+                         <div {...getRootProps()} className={cn("w-full aspect-[21/9] border-2 border-dashed rounded-3xl flex flex-col items-center justify-center transition-all cursor-pointer", isDragActive ? "border-indigo-500 bg-indigo-50/50 text-indigo-600 scale-[1.02]" : "border-slate-300 text-slate-500 hover:border-indigo-400 hover:bg-slate-50")}><input {...getInputProps()} /><div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm border border-slate-100"><UploadCloud className="h-6 w-6 text-indigo-500"/></div><p className="font-bold text-slate-700">Görselleri sürükleyip bırakın</p><p className="text-sm text-slate-500 mt-1">veya cihazdan seçin</p></div>
+                        <DialogFooter className="pt-6 mt-4"><Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl text-slate-600 hover:bg-slate-100 font-bold px-6">İptal</Button><Button type="submit" disabled={isImporting || form.watch('images')?.length === 0} className="h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 shadow-lg w-full sm:w-auto">{isImporting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 'Görselleri Aktar'}</Button></DialogFooter>
                     </form>
                 </RhfForm>
             </DialogContent>
@@ -539,47 +419,21 @@ function BulkAddImagesDialog({
 const bulkAddSchema = z.object({
   subject: z.string().min(1, "Ders seçimi zorunludur."),
   topic: z.string().min(1, "Konu seçimi zorunludur."),
-  images: z.array(z.object({
-      dataUri: z.string(),
-      filename: z.string(),
-  })).min(1, "En az bir resim yüklemelisiniz."),
+  images: z.array(z.object({ dataUri: z.string(), filename: z.string(), })).min(1, "En az bir resim yüklemelisiniz."),
 });
 
 function QuestionCard({ item, isSelected, onToggle, onPreview, onEdit, showEdit, familyMembers, isMistake }: any) {
     return (
         <div className={cn("group relative flex flex-col rounded-3xl overflow-hidden cursor-pointer", isSelected ? "border-2 border-indigo-500 bg-indigo-50/20 shadow-lg" : themeColors.CARD_BG)} onClick={onToggle}>
             <div className="relative aspect-[4/3] w-full bg-slate-50 border-b border-slate-100 flex items-center justify-center overflow-hidden">
-                <div className="absolute top-3 left-3 z-20">
-                    <div className={cn("p-0.5 rounded-lg backdrop-blur-md transition-all", isSelected ? "bg-white border-transparent" : "bg-white/60 border-slate-200 opacity-0 group-hover:opacity-100")}>
-                        <Checkbox checked={isSelected} className="w-5 h-5 rounded data-[state=checked]:bg-indigo-600" />
-                    </div>
-                </div>
-                {showEdit && (
-                    <div className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-all">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/90 shadow-sm rounded-lg" onClick={(e) => { e.stopPropagation(); onEdit(); }}><Edit className="h-4 w-4"/></Button>
-                    </div>
-                )}
-                {item.imageUrl ? (
-                    <>
-                        <NextImage src={item.imageUrl} alt="Soru" fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
-                        <div className="absolute inset-0 bg-transparent hover:bg-slate-900/20 flex items-center justify-center transition-all" onClick={(e) => { e.stopPropagation(); onPreview(); }}>
-                            <div className="bg-white/90 p-3 rounded-2xl shadow-lg opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all"><Maximize2 className="w-5 h-5" /></div>
-                        </div>
-                    </>
-                ) : <FileQuestion className="w-12 h-12 text-slate-300" />}
+                <div className="absolute top-3 left-3 z-20"><div className={cn("p-0.5 rounded-lg backdrop-blur-md transition-all", isSelected ? "bg-white border-transparent" : "bg-white/60 border-slate-200 opacity-0 group-hover:opacity-100")}><Checkbox checked={isSelected} className="w-5 h-5 rounded data-[state=checked]:bg-indigo-600" /></div></div>
+                {showEdit && (<div className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-all"><Button variant="ghost" size="icon" className="h-8 w-8 bg-white/90 shadow-sm rounded-lg" onClick={(e) => { e.stopPropagation(); onEdit(); }}><Edit className="h-4 w-4"/></Button></div>)}
+                {item.imageUrl ? (<><NextImage src={item.imageUrl} alt="Soru" fill className="object-cover transition-transform duration-500 group-hover:scale-105" /><div className="absolute inset-0 bg-transparent hover:bg-slate-900/20 flex items-center justify-center transition-all" onClick={(e) => { e.stopPropagation(); onPreview(); }}><div className="bg-white/90 p-3 rounded-2xl shadow-lg opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all"><Maximize2 className="w-5 h-5" /></div></div></>) : <FileQuestion className="w-12 h-12 text-slate-300" />}
             </div>
             <div className="p-5 flex flex-col flex-1 bg-white">
-                <div className="flex gap-2 mb-3 flex-wrap">
-                    <Badge className="bg-indigo-50 text-indigo-700 font-bold text-[10px] rounded-md">{item.subject}</Badge>
-                    <Badge variant="outline" className="text-slate-500 text-[10px] rounded-md">{item.topic}</Badge>
-                </div>
+                <div className="flex gap-2 mb-3 flex-wrap"><Badge className="bg-indigo-50 text-indigo-700 font-bold text-[10px] rounded-md">{item.subject}</Badge><Badge variant="outline" className="text-slate-500 text-[10px] rounded-md">{item.topic}</Badge></div>
                 <p className="text-sm font-bold text-slate-800 line-clamp-2 leading-relaxed">{item.title || item.originalFilename}</p>
-                {isMistake && (
-                    <div className="mt-auto pt-4 border-t border-slate-50 flex items-center gap-2 text-xs font-semibold text-rose-600">
-                        <div className="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center"><AlertTriangle className="w-3.5 h-3.5"/></div>
-                        <span>{familyMembers.find((f:any) => f.id === item.creatorId)?.name} Yanlışı</span>
-                    </div>
-                )}
+                {isMistake && (<div className="mt-auto pt-4 border-t border-slate-50 flex items-center gap-2 text-xs font-semibold text-rose-600"><div className="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center"><AlertTriangle className="w-3.5 h-3.5"/></div><span>{familyMembers.find((f:any) => f.id === item.creatorId)?.name} Yanlışı</span></div>)}
             </div>
         </div>
     )
@@ -596,12 +450,7 @@ function EmptyState({ onClear, hasFilters }: { onClear: () => void, hasFilters: 
     )
 }
 
-const assignFormSchema = z.object({
-  title: z.string().min(3, "Başlık en az 3 karakter olmalıdır."),
-  durationMinutes: z.coerce.number().min(1, "Süre en az 1 dakika olmalıdır.").optional(),
-  studentIds: z.array(z.string()).min(1, "En az bir öğrenci seçmelisiniz."),
-  dateRange: z.object({ from: z.date(), to: z.date() }),
-});
+const assignFormSchema = z.object({ title: z.string().min(3, "Başlık en az 3 karakter olmalıdır."), durationMinutes: z.coerce.number().min(1, "Süre en az 1 dakika olmalıdır.").optional(), studentIds: z.array(z.string()).min(1, "En az bir öğrenci seçmelisiniz."), dateRange: z.object({ from: z.date(), to: z.date() }), });
 
 function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, selectedIds, type, onAssignmentComplete }: any) {
   const { toast } = useToast();
@@ -609,141 +458,29 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
   const [loading, setLoading] = useState(false);
   const students = useMemo(() => familyMembers.filter((m:any) => m.role.includes('Çocuk')), [familyMembers]);
   const form = useForm<z.infer<typeof assignFormSchema>>({ resolver: zodResolver(assignFormSchema), defaultValues: { title: "", studentIds: [], dateRange: { from: new Date(), to: addDays(new Date(), 7) } } });
-
   const handleAssignmentSubmit = async (values: z.infer<typeof assignFormSchema>) => {
     setLoading(true);
     const source = type === 'bank' ? allQuestions : allMistakes;
     const selectedItems = source.filter((q:any) => selectedIds.includes(q.id));
-    
-    const questionsForTest = selectedItems.map((item:any) => ({
-        questionId: item.id,
-        imageUrl: item.imageUrl!,
-        type: item.type,
-        correctAnswer: item.correctAnswer 
-    }));
-    
+    const questionsForTest = selectedItems.map((item:any) => ({ questionId: item.id, imageUrl: item.imageUrl!, type: item.type, correctAnswer: item.correctAnswer }));
     const isTestOpenEnded = questionsForTest.some((q:any) => q.type === 'open_ended');
     const answerKey: any = {};
-    if (!isTestOpenEnded) {
-        questionsForTest.forEach((q:any, index:number) => { if (q.correctAnswer) answerKey[(index + 1).toString()] = q.correctAnswer; });
-    }
-
+    if (!isTestOpenEnded) { questionsForTest.forEach((q:any, index:number) => { if (q.correctAnswer) answerKey[(index + 1).toString()] = q.correctAnswer; }); }
     try {
         for (const studentId of values.studentIds) {
-            const testData = {
-                title: values.title,
-                subject: selectedItems[0]?.subject || 'Karma',
-                studentId: studentId,
-                questionCount: selectedItems.length,
-                durationMinutes: values.durationMinutes,
-                assignedDate: format(values.dateRange.from, 'dd MMMM yyyy', { locale: tr }),
-                dueDate: format(values.dateRange.to, 'dd MMMM yyyy', { locale: tr }),
-                sourceType: type,
-                status: 'Atandı',
-                isArchived: false,
-                answerKey: isTestOpenEnded ? undefined : answerKey,
-                openEnded: isTestOpenEnded,
-            };
+            const testData = { title: values.title, subject: selectedItems[0]?.subject || 'Karma', studentId: studentId, questionCount: selectedItems.length, durationMinutes: values.durationMinutes, assignedDate: format(values.dateRange.from, 'dd MMMM yyyy', { locale: tr }), dueDate: format(values.dateRange.to, 'dd MMMM yyyy', { locale: tr }), sourceType: type, status: 'Atandı', isArchived: false, answerKey: isTestOpenEnded ? undefined : answerKey, openEnded: isTestOpenEnded, };
             await addTest(testData as any, questionsForTest);
         }
         toast({ title: "✅ Başarılı", description: "Ödev başarıyla atandı.", variant: "default" });
         onAssignmentComplete();
         onOpenChange(false);
-    } catch (e) { 
-        toast({ title: "Hata", description: "Ödev atanırken bir sorun oluştu.", variant: "destructive" }); 
-    } finally { 
-        setLoading(false); 
-    }
+    } catch (e) { toast({ title: "Hata", description: "Ödev atanırken bir sorun oluştu.", variant: "destructive" }); } finally { setLoading(false); }
   };
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-3xl shadow-2xl p-6 md:p-8">
-        <DialogHeader>
-            <DialogTitle className="text-2xl font-black flex items-center gap-3">
-                Ödev Oluştur
-                <Badge className="bg-emerald-100 text-emerald-700 font-bold border-none">{selectedIds.length} Soru</Badge>
-            </DialogTitle>
-        </DialogHeader>
-        <RhfForm {...form}>
-            <form onSubmit={form.handleSubmit(handleAssignmentSubmit)} className="space-y-6">
-                
-                <FormField control={form.control} name="title" render={({field}) => (
-                    <FormItem>
-                        <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Test Başlığı</FormLabel>
-                        <Input {...field} placeholder="Hafta Sonu Ödevi" className="h-12 bg-slate-50 border-slate-200 focus:bg-white rounded-xl text-sm font-medium"/>
-                    </FormItem>
-                )}/>
-                
-                <FormField control={form.control} name="studentIds" render={() => (
-                    <FormItem>
-                        <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Öğrenciler</FormLabel>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {students.map((s:any) => (
-                                <FormField key={s.id} control={form.control} name="studentIds" render={({ field }) => {
-                                    const isSelected = field.value?.includes(s.id);
-                                    return (
-                                        <FormItem className={cn(
-                                            "flex items-center space-x-3 space-y-0 p-3 rounded-xl transition-all cursor-pointer border",
-                                            isSelected ? "bg-indigo-50/50 border-indigo-200 shadow-sm" : "bg-slate-50 border-slate-200 hover:border-indigo-300"
-                                        )}>
-                                            <FormControl>
-                                                <Checkbox 
-                                                    checked={isSelected} 
-                                                    onCheckedChange={(c) => c ? field.onChange([...(field.value||[]), s.id]) : field.onChange(field.value?.filter((v)=>v!==s.id))} 
-                                                    className="border-slate-300 w-5 h-5 rounded data-[state=checked]:bg-indigo-600"
-                                                />
-                                            </FormControl>
-                                            <FormLabel className="font-bold cursor-pointer w-full text-slate-700 flex items-center gap-2">
-                                                <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{backgroundColor: s.color || '#6366f1'}}/>
-                                                {s.name}
-                                            </FormLabel>
-                                        </FormItem>
-                                    )
-                                }}/>
-                            ))}
-                        </div>
-                    </FormItem>
-                )}/>
-
-                 <div className="grid grid-cols-2 gap-5">
-                    <FormField control={form.control} name="dateRange" render={({field}) => (
-                        <FormItem>
-                            <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Tarih</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant="outline" className={cn("w-full h-12 justify-start text-left bg-slate-50 border-slate-200 hover:bg-white shadow-sm font-bold text-slate-700 rounded-xl px-3")}>
-                                        <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
-                                        <span className="truncate">{field.value.to ? format(field.value.to, "d MMM", {locale:tr}) : "Seçin"}</span>
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="bg-white border-slate-200 shadow-2xl w-auto p-0 rounded-2xl" align="start">
-                                    <Calendar 
-                                        mode="range" 
-                                        selected={field.value} 
-                                        onSelect={(val) => { if(val?.from && val?.to) field.onChange(val); }} 
-                                        className="bg-white text-slate-900 p-4"
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                        </FormItem>
-                    )}/>
-                    <FormField control={form.control} name="durationMinutes" render={({field}) => (
-                        <FormItem>
-                            <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Süre (Dk)</FormLabel>
-                            <Input type="number" placeholder="Süresiz" {...field} className="h-12 bg-slate-50 border-slate-200 focus:bg-white rounded-xl text-sm font-bold text-slate-700"/>
-                        </FormItem>
-                    )}/>
-                 </div>
-                 
-                <DialogFooter className="pt-6 mt-4">
-                    <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl text-slate-600 hover:bg-slate-100 font-bold px-6">İptal</Button>
-                    <Button type="submit" disabled={loading || form.watch('studentIds').length === 0} className="h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 shadow-lg w-full sm:w-auto">
-                        {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 'Ödevi Ata'}
-                    </Button>
-                </DialogFooter>
-            </form>
-        </RhfForm>
+        <DialogHeader><DialogTitle className="text-2xl font-black flex items-center gap-3">Ödev Oluştur <Badge className="bg-emerald-100 text-emerald-700 font-bold border-none">{selectedIds.length} Soru</Badge></DialogTitle></DialogHeader>
+        <RhfForm {...form}><form onSubmit={form.handleSubmit(handleAssignmentSubmit)} className="space-y-6"><FormField control={form.control} name="title" render={({field}) => (<FormItem><FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Test Başlığı</FormLabel><Input {...field} placeholder="Hafta Sonu Ödevi" className="h-12 bg-slate-50 border-slate-200 focus:bg-white rounded-xl text-sm font-medium"/></FormItem>)}/><FormField control={form.control} name="studentIds" render={() => (<FormItem><FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Öğrenciler</FormLabel><div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{students.map((s:any) => (<FormField key={s.id} control={form.control} name="studentIds" render={({ field }) => { const isSelected = field.value?.includes(s.id); return (<FormItem className={cn("flex items-center space-x-3 space-y-0 p-3 rounded-xl transition-all cursor-pointer border", isSelected ? "bg-indigo-50/50 border-indigo-200 shadow-sm" : "bg-slate-50 border-slate-200 hover:border-indigo-300")}><FormControl><Checkbox checked={isSelected} onCheckedChange={(c) => c ? field.onChange([...(field.value||[]), s.id]) : field.onChange(field.value?.filter((v)=>v!==s.id))} className="border-slate-300 w-5 h-5 rounded data-[state=checked]:bg-indigo-600"/></FormControl><FormLabel className="font-bold cursor-pointer w-full text-slate-700 flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{backgroundColor: s.color || '#6366f1'}}/>{s.name}</FormLabel></FormItem>) }}/>))}</div></FormItem>)}/><div className="grid grid-cols-2 gap-5"><FormField control={form.control} name="dateRange" render={({field}) => (<FormItem><FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Tarih</FormLabel><Popover><PopoverTrigger asChild><Button variant="outline" className={cn("w-full h-12 justify-start text-left bg-slate-50 border-slate-200 hover:bg-white shadow-sm font-bold text-slate-700 rounded-xl px-3")}><CalendarIcon className="mr-2 h-4 w-4 text-slate-400" /><span className="truncate">{field.value.to ? format(field.value.to, "d MMM", {locale:tr}) : "Seçin"}</span></Button></PopoverTrigger><PopoverContent className="bg-white border-slate-200 shadow-2xl w-auto p-0 rounded-2xl" align="start"><Calendar mode="range" selected={field.value} onSelect={(val) => { if(val?.from && val?.to) field.onChange(val); }} className="bg-white text-slate-900 p-4"/></PopoverContent></Popover></FormItem>)}/><FormField control={form.control} name="durationMinutes" render={({field}) => (<FormItem><FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Süre (Dk)</FormLabel><Input type="number" placeholder="Süresiz" {...field} className="h-12 bg-slate-50 border-slate-200 focus:bg-white rounded-xl text-sm font-bold text-slate-700"/></FormItem>)}/></div><DialogFooter className="pt-6 mt-4"><Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl text-slate-600 hover:bg-slate-100 font-bold px-6">İptal</Button><Button type="submit" disabled={loading || form.watch('studentIds').length === 0} className="h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 shadow-lg w-full sm:w-auto">{loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 'Ödevi Ata'}</Button></DialogFooter></form></RhfForm>
       </DialogContent>
     </Dialog>
   );

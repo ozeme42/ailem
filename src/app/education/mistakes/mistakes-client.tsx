@@ -8,7 +8,7 @@ import {
     Layers, Search, Filter, HelpCircle, GraduationCap,
     Library, FileText, CheckCircle2, XCircle, BarChart3,
     ChevronDown, BookCopy, ListTree, TrendingUp, TrendingDown, MinusCircle,
-    Eye, ExternalLink
+    Eye, ExternalLink, LayoutGrid, ClipboardList, ListX
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { onTestsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
@@ -24,17 +24,37 @@ import { getCategoryName } from "@/app/education/page";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { parse, isPast, isToday } from 'date-fns';
+import { format, parseISO, parse } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
 // --- DESIGN SYSTEM ---
 const themeColors = {
     HEADER_BG: "bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800/50 sticky top-0 z-40",
-    CARD_BG: "bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md transition-all duration-300",
+    CARD_BG: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300",
     ICON_BOX: "bg-gradient-to-br from-rose-500 to-pink-600 p-2.5 rounded-xl shadow-lg shadow-rose-500/20 text-white",
     INPUT_BG: "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:border-indigo-500 transition-all",
-    MISTAKE_CARD: "bg-slate-50/50 dark:bg-black/20 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 transition-all",
+    MISTAKE_ROW: "bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 transition-all hover:bg-slate-50 dark:hover:bg-slate-900",
+    TAB_LIST: "bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-1 rounded-xl",
 };
+
+const typeIcons: Record<string, any> = {
+    json: FileText,
+    exam: ClipboardList,
+    bank: Library,
+    quick: Sparkles,
+    html: Code,
+    trackedBook: BookOpen,
+    mistake: AlertCircle
+};
+
+function translateType(type: string) {
+    const map: Record<string, string> = {
+        json: 'Yazılı Test', exam: 'Deneme Sınavı', bank: 'Soru Bankası',
+        quick: 'Hızlı Test', mistake: 'Yanlış Havuzu', trackedBook: 'Kitap Takibi',
+        html: 'HTML Test'
+    };
+    return map[type] || type;
+}
 
 type MistakeDetail = {
     id: string;
@@ -63,8 +83,8 @@ export function MistakesClient() {
     const [loading, setLoading] = React.useState(true);
     const [searchTerm, setSearchTerm] = React.useState("");
     const [selectedStudent, setSelectedStudent] = React.useState<FamilyMember | null>(null);
+    const [groupingMode, setGroupingMode] = React.useState<'subject' | 'type'>('subject');
 
-    // Initial student selection
     React.useEffect(() => {
         if (familyMembers.length > 0 && !selectedStudent) {
             const initial = studentIdParam 
@@ -76,312 +96,176 @@ export function MistakesClient() {
 
     React.useEffect(() => {
         if (!familyId || !selectedStudent) return;
-
         const unsubTests = onTestsUpdate((all) => {
-            // Sadece seçili öğrencinin sonuçlanmış testlerini al
             setTests(all.filter(t => t.studentId === selectedStudent.id && t.status === 'Sonuçlandı'));
             setLoading(false);
         });
         const unsubBooks = onTrackedBooksUpdate(setTrackedBooks);
-
-        return () => {
-            unsubTests();
-            unsubBooks();
-        };
+        return () => { unsubTests(); unsubBooks(); };
     }, [familyId, selectedStudent]);
 
-    // Aggregate Mistakes & Empties
     const aggregatedMistakes = React.useMemo(() => {
         const list: MistakeDetail[] = [];
-
-        // YALNIZCA SORU BANKASI VE YAZILI TESTLERİ FİLTRELE
-        const filteredTestsBySource = tests.filter(t => 
-            t.sourceType === 'bank' || 
-            t.sourceType === 'quick' || 
-            t.sourceType === 'json' ||
-            t.sourceType === 'html'
-        );
-
-        filteredTestsBySource.forEach(test => {
+        tests.forEach(test => {
             const subjectName = getCategoryName(test);
             let topicName = "Genel";
-            
-            // Konu adını bulma mantığı
             if (test.topicId) {
                 const allTopics = trackedBooks.flatMap(b => b.subjects.flatMap(s => s.topics));
-                const foundTopic = allTopics.find(t => t.id === test.topicId);
-                if (foundTopic) topicName = foundTopic.name;
+                topicName = allTopics.find(t => t.id === test.topicId)?.name || "Genel";
             } else if ((test as any).topic) {
                 topicName = (test as any).topic;
             }
 
-            // DURUM 1: Çoktan Seçmeli (MCQ) Mantığı (studentAnswers & answerKey)
             if (!test.openEnded) {
                 const studentAnswers = test.studentAnswers || {};
-                const answerKey = test.answerKey || {};
-
-                // Eğer JSON testi ise ve answerKey yoksa jsonQuestions'dan türet
-                let effectiveAnswerKey = { ...answerKey };
+                let effectiveAnswerKey = test.answerKey || {};
                 if (test.sourceType === 'json' && Object.keys(effectiveAnswerKey).length === 0 && test.jsonQuestions) {
-                    test.jsonQuestions.forEach((q, idx) => {
-                        effectiveAnswerKey[(idx + 1).toString()] = q.answer;
-                    });
+                    test.jsonQuestions.forEach((q, idx) => { effectiveAnswerKey[(idx + 1).toString()] = q.answer; });
                 }
-
                 Object.entries(effectiveAnswerKey).forEach(([qNum, cAns]) => {
                     const sAns = studentAnswers[qNum];
-                    const isWrong = sAns && sAns !== cAns;
-                    const isEmpty = !sAns;
-
-                    if (isWrong || isEmpty) {
-                        list.push({
-                            id: `${test.id}_${qNum}`,
-                            questionNumber: qNum,
-                            studentAnswer: sAns || null,
-                            correctAnswer: cAns,
-                            testTitle: test.title,
-                            testId: test.id,
-                            date: test.assignedDate,
-                            subject: subjectName,
-                            topic: topicName,
-                            sourceType: test.sourceType,
-                            isEmpty: !!isEmpty
-                        });
+                    if (!sAns || sAns !== cAns) {
+                        list.push({ id: `${test.id}_${qNum}`, questionNumber: qNum, studentAnswer: sAns || null, correctAnswer: cAns, testTitle: test.title, testId: test.id, date: test.assignedDate, subject: subjectName, topic: topicName, sourceType: test.sourceType, isEmpty: !sAns });
                     }
                 });
-            } 
-            // DURUM 2: Açık Uçlu (Evaluated) Mantığı (studentTextAnswersEvaluation)
-            else if (test.studentTextAnswersEvaluation) {
+            } else if (test.studentTextAnswersEvaluation) {
                 Object.entries(test.studentTextAnswersEvaluation).forEach(([qNum, status]) => {
                     if (status === 'incorrect' || status === 'empty') {
-                        list.push({
-                            id: `${test.id}_${qNum}`,
-                            questionNumber: qNum,
-                            studentAnswer: test.studentTextAnswers?.[qNum] || null,
-                            correctAnswer: test.answerKey?.[qNum] || "Bilinmiyor",
-                            testTitle: test.title,
-                            testId: test.id,
-                            date: test.assignedDate,
-                            subject: subjectName,
-                            topic: topicName,
-                            sourceType: test.sourceType,
-                            isEmpty: status === 'empty'
-                        });
+                        list.push({ id: `${test.id}_${qNum}`, questionNumber: qNum, studentAnswer: test.studentTextAnswers?.[qNum] || null, correctAnswer: test.answerKey?.[qNum] || "Bilinmiyor", testTitle: test.title, testId: test.id, date: test.assignedDate, subject: subjectName, topic: topicName, sourceType: test.sourceType, isEmpty: status === 'empty' });
                     }
                 });
             }
         });
-
-        // Arama filtresi ve Tarih sıralaması
-        return list.filter(m => 
-            m.testTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            m.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            m.topic.toLowerCase().includes(searchTerm.toLowerCase())
-        ).sort((a,b) => b.date.localeCompare(a.date));
+        return list.filter(m => m.testTitle.toLowerCase().includes(searchTerm.toLowerCase()) || m.subject.toLowerCase().includes(searchTerm.toLowerCase()) || m.topic.toLowerCase().includes(searchTerm.toLowerCase())).sort((a,b) => b.date.localeCompare(a.date));
     }, [tests, trackedBooks, searchTerm]);
 
-    // Gruplandırma: Ders > Konu > Test
     const hierarchy = React.useMemo(() => {
-        const map: Record<string, Record<string, Record<string, MistakeDetail[]>>> = {};
-        
+        const map: Record<string, Record<string, MistakeDetail[]>> = {};
         aggregatedMistakes.forEach(m => {
-            if (!map[m.subject]) map[m.subject] = {};
-            if (!map[m.subject][m.topic]) map[m.subject][m.topic] = {};
-            if (!map[m.subject][m.topic][m.testTitle]) map[m.subject][m.topic][m.testTitle] = [];
-            map[m.subject][m.topic][m.testTitle].push(m);
+            const groupKey = groupingMode === 'subject' ? m.subject : translateType(m.sourceType);
+            const subKey = m.testTitle;
+            if (!map[groupKey]) map[groupKey] = {};
+            if (!map[groupKey][subKey]) map[groupKey][subKey] = [];
+            map[groupKey][subKey].push(m);
         });
+        return map;
+    }, [aggregatedMistakes, groupingMode]);
 
-        // Sort keys alphabetically
-        return Object.keys(map).sort().reduce((acc, subject) => {
-            acc[subject] = Object.keys(map[subject]).sort().reduce((topicAcc, topic) => {
-                topicAcc[topic] = Object.keys(map[subject][topic]).sort().reduce((testAcc, testTitle) => {
-                    testAcc[testTitle] = map[subject][topic][testTitle];
-                    return testAcc;
-                }, {} as Record<string, MistakeDetail[]>);
-                return topicAcc;
-            }, {} as Record<string, Record<string, MistakeDetail[]>>);
-            return acc;
-        }, {} as Record<string, Record<string, Record<string, MistakeDetail[]>>>);
-    }, [aggregatedMistakes]);
+    if (loading) return <div className="flex h-screen items-center justify-center dark:bg-slate-950"><Loader2 className="animate-spin h-10 w-10 text-rose-500" /></div>;
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans flex flex-col">
             <header className={themeColors.HEADER_BG}>
                 <div className="max-w-5xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400" onClick={() => router.back()}>
-                            <ArrowLeft className="h-6 w-6" />
-                        </Button>
-                        <div className={themeColors.ICON_BOX}>
-                            <AlertCircle className="w-6 h-6 text-white" />
-                        </div>
+                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500" onClick={() => router.back()}><ArrowLeft className="h-6 w-6" /></Button>
+                        <div className={themeColors.ICON_BOX}><ListX className="w-6 h-6 text-white" /></div>
                         <div>
-                            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 leading-none">Yanlışlarım & Boşlarım</h1>
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Hata ve Eksik Analiz Merkezi</p>
+                            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 leading-none">Yanlışlarım</h1>
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Eksik ve Hata Havuzu</p>
                         </div>
                     </div>
-
                     <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
                         {familyMembers.filter(m => m.role.includes('Çocuk')).map(member => (
-                            <button 
-                                key={member.id}
-                                onClick={() => setSelectedStudent(member)}
-                                className={cn(
-                                    "px-3 py-1.5 rounded-full text-xs font-bold transition-all border shrink-0",
-                                    selectedStudent?.id === member.id 
-                                        ? "bg-indigo-600 text-white border-indigo-500 shadow-md" 
-                                        : "bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800"
-                                )}
-                            >
-                                {member.name}
-                            </button>
+                            <button key={member.id} onClick={() => setSelectedStudent(member)} className={cn("px-4 py-1.5 rounded-full text-xs font-bold transition-all border shrink-0", selectedStudent?.id === member.id ? "bg-rose-600 text-white border-rose-500 shadow-md" : "bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800")}>{member.name}</button>
                         ))}
                     </div>
                 </div>
             </header>
 
-            <main className="flex-1 max-w-5xl mx-auto w-full p-4 md:p-6 space-y-6">
-                
-                {/* Stats & Search */}
-                <div className={cn("rounded-3xl p-4 md:p-6", themeColors.CARD_BG)}>
-                    <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-                        <div className="flex items-center gap-6">
-                            <div className="text-center">
-                                <p className="text-3xl font-black text-rose-500">{aggregatedMistakes.length}</p>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Toplam Eksik</p>
-                            </div>
-                            <div className="w-px h-10 bg-slate-200 dark:bg-slate-800" />
-                            <div className="text-center">
-                                <p className="text-3xl font-black text-slate-400">{aggregatedMistakes.filter(m => m.isEmpty).length}</p>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Boş Sorular</p>
-                            </div>
-                            <div className="w-px h-10 bg-slate-200 dark:bg-slate-800 hidden sm:block" />
-                            <div className="text-center hidden sm:block">
-                                <p className="text-sm font-bold text-slate-400 max-w-[120px] leading-tight">Soru Bankası & Yazılılar</p>
-                            </div>
-                        </div>
-
+            <main className="flex-1 max-w-5xl mx-auto w-full p-4 md:p-6 space-y-8 pb-20">
+                <div className={cn("rounded-3xl p-5", themeColors.CARD_BG)}>
+                    <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+                        <Tabs value={groupingMode} onValueChange={(v) => setGroupingMode(v as any)} className="w-full sm:w-auto">
+                            <TabsList className={themeColors.TAB_LIST}>
+                                <TabsTrigger value="subject" className="rounded-lg text-xs font-bold px-5 h-9">Ders Kartları</TabsTrigger>
+                                <TabsTrigger value="type" className="rounded-lg text-xs font-bold px-5 h-9">Sınav Türleri</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
                         <div className="relative w-full md:max-w-sm">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input 
-                                placeholder="Ders, konu veya test ara..." 
-                                className={cn("pl-10 h-11 rounded-xl", themeColors.INPUT_BG)}
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <Input placeholder="Konu veya sınav ara..." className={cn("pl-10 h-11 rounded-xl", themeColors.INPUT_BG)} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                         </div>
                     </div>
                 </div>
 
-                {/* HIERARCHICAL ACCORDIONS */}
-                <div className="pb-20">
-                    {Object.keys(hierarchy).length > 0 ? (
-                        <Accordion 
-                            type="multiple" 
-                            className="space-y-4"
-                        >
-                            {Object.entries(hierarchy).map(([subject, topics]) => (
-                                <AccordionItem key={subject} value={subject} className="border-none rounded-3xl overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-                                    <AccordionTrigger className="px-6 py-5 hover:no-underline bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-slate-100 dark:border-slate-700">
-                                                <BookCopy className="w-6 h-6" />
-                                            </div>
-                                            <div className="text-left">
-                                                <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 leading-none">{subject}</h3>
-                                                <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-wider">
-                                                    {Object.keys(topics).length} Konuda {Object.values(topics).flat().flat().length} Eksik
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </AccordionTrigger>
-                                    <AccordionContent className="p-4 pt-2 bg-slate-50/30 dark:bg-black/20">
-                                        <Accordion type="multiple" className="space-y-2">
-                                            {Object.entries(topics).map(([topic, testsMap]) => (
-                                                <AccordionItem key={topic} value={topic} className="border-none">
-                                                    <AccordionTrigger className="px-4 py-3 bg-white dark:bg-slate-950 rounded-xl hover:no-underline border border-slate-100 dark:border-slate-800">
-                                                        <div className="flex items-center gap-3">
-                                                            <Layers className="w-4 h-4 text-rose-500" />
-                                                            <h4 className="font-bold text-sm text-slate-700 dark:text-slate-300 uppercase tracking-widest">{topic}</h4>
-                                                            <Badge variant="outline" className="ml-2 bg-rose-500/5 text-rose-500 border-rose-500/20 text-[10px] h-5">
-                                                                {Object.values(testsMap).flat().length}
-                                                            </Badge>
-                                                        </div>
-                                                    </AccordionTrigger>
-                                                    <AccordionContent className="p-2 space-y-4">
-                                                        {Object.entries(testsMap).map(([testTitle, mistakes]) => (
-                                                            <div key={testTitle} className="bg-white/50 dark:bg-slate-900/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
-                                                                <div className="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <FileText className="w-4 h-4 text-slate-400" />
-                                                                        <h5 className="font-bold text-sm text-slate-800 dark:text-slate-200">{testTitle}</h5>
-                                                                    </div>
-                                                                    <Link href={`/education/${mistakes[0].testId}`}>
-                                                                        <Button size="sm" variant="outline" className="h-7 text-[10px] font-bold gap-1.5 rounded-lg border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950">
-                                                                            <Eye className="w-3 h-3" /> Testi İncele
-                                                                        </Button>
-                                                                    </Link>
+                {Object.keys(hierarchy).length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {Object.entries(hierarchy).map(([groupName, testsMap]) => {
+                            const totalMistakes = Object.values(testsMap).flat().length;
+                            const Icon = groupingMode === 'type' ? (typeIcons[Object.values(testsMap)[0][0].sourceType] || Library) : BookCopy;
+                            
+                            return (
+                                <Accordion type="single" collapsible key={groupName} className="border-none">
+                                    <AccordionItem value={groupName} className="border-none">
+                                        <div className={cn("rounded-[2rem] overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all")}>
+                                            <AccordionTrigger className="px-6 py-5 hover:no-underline group">
+                                                <div className="flex items-center gap-4 text-left w-full">
+                                                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner shrink-0", groupingMode === 'subject' ? "bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400" : "bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400")}>
+                                                        <Icon className="w-6 h-6" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 truncate pr-4">{groupName}</h3>
+                                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">{Object.keys(testsMap).length} Sınav • {totalMistakes} Hata</p>
+                                                    </div>
+                                                    <Badge className="bg-rose-500 text-white font-black px-2 py-1 rounded-lg shadow-sm shrink-0 mr-4">{totalMistakes}</Badge>
+                                                </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent className="p-4 pt-0 bg-slate-50/50 dark:bg-black/20">
+                                                <div className="space-y-4">
+                                                    {Object.entries(testsMap).map(([testTitle, mistakes]) => (
+                                                        <div key={testTitle} className="space-y-2">
+                                                            <div className="flex items-center justify-between px-2 pt-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <FileText className="w-4 h-4 text-slate-400" />
+                                                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{testTitle}</span>
                                                                 </div>
-                                                                
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                    {mistakes.map(mistake => (
-                                                                        <div key={mistake.id} className={cn(themeColors.MISTAKE_CARD, mistake.isEmpty && "border-slate-200 dark:border-slate-800")}>
-                                                                            <div className="flex justify-between items-center mb-3">
-                                                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{mistake.date}</span>
-                                                                                <div className="flex gap-2">
-                                                                                    {mistake.isEmpty && <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800 border-none text-[9px] h-5 text-slate-500 font-bold uppercase">Boş</Badge>}
-                                                                                    <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800 border-none text-[10px] h-5">Soru {mistake.questionNumber}</Badge>
+                                                                <Link href={`/education/${mistakes[0].testId}`} className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">Testi Gör <ChevronRight className="w-3 h-3"/></Link>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                {mistakes.map(m => (
+                                                                    <div key={m.id} className={themeColors.MISTAKE_ROW}>
+                                                                        <div className="flex items-center justify-between gap-4">
+                                                                            <div className="flex items-center gap-4 flex-1">
+                                                                                <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-xs text-slate-500">{m.questionNumber}</div>
+                                                                                <div className="min-w-0">
+                                                                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{m.topic}</p>
+                                                                                    <p className="text-[10px] text-slate-400 font-medium">{m.date}</p>
                                                                                 </div>
                                                                             </div>
-                                                                            
-                                                                            <div className="flex items-center gap-4 bg-white dark:bg-black/20 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
-                                                                                <div className="flex flex-col items-center gap-1 flex-1">
-                                                                                    <span className="text-[9px] font-black text-slate-400 uppercase">Senin</span>
-                                                                                    <div className={cn(
-                                                                                        "w-9 h-9 rounded-full border-2 flex items-center justify-center font-black text-base",
-                                                                                        mistake.studentAnswer 
-                                                                                            ? "bg-rose-500/10 border-rose-500/30 text-rose-600" 
-                                                                                            : "bg-slate-500/10 border-slate-500/30 text-slate-500"
-                                                                                    )}>
-                                                                                        {mistake.studentAnswer || "—"}
-                                                                                    </div>
+                                                                            <div className="flex items-center gap-6">
+                                                                                <div className="text-center">
+                                                                                    <p className="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Senin</p>
+                                                                                    <span className={cn("text-sm font-black", m.isEmpty ? "text-slate-400" : "text-rose-500")}>{m.studentAnswer || "BOŞ"}</span>
                                                                                 </div>
-                                                                                <ChevronRight className="w-4 h-4 text-slate-300" />
-                                                                                <div className="flex flex-col items-center gap-1 flex-1">
-                                                                                    <span className="text-[9px] font-black text-slate-400 uppercase">Doğru</span>
-                                                                                    <div className="w-9 h-9 rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center text-emerald-600 font-black text-base">
-                                                                                        {mistake.correctAnswer?.length > 1 ? "..." : (mistake.correctAnswer || "?")}
-                                                                                    </div>
+                                                                                <ChevronRight className="w-4 h-4 text-slate-200" />
+                                                                                <div className="text-center">
+                                                                                    <p className="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Doğru</p>
+                                                                                    <span className="text-sm font-black text-emerald-500">{m.correctAnswer}</span>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
-                                                                    ))}
-                                                                </div>
+                                                                    </div>
+                                                                ))}
                                                             </div>
-                                                        ))}
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            ))}
-                                        </Accordion>
-                                    </AccordionContent>
-                                </AccordionItem>
-                            ))}
-                        </Accordion>
-                    ) : (
-                        <div className="py-24 text-center rounded-[3rem] border border-dashed border-slate-300 dark:border-slate-700 bg-white/30 dark:bg-white/5">
-                            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <CheckCircle2 className="w-10 h-10 text-emerald-500" />
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">Henüz Hata veya Boş Yok!</h3>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-xs mx-auto">
-                                Soru Bankası ve Yazılı Testlerde yaptığın hatalar ve boş bıraktığın sorular burada toplanacak.
-                            </p>
-                            <Button variant="outline" className="mt-8 rounded-full border-slate-200 dark:border-slate-800 font-bold" onClick={() => router.push('/education')}>
-                                Eğitim Sayfasına Dön
-                            </Button>
-                        </div>
-                    )}
-                </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </AccordionContent>
+                                        </div>
+                                    </AccordionItem>
+                                </Accordion>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="py-24 text-center rounded-[3rem] border border-dashed border-slate-300 dark:border-slate-800 bg-white/30 dark:bg-white/5">
+                        <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-950/30 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle2 className="w-10 h-10 text-emerald-500" /></div>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white">Harika! Hiç yanlışın yok.</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-xs mx-auto">Sınavları çözmeye devam et, eksiklerini buradan takip edelim.</p>
+                        <Button variant="outline" className="mt-8 rounded-full h-11 px-8 border-slate-200 dark:border-slate-800 font-bold" onClick={() => router.push('/education')}>Eğitim Sayfasına Dön</Button>
+                    </div>
+                )}
             </main>
         </div>
     );
