@@ -241,7 +241,7 @@ export function QuestionsClient() {
                         
                         <div className="relative w-full sm:w-72 shrink-0">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <Input placeholder="Soru veya klasör ara..." value={searchQuery} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-sm focus:bg-white" />
+                            <Input placeholder="Soru veya klasör ara..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-sm focus:bg-white" />
                         </div>
                     </div>
                 </div>
@@ -356,7 +356,7 @@ export function QuestionsClient() {
             existingTopics={allTopics}
             trackedBooks={trackedBooks}
             studyPlans={studyPlans}
-            bankQuestions={bankQuestions}
+            bankQuestions={[...bankQuestions, ...mistakes]}
             onSubjectCreate={handleCreateSubject} 
             onTopicCreate={handleCreateTopic} 
             type={bulkDialogType} 
@@ -392,7 +392,7 @@ export function QuestionsClient() {
                             <Button variant="ghost" onClick={() => setSelectedIds([])} className="rounded-xl text-slate-400 hover:text-white hover:bg-white/10 h-11">Vazgeç</Button>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button className="rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold h-11 px-6">İşlem Yap <ChevronRight className="ml-2 h-4 w-4"/></Button>
+                                    <Button className="rounded-xl bg-indigo-600 hover:bg-indigo-50 font-bold h-11 px-6">İşlem Yap <ChevronRight className="ml-2 h-4 w-4"/></Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-48 bg-slate-900 border-white/10 text-slate-100 rounded-xl p-1 mb-2">
                                     <DropdownMenuItem onClick={() => { setAssignmentType(activeTab as any); setIsAssignDialogOpen(true); }} className="cursor-pointer py-3 rounded-lg"><Send className="mr-2 h-4 w-4 text-emerald-400"/> Ödev Ata</DropdownMenuItem>
