@@ -12,7 +12,6 @@ import {
     Calendar as CalendarIcon, FileQuestion, BookCopy, Search, CheckCircle2, 
     Maximize2, Database, LayoutGrid, Folder, FolderOpen, ChevronRight 
 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useDropzone } from 'react-dropzone';
 import NextImage from 'next/image';
@@ -35,6 +34,8 @@ import { format, addDays } from "date-fns";
 import { tr } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
+import { motion, AnimatePresence } from "framer-motion";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 // --- DESIGN SYSTEM ---
 const themeColors = {
@@ -240,7 +241,7 @@ export function QuestionsClient() {
                         
                         <div className="relative w-full sm:w-72 shrink-0">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <Input placeholder="Soru veya klasör ara..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-sm focus:bg-white" />
+                            <Input placeholder="Soru veya klasör ara..." value={searchQuery} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-sm focus:bg-white" />
                         </div>
                     </div>
                 </div>

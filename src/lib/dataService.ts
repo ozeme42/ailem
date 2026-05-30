@@ -342,9 +342,14 @@ export const addAccount = async (data: any) => { const familyId = await getCurre
 export const updateAccount = (id: string, data: any) => updateDoc(doc(db, 'accounts', id), removeUndefined(data));
 export const deleteAccount = (id: string) => deleteDoc(doc(db, 'accounts', id));
 
-export const addTransaction = async (data: any) => { const familyId = await getCurrentFamilyId(); return addDoc(collection(db, 'transactions'), { ...data, familyId }); };
+export const addTransaction = async (data: any) => { 
+    const familyId = await getCurrentFamilyId(); 
+    const auth = getAuth();
+    const user = auth.currentUser;
+    return addDoc(collection(db, 'transactions'), { ...data, familyId, ownerId: user?.uid }); 
+};
 export const updateTransaction = (id: string, data: any) => updateDoc(doc(db, 'transactions', id), removeUndefined(data));
-export const deleteTransaction = (id: string) => deleteDoc(collection(db, 'transactions'), id);
+export const deleteTransaction = (id: string) => deleteDoc(doc(db, 'transactions', id));
 
 // --- POMODORO ---
 export const onPomodoroProjectsUpdate = (uid: string, cb: (p: PomodoroProject[]) => void) => onSnapshot(query(collection(db, 'pomodoroProjects'), where('memberId', '==', uid)), s => cb(s.docs.map(d => ({id:d.id, ...d.data()} as any))));
