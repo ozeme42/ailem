@@ -127,7 +127,7 @@ export function NewJsonTestForm({
         if (q.subject === watchedSubject && q.topic) topicsSet.add(q.topic);
     });
 
-    // Global listeden bu dersle eşleşebilecekleri topla (v1.x'te ders-konu eşleşmesi derived olduğu için hepsini gösteriyoruz ama öncelik yukarıdakilerde)
+    // Global listeden bu dersle eşleşebilecekleri topla (Eğer global listedeyse de göster)
     availableTopics.forEach(t => topicsSet.add(t));
     
     return Array.from(topicsSet).sort().map(t => ({ label: t, value: t }));
@@ -292,7 +292,7 @@ export function NewJsonTestForm({
                                         mode="single" 
                                         selected={field.value} 
                                         onSelect={field.onChange} 
-                                        disabled={(date) => date < new Date()} 
+                                        disabled={(date) => date < new Date() && !initialData} 
                                         initialFocus 
                                         className="bg-slate-950 text-slate-200 rounded-md border border-white/10"
                                     />

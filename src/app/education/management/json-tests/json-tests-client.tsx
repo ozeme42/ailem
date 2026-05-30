@@ -17,6 +17,7 @@ import { NewJsonTestForm } from "@/components/new-json-test-form";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // --- DESIGN SYSTEM ---
 const themeColors = {
@@ -107,17 +108,6 @@ export function JsonTestsClient() {
     const newList = [...new Set([...allTopics, name])];
     await updateTopics(newList);
   };
-
-  // React Hook hatasını önlemek için useMemo dışarı taşındı ve NewJsonTestForm'un içinde filtrelenmesi sağlandı.
-  // Bu prop artık sadece "tüm" konuları geçer, form içinde seçilen derse göre filtrelenir.
-  const masterTopics = React.useMemo(() => {
-    const topicsSet = new Set<string>();
-    trackedBooks.forEach(book => (book.subjects || []).forEach(s => (s.topics || []).forEach(t => topicsSet.add(t.name))));
-    studyPlans.forEach(plan => (plan.subjects || []).forEach(s => (s.topics || []).forEach(t => topicsSet.add(t.name))));
-    bankQuestions.forEach(q => { if (q.topic) topicsSet.add(q.topic); });
-    allTopics.forEach(t => topicsSet.add(t));
-    return Array.from(topicsSet).sort();
-  }, [allTopics, trackedBooks, studyPlans, bankQuestions]);
 
   if (loading) {
     return <div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin h-10 w-10 text-indigo-500" /></div>;
@@ -289,7 +279,7 @@ export function JsonTestsClient() {
                         initialData={editingTest}
                         availableSubjects={allSubjects}
                         onSubjectCreated={handleCreateSubject}
-                        availableTopics={masterTopics}
+                        availableTopics={allTopics}
                         onTopicCreated={handleCreateTopic}
                         trackedBooks={trackedBooks}
                         studyPlans={studyPlans}

@@ -441,7 +441,6 @@ export function StatsClient() {
 
         const filtered = enrichedBaseData.filter(t => {
             const inPeriod = t._solvedDate >= startDate && t._solvedDate <= now;
-            // "Tüm Dersler" mantığı: goal.subject "all" ise tüm dersleri say
             const subjectMatch = goal.subject === 'all' || t._subjectName === goal.subject;
             return inPeriod && subjectMatch;
         });

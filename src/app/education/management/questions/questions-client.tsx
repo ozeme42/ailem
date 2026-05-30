@@ -164,11 +164,6 @@ export function QuestionsClient() {
 
   const toggleSelection = (id: string) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
-  const toggleSelectAll = (dataArray: any[]) => {
-      if (selectedIds.length === dataArray.length) setSelectedIds([]);
-      else setSelectedIds(dataArray.map(i => i.id));
-  };
-
   if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-50/50"><Loader2 className="animate-spin h-12 w-12 text-indigo-600" /></div>;
 
   return (
@@ -383,6 +378,40 @@ export function QuestionsClient() {
               </div>
           )}
         </main>
+
+        <AnimatePresence>
+            {selectedIds.length > 0 && (
+                <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }} className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-lg">
+                    <div className="bg-slate-900 text-white rounded-3xl p-4 shadow-2xl flex items-center justify-between border border-white/10 backdrop-blur-xl">
+                        <div className="flex items-center gap-4 pl-2">
+                             <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center font-black">{selectedIds.length}</div>
+                             <span className="font-bold text-sm">Soru Seçildi</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button variant="ghost" onClick={() => setSelectedIds([])} className="rounded-xl text-slate-400 hover:text-white hover:bg-white/10 h-11">Vazgeç</Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button className="rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold h-11 px-6">İşlem Yap <ChevronRight className="ml-2 h-4 w-4"/></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48 bg-slate-900 border-white/10 text-slate-100 rounded-xl p-1 mb-2">
+                                    <DropdownMenuItem onClick={() => { setAssignmentType(activeTab as any); setIsAssignDialogOpen(true); }} className="cursor-pointer py-3 rounded-lg"><Send className="mr-2 h-4 w-4 text-emerald-400"/> Ödev Ata</DropdownMenuItem>
+                                    <DropdownMenuSeparator className="bg-white/5" />
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 cursor-pointer py-3 rounded-lg focus:text-rose-400 focus:bg-rose-500/10"><Trash2 className="mr-2 h-4 w-4"/> Hepsini Sil</DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100 rounded-3xl">
+                                            <AlertDialogHeader><AlertDialogTitle>Seçilenleri Sil?</AlertDialogTitle><AlertDialogDescription>"{selectedIds.length}" adet kayıt kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
+                                            <AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 text-white">İptal</AlertDialogCancel><AlertDialogAction onClick={handleDeleteSelected} className="bg-rose-600 hover:bg-rose-700">Hepsini Sil</AlertDialogAction></AlertDialogFooter>
+                                        </AlertDialog>
+                                    </AlertDialog>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     </div>
   );
 }
