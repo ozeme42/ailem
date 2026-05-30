@@ -713,11 +713,8 @@ export function StatsClient() {
   }, [processedData, drawerSubject]);
 
   if (loading) return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-4">
-      <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-xl shadow-indigo-500/30">
-        <Loader2 className="w-8 h-8 animate-spin text-white" />
-      </div>
-      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Analiz yükleniyor…</p>
+    <div className="flex h-screen items-center justify-center bg-slate-50/50">
+      <Loader2 className="animate-spin h-10 w-10 text-indigo-600" />
     </div>
   );
 
@@ -1487,7 +1484,7 @@ export function StatsClient() {
                 </div>
 
                 <div className="mt-8">
-                  <SectionHeader icon={Layers} title="Tüm Hedefler ve Detaylar" desc="Geçmiş ve mevcut tüm hedeflerin listesi" color={C.SLATE} />
+                  <SectionHeader icon={Layers} title=" Tüm Hedefler ve Detaylar" desc="Geçmiş ve mevcut tüm hedeflerin listesi" color={C.SLATE} />
                   <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-2">
                     <PerformanceGoals member={student!} solvedTests={processedData} availableSubjects={availableSubjectsList} />
                   </div>

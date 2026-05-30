@@ -52,6 +52,8 @@ export function QuestionsClient() {
   const { familyMembers } = useAuth();
   const [bankQuestions, setBankQuestions] = useState<BankQuestion[]>([]);
   const [mistakes, setMistakes] = useState<Mistake[]>([]);
+  const [trackedBooks, setTrackedBooks] = useState<TrackedBook[]>([]);
+  const [studyPlans, setStudyPlans] = useState<StudyPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // Modals & Forms
@@ -89,7 +91,9 @@ export function QuestionsClient() {
     const unsubSubjects = onSubjectsUpdate(setAllSubjects);
     const unsubTopics = onTopicsUpdate(setAllTopics);
     const unsubMistakes = onMistakesUpdate(setMistakes);
-    return () => { unsubQuestions(); unsubSubjects(); unsubTopics(); unsubMistakes(); };
+    const unsubBooks = onTrackedBooksUpdate(setTrackedBooks);
+    const unsubPlans = onStudyPlansUpdate(setStudyPlans);
+    return () => { unsubQuestions(); unsubSubjects(); unsubTopics(); unsubMistakes(); unsubBooks(); unsubPlans(); };
   }, []);
 
   // Grid Görünümü için Düz Filtrelenmiş Veri
@@ -413,9 +417,6 @@ function BulkAddImagesDialog({
             if (q.subject === selectedSubject && q.topic) topicsSet.add(q.topic);
         });
 
-        // 4. Eğer konu global listede varsa ama henüz hiçbir yerde bu dersle eşleşmemişse, yine de gösterilsin mi? 
-        // Kullanıcı "konu yoksa o anda eklenebilsin" dediği için şimdilik sadece bu dersle ilişkili olanları getirmek daha doğru (Hiyerarşi).
-
         return Array.from(topicsSet).sort().map(t => ({ label: t, value: t }));
     }, [selectedSubject, trackedBooks, studyPlans, bankQuestions]);
 
@@ -495,7 +496,7 @@ function BulkAddImagesDialog({
 
                         <DialogFooter className="pt-6 mt-4">
                             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl text-slate-600 hover:bg-slate-100 font-bold px-6">İptal</Button>
-                            <Button type="submit" disabled={isImporting || form.watch('images')?.length === 0} className="h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 shadow-lg shadow-indigo-500/20 w-full sm:w-auto">
+                            <Button type="submit" disabled={isImporting || form.watch('images')?.length === 0} className="h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 shadow-lg w-full sm:w-auto">
                                 {isImporting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 'Görselleri Aktar'}
                             </Button>
                         </DialogFooter>

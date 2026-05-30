@@ -269,7 +269,7 @@ export const addStudyPlan = async (data: Omit<StudyPlan, 'id' | 'familyId'>) => 
     return addDoc(collection(db, 'studyPlans'), { ...data, familyId, createdAt: new Date().toISOString() });
 };
 export const updateStudyPlan = (id: string, data: any) => updateDoc(doc(db, 'studyPlans', id), removeUndefined(data));
-export const deleteStudyPlan = (id: string) => deleteDoc(doc(db, 'studyPlans', id));
+export const deleteStudyPlan = (id: string) => deleteDoc(doc(db, "studyPlans", id));
 export const onStudyPlanUpdate = (id: string, cb: (p: StudyPlan | null) => void) => onSnapshot(doc(db, 'studyPlans', id), d => cb(d.exists() ? {id:d.id, ...d.data()} as any : null));
 
 // --- SUMMARIES ---
