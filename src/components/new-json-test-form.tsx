@@ -20,6 +20,7 @@ import type { FamilyMember, Test, TrackedBook, StudyPlan, BankQuestion } from "@
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "./ui/scroll-area";
 import { Combobox } from "./ui/combobox";
+import { updateTopics } from "@/lib/dataService";
 
 // --- DESIGN SYSTEM: Glassmorphism ---
 const glassColors = {
@@ -91,6 +92,7 @@ export function NewJsonTestForm({
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
+  const [sessionAddedTopics, setSessionAddedTopics] = React.useState<Record<string, string[]>>({});
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -111,26 +113,22 @@ export function NewJsonTestForm({
     if (!watchedSubject) return [];
     const topicsSet = new Set<string>();
     
-    // Kitaplardan gelen bu derse ait konular
     trackedBooks.forEach(book => (book.subjects || []).forEach(s => { 
         if (s.name === watchedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
     }));
     
-    // Planlardaki bu derse ait konular
     studyPlans.forEach(plan => (plan.subjects || []).forEach(s => { 
         if (s.name === watchedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
     }));
     
-    // Daha önce bankaya bu dersle kaydedilmiş konular
     bankQuestions.forEach(q => {
         if (q.subject === watchedSubject && q.topic) topicsSet.add(q.topic);
     });
 
-    // Global listeden bu dersle eşleşebilecekleri topla (Eğer global listedeyse de göster)
-    availableTopics.forEach(t => topicsSet.add(t));
+    (sessionAddedTopics[watchedSubject] || []).forEach(t => topicsSet.add(t));
     
     return Array.from(topicsSet).sort().map(t => ({ label: t, value: t }));
-  }, [watchedSubject, trackedBooks, studyPlans, bankQuestions, availableTopics]);
+  }, [watchedSubject, trackedBooks, studyPlans, bankQuestions, sessionAddedTopics]);
 
   React.useEffect(() => {
     if (initialData) {
@@ -159,6 +157,17 @@ export function NewJsonTestForm({
     }
 
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCreateTopicInternal = async (name: string) => {
+    if (!watchedSubject) return;
+    setSessionAddedTopics(prev => ({
+        ...prev,
+        [watchedSubject]: Array.from(new Set([...(prev[watchedSubject] || []), name]))
+    }));
+    const newList = [...new Set([...availableTopics, name])];
+    await updateTopics(newList);
+    onTopicCreated(name);
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -262,7 +271,7 @@ export function NewJsonTestForm({
                                     options={filteredTopicsOptions}
                                     value={field.value || ""}
                                     onChange={field.onChange}
-                                    onCreate={onTopicCreated}
+                                    onCreate={handleCreateTopicInternal}
                                     placeholder={watchedSubject ? "Konu seçin veya oluşturun..." : "Önce ders seçin..."}
                                     className={glassColors.INPUT_BG}
                                     disabled={!watchedSubject}

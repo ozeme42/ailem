@@ -8,7 +8,7 @@ import {
     Layers, Search, Filter, HelpCircle, GraduationCap,
     Library, FileText, CheckCircle2, XCircle, BarChart3,
     ChevronDown, BookCopy, ListTree, TrendingUp, TrendingDown, MinusCircle,
-    Eye, ExternalLink, LayoutGrid, ClipboardList, ListX, Loader2
+    Eye, ExternalLink, LayoutGrid, ClipboardList, ListX, Loader2, Sparkles, Code
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { onTestsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";

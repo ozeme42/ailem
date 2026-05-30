@@ -348,7 +348,7 @@ export function QuestionsClient() {
                                         </AlertDialogTrigger>
                                         <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100 rounded-3xl">
                                             <AlertDialogHeader><AlertDialogTitle>Seçilenleri Sil?</AlertDialogTitle><AlertDialogDescription>"{selectedIds.length}" adet kayıt kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
-                                            <AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 text-white">İptal</AlertDialogCancel><AlertDialogAction onClick={handleDeleteSelected} className="bg-rose-600 hover:bg-rose-700">Hepsini Sil</AlertDialogAction></AlertDialogFooter>
+                                            <AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 text-white">İptal</AlertDialogCancel><AlertDialogAction onClick={handleDeleteSelected} className="bg-rose-600 hover:bg-rose-700 border-none">Evet, Sil</AlertDialogAction></AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 </DropdownMenuContent>
