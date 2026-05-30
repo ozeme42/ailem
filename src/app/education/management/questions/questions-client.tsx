@@ -72,7 +72,7 @@ export function QuestionsClient() {
   const [viewLayout, setViewLayout] = useState<'grid' | 'folder'>('folder');
   const [currentFolder, setCurrentFolder] = useState<{subject: string | null, topic: string | null}>({subject: null, topic: null});
 
-  const [editingQuestion, setEditingQuestion] = setEditingQuestion || useState<BankQuestion | null>(null);
+  const [editingQuestion, setEditingQuestion] = useState<BankQuestion | null>(null);
   const [defaultQuestionType, setDefaultQuestionType] = useState<'mcq' | 'open_ended'>('mcq');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [assignmentType, setAssignmentType] = useState<'bank' | 'mistake'>('bank');
