@@ -1,9 +1,7 @@
-
 "use client";
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { 
     ArrowLeft, AlertCircle, ChevronRight, BookOpen, 
     Layers, Search, Filter, HelpCircle, GraduationCap,
@@ -11,7 +9,7 @@ import {
     ChevronDown, BookCopy, ListTree, TrendingUp, TrendingDown, MinusCircle,
     Eye, ExternalLink, LayoutGrid, ClipboardList, ListX, Loader2, Sparkles, Code,
     ArrowUpDown, Download, RotateCcw, X, Table as TableIcon, FileSpreadsheet,
-    ChevronUp
+    ChevronUp, Check, Calculator
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { onTestsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
@@ -33,7 +31,6 @@ import { motion, AnimatePresence } from "framer-motion";
 const themeColors = {
     HEADER_BG: "bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800/50 sticky top-0 z-40",
     CARD_BG: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300",
-    ICON_BOX: "bg-gradient-to-br from-rose-500 to-pink-600 p-2.5 rounded-xl shadow-lg shadow-rose-500/20 text-white",
     TABLE_HEADER: "bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest font-black h-12 whitespace-nowrap cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none",
     TABLE_ROW: "hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-colors border-b border-slate-100 dark:border-slate-800/50 last:border-0",
     TAB_LIST: "bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-1 rounded-xl",
@@ -84,14 +81,12 @@ export function MistakesClient() {
     const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
     const [loading, setLoading] = React.useState(true);
     
-    // Filters & States
     const [searchTerm, setSearchTerm] = React.useState("");
     const [selectedStudent, setSelectedStudent] = React.useState<FamilyMember | null>(null);
     const [groupingMode, setGroupingMode] = React.useState<'subject' | 'type'>('subject');
     const [selectedGroup, setSelectedGroup] = React.useState<string | null>(null);
     const [selectedSubGroup, setSelectedSubGroup] = React.useState<string | null>(null);
     
-    // Table Sorting
     const [sortConfig, setSortConfig] = React.useState<{ key: keyof MistakeDetail | 'dateRaw', direction: 'asc' | 'desc' }>({ key: 'dateRaw', direction: 'desc' });
 
     React.useEffect(() => {
@@ -113,7 +108,6 @@ export function MistakesClient() {
         return () => { unsubTests(); unsubBooks(); };
     }, [familyId, selectedStudent]);
 
-    // Aggregate Mistakes
     const allMistakesFlat = React.useMemo(() => {
         const list: MistakeDetail[] = [];
         const allTopics = trackedBooks.flatMap(b => (b.subjects || []).flatMap(s => (s.topics || []).map(t => ({...t, subjectName: s.name}))));
@@ -179,7 +173,6 @@ export function MistakesClient() {
         return list;
     }, [tests, trackedBooks]);
 
-    // Grouping: Level 1 (Subject or Type)
     const groups = React.useMemo(() => {
         const map: Record<string, MistakeDetail[]> = {};
         allMistakesFlat.forEach(m => {
@@ -190,7 +183,6 @@ export function MistakesClient() {
         return map;
     }, [allMistakesFlat, groupingMode]);
 
-    // Grouping: Level 2 (SubGroups/Topics within selected Level 1)
     const subGroups = React.useMemo(() => {
         if (!selectedGroup) return [];
         const itemsInGroup = groups[selectedGroup] || [];
@@ -204,10 +196,9 @@ export function MistakesClient() {
 
         return Object.entries(map)
             .map(([name, items]) => ({ name, items, count: items.length }))
-            .sort((a, b) => b.count - a.count); // Most mistakes to least
+            .sort((a, b) => b.count - a.count);
     }, [groups, selectedGroup, groupingMode]);
 
-    // Final Table Data
     const tableData = React.useMemo(() => {
         if (!selectedGroup) return [];
         let data = groups[selectedGroup] || [];
@@ -292,8 +283,6 @@ export function MistakesClient() {
             </header>
 
             <main className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-6 space-y-8 pb-20">
-                
-                {/* --- SEÇİM EKRANI (Ders/Tür Kartları) --- */}
                 {!selectedGroup ? (
                     <div className="space-y-6">
                         <div className={cn("rounded-3xl p-5", themeColors.CARD_BG)}>
@@ -346,10 +335,7 @@ export function MistakesClient() {
                         </div>
                     </div>
                 ) : (
-                    /* --- DETAY EKRANI (Konu Kartları + Excel Tablo) --- */
                     <div className="space-y-8 animate-in slide-in-from-right-10 duration-500">
-                        
-                        {/* 1. Üst Konu Kartları (Sıralı) */}
                         <div className="space-y-4">
                             <div className="flex items-center justify-between px-2">
                                 <div className="flex items-center gap-3">
@@ -396,7 +382,6 @@ export function MistakesClient() {
                             </div>
                         </div>
 
-                        {/* 2. Filtreler ve Tablo İşlemleri */}
                         <div className={cn("rounded-3xl p-4 md:p-6 space-y-4", themeColors.CARD_BG)}>
                             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
                                 <div className="relative w-full lg:max-w-md">
@@ -414,8 +399,7 @@ export function MistakesClient() {
                             </div>
                         </div>
 
-                        {/* 3. Excel Tarzı Tablo Görünümü */}
-                        <div className={cn("rounded-[2rem] overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-900")}>
+                        <div className={cn("rounded-[2rem] overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900")}>
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
@@ -447,7 +431,7 @@ export function MistakesClient() {
                                                         {m.correctAnswer}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="px-4 py-4 text-[10px] text-slate-400 font-mono whitespace-nowrap">{m.date}</TableCell>
+                                                <TableCell className="px-4 py-4 text-[10px] text-slate-400 font-mono whitespace-nowrap">{m._dateStr || m.date}</TableCell>
                                                 <TableCell className="px-4 py-4 text-right pr-6">
                                                     <Link href={`/education/${m.testId}`}>
                                                         <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-xl transition-all">
