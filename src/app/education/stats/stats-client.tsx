@@ -96,8 +96,7 @@ function rateColor(r: number) {
   return C.ROSE;
 }
 
-// --- ALT BİLEŞENLER ---
-
+// --- Dairesel Hedef Kartı Bileşeni ---
 const VisualGoalCard = ({ 
   title, current, target, unit = "Soru", icon: Icon, color = "#6366F1", deadline 
 }: { 
@@ -116,13 +115,13 @@ const VisualGoalCard = ({
       initial={{ opacity: 0, scale: 0.95 }} 
       animate={{ opacity: 1, scale: 1 }}
       className={cn(
-        "relative rounded-[2rem] p-6 border shadow-sm overflow-hidden group transition-all hover:shadow-md flex flex-col justify-between min-h-[180px]",
+        "relative rounded-[2rem] p-6 border shadow-sm overflow-hidden group transition-all hover:shadow-md h-full flex flex-col justify-between min-h-[180px]",
         isCompleted ? "bg-emerald-50/30 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
       )}
     >
       <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 opacity-10 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: color }} />
 
-      <div className="flex items-center gap-6 z-10 relative h-full">
+      <div className="flex items-center gap-6 relative z-10 h-full">
         <div className="relative w-24 h-24 shrink-0 flex items-center justify-center">
           <svg className="w-full h-full transform -rotate-90 drop-shadow-sm" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r={radius} stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-100 dark:text-slate-800" />
@@ -714,7 +713,7 @@ export function StatsClient() {
 
   if (loading) return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-4">
-      <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-xl shadow-indigo-600/30">
+      <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-xl shadow-indigo-500/30">
         <Loader2 className="w-8 h-8 animate-spin text-white" />
       </div>
       <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Analiz yükleniyor…</p>
@@ -1197,7 +1196,7 @@ export function StatsClient() {
                             <div className="grid gap-3">
                               {topicStats.best.length > 0 ? topicStats.best.slice(0, 8).map((t, i) => (
                                   <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-transparent hover:border-emerald-200 transition-all group">
-                                      <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 font-black text-xs shrink-0">
+                                      <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-rose-900/50 flex items-center justify-center text-emerald-600 font-black text-xs shrink-0">
                                           <CheckCircle2 className="w-4 h-4" />
                                       </div>
                                       <div className="flex-1 min-w-0">
@@ -1447,7 +1446,7 @@ export function StatsClient() {
                  </div>
               </TabsContent>
 
-              {/* 7. GOALS (HEDEFLER) - YENİ TASARIM */}
+              {/* 7. GOALS (HEDEFLER) */}
               <TabsContent value="goals" className="space-y-6 mt-0">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-indigo-600 rounded-[2rem] p-8 text-white shadow-lg shadow-indigo-600/20 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
@@ -1462,7 +1461,7 @@ export function StatsClient() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {goalProgressData.length > 0 ? goalProgressData.map((goal) => {
-                      const typeIcon = goal.type === 'questions' ? BarChart3 : goal.type === 'successRate' ? Percent : Calculator;
+                      const typeIcon = goal.type === 'questions' ? Target : goal.type === 'successRate' ? Sparkles : Calculator;
                       const unit = goal.type === 'questions' ? 'Soru' : goal.type === 'successRate' ? '%' : 'Net';
                       const themeColor = goal.isCompleted ? C.EMERALD : (goal.type === 'questions' ? C.INDIGO : goal.type === 'successRate' ? C.PURPLE : C.ORANGE);
                       

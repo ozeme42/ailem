@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -198,31 +199,31 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                             </AlertDialog>
                                         )
                                     ) : (
-                                        <div className="flex items-center gap-2 md:gap-4 bg-white/80 dark:bg-black/40 p-2 px-4 rounded-2xl border-2 border-indigo-500/30 animate-in zoom-in-95 shadow-lg relative z-10">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-emerald-600 dark:text-emerald-400 font-black text-sm">{stats.correct}</span>
-                                                    <span className="text-[8px] font-bold text-slate-400 uppercase">D</span>
+                                        <div className="flex items-center gap-1.5 md:gap-4 bg-white/80 dark:bg-black/40 p-1.5 px-3 md:p-2 md:px-4 rounded-2xl border-2 border-indigo-500/30 animate-in zoom-in-95 shadow-lg relative z-10 shrink-0">
+                                            <div className="flex items-center gap-1.5 md:gap-3">
+                                                <div className="flex flex-col items-center min-w-[1.2rem]">
+                                                    <span className="text-emerald-600 dark:text-emerald-400 font-black text-[10px] md:text-sm">{stats.correct}</span>
+                                                    <span className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase">D</span>
                                                 </div>
-                                                <div className="w-px h-6 bg-slate-200 dark:bg-slate-700" />
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-rose-600 dark:text-rose-400 font-black text-sm">{stats.incorrect}</span>
-                                                    <span className="text-[8px] font-bold text-slate-400 uppercase">Y</span>
+                                                <div className="w-px h-4 md:h-6 bg-slate-200 dark:bg-slate-700" />
+                                                <div className="flex flex-col items-center min-w-[1.2rem]">
+                                                    <span className="text-rose-600 dark:text-rose-400 font-black text-[10px] md:text-sm">{stats.incorrect}</span>
+                                                    <span className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase">Y</span>
                                                 </div>
-                                                <div className="w-px h-6 bg-slate-200 dark:bg-slate-700" />
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-slate-500 dark:text-slate-400 font-black text-sm">{stats.empty}</span>
-                                                    <span className="text-[8px] font-bold text-slate-400 uppercase">B</span>
+                                                <div className="w-px h-4 md:h-6 bg-slate-200 dark:bg-slate-700" />
+                                                <div className="flex flex-col items-center min-w-[1.2rem]">
+                                                    <span className="text-slate-500 dark:text-slate-400 font-black text-[10px] md:text-sm">{stats.empty}</span>
+                                                    <span className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase">B</span>
                                                 </div>
                                             </div>
                                             
-                                            <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2" />
+                                            <div className="h-6 md:h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1 md:mx-2" />
                                             
                                             <div className="text-right">
-                                                <p className={cn("font-black text-lg leading-none", stats.rate >= 70 ? "text-emerald-600" : stats.rate >= 40 ? "text-amber-500" : "text-rose-600")}>
+                                                <p className={cn("font-black text-sm md:text-lg leading-none", stats.rate >= 70 ? "text-emerald-600" : stats.rate >= 40 ? "text-amber-500" : "text-rose-600")}>
                                                     %{stats.rate}
                                                 </p>
-                                                <p className="text-[8px] font-bold text-slate-400 uppercase">Başarı</p>
+                                                <p className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase">Başarı</p>
                                             </div>
                                         </div>
                                     )}
