@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -6,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { format, parse } from "date-fns";
 import { tr } from "date-fns/locale";
-import { CalendarIcon, Loader2, Code, User, BookOpen, Calendar as CalendarLucide, FileCode } from "lucide-react";
+import { CalendarIcon, Loader2, Code, User, BookOpen, Calendar as CalendarLucide, FileCode, Layers } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -16,10 +17,11 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { FamilyMember, Test } from "@/lib/data";
+import type { FamilyMember, Test, TrackedBook, StudyPlan, BankQuestion } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "./ui/scroll-area";
 import { AnswerKeyForm } from "./answer-key-form";
+import { Combobox } from "./ui/combobox";
 
 // --- DESIGN SYSTEM: Glassmorphism ---
 const glassColors = {
@@ -31,7 +33,8 @@ const glassColors = {
 
 const formSchema = z.object({
   title: z.string().min(3, "Başlık en az 3 karakter olmalıdır."),
-  subject: z.string().min(2, "Ders adı zorunludur."),
+  subject: z.string().min(1, "Ders seçimi zorunludur."),
+  topic: z.string().optional(),
   assigneeId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
   dueDate: z.date({ required_error: "Lütfen bir bitiş tarihi seçin." }),
   htmlContent: z.string().min(1, "Lütfen HTML içeriği girin."),
@@ -43,9 +46,27 @@ type NewHtmlTestFormProps = {
   familyMembers: FamilyMember[];
   onFormSubmit: (data: Omit<Test, 'id' | 'familyId'>) => void;
   initialData?: Test | null;
+  availableSubjects: string[];
+  onSubjectCreated: (subject: string) => void;
+  availableTopics: string[];
+  onTopicCreated: (topic: string) => void;
+  trackedBooks: TrackedBook[];
+  studyPlans: StudyPlan[];
+  bankQuestions: BankQuestion[];
 };
 
-export function NewHtmlTestForm({ familyMembers, onFormSubmit, initialData }: NewHtmlTestFormProps) {
+export function NewHtmlTestForm({ 
+    familyMembers, 
+    onFormSubmit, 
+    initialData,
+    availableSubjects,
+    onSubjectCreated,
+    availableTopics,
+    onTopicCreated,
+    trackedBooks,
+    studyPlans,
+    bankQuestions
+}: NewHtmlTestFormProps) {
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
 
@@ -54,19 +75,45 @@ export function NewHtmlTestForm({ familyMembers, onFormSubmit, initialData }: Ne
     defaultValues: {
       title: initialData?.title || "",
       subject: initialData?.subject || "",
+      topic: initialData?.topicId ? initialData.topicId : ((initialData as any)?.topic || ""),
       assigneeId: initialData?.studentId || undefined,
-      dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
+      dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       htmlContent: initialData?.htmlContent || "",
       questionCount: initialData?.questionCount || 10,
       answerKey: initialData?.answerKey || {},
     },
   });
 
+  const watchedSubject = form.watch("subject");
+
+  // Hiyerarşik Konu Listesi: Seçilen derse göre filtreleme
+  const filteredTopicsOptions = React.useMemo(() => {
+    if (!watchedSubject) return [];
+    const topicsSet = new Set<string>();
+    
+    trackedBooks.forEach(book => (book.subjects || []).forEach(s => { 
+        if (s.name === watchedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
+    }));
+    
+    studyPlans.forEach(plan => (plan.subjects || []).forEach(s => { 
+        if (s.name === watchedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
+    }));
+    
+    bankQuestions.forEach(q => {
+        if (q.subject === watchedSubject && q.topic) topicsSet.add(q.topic);
+    });
+
+    availableTopics.forEach(t => topicsSet.add(t));
+    
+    return Array.from(topicsSet).sort().map(t => ({ label: t, value: t }));
+  }, [watchedSubject, trackedBooks, studyPlans, bankQuestions, availableTopics]);
+
   React.useEffect(() => {
     if (initialData) {
       form.reset({
         title: initialData.title,
         subject: initialData.subject,
+        topic: initialData.topicId ? initialData.topicId : ((initialData as any)?.topic || ""),
         assigneeId: initialData.studentId,
         dueDate: initialData.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(),
         htmlContent: initialData.htmlContent || "",
@@ -79,7 +126,7 @@ export function NewHtmlTestForm({ familyMembers, onFormSubmit, initialData }: Ne
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     try {
-      const testData = {
+      const testData: any = {
         title: values.title,
         subject: values.subject,
         studentId: values.assigneeId,
@@ -92,6 +139,11 @@ export function NewHtmlTestForm({ familyMembers, onFormSubmit, initialData }: Ne
         htmlContent: values.htmlContent,
         answerKey: values.answerKey,
       };
+
+      if (values.topic) {
+          testData.topic = values.topic;
+      }
+
       onFormSubmit(testData);
     } catch (err: any) {
       toast({ title: 'Hata', description: 'Test oluşturulurken bir sorun oluştu.', variant: 'destructive' });
@@ -100,6 +152,7 @@ export function NewHtmlTestForm({ familyMembers, onFormSubmit, initialData }: Ne
     }
   };
 
+  const subjectOptions = availableSubjects.map(s => ({ label: s, value: s }));
   const watchedQuestionCount = form.watch("questionCount");
   const watchedAnswerKey = form.watch("answerKey");
 
@@ -118,16 +171,6 @@ export function NewHtmlTestForm({ familyMembers, onFormSubmit, initialData }: Ne
                         </FormItem>
                     )}/>
                     
-                    <FormField control={form.control} name="subject" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel className={glassColors.LABEL}><BookOpen className="w-3.5 h-3.5 text-pink-400"/> Ders</FormLabel>
-                            <FormControl><Input placeholder="Örn: Bilişim Teknolojileri" {...field} className={glassColors.INPUT_BG}/></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}/>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     <FormField control={form.control} name="assigneeId" render={({ field }) => (
                         <FormItem>
                             <FormLabel className={glassColors.LABEL}><User className="w-3.5 h-3.5 text-emerald-400"/> Sorumlu Kişi</FormLabel>
@@ -144,14 +187,56 @@ export function NewHtmlTestForm({ familyMembers, onFormSubmit, initialData }: Ne
                             <FormMessage />
                         </FormItem>
                     )}/>
-                    
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <FormField control={form.control} name="subject" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className={glassColors.LABEL}><BookOpen className="w-3.5 h-3.5 text-pink-400"/> Ders</FormLabel>
+                            <FormControl>
+                                <Combobox 
+                                    options={subjectOptions}
+                                    value={field.value}
+                                    onChange={(val) => {
+                                        field.onChange(val);
+                                        form.setValue('topic', '');
+                                    }}
+                                    onCreate={onSubjectCreated}
+                                    placeholder="Ders seçin..."
+                                    className={glassColors.INPUT_BG}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+
+                    <FormField control={form.control} name="topic" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className={glassColors.LABEL}><Layers className="w-3.5 h-3.5 text-indigo-400"/> Konu (Opsiyonel)</FormLabel>
+                            <FormControl>
+                                <Combobox 
+                                    options={filteredTopicsOptions}
+                                    value={field.value || ""}
+                                    onChange={field.onChange}
+                                    onCreate={onTopicCreated}
+                                    placeholder={watchedSubject ? "Konu seçin..." : "Önce ders seçin..."}
+                                    className={glassColors.INPUT_BG}
+                                    disabled={!watchedSubject}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <FormField control={form.control} name="dueDate" render={({ field }) => (
                         <FormItem className="flex flex-col">
                             <FormLabel className={glassColors.LABEL}><CalendarLucide className="w-3.5 h-3.5 text-blue-400"/> Bitiş Tarihi</FormLabel>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <FormControl>
-                                        <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground", glassColors.INPUT_BG)}>
+                                        <Button variant={"outline"} className={cn("w-full h-10 pl-3 text-left font-normal", !field.value && "text-muted-foreground", glassColors.INPUT_BG)}>
                                             {field.value ? format(field.value, "d MMMM yyyy", { locale: tr }) : <span>Tarih seçin</span>}
                                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                         </Button>
