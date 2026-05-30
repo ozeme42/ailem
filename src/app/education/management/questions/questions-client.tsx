@@ -241,7 +241,7 @@ export function QuestionsClient() {
                         
                         <div className="relative w-full sm:w-72 shrink-0">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <Input placeholder="Soru veya klasör ara..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-sm focus:bg-white" />
+                            <Input placeholder="Soru veya klasör ara..." value={searchQuery} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-sm focus:bg-white" />
                         </div>
                     </div>
                 </div>
@@ -404,7 +404,7 @@ export function QuestionsClient() {
                                         <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100 rounded-3xl">
                                             <AlertDialogHeader><AlertDialogTitle>Seçilenleri Sil?</AlertDialogTitle><AlertDialogDescription>"{selectedIds.length}" adet kayıt kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
                                             <AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 text-white">İptal</AlertDialogCancel><AlertDialogAction onClick={handleDeleteSelected} className="bg-rose-600 hover:bg-rose-700">Hepsini Sil</AlertDialogAction></AlertDialogFooter>
-                                        </AlertDialog>
+                                        </AlertDialogContent>
                                     </AlertDialog>
                                 </DropdownMenuContent>
                             </DropdownMenu>
