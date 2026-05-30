@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { useRouter } from "next/navigation";
 import { ArrowLeft, FileJson, PlusCircle, Trash2, Edit, Send, Repeat, Loader2, MoreVertical, BookOpen, User, Calendar as CalendarLucide, ClipboardCheck, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { onTestsUpdate, deleteTest, addTest, updateTest, onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics, onTrackedBooksUpdate, onStudyPlansUpdate } from "@/lib/dataService";
+import { onTestsUpdate, deleteTest, addTest, updateTest, onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics, onTrackedBooksUpdate, onStudyPlansUpdate, onBankQuestionsUpdate } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
-import { Test, FamilyMember, TrackedBook, StudyPlan } from "@/lib/data";
+import { Test, FamilyMember, TrackedBook, StudyPlan, BankQuestion } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -41,6 +41,7 @@ export function JsonTestsClient() {
   const [allTopics, setAllTopics] = React.useState<string[]>([]);
   const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
   const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([]);
+  const [bankQuestions, setBankQuestions] = React.useState<BankQuestion[]>([]);
 
   React.useEffect(() => {
     if (!familyId) return;
@@ -52,6 +53,7 @@ export function JsonTestsClient() {
     const unsubTopics = onTopicsUpdate(setAllTopics);
     const unsubBooks = onTrackedBooksUpdate(setTrackedBooks);
     const unsubPlans = onStudyPlansUpdate(setStudyPlans);
+    const unsubBank = onBankQuestionsUpdate(setBankQuestions);
 
     return () => {
         unsub();
@@ -59,6 +61,7 @@ export function JsonTestsClient() {
         unsubTopics();
         unsubBooks();
         unsubPlans();
+        unsubBank();
     };
   }, [familyId]);
 
@@ -89,7 +92,7 @@ export function JsonTestsClient() {
       await deleteTest(testId);
       toast({ title: "🗑️ Test Silindi", variant: "destructive" });
     } catch (e) {
-      toast({ title: "❌ Hata", variant: "destructive" });
+      toast({ title: "❌ Hata", description: "Silme işlemi başarısız.", variant: "destructive" });
     }
   };
 
@@ -102,6 +105,25 @@ export function JsonTestsClient() {
     const newList = [...new Set([...allTopics, name])];
     await updateTopics(newList);
   };
+
+  // Fixed React Hook Order: Move useMemo calculation to top level
+  const relevantTopicsForForm = React.useMemo(() => {
+    const currentSubj = editingTest?.subject;
+    if (!currentSubj) return allTopics;
+    
+    const topicsSet = new Set<string>();
+    trackedBooks.forEach(book => (book.subjects || []).forEach(s => { 
+        if (s.name === currentSubj) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
+    }));
+    studyPlans.forEach(plan => (plan.subjects || []).forEach(s => { 
+        if (s.name === currentSubj) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
+    }));
+    bankQuestions.forEach(q => {
+        if (q.subject === currentSubj && q.topic) topicsSet.add(q.topic);
+    });
+    
+    return topicsSet.size > 0 ? Array.from(topicsSet).sort() : allTopics;
+  }, [allTopics, editingTest, trackedBooks, studyPlans, bankQuestions]);
 
   if (loading) {
     return <div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin h-10 w-10 text-indigo-500" /></div>;
@@ -197,7 +219,7 @@ export function JsonTestsClient() {
                                             <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Soru</span>
                                         </div>
                                         <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex flex-col items-center justify-center">
-                                            <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full", isCompleted ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400")}>
+                                            <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full", isCompleted ? "bg-emerald-50/10 text-emerald-400" : "bg-amber-50/10 text-amber-400")}>
                                                 {isCompleted ? "Bitti" : "Atandı"}
                                             </span>
                                             <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mt-1">Durum</span>
@@ -263,11 +285,7 @@ export function JsonTestsClient() {
                         onSubjectCreated={handleCreateSubject}
                         availableTopics={allTopics}
                         onTopicCreated={handleCreateTopic}
-                        relevantTopics={React.useMemo(() => {
-                            const watchedSubject = editingTest?.subject; // This logic needs to be inside the form or handled with current form state
-                            // For simplicity, we'll let NewJsonTestForm handle the filtering of topics based on its internal state
-                            return allTopics;
-                        }, [allTopics, editingTest])}
+                        relevantTopics={relevantTopicsForForm}
                     />
                 </div>
             </DialogContent>
