@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Send, Edit, Trash2, BookCopy, Calendar as CalendarIcon, ClipboardList, BookOpen, CheckSquare, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { onSinglePracticeExamUpdate, addTest, updatePracticeExam } from "@/lib/dataService";
+import { onSinglePracticeExamUpdate, addTest, updatePracticeExam, onSubjectsUpdate, updateSubjects } from "@/lib/dataService";
 import type { PracticeExam, PracticeExamSubject, FamilyMember } from "@/lib/data";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ import { Card, CardHeader, CardDescription, CardTitle, CardContent } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
+import { Combobox } from "@/components/ui/combobox";
 
 // --- DESIGN SYSTEM: Glassmorphism ---
 const glassColors = {
@@ -56,11 +58,17 @@ export function ExamDetailClient() {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [isAnswerKeyDialogOpen, setIsAnswerKeyDialogOpen] = useState(false);
   const [currentSubject, setCurrentSubject] = useState<PracticeExamSubject | null>(null);
+  
+  const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
 
   useEffect(() => {
     if (!examId) return;
     const unsub = onSinglePracticeExamUpdate(examId, setExam);
-    return () => unsub();
+    const unsubSubjects = onSubjectsUpdate(setAvailableSubjects);
+    return () => {
+        unsub();
+        unsubSubjects();
+    };
   }, [examId]);
 
   const handleSubjectSave = async (data: SubjectFormData) => {
@@ -75,6 +83,11 @@ export function ExamDetailClient() {
     await updatePracticeExam(exam.id, { subjects: [...subjects, newSubject] });
     toast({ title: "Ders Eklendi" });
     setIsSubjectDialogOpen(false);
+  };
+
+  const handleSubjectCreate = async (name: string) => {
+    const newSubjects = [...new Set([...availableSubjects, name])];
+    await updateSubjects(newSubjects);
   };
 
   const handleDeleteSubject = async (subjectId: string) => {
@@ -243,6 +256,8 @@ export function ExamDetailClient() {
         isOpen={isSubjectDialogOpen}
         onOpenChange={setIsSubjectDialogOpen}
         onSave={handleSubjectSave}
+        availableSubjects={availableSubjects}
+        onSubjectCreate={handleSubjectCreate}
       />
       
       {currentSubject && (
@@ -279,7 +294,19 @@ export function ExamDetailClient() {
 }
 
 
-function SubjectFormDialog({ isOpen, onOpenChange, onSave }: { isOpen: boolean, onOpenChange: (open: boolean) => void, onSave: (data: SubjectFormData) => void}) {
+function SubjectFormDialog({ 
+    isOpen, 
+    onOpenChange, 
+    onSave,
+    availableSubjects,
+    onSubjectCreate
+}: { 
+    isOpen: boolean, 
+    onOpenChange: (open: boolean) => void, 
+    onSave: (data: SubjectFormData) => void,
+    availableSubjects: string[],
+    onSubjectCreate: (name: string) => void
+}) {
     const form = useForm<SubjectFormData>({
         resolver: zodResolver(subjectSchema),
         defaultValues: { name: "", questionCount: 20 },
@@ -290,30 +317,62 @@ function SubjectFormDialog({ isOpen, onOpenChange, onSave }: { isOpen: boolean, 
         form.reset();
     }
 
+    const subjectOptions = useMemo(() => availableSubjects.map(s => ({ label: s, value: s })), [availableSubjects]);
+
     return (
          <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl">
+            <DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl shadow-2xl">
                 <DialogHeader>
                     <DialogTitle>Yeni Ders Ekle</DialogTitle>
+                    <DialogDescription className="text-slate-400">Deneme sınavına yeni bir ders alanı ekleyin.</DialogDescription>
                 </DialogHeader>
                 <FormProvider {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="col-span-2 sm:col-span-1">
-                                <Label className="text-xs font-semibold text-slate-300 uppercase mb-2 block">Ders Adı</Label>
-                                <Input {...form.register("name")} placeholder="Örn: Matematik" className={glassColors.INPUT_BG}/>
-                                {form.formState.errors.name && <p className="text-sm text-rose-400 mt-1">{form.formState.errors.name.message}</p>}
-                            </div>
-                            <div className="col-span-2 sm:col-span-1">
-                                <Label className="text-xs font-semibold text-slate-300 uppercase mb-2 block">Soru Sayısı</Label>
-                                <Input type="number" {...form.register("questionCount")} placeholder="20" className={glassColors.INPUT_BG}/>
-                                {form.formState.errors.questionCount && <p className="text-sm text-rose-400 mt-1">{form.formState.errors.questionCount.message}</p>}
-                            </div>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
+                        <div className="space-y-4">
+                            <FormField
+                                control={form.control}
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 block">Ders Seçin</FormLabel>
+                                        <FormControl>
+                                            <Combobox 
+                                                options={subjectOptions}
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                onCreate={(name) => {
+                                                    onSubjectCreate(name);
+                                                    field.onChange(name);
+                                                }}
+                                                placeholder="Ders ara veya yeni oluştur..."
+                                                notfoundText="Ders bulunamadı."
+                                                createText="Müfredata ekle:"
+                                                className={glassColors.INPUT_BG}
+                                            />
+                                        </FormControl>
+                                        {form.formState.errors.name && <p className="text-sm text-rose-400 mt-1">{form.formState.errors.name.message}</p>}
+                                    </FormItem>
+                                )}
+                            />
+                            
+                            <FormField
+                                control={form.control}
+                                name="questionCount"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 block">Soru Sayısı</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" placeholder="20" className={glassColors.INPUT_BG} {...field} />
+                                        </FormControl>
+                                        {form.formState.errors.questionCount && <p className="text-sm text-rose-400 mt-1">{form.formState.errors.questionCount.message}</p>}
+                                    </FormItem>
+                                )}
+                            />
                         </div>
 
-                        <DialogFooter>
+                        <DialogFooter className="gap-2 sm:gap-0">
                             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-slate-400 hover:text-white hover:bg-white/10">İptal</Button>
-                            <Button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white">Ekle</Button>
+                            <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 px-8">Dersi Ekle</Button>
                         </DialogFooter>
                     </form>
                 </FormProvider>

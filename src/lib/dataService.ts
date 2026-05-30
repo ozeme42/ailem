@@ -318,7 +318,7 @@ export const onPracticeExamsUpdate = (cb: (e: PracticeExam[]) => void) => onFami
 export const onSinglePracticeExamUpdate = (id: string, cb: (e: PracticeExam | null) => void) => onSnapshot(doc(db, 'practiceExams', id), d => cb(d.exists() ? {id:d.id, ...d.data()} as any : null));
 export const addPracticeExam = async (data: any) => { const familyId = await getCurrentFamilyId(); return addDoc(collection(db, 'practiceExams'), { ...data, familyId }); };
 export const updatePracticeExam = (id: string, data: any) => updateDoc(doc(db, 'practiceExams', id), removeUndefined(data));
-export const deletePracticeExam = (id: string) => deleteDoc(doc(db, 'practiceExams', id));
+export const deletePracticeExam = (id: string) => deleteDoc(doc(db, "practiceExams", id));
 
 // --- BUDGET ---
 export const onBudgetCategoriesUpdate = (cb: (c: BudgetCategory[]) => void) => onFamilyDataUpdate<BudgetCategory>('budgetCategories', cb);
