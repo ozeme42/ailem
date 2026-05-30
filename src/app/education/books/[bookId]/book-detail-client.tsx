@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Edit, Trash2, Send, Check, FileText, HelpCircle, CheckCircle, XCircle, Library, BookOpen, ChevronRight, CheckSquare, ListX, BookCopy, AlertTriangle, FileOutput, MinusCircle, Filter, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest, addBulkTrackedBookTests, deleteTrackedBookTopic, deleteTrackedBookSubject, onTestsUpdate } from "@/lib/dataService";
+import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest, addBulkTrackedBookTests, deleteTrackedBookTopic, deleteTrackedBookSubject, onTestsUpdate, onSubjectsUpdate, updateSubjects } from "@/lib/dataService";
 import type { TrackedBook, TrackedBookSubject, TrackedBookTest, FamilyMember, Topic, Test } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Combobox } from "@/components/ui/combobox";
 
 
 // --- DESIGN SYSTEM: Glassmorphism ---
@@ -59,6 +60,7 @@ export default function BookDetailClient() {
   const [allAssignedTests, setAllAssignedTests] = useState<Test[]>([]); 
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("contents");
+  const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
 
   const [mistakeFilterSubject, setMistakeFilterSubject] = useState<string>("all");
   const [mistakeFilterTopic, setMistakeFilterTopic] = useState<string>("all");
@@ -84,9 +86,11 @@ export default function BookDetailClient() {
     if (!bookId) return;
     const unsubBook = onTrackedBookUpdate(bookId, setBook);
     const unsubBookTests = onTrackedBookTestsUpdate(bookId, setBookTests);
+    const unsubSubjects = onSubjectsUpdate(setAvailableSubjects);
     return () => {
       unsubBook();
       unsubBookTests();
+      unsubSubjects();
     };
   }, [bookId]);
 
@@ -202,6 +206,11 @@ export default function BookDetailClient() {
     setIsSubjectDialogOpen(false);
     setNewSubjectName("");
     setCurrentSubject(null);
+  };
+
+  const handleSubjectCreate = async (name: string) => {
+      const newSubjects = [...new Set([...availableSubjects, name])];
+      await updateSubjects(newSubjects);
   };
 
   const handleDeleteSubject = async (subjectId: string) => {
@@ -528,10 +537,31 @@ export default function BookDetailClient() {
             </Tabs>
         </div>
         
-        <Dialog open={isSubjectDialogOpen} onOpenChange={setIsSubjectDialogOpen}><DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl"><DialogHeader><DialogTitle>{currentSubject ? 'Dersi Düzenle' : 'Yeni Ders Ekle'}</DialogTitle></DialogHeader><div className="py-4"><Input value={newSubjectName} onChange={(e) => setNewSubjectName(e.target.value)} placeholder="Ders Adı" className={glassColors.INPUT_BG}/></div><DialogFooter><Button variant="ghost" onClick={() => setIsSubjectDialogOpen(false)} className="text-slate-400">İptal</Button><Button onClick={handleSubjectSave} className="bg-indigo-600">Kaydet</Button></DialogFooter></DialogContent></Dialog>
-        <Dialog open={isTopicDialogOpen} onOpenChange={setIsTopicDialogOpen}><DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl"><DialogHeader><DialogTitle>{currentTopic ? 'Konuyu Düzenle' : 'Yeni Konu Ekle'}</DialogTitle></DialogHeader><div className="py-4"><Input value={newTopicName} onChange={(e) => setNewTopicName(e.target.value)} placeholder="Konu Adı" className={glassColors.INPUT_BG}/></div><DialogFooter><Button variant="ghost" onClick={() => setIsTopicDialogOpen(false)} className="text-slate-400">İptal</Button><Button onClick={handleTopicSave} className="bg-indigo-600">Kaydet</Button></DialogFooter></DialogContent></Dialog>
-        <Dialog open={isTestDialogOpen} onOpenChange={setIsTestDialogOpen}><DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl"><DialogHeader><DialogTitle>{currentTest ? 'Testi Düzenle' : 'Yeni Test Ekle'}</DialogTitle></DialogHeader><div className="space-y-4 py-4"><div className="space-y-2"><Label className="text-xs font-bold text-slate-400">Test Adı</Label><Input value={testFormData.name} onChange={(e) => setTestFormData(prev => ({...prev, name: e.target.value}))} className={glassColors.INPUT_BG}/></div><div className="space-y-2"><Label className="text-xs font-bold text-slate-400">Soru Sayısı</Label><Input type="number" value={testFormData.questionCount} onChange={(e) => setTestFormData(prev => ({...prev, questionCount: parseInt(e.target.value) || 0}))} className={glassColors.INPUT_BG}/></div>{book.bookType !== 'open_ended' && (<div className="space-y-2"><Label className="text-xs font-bold text-slate-400">Cevap Anahtarı</Label><div className="bg-black/20 p-2 rounded-lg max-h-40 overflow-y-auto"><AnswerKeyForm totalQuestions={testFormData.questionCount} answerKey={testFormData.answerKey} onSave={(key) => setTestFormData(prev => ({...prev, answerKey: key}))} /></div></div>)}</div><DialogFooter><Button variant="ghost" onClick={() => setIsTestDialogOpen(false)} className="text-slate-400">İptal</Button><Button onClick={handleTestSave} className="bg-indigo-600">Kaydet</Button></DialogFooter></DialogContent></Dialog>
-        <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}><DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl"><DialogHeader><DialogTitle>Ödev Ata</DialogTitle></DialogHeader><div className="space-y-4 py-4"><div className="space-y-2"><Label className="text-xs font-bold text-slate-400">Öğrenci(ler)</Label><div className="space-y-2 p-3 bg-black/20 rounded-xl max-h-40 overflow-y-auto">{familyMembers.filter(m => m.role.includes("Çocuk")).map(s => (<div key={s.id} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg cursor-pointer" onClick={() => handleAssignDialogStudentSelection(s.id, !assignFormData.studentIds.includes(s.id))}><Checkbox checked={assignFormData.studentIds.includes(s.id)} onCheckedChange={(checked) => handleAssignDialogStudentSelection(s.id, !!checked)} /><label className="font-medium text-slate-200 cursor-pointer text-sm">{s.name}</label></div>))}</div></div><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label className="text-xs font-bold text-slate-400">Bitiş</Label><Popover><PopoverTrigger asChild><Button variant={"outline"} className="w-full justify-start text-left bg-white/5 border-white/10"><CalendarIcon className="mr-2 h-4 w-4" />{format(assignFormData.dueDate, "d MMM yyyy", { locale: tr })}</Button></PopoverTrigger><PopoverContent className="w-auto p-0 bg-slate-900 border-white/10"><Calendar mode="single" selected={assignFormData.dueDate} onSelect={(d) => setAssignFormData(prev => ({...prev, dueDate: d || prev.dueDate}))} className="bg-slate-900 text-slate-100" /></PopoverContent></Popover></div></div></div><DialogFooter><Button variant="ghost" onClick={() => setIsAssignDialogOpen(false)} className="text-slate-400">İptal</Button><Button onClick={handleAssignSelectedTests} className="bg-indigo-600">Ödevleri Ata</Button></DialogFooter></DialogContent></Dialog>
+        <Dialog open={isSubjectDialogOpen} onOpenChange={setIsSubjectDialogOpen}>
+            <DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl">
+                <DialogHeader>
+                    <DialogTitle>{currentSubject ? 'Dersi Düzenle' : 'Yeni Ders Ekle'}</DialogTitle>
+                </DialogHeader>
+                <div className="py-4">
+                    <Combobox 
+                        options={availableSubjects.map(s => ({ label: s, value: s }))}
+                        value={newSubjectName}
+                        onChange={setNewSubjectName}
+                        onCreate={handleSubjectCreate}
+                        placeholder="Ders seçin veya yeni oluşturun..."
+                        className={glassColors.INPUT_BG}
+                    />
+                </div>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={() => setIsSubjectDialogOpen(false)} className="text-slate-400">İptal</Button>
+                    <Button onClick={handleSubjectSave} className="bg-indigo-600">Kaydet</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog open={isTopicDialogOpen} onOpenChange={setIsTopicDialogOpen}><DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl"><DialogHeader><DialogTitle>{currentTopic ? 'Konuyu Düzenle' : 'Yeni Konu Ekle'}</DialogTitle></DialogHeader><div className="py-4"><Input value={newTopicName} onChange={(e) => setNewTopicName(e.target.value)} placeholder="Konu Adı" className={glassColors.INPUT_BG}/></div><DialogFooter><Button variant="ghost" onClick={() => setIsTopicDialogOpen(false)} className="text-slate-400">İptal</Button><Button onClick={handleTopicSave} className="bg-indigo-600">Kaydet</Button></DialogFooter></Dialog></Dialog>
+        <Dialog open={isTestDialogOpen} onOpenChange={setIsTestDialogOpen}><DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl"><DialogHeader><DialogTitle>{currentTest ? 'Testi Düzenle' : 'Yeni Test Ekle'}</DialogTitle></DialogHeader><div className="space-y-4 py-4"><div className="space-y-2"><Label className="text-xs font-bold text-slate-400">Test Adı</Label><Input value={testFormData.name} onChange={(e) => setTestFormData(prev => ({...prev, name: e.target.value}))} className={glassColors.INPUT_BG}/></div><div className="space-y-2"><Label className="text-xs font-bold text-slate-400">Soru Sayısı</Label><Input type="number" value={testFormData.questionCount} onChange={(e) => setTestFormData(prev => ({...prev, questionCount: parseInt(e.target.value) || 0}))} className={glassColors.INPUT_BG}/></div>{book.bookType !== 'open_ended' && (<div className="space-y-2"><Label className="text-xs font-bold text-slate-400">Cevap Anahtarı</Label><div className="bg-black/20 p-2 rounded-lg max-h-40 overflow-y-auto"><AnswerKeyForm totalQuestions={testFormData.questionCount} answerKey={testFormData.answerKey} onSave={(key) => setTestFormData(prev => ({...prev, answerKey: key}))} /></div></div>)}</div><DialogFooter><Button variant="ghost" onClick={() => setIsTestDialogOpen(false)} className="text-slate-400">İptal</Button><Button onClick={handleTestSave} className="bg-indigo-600">Kaydet</Button></DialogFooter></Dialog></Dialog>
+        <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}><DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl"><DialogHeader><DialogTitle>Ödev Ata</DialogTitle></DialogHeader><div className="space-y-4 py-4"><div className="space-y-2"><Label className="text-xs font-bold text-slate-400">Öğrenci(ler)</Label><div className="space-y-2 p-3 bg-black/20 rounded-xl max-h-40 overflow-y-auto">{familyMembers.filter(m => m.role.includes("Çocuk")).map(s => (<div key={s.id} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg cursor-pointer" onClick={() => handleAssignDialogStudentSelection(s.id, !assignFormData.studentIds.includes(s.id))}><Checkbox checked={assignFormData.studentIds.includes(s.id)} onCheckedChange={(checked) => handleAssignDialogStudentSelection(s.id, !!checked)} /><label className="font-medium text-slate-200 cursor-pointer text-sm">{s.name}</label></div>))}</div></div><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label className="text-xs font-bold text-slate-400">Bitiş</Label><Popover><PopoverTrigger asChild><Button variant={"outline"} className="w-full justify-start text-left bg-white/5 border-white/10"><CalendarIcon className="mr-2 h-4 w-4" />{format(assignFormData.dueDate, "d MMM yyyy", { locale: tr })}</Button></PopoverTrigger><PopoverContent className="w-auto p-0 bg-slate-900 border-white/10"><Calendar mode="single" selected={assignFormData.dueDate} onSelect={(d) => setAssignFormData(prev => ({...prev, dueDate: d || prev.dueDate}))} className="bg-slate-900 text-slate-100" /></PopoverContent></Popover></div></div></div><DialogFooter><Button variant="ghost" onClick={() => setIsAssignDialogOpen(false)} className="text-slate-400">İptal</Button><Button onClick={handleAssignSelectedTests} className="bg-indigo-600">Ödevleri Ata</Button></DialogFooter></Dialog></Dialog>
         {selectedTests.length > 0 && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-5"><span className="font-bold">{selectedTests.length} Test Seçildi</span><div className="h-4 w-px bg-white/30"></div><button onClick={() => setIsAssignDialogOpen(true)} className="hover:underline font-medium flex items-center gap-1">Ata <Send className="w-4 h-4"/></button><button onClick={() => setSelectedTests([])} className="ml-2 bg-indigo-700 rounded-full p-1"><XCircle className="w-4 h-4"/></button></div>}
     </div>
   );

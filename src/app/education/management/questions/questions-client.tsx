@@ -360,7 +360,7 @@ export function QuestionsClient() {
             existingTopics={allTopics}
             trackedBooks={trackedBooks}
             studyPlans={studyPlans}
-            bankQuestions={[...bankQuestions, ...mistakes]}
+            bankQuestions={bankQuestions}
             onSubjectCreate={handleCreateSubject} 
             onTopicCreate={handleCreateTopic} 
             type={bulkDialogType} 
