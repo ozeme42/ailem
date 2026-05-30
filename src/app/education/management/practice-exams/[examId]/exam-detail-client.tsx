@@ -7,7 +7,6 @@ import { ArrowLeft, Plus, Send, Edit, Trash2, BookCopy, Calendar as CalendarIcon
 import { useToast } from "@/hooks/use-toast";
 import { onSinglePracticeExamUpdate, addTest, updatePracticeExam, onSubjectsUpdate, updateSubjects } from "@/lib/dataService";
 import type { PracticeExam, PracticeExamSubject, FamilyMember } from "@/lib/data";
-import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -28,7 +27,6 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardHeader, CardDescription, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2 } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 
 // --- DESIGN SYSTEM: Glassmorphism ---
@@ -123,7 +121,7 @@ export function ExamDetailClient() {
         
         {/* AMBIENT BACKGROUND */}
         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-            <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-amber-900/20 rounded-full blur-[120px]" />
+            <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-amber-900/20 rounded-full blur-[120px]" />
             <div className="absolute bottom-[20%] right-[-5%] w-[400px] h-[400px] bg-orange-900/20 rounded-full blur-[120px]" />
         </div>
 
