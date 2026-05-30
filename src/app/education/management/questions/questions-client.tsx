@@ -75,7 +75,7 @@ export function QuestionsClient() {
   const [viewLayout, setViewLayout] = useState<'grid' | 'folder'>('folder');
   const [currentFolder, setCurrentFolder] = useState<{subject: string | null, topic: string | null}>({subject: null, topic: null});
 
-  const [editingQuestion, setEditingQuestion] = setEditingQuestion = useState<BankQuestion | null>(null);
+  const [editingQuestion, setEditingQuestion] = useState<BankQuestion | null>(null);
   const [defaultQuestionType, setDefaultQuestionType] = useState<'mcq' | 'open_ended'>('mcq');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [assignmentType, setAssignmentType] = useState<'bank' | 'mistake'>('bank');
@@ -399,7 +399,7 @@ export function QuestionsClient() {
                                     <DropdownMenuSeparator className="bg-white/5" />
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 cursor-pointer py-3 rounded-lg focus:text-rose-400 focus:bg-rose-500/10"><Trash2 className="mr-2 h-4 w-4"/> Hepsini Sil</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 cursor-pointer py-3 rounded-lg focus:text-rose-400 focus:bg-rose-50/10"><Trash2 className="mr-2 h-4 w-4"/> Hepsini Sil</DropdownMenuItem>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100 rounded-3xl">
                                             <AlertDialogHeader><AlertDialogTitle>Seçilenleri Sil?</AlertDialogTitle><AlertDialogDescription>"{selectedIds.length}" adet kayıt kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
@@ -715,7 +715,7 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
                                 <PopoverTrigger asChild>
                                     <Button variant="outline" className={cn("w-full h-12 justify-start text-left bg-slate-50 border-slate-200 hover:bg-white shadow-sm font-bold text-slate-700 rounded-xl px-3")}>
                                         <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
-                                        <span className="truncate">{format(field.value.to, "d MMM", {locale:tr})}</span>
+                                        <span className="truncate">{field.value.to ? format(field.value.to, "d MMM", {locale:tr}) : "Seçin"}</span>
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="bg-white border-slate-200 shadow-2xl w-auto p-0 rounded-2xl" align="start">
@@ -749,3 +749,4 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
     </Dialog>
   );
 }
+

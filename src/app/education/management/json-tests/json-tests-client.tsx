@@ -25,7 +25,7 @@ const themeColors = {
     CARD_BG: "bg-slate-900/40 border border-slate-800 shadow-xl backdrop-blur-md hover:bg-slate-900/60 hover:border-slate-700 transition-all duration-300",
     ICON_BOX: "bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20 text-white",
     BUTTON_PRIMARY: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 transition-all active:scale-95",
-    TAB_LIST: "h-11 p-1 rounded-xl bg-slate-950/50 border border-slate-800 w-full lg:w-auto grid grid-cols-3",
+    TAB_LIST: "h-11 p-1 rounded-xl bg-slate-950/50 border border-slate-800 w-full lg:w-auto grid grid-cols-1",
     TAB_TRIGGER: "rounded-lg text-xs font-bold data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 hover:text-slate-200"
 };
 
@@ -186,7 +186,7 @@ export function JsonTestsClient() {
                                                                         <Trash2 className="mr-2 h-4 w-4" /> Testi Sil
                                                                     </DropdownMenuItem>
                                                                 </AlertDialogTrigger>
-                                                                <AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
+                                                                <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100 rounded-2xl">
                                                                     <AlertDialogHeader>
                                                                         <AlertDialogTitle>Testi Sil?</AlertDialogTitle>
                                                                         <AlertDialogDescription className="text-slate-400">
@@ -291,3 +291,4 @@ export function JsonTestsClient() {
     </div>
   );
 }
+
