@@ -223,6 +223,7 @@ export const onTrackedBookTestsUpdate = (id: string, cb: (t: TrackedBookTest[]) 
 export const addTrackedBookTest = async (id: string, data: any) => { const familyId = await getCurrentFamilyId(); return addDoc(collection(db, 'trackedBookTests'), { ...data, familyId, bookId: id }); };
 export const updateTrackedBookTest = (id: string, data: any) => updateDoc(doc(db, 'trackedBookTests', id), data);
 export const deleteTrackedBookTest = (id: string) => deleteDoc(doc(db, "trackedBookTests", id));
+
 export const addBulkTrackedBookTests = async (bid: string, sid: string, tid: string, count: number, qCount: number, prefix: string) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) return;
@@ -233,6 +234,7 @@ export const addBulkTrackedBookTests = async (bid: string, sid: string, tid: str
     }
     await batch.commit();
 };
+
 export const deleteTrackedBookTopic = async (bid: string, sid: string, tid: string) => {
     const bookRef = doc(db, 'trackedBooks', bid);
     const snap = await getDoc(bookRef);
@@ -275,6 +277,8 @@ export const onSummariesUpdate = (cb: (s: Summary[]) => void) => onFamilyDataUpd
 export const addSummary = async (data: any) => { const familyId = await getCurrentFamilyId(); return addDoc(collection(db, 'summaries'), { ...data, familyId, createdAt: new Date().toISOString() }); };
 export const updateSummary = (id: string, data: any) => updateDoc(doc(db, 'summaries', id), removeUndefined(data));
 export const deleteSummary = (id: string) => deleteDoc(doc(db, 'summaries', id));
+
+// --- NOTEBOOKS ---
 export const onNotebookDetailsUpdate = (id: string, cb: (d: any) => void) => onSnapshot(doc(db, 'notebooks', id), async (d) => {
     if (!d.exists()) return cb(null);
     const notebook = { id: d.id, ...d.data() } as any;
@@ -576,7 +580,7 @@ export const deleteTag = async (collectionName: string, tag: string, type: strin
 
 // --- BADGES & SYSTEM ---
 export const checkAndAwardBadges = async (mid: string, fid: string, context: any) => {
-    // Badge logic simplified for MVP
+    // Badge logic placeholder
 };
 
 export const initializeDefaultData = async (familyId: string, userId: string) => { 
@@ -612,3 +616,6 @@ export const addReadingSession = async (data: any) => {
     const familyId = await getCurrentFamilyId();
     if (familyId) return addDoc(collection(db, 'readingSessions'), { ...data, familyId });
 };
+
+export const onAmbientSoundsUpdate = (cb: (s: AmbientSound[]) => void) => onFamilyDataUpdate<AmbientSound>('ambientSounds', cb);
+

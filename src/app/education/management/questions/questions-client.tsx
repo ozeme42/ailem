@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -109,7 +110,7 @@ export function QuestionsClient() {
       return data;
   }, [bankQuestions, mistakes, activeTab, activeSubTab, searchQuery, filterSubject, filterTopic]);
 
-  // Klasör Görünümü İçin Hiyerarşik Veri Yapısı (Sadece Arama ve Tip Filtresi Uygulanır)
+  // Klasör Görünümü İçin Hiyerarşik Veri Yapısı
   const folderStats = useMemo(() => {
       const source = activeTab === 'bank' ? bankQuestions : mistakes;
       const baseFiltered = source.filter(i => 
@@ -129,17 +130,6 @@ export function QuestionsClient() {
 
       return subjects;
   }, [bankQuestions, mistakes, activeTab, activeSubTab, searchQuery]);
-
-  // Klasörler değiştiğinde seçimleri temizle
-  useEffect(() => { setSelectedIds([]); }, [currentFolder, viewLayout, activeTab, activeSubTab]);
-  useEffect(() => { setFilterTopic('all'); }, [filterSubject]);
-
-  const availableSubjects = useMemo(() => Array.from(new Set((activeTab === 'bank' ? bankQuestions : mistakes).map(i => i.subject))).sort(), [activeTab, bankQuestions, mistakes]);
-  const availableTopics = useMemo(() => {
-      let source = activeTab === 'bank' ? bankQuestions : mistakes;
-      if (filterSubject !== 'all') source = source.filter(i => i.subject === filterSubject);
-      return Array.from(new Set(source.map(i => i.topic))).sort();
-  }, [activeTab, bankQuestions, mistakes, filterSubject]);
 
   const handleCreateSubject = async (name: string) => { await updateSubjects([...new Set([...allSubjects, name])]); toast({title: "Oluşturuldu"}); };
   const handleCreateTopic = async (name: string) => { await updateTopics([...new Set([...allTopics, name])]); toast({title: "Oluşturuldu"}); };
@@ -251,27 +241,9 @@ export function QuestionsClient() {
                         
                         <div className="relative w-full sm:w-72 shrink-0">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <Input placeholder="Soru veya klasör ara..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-sm focus:bg-white" />
+                            <Input placeholder="Soru veya klasör ara..." value={searchQuery} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-sm focus:bg-white" />
                         </div>
                     </div>
-                    
-                    {/* Grid Görünümünde Dropdown Filtreler Gösterilir */}
-                    {viewLayout === 'grid' && (
-                        <div className="flex flex-wrap md:flex-nowrap items-center gap-2 w-full md:w-auto">
-                            <Select value={filterSubject} onValueChange={setFilterSubject}>
-                                <SelectTrigger className="w-full sm:w-[140px] h-10 rounded-xl bg-slate-50 border-slate-200 text-sm font-medium">
-                                    <SelectValue placeholder="Ders" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl"><SelectItem value="all">Tüm Dersler</SelectItem>{availableSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                            </Select>
-                            <Select value={filterTopic} onValueChange={setFilterTopic} disabled={availableTopics.length === 0}>
-                                <SelectTrigger className="w-full sm:w-[140px] h-10 rounded-xl bg-slate-50 border-slate-200 text-sm font-medium">
-                                    <SelectValue placeholder="Konu" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl"><SelectItem value="all">Tüm Konular</SelectItem>{availableTopics.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                            </Select>
-                        </div>
-                    )}
                 </div>
             </div>
 
@@ -286,14 +258,13 @@ export function QuestionsClient() {
                                 <QuestionCard key={item.id} item={item} isSelected={selectedIds.includes(item.id)} onToggle={() => toggleSelection(item.id)} onPreview={() => setImagePreview(item.imageUrl!)} onEdit={() => handleOpenForm(item, activeSubTab as any)} showEdit={activeTab === 'bank'} familyMembers={familyMembers} isMistake={activeTab === 'mistakes'} />
                             ))}
                         </div>
-                    ) : <EmptyState onClear={() => {setSearchQuery(''); setFilterSubject('all'); setFilterTopic('all');}} hasFilters={!!searchQuery || filterSubject !== 'all' || filterTopic !== 'all'} />
+                    ) : <EmptyState onClear={() => {setSearchQuery(''); setFilterSubject('all'); setFilterTopic('all');}} hasFilters={!!searchQuery} />
                 )}
 
                 {/* 2. KLASÖR (FOLDER) GÖRÜNÜMÜ */}
                 {viewLayout === 'folder' && (
                     <div className="space-y-4 animate-in fade-in">
                         
-                        {/* Breadcrumbs Yolu */}
                         <div className="flex items-center gap-2 text-sm font-bold text-slate-500 mb-6 bg-slate-100/50 w-fit px-4 py-2 rounded-2xl flex-wrap">
                             <span className="cursor-pointer hover:text-indigo-600 transition-colors flex items-center" onClick={() => setCurrentFolder({subject: null, topic: null})}>
                                 <Folder className="w-4 h-4 mr-2" /> Havuz
@@ -314,7 +285,6 @@ export function QuestionsClient() {
                             )}
                         </div>
 
-                        {/* SEVİYE 1: DERS KLASÖRLERİ */}
                         {!currentFolder.subject && (
                             Object.keys(folderStats).length > 0 ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -333,7 +303,6 @@ export function QuestionsClient() {
                             ) : <EmptyState onClear={() => setSearchQuery('')} hasFilters={!!searchQuery} />
                         )}
 
-                        {/* SEVİYE 2: KONU KLASÖRLERİ */}
                         {currentFolder.subject && !currentFolder.topic && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                 {Object.entries(folderStats[currentFolder.subject]?.topics || {}).map(([topic, items]) => (
@@ -350,42 +319,18 @@ export function QuestionsClient() {
                             </div>
                         )}
 
-                        {/* SEVİYE 3: LİSTE GÖRÜNÜMÜ (Sorular) */}
                         {currentFolder.subject && currentFolder.topic && (
                             <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
-                                <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:flex">
-                                    <div className="flex items-center gap-4">
-                                        <Checkbox 
-                                            checked={selectedIds.length === folderStats[currentFolder.subject].topics[currentFolder.topic].length && selectedIds.length > 0} 
-                                            onCheckedChange={() => toggleSelectAll(folderStats[currentFolder.subject].topics[currentFolder.topic])} 
-                                            className="ml-1"
-                                        />
-                                        <span>Soru İçeriği</span>
-                                    </div>
-                                    <span className="w-24 text-center">İşlemler</span>
-                                </div>
-                                
                                 <div className="divide-y divide-slate-100">
                                     {folderStats[currentFolder.subject].topics[currentFolder.topic].map(item => (
                                         <div key={item.id} className={themeColors.LIST_ITEM} onClick={() => toggleSelection(item.id)}>
                                             <Checkbox checked={selectedIds.includes(item.id)} className="ml-1 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600" />
-                                            
                                             <div className="w-16 h-16 sm:w-12 sm:h-12 bg-slate-100 rounded-xl sm:rounded-lg overflow-hidden relative shrink-0 border border-slate-200" onClick={(e) => { e.stopPropagation(); setImagePreview(item.imageUrl!); }}>
                                                 {item.imageUrl ? <NextImage src={item.imageUrl} alt="Soru" fill className="object-cover" /> : <FileQuestion className="w-full h-full p-3 text-slate-300" />}
-                                                <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
-                                                    <Maximize2 className="w-4 h-4 text-white drop-shadow-md" />
-                                                </div>
                                             </div>
-
                                             <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                                <p className="font-bold text-sm text-slate-800 line-clamp-2 sm:truncate" title={item.title || item.originalFilename}>{item.title || item.originalFilename || 'İsimsiz Soru'}</p>
-                                                {activeTab === 'mistakes' && (
-                                                    <span className="text-[10px] font-bold text-rose-500 flex items-center gap-1 mt-0.5">
-                                                        <AlertTriangle className="w-3 h-3"/> {familyMembers.find(f => f.id === item.creatorId)?.name}
-                                                    </span>
-                                                )}
+                                                <p className="font-bold text-sm text-slate-800 line-clamp-2 sm:truncate">{item.title || item.originalFilename || 'İsimsiz Soru'}</p>
                                             </div>
-
                                             <div className="w-auto sm:w-24 flex justify-end sm:justify-center shrink-0">
                                                 {activeTab === 'bank' && (
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50" onClick={(e) => { e.stopPropagation(); handleOpenForm(item, activeSubTab as any); }}>
@@ -402,42 +347,19 @@ export function QuestionsClient() {
                 )}
             </div>
           </Tabs>
-          
-          {/* Toplu İşlem Çubuğu */}
-          {selectedIds.length > 0 && (
-             <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur-xl border border-slate-800 text-white p-2 rounded-2xl shadow-2xl flex items-center gap-2 animate-in slide-in-from-bottom-8 w-[90%] sm:w-auto max-w-2xl justify-between">
-                 <div className="flex items-center gap-3 pl-3 pr-4 border-r border-slate-700">
-                     <div className="bg-indigo-500 text-white text-sm font-black px-3 py-1.5 rounded-xl text-center">{selectedIds.length}</div>
-                     <span className="text-sm font-bold text-slate-200 hidden sm:inline">Seçili</span>
-                 </div>
-                 <div className="flex items-center gap-2 pl-2">                     
-                     <Button onClick={() => { setAssignmentType(activeTab === 'bank' ? 'bank' : 'mistake'); setIsAssignDialogOpen(true); }} className="h-9 bg-indigo-500 hover:bg-indigo-400 text-white border-0 rounded-xl px-4 shadow-md font-bold">
-                         <Send className="w-4 h-4 sm:mr-2"/> <span className="hidden sm:inline">Ödev Ata</span>
-                     </Button>
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button size="icon" variant="destructive" className="h-9 w-9 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl">
-                                <Trash2 className="w-4 h-4"/>
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-white rounded-3xl p-6">
-                            <AlertDialogHeader>
-                                <AlertDialogTitle className="text-2xl font-black">Toplu Silme</AlertDialogTitle>
-                                <AlertDialogDescription>Seçili {selectedIds.length} kayıt kalıcı olarak silinecektir. Emin misiniz?</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel className="h-12 rounded-xl px-6">Vazgeç</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDeleteSelected} className="bg-rose-600 h-12 rounded-xl px-8 text-white">Sil</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                     </AlertDialog>
-                     <div className="w-px h-6 bg-slate-700 mx-1 hidden sm:block" />
-                     <Button size="icon" variant="ghost" onClick={() => setSelectedIds([])} className="h-9 w-9 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white"><X className="w-5 h-5"/></Button>
-                 </div>
-             </div>
-          )}
-          
-          {/* Diyaloglar */}
+
+          <BulkAddImagesDialog 
+            open={isBulkDialogOpen} 
+            onOpenChange={setIsBulkDialogOpen} 
+            onImport={handleBulkImport} 
+            existingSubjects={allSubjects} 
+            bankQuestions={[...bankQuestions, ...mistakes]}
+            onSubjectCreate={handleCreateSubject} 
+            onTopicCreate={handleCreateTopic} 
+            type={bulkDialogType} 
+          />
+          <AssignTestDialog isOpen={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen} allQuestions={bankQuestions} allMistakes={mistakes} selectedIds={selectedIds} type={assignmentType} onAssignmentComplete={() => setSelectedIds([])} />
+
           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogContent className="sm:max-w-xl bg-white rounded-3xl p-0 overflow-hidden"><ScrollArea className="max-h-[85vh]"><div className="p-8">
                 <DialogHeader className="mb-6"><DialogTitle className="text-2xl font-black">{editingQuestion ? 'Soruyu Düzenle' : 'Yeni Soru Ekle'}</DialogTitle></DialogHeader>
@@ -445,10 +367,6 @@ export function QuestionsClient() {
             </div></ScrollArea></DialogContent>
           </Dialog>
 
-          <BulkAddImagesDialog open={isBulkDialogOpen} onOpenChange={setIsBulkDialogOpen} onImport={handleBulkImport} existingSubjects={allSubjects} existingTopics={allTopics} onSubjectCreate={handleCreateSubject} onTopicCreate={handleCreateTopic} type={bulkDialogType} />
-          <AssignTestDialog isOpen={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen} allQuestions={bankQuestions} allMistakes={mistakes} selectedIds={selectedIds} type={assignmentType} onAssignmentComplete={() => setSelectedIds([])} />
-
-          {/* Lightbox Görsel Önizleme */}
           {imagePreview && (
               <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setImagePreview(null)}>
                   <div className="relative w-full max-w-6xl h-[85vh] bg-transparent flex items-center justify-center">
@@ -462,9 +380,121 @@ export function QuestionsClient() {
   );
 }
 
-// -------------------------------------------------------------
-// YARDIMCI BİLEŞENLER
-// -------------------------------------------------------------
+function BulkAddImagesDialog({ 
+    open, onOpenChange, onImport, existingSubjects, bankQuestions, onSubjectCreate, onTopicCreate, type
+}: { 
+    open: boolean, onOpenChange: (open: boolean) => void, onImport: (questions: Partial<BankQuestion>[], type: 'mcq' | 'open_ended') => void,
+    existingSubjects: string[], bankQuestions: any[], onSubjectCreate: (name: string) => void, onTopicCreate: (name: string) => void, type: 'mcq' | 'open_ended';
+}) {
+    const [isImporting, setIsImporting] = useState(false);
+    const form = useForm<z.infer<typeof bulkAddSchema>>({ resolver: zodResolver(bulkAddSchema), defaultValues: { subject: '', topic: '', images: [] } });
+    
+    const selectedSubject = form.watch('subject');
+
+    const filteredTopicsOptions = useMemo(() => {
+        if (!selectedSubject) return [];
+        const topicsSet = new Set<string>();
+        bankQuestions.forEach(q => {
+            if (q.subject === selectedSubject && q.topic) topicsSet.add(q.topic);
+        });
+        return Array.from(topicsSet).sort().map(t => ({ label: t, value: t }));
+    }, [selectedSubject, bankQuestions]);
+
+    const onDrop = useCallback((acceptedFiles: File[]) => {
+        const currentImages = form.getValues('images') || [];
+        const filePromises = acceptedFiles.map(file => new Promise<{dataUri: string, filename: string}>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve({ dataUri: reader.result as string, filename: file.name });
+                reader.readAsDataURL(file);
+            })
+        );
+        Promise.all(filePromises).then(newImages => { form.setValue('images', [...currentImages, ...newImages], { shouldValidate: true }); });
+    }, [form]);
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.gif'] } });
+    
+    const handleImportClick = (values: z.infer<typeof bulkAddSchema>) => {
+        setIsImporting(true);
+        const questionsToImport = values.images.map((image) => ({ originalFilename: image.filename, subject: values.subject, topic: values.topic, imageUrl: image.dataUri }));
+        onImport(questionsToImport, type);
+        setIsImporting(false);
+        form.reset();
+    };
+    
+    return (
+        <Dialog open={open} onOpenChange={(o) => { if (!o) form.reset(); onOpenChange(o); }}>
+            <DialogContent className="sm:max-w-2xl bg-white border-slate-200 text-slate-900 rounded-3xl shadow-2xl p-6 md:p-8">
+                <DialogHeader className="mb-6">
+                    <DialogTitle className="text-2xl font-black flex items-center gap-3">
+                        Toplu İçe Aktar
+                        <Badge className="bg-indigo-100 text-indigo-700 font-bold border-none">{type === 'mcq' ? 'Çoktan Seçmeli' : 'Açık Uçlu'}</Badge>
+                    </DialogTitle>
+                </DialogHeader>
+                <RhfForm {...form}>
+                    <form onSubmit={form.handleSubmit(handleImportClick)} className="space-y-6">
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <FormField control={form.control} name="subject" render={({field}) => (
+                                <FormItem>
+                                    <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Ders</FormLabel>
+                                    <Combobox 
+                                        options={existingSubjects.map(s=>({label:s,value:s}))} 
+                                        value={field.value} 
+                                        onChange={(v) => { field.onChange(v); form.setValue('topic', ''); }} 
+                                        onCreate={onSubjectCreate} 
+                                        className="bg-slate-50 border-slate-200 h-11 rounded-xl"
+                                    />
+                                    <FormMessage/>
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="topic" render={({field}) => (
+                                <FormItem>
+                                    <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Konu</FormLabel>
+                                    <Combobox 
+                                        options={filteredTopicsOptions} 
+                                        value={field.value} 
+                                        onChange={field.onChange} 
+                                        onCreate={onTopicCreate} 
+                                        placeholder={selectedSubject ? "Konu seçin..." : "Önce ders seçin..."}
+                                        className="bg-slate-50 border-slate-200 h-11 rounded-xl"
+                                    />
+                                    <FormMessage/>
+                                </FormItem>
+                            )}/>
+                         </div>
+                         
+                         <div {...getRootProps()} className={cn(
+                             "w-full aspect-[21/9] border-2 border-dashed rounded-3xl flex flex-col items-center justify-center transition-all cursor-pointer",
+                             isDragActive ? "border-indigo-500 bg-indigo-50/50 text-indigo-600 scale-[1.02]" : "border-slate-300 text-slate-500 hover:border-indigo-400 hover:bg-slate-50"
+                         )}>
+                              <input {...getInputProps()} />
+                              <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm border border-slate-100">
+                                  <UploadCloud className="h-6 w-6 text-indigo-500"/>
+                              </div>
+                              <p className="font-bold text-slate-700">Görselleri sürükleyip bırakın</p>
+                              <p className="text-sm text-slate-500 mt-1">veya cihazdan seçin</p>
+                         </div>
+
+                        <DialogFooter className="pt-6 mt-4">
+                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl text-slate-600 hover:bg-slate-100 font-bold px-6">İptal</Button>
+                            <Button type="submit" disabled={isImporting || form.watch('images')?.length === 0} className="h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 shadow-lg shadow-indigo-600/20 w-full sm:w-auto">
+                                {isImporting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 'Görselleri Aktar'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </RhfForm>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+const bulkAddSchema = z.object({
+  subject: z.string().min(1, "Ders seçimi zorunludur."),
+  topic: z.string().min(1, "Konu seçimi zorunludur."),
+  images: z.array(z.object({
+      dataUri: z.string(),
+      filename: z.string(),
+  })).min(1, "En az bir resim yüklemelisiniz."),
+});
 
 function QuestionCard({ item, isSelected, onToggle, onPreview, onEdit, showEdit, familyMembers, isMistake }: any) {
     return (
@@ -515,113 +545,6 @@ function EmptyState({ onClear, hasFilters }: { onClear: () => void, hasFilters: 
             {hasFilters && <Button onClick={onClear} className="mt-6 bg-slate-900 text-white rounded-xl h-11 px-6">Filtreleri Temizle</Button>}
         </div>
     )
-}
-
-// -------------------------------------------------------------
-// DIALOG & MODAL BİLEŞENLERİ
-// -------------------------------------------------------------
-
-const bulkAddSchema = z.object({
-  subject: z.string().min(1, "Ders seçimi zorunludur."),
-  topic: z.string().min(1, "Konu seçimi zorunludur."),
-  images: z.array(z.object({
-      dataUri: z.string(),
-      filename: z.string(),
-  })).min(1, "En az bir resim yüklemelisiniz."),
-});
-
-function BulkAddImagesDialog({ 
-    open, onOpenChange, onImport, existingSubjects, existingTopics, onSubjectCreate, onTopicCreate, type
-}: { 
-    open: boolean, onOpenChange: (open: boolean) => void, onImport: (questions: Partial<BankQuestion>[], type: 'mcq' | 'open_ended') => void,
-    existingSubjects: string[], existingTopics: string[], onSubjectCreate: (name: string) => void, onTopicCreate: (name: string) => void, type: 'mcq' | 'open_ended';
-}) {
-    const [isImporting, setIsImporting] = useState(false);
-    const form = useForm<z.infer<typeof bulkAddSchema>>({ resolver: zodResolver(bulkAddSchema), defaultValues: { subject: '', topic: '', images: [] } });
-    
-    const onDrop = useCallback((acceptedFiles: File[]) => {
-        const currentImages = form.getValues('images') || [];
-        const filePromises = acceptedFiles.map(file => new Promise<{dataUri: string, filename: string}>((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve({ dataUri: reader.result as string, filename: file.name });
-                reader.readAsDataURL(file);
-            })
-        );
-        Promise.all(filePromises).then(newImages => { form.setValue('images', [...currentImages, ...newImages], { shouldValidate: true }); });
-    }, [form]);
-
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.gif'] } });
-    
-    const handleImportClick = (values: z.infer<typeof bulkAddSchema>) => {
-        setIsImporting(true);
-        const questionsToImport = values.images.map((image) => ({ originalFilename: image.filename, subject: values.subject, topic: values.topic, imageUrl: image.dataUri }));
-        onImport(questionsToImport, type).finally(() => { setIsImporting(false); form.reset(); });
-    };
-    
-    return (
-        <Dialog open={open} onOpenChange={(o) => { if (!o) form.reset(); onOpenChange(o); }}>
-            <DialogContent className="sm:max-w-2xl bg-white border-slate-200 text-slate-900 rounded-3xl shadow-2xl p-6 md:p-8">
-                <DialogHeader className="mb-6">
-                    <DialogTitle className="text-2xl font-black flex items-center gap-3">
-                        Toplu İçe Aktar
-                        <Badge className="bg-indigo-100 text-indigo-700 font-bold border-none">{type === 'mcq' ? 'Çoktan Seçmeli' : 'Açık Uçlu'}</Badge>
-                    </DialogTitle>
-                    <DialogDescription className="text-slate-500">Cihazınızdaki soru fotoğraflarını tek seferde sisteme yükleyin.</DialogDescription>
-                </DialogHeader>
-                <RhfForm {...form}>
-                    <form onSubmit={form.handleSubmit(handleImportClick)} className="space-y-6">
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <FormField control={form.control} name="subject" render={({field}) => (
-                                <FormItem>
-                                    <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Ders</FormLabel>
-                                    <Combobox options={existingSubjects.map(s=>({label:s,value:s}))} value={field.value} onChange={field.onChange} onCreate={onSubjectCreate} className="bg-slate-50 border-slate-200 h-11 rounded-xl"/>
-                                    <FormMessage/>
-                                </FormItem>
-                            )}/>
-                            <FormField control={form.control} name="topic" render={({field}) => (
-                                <FormItem>
-                                    <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Konu</FormLabel>
-                                    <Combobox options={existingTopics.map(s=>({label:s,value:s}))} value={field.value} onChange={field.onChange} onCreate={onTopicCreate} className="bg-slate-50 border-slate-200 h-11 rounded-xl"/>
-                                    <FormMessage/>
-                                </FormItem>
-                            )}/>
-                         </div>
-                         
-                         <div {...getRootProps()} className={cn(
-                             "w-full aspect-[21/9] border-2 border-dashed rounded-3xl flex flex-col items-center justify-center transition-all cursor-pointer",
-                             isDragActive ? "border-indigo-500 bg-indigo-50/50 text-indigo-600 scale-[1.02]" : "border-slate-300 text-slate-500 hover:border-indigo-400 hover:bg-slate-50"
-                         )}>
-                              <input {...getInputProps()} />
-                              <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm border border-slate-100">
-                                  <UploadCloud className="h-6 w-6 text-indigo-500"/>
-                              </div>
-                              <p className="text-base font-bold text-slate-700">Görselleri sürükleyip bırakın</p>
-                              <p className="text-sm text-slate-500 mt-1">veya cihazdan seçmek için tıklayın</p>
-                         </div>
-
-                         {form.watch('images')?.length > 0 && (
-                             <div className="flex items-center justify-between p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-700 animate-in fade-in">
-                                 <div className="flex items-center gap-3">
-                                     <div className="w-8 h-8 rounded-full bg-emerald-200 flex items-center justify-center">
-                                         <CheckCircle2 className="w-5 h-5"/>
-                                     </div>
-                                     <span className="font-bold">{form.watch('images').length} görsel hazır</span>
-                                 </div>
-                                 <Button type="button" variant="ghost" size="sm" onClick={() => form.setValue('images', [])} className="text-emerald-700 hover:bg-emerald-100 rounded-lg">Temizle</Button>
-                             </div>
-                         )}
-
-                        <DialogFooter className="pt-6 mt-4">
-                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl text-slate-600 hover:bg-slate-100 font-bold px-6">İptal</Button>
-                            <Button type="submit" disabled={isImporting || form.watch('images')?.length === 0} className="h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 shadow-lg shadow-indigo-600/20 w-full sm:w-auto">
-                                {isImporting ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Yükleniyor...</> : 'Görselleri Aktar'}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </RhfForm>
-            </DialogContent>
-        </Dialog>
-    );
 }
 
 const assignFormSchema = z.object({
@@ -692,7 +615,6 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
                 Ödev Oluştur
                 <Badge className="bg-emerald-100 text-emerald-700 font-bold border-none">{selectedIds.length} Soru</Badge>
             </DialogTitle>
-            <DialogDescription className="text-slate-500">Seçtiğiniz soruları bir test formatında öğrencilere atayın.</DialogDescription>
         </DialogHeader>
         <RhfForm {...form}>
             <form onSubmit={form.handleSubmit(handleAssignmentSubmit)} className="space-y-6">
@@ -700,7 +622,7 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
                 <FormField control={form.control} name="title" render={({field}) => (
                     <FormItem>
                         <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Test Başlığı</FormLabel>
-                        <Input {...field} placeholder="Örn: Hafta Sonu Matematik Denemesi" className="h-12 bg-slate-50 border-slate-200 focus:bg-white rounded-xl text-sm font-medium"/>
+                        <Input {...field} placeholder="Hafta Sonu Ödevi" className="h-12 bg-slate-50 border-slate-200 focus:bg-white rounded-xl text-sm font-medium"/>
                     </FormItem>
                 )}/>
                 
@@ -720,7 +642,7 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
                                                 <Checkbox 
                                                     checked={isSelected} 
                                                     onCheckedChange={(c) => c ? field.onChange([...(field.value||[]), s.id]) : field.onChange(field.value?.filter((v)=>v!==s.id))} 
-                                                    className="border-slate-300 w-5 h-5 rounded data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                                                    className="border-slate-300 w-5 h-5 rounded data-[state=checked]:bg-indigo-600"
                                                 />
                                             </FormControl>
                                             <FormLabel className="font-bold cursor-pointer w-full text-slate-700 flex items-center gap-2">
@@ -738,12 +660,12 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
                  <div className="grid grid-cols-2 gap-5">
                     <FormField control={form.control} name="dateRange" render={({field}) => (
                         <FormItem>
-                            <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Tarih Aralığı</FormLabel>
+                            <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-500">Tarih</FormLabel>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button variant="outline" className={cn("w-full h-12 justify-start text-left bg-slate-50 border-slate-200 hover:bg-white shadow-sm font-bold text-slate-700 rounded-xl px-3")}>
                                         <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
-                                        <span className="truncate">{format(field.value.from, "d MMM", {locale:tr})} - {format(field.value.to, "d MMM", {locale:tr})}</span>
+                                        <span className="truncate">{format(field.value.to, "d MMM", {locale:tr})}</span>
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="bg-white border-slate-200 shadow-2xl w-auto p-0 rounded-2xl" align="start">
@@ -767,8 +689,8 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
                  
                 <DialogFooter className="pt-6 mt-4">
                     <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl text-slate-600 hover:bg-slate-100 font-bold px-6">İptal</Button>
-                    <Button type="submit" disabled={loading || form.watch('studentIds').length === 0} className="h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 shadow-lg shadow-indigo-600/20 w-full sm:w-auto">
-                        {loading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Atanıyor...</> : 'Ödevi Ata'}
+                    <Button type="submit" disabled={loading || form.watch('studentIds').length === 0} className="h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 shadow-lg w-full sm:w-auto">
+                        {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 'Ödevi Ata'}
                     </Button>
                 </DialogFooter>
             </form>
@@ -777,3 +699,4 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
     </Dialog>
   );
 }
+

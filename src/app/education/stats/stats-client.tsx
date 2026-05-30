@@ -441,6 +441,7 @@ export function StatsClient() {
 
         const filtered = enrichedBaseData.filter(t => {
             const inPeriod = t._solvedDate >= startDate && t._solvedDate <= now;
+            // "Tüm Dersler" mantığı: goal.subject "all" ise tüm dersleri say
             const subjectMatch = goal.subject === 'all' || t._subjectName === goal.subject;
             return inPeriod && subjectMatch;
         });
@@ -942,7 +943,7 @@ export function StatsClient() {
                         
                         <Area yAxisId="l" type="monotone" dataKey="questions" name="Soru Sayısı" fill="url(#colorQ)" stroke={C.INDIGO} strokeWidth={2} />
                         <Bar yAxisId="l" dataKey="questions" name="Soru Çubuğu" fill={C.INDIGO} opacity={0.6} radius={[4, 4, 0, 0]} maxBarSize={40} />
-                        <Line yAxisId="r" type="monotone" dataKey="rate" name="Başarı (%)" stroke={C.EMERALD} strokeWidth={3} dot={{ r: 4, fill: C.EMERALD, stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 6, strokeWidth: 0 }} />
+                        <Line yAxisId="r" type="monotone" dataKey="rate" name="Başarı (%)" stroke={C.EMERALD} strokeWidth={3} dot={{ r: 4, fill: C.EMERALD, stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 7 }} />
                       </ComposedChart>
                     </ResponsiveContainer>
                   </div>
@@ -1673,3 +1674,4 @@ export function StatsClient() {
     </div>
   );
 }
+

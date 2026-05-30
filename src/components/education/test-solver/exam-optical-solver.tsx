@@ -85,47 +85,47 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
         <div className="space-y-6 pb-20 max-w-5xl mx-auto w-full animate-in fade-in duration-500">
             {/* Üst Bilgi Paneli */}
             <div className={cn(
-                "rounded-[2.5rem] p-6 border shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 transition-all",
+                "rounded-[2rem] md:rounded-[2.5rem] p-4 md:p-6 border shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 transition-all",
                 isReviewMode ? "bg-indigo-600 text-white border-none" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
             )}>
-                 <div className="flex items-center gap-5">
-                    <div className={cn("w-16 h-16 rounded-3xl flex items-center justify-center shadow-lg", isReviewMode ? "bg-white/20" : "bg-indigo-50 dark:bg-indigo-950 text-indigo-600")}>
-                        {isReviewMode ? <Trophy className="w-8 h-8" /> : <ListChecks className="w-8 h-8" />}
+                 <div className="flex items-center gap-4 md:gap-5 w-full md:w-auto">
+                    <div className={cn("w-12 h-12 md:w-16 md:h-16 rounded-2xl md:rounded-3xl flex items-center justify-center shadow-lg shrink-0", isReviewMode ? "bg-white/20" : "bg-indigo-50 dark:bg-indigo-950 text-indigo-600")}>
+                        {isReviewMode ? <Trophy className="w-6 h-6 md:w-8 md:h-8" /> : <ListChecks className="w-6 h-6 md:w-8 md:h-8" />}
                     </div>
-                    <div>
-                        <h2 className={cn("text-2xl font-black tracking-tight", isReviewMode ? "text-white" : "text-slate-800 dark:text-slate-100")}>{examDetails.name}</h2>
-                        <p className={cn("text-sm font-bold opacity-70 uppercase tracking-widest", isReviewMode ? "text-indigo-100" : "text-slate-50")}>
+                    <div className="min-w-0">
+                        <h2 className={cn("text-lg md:text-2xl font-black tracking-tight truncate", isReviewMode ? "text-white" : "text-slate-800 dark:text-slate-100")}>{examDetails.name}</h2>
+                        <p className={cn("text-[10px] md:text-sm font-bold opacity-70 uppercase tracking-widest", isReviewMode ? "text-indigo-100" : "text-slate-50")}>
                             {isReviewMode ? "SINAV ANALİZİ" : `${examDetails.subjects?.length} Ders • ${test.questionCount} Soru`}
                         </p>
                     </div>
                 </div>
 
-                <div className="flex gap-4 items-center">
+                <div className="flex gap-4 items-center w-full md:w-auto justify-center md:justify-end">
                     {!isReviewMode && (
-                        <Button type="button" size="lg" className="h-14 rounded-2xl px-10 bg-indigo-600 hover:bg-indigo-500 text-white font-black shadow-lg shadow-indigo-500/20" onClick={onFinish}>
+                        <Button type="button" size="lg" className="h-12 md:h-14 rounded-xl md:rounded-2xl px-6 md:px-10 bg-indigo-600 hover:bg-indigo-500 text-white font-black shadow-lg shadow-indigo-500/20 w-full sm:w-auto" onClick={onFinish}>
                             Sınavı Bitir
                         </Button>
                     )}
                     {isReviewMode && (
-                         <div className="flex gap-4 sm:gap-6 text-center bg-black/20 p-4 rounded-3xl border border-white/10 backdrop-blur-sm">
-                             <div>
-                                <p className="text-2xl font-black text-emerald-400">{test.correctAnswers || 0}</p>
-                                <p className="text-[10px] font-bold text-white/60 uppercase">D</p>
+                         <div className="flex items-center gap-2 sm:gap-6 text-center bg-black/20 p-3 md:p-4 rounded-2xl md:rounded-3xl border border-white/10 backdrop-blur-sm w-full md:w-auto justify-center">
+                             <div className="min-w-[2.5rem]">
+                                <p className="text-xl md:text-2xl font-black text-emerald-400">{test.correctAnswers || 0}</p>
+                                <p className="text-[8px] md:text-[10px] font-bold text-white/60 uppercase">D</p>
                             </div>
-                            <div className="w-px h-8 bg-white/10" />
-                            <div>
-                                <p className="text-2xl font-black text-rose-400">{test.incorrectAnswers || 0}</p>
-                                <p className="text-[10px] font-bold text-white/60 uppercase">Y</p>
+                            <div className="w-px h-6 md:h-8 bg-white/10" />
+                            <div className="min-w-[2.5rem]">
+                                <p className="text-xl md:text-2xl font-black text-rose-400">{test.incorrectAnswers || 0}</p>
+                                <p className="text-[8px] md:text-[10px] font-bold text-white/60 uppercase">Y</p>
                             </div>
-                            <div className="w-px h-8 bg-white/10" />
-                            <div>
-                                <p className="text-2xl font-black text-slate-300">{test.emptyAnswers || 0}</p>
-                                <p className="text-[10px] font-bold text-white/60 uppercase">B</p>
+                            <div className="w-px h-6 md:h-8 bg-white/10" />
+                            <div className="min-w-[2.5rem]">
+                                <p className="text-xl md:text-2xl font-black text-slate-300">{test.emptyAnswers || 0}</p>
+                                <p className="text-[8px] md:text-[10px] font-bold text-white/60 uppercase">B</p>
                             </div>
-                            <div className="w-px h-8 bg-white/10" />
-                            <div className="text-center">
-                                <p className="text-2xl font-black text-indigo-200">%{test.score?.toFixed(0) || 0}</p>
-                                <p className="text-[10px] font-bold text-white/60 uppercase">SKOR</p>
+                            <div className="w-px h-6 md:h-8 bg-white/10" />
+                            <div className="text-center min-w-[3rem]">
+                                <p className="text-xl md:text-2xl font-black text-indigo-200">%{test.score?.toFixed(0) || 0}</p>
+                                <p className="text-[8px] md:text-[10px] font-bold text-white/60 uppercase">SKOR</p>
                             </div>
                         </div>
                     )}
@@ -152,21 +152,21 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                     const isRevealed = isReviewMode || (test.revealedSubjectIds || []).includes(subject.id);
 
                     return (
-                        <AccordionItem key={subject.id} value={subject.id} className="border-none rounded-[2rem] overflow-hidden bg-white dark:bg-slate-900 shadow-md border border-slate-200 dark:border-slate-800">
-                            <div className="flex items-center justify-between pr-4 bg-slate-50/50 dark:bg-slate-950/50 hover:bg-slate-100 transition-colors border-b border-slate-100 dark:border-slate-800">
-                                <AccordionTrigger className="flex-1 px-6 py-5 hover:no-underline">
-                                    <div className="flex items-center gap-4 text-left">
-                                        <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-500 shrink-0">
+                        <AccordionItem key={subject.id} value={subject.id} className="border-none rounded-[1.5rem] md:rounded-[2rem] overflow-hidden bg-white dark:bg-slate-900 shadow-md border border-slate-200 dark:border-slate-800">
+                            <div className="flex flex-col sm:flex-row items-center justify-between pr-0 sm:pr-4 bg-slate-50/50 dark:bg-slate-950/50 hover:bg-slate-100 transition-colors border-b border-slate-100 dark:border-slate-800">
+                                <AccordionTrigger className="flex-1 px-4 md:px-6 py-4 md:py-5 hover:no-underline w-full">
+                                    <div className="flex items-center gap-3 md:gap-4 text-left min-w-0">
+                                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center font-black text-slate-500 shrink-0 text-sm md:text-base">
                                             {sIdx + 1}
                                         </div>
-                                        <div>
-                                            <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">{subject.name}</h3>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{subject.questionCount} Soru • {answeredInSubject} / {subject.questionCount} İşaretlendi</p>
+                                        <div className="min-w-0">
+                                            <h3 className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 truncate">{subject.name}</h3>
+                                            <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">{subject.questionCount} Soru • {answeredInSubject} İşaretlendi</p>
                                         </div>
                                     </div>
                                 </AccordionTrigger>
                                 
-                                <div className="flex items-center gap-3 shrink-0 mr-4">
+                                <div className="flex items-center justify-center gap-3 shrink-0 pb-4 sm:pb-0 px-4 sm:px-0 ml-auto sm:ml-0">
                                     {!isRevealed ? (
                                         (isReviewMode || isThresholdReached) && (
                                             <AlertDialog>
@@ -174,12 +174,12 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                                     <Button 
                                                         variant="outline" 
                                                         size="sm" 
-                                                        className="h-10 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-white dark:bg-slate-800 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 shadow-sm relative z-10 animate-in zoom-in-95"
+                                                        className="h-9 md:h-10 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-white dark:bg-slate-800 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 shadow-sm relative z-10 animate-in zoom-in-95"
                                                     >
-                                                        <BarChart3 className="w-4 h-4 mr-2" /> Ders Sonuçlarını Gör
+                                                        <BarChart3 className="w-3.5 h-3.5 md:w-4 md:h-4 mr-2" /> Ders Sonuçlarını Gör
                                                     </Button>
                                                 </AlertDialogTrigger>
-                                                <AlertDialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl">
+                                                <AlertDialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl w-[90%] sm:max-w-lg">
                                                     <AlertDialogHeader>
                                                         <AlertDialogTitle className="text-xl font-black text-slate-900 dark:text-white">Sonuçları Gör?</AlertDialogTitle>
                                                         <AlertDialogDescription className="text-slate-500 dark:text-slate-400">
@@ -187,10 +187,10 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                                         </AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter className="mt-4 gap-2">
-                                                        <AlertDialogCancel className="rounded-xl h-11 bg-slate-100 dark:bg-slate-800 border-none hover:bg-slate-200 dark:hover:bg-slate-700 font-bold m-0">Vazgeç</AlertDialogCancel>
+                                                        <AlertDialogCancel className="rounded-xl h-11 bg-slate-100 dark:bg-slate-800 border-none hover:bg-slate-200 dark:hover:bg-slate-700 font-bold m-0 flex-1">Vazgeç</AlertDialogCancel>
                                                         <AlertDialogAction 
                                                             onClick={() => handleConfirmReveal(subject.id)}
-                                                            className="rounded-xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-bold m-0 shadow-lg shadow-indigo-500/20"
+                                                            className="rounded-xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-bold m-0 shadow-lg shadow-indigo-500/20 flex-1"
                                                         >
                                                             Onayla ve Gör
                                                         </AlertDialogAction>
@@ -199,39 +199,39 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                             </AlertDialog>
                                         )
                                     ) : (
-                                        <div className="flex items-center gap-1.5 md:gap-4 bg-white/80 dark:bg-black/40 p-1.5 px-3 md:p-2 md:px-4 rounded-2xl border-2 border-indigo-500/30 animate-in zoom-in-95 shadow-lg relative z-10 shrink-0">
+                                        <div className="flex items-center gap-1.5 md:gap-4 bg-white/80 dark:bg-black/40 p-1.5 px-3 md:p-2 md:px-4 rounded-xl md:rounded-2xl border-2 border-indigo-500/30 animate-in zoom-in-95 shadow-lg relative z-10 shrink-0">
                                             <div className="flex items-center gap-1.5 md:gap-3">
-                                                <div className="flex flex-col items-center min-w-[1.2rem]">
+                                                <div className="flex flex-col items-center min-w-[1rem] md:min-w-[1.2rem]">
                                                     <span className="text-emerald-600 dark:text-emerald-400 font-black text-[10px] md:text-sm">{stats.correct}</span>
-                                                    <span className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase">D</span>
+                                                    <span className="text-[6px] md:text-[8px] font-bold text-slate-400 uppercase">D</span>
                                                 </div>
                                                 <div className="w-px h-4 md:h-6 bg-slate-200 dark:bg-slate-700" />
-                                                <div className="flex flex-col items-center min-w-[1.2rem]">
+                                                <div className="flex flex-col items-center min-w-[1rem] md:min-w-[1.2rem]">
                                                     <span className="text-rose-600 dark:text-rose-400 font-black text-[10px] md:text-sm">{stats.incorrect}</span>
-                                                    <span className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase">Y</span>
+                                                    <span className="text-[6px] md:text-[8px] font-bold text-slate-400 uppercase">Y</span>
                                                 </div>
                                                 <div className="w-px h-4 md:h-6 bg-slate-200 dark:bg-slate-700" />
-                                                <div className="flex flex-col items-center min-w-[1.2rem]">
+                                                <div className="flex flex-col items-center min-w-[1rem] md:min-w-[1.2rem]">
                                                     <span className="text-slate-500 dark:text-slate-400 font-black text-[10px] md:text-sm">{stats.empty}</span>
-                                                    <span className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase">B</span>
+                                                    <span className="text-[6px] md:text-[8px] font-bold text-slate-400 uppercase">B</span>
                                                 </div>
                                             </div>
                                             
                                             <div className="h-6 md:h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1 md:mx-2" />
                                             
                                             <div className="text-right">
-                                                <p className={cn("font-black text-sm md:text-lg leading-none", stats.rate >= 70 ? "text-emerald-600" : stats.rate >= 40 ? "text-amber-500" : "text-rose-600")}>
+                                                <p className={cn("font-black text-xs md:text-lg leading-none", stats.rate >= 70 ? "text-emerald-600" : stats.rate >= 40 ? "text-amber-500" : "text-rose-600")}>
                                                     %{stats.rate}
                                                 </p>
-                                                <p className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase">Başarı</p>
+                                                <p className="text-[6px] md:text-[8px] font-bold text-slate-400 uppercase">Başarı</p>
                                             </div>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            <AccordionContent className="p-6 bg-white dark:bg-slate-900">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                            <AccordionContent className="p-4 md:p-6 bg-white dark:bg-slate-900">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
                                     {Array.from({ length: subject.questionCount }).map((_, i) => {
                                         const qNum = (offset + i + 1).toString();
                                         const sAns = studentAnswers[qNum] || "";
@@ -242,7 +242,7 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
 
                                         return (
                                             <div key={qNum} className={cn(
-                                                "flex flex-col gap-3 p-4 rounded-2xl border transition-all",
+                                                "flex flex-col gap-3 p-3 md:p-4 rounded-xl md:rounded-2xl border transition-all",
                                                 (showResult && sAns) ? (
                                                     isCorrect ? "bg-emerald-50/30 border-emerald-200 shadow-sm" :
                                                     isWrong ? "bg-rose-50/30 border-rose-200 shadow-sm" :
@@ -250,14 +250,14 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                                 ) : (sAns ? "bg-indigo-50/20 border-indigo-100" : "bg-slate-50 dark:bg-black/20 border-slate-100 dark:border-slate-800")
                                             )}>
                                                 <div className="flex justify-between items-center px-1">
-                                                    <span className={cn("text-[10px] font-black uppercase tracking-widest", (showResult && sAns) && isCorrect ? "text-emerald-600" : (showResult && sAns) && isWrong ? "text-rose-600" : "text-slate-400")}>Soru {qNum}</span>
-                                                    {showResult && sAns && isCorrect && <Check className="w-3.5 h-3.5 text-emerald-500" strokeWidth={4} />}
-                                                    {showResult && sAns && isWrong && <X className="w-3.5 h-3.5 text-rose-500" strokeWidth={4} />}
+                                                    <span className={cn("text-[9px] md:text-[10px] font-black uppercase tracking-widest", (showResult && sAns) && isCorrect ? "text-emerald-600" : (showResult && sAns) && isWrong ? "text-rose-600" : "text-slate-400")}>Soru {qNum}</span>
+                                                    {showResult && sAns && isCorrect && <Check className="w-3 md:w-3.5 h-3 md:h-3.5 text-emerald-500" strokeWidth={4} />}
+                                                    {showResult && sAns && isWrong && <X className="w-3 md:w-3.5 h-3 md:h-3.5 text-rose-500" strokeWidth={4} />}
                                                 </div>
 
-                                                <div className="flex justify-between items-center gap-1.5">
+                                                <div className="flex justify-between items-center gap-1 md:gap-1.5">
                                                     {['A', 'B', 'C', 'D', 'E'].map(opt => {
-                                                        const isSelected = sAns === opt;
+                                                        const isActive = sAns === opt;
                                                         const isCorrectOpt = showResult && opt === cAns;
                                                         const isStudentWrongOpt = showResult && opt === sAns && opt !== cAns;
 
@@ -268,14 +268,13 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                                                 disabled={isReviewMode || showResult}
                                                                 onClick={() => {
                                                                     if (isReviewMode || showResult) return;
-                                                                    // Eğer zaten seçiliyse temizle (Toggle logic)
-                                                                    const newValue = isSelected ? "" : opt;
+                                                                    const newValue = isActive ? "" : opt;
                                                                     onAnswer(qNum, newValue);
                                                                 }}
                                                                 className={cn(
-                                                                    "flex items-center justify-center h-10 flex-1 rounded-xl border transition-all text-xs font-black cursor-pointer",
+                                                                    "flex items-center justify-center h-9 md:h-10 flex-1 rounded-lg md:rounded-xl border transition-all text-[10px] md:text-xs font-black cursor-pointer",
                                                                     !showResult ? (
-                                                                        isSelected 
+                                                                        isActive 
                                                                             ? "bg-indigo-600 border-indigo-600 text-white shadow-md scale-105"
                                                                             : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 hover:border-indigo-400"
                                                                     ) : (
@@ -302,3 +301,4 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
         </div>
     );
 }
+
