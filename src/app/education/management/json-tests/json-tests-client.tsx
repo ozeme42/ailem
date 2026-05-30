@@ -24,6 +24,8 @@ const themeColors = {
     CARD_BG: "bg-slate-900/40 border border-slate-800 shadow-xl backdrop-blur-md hover:bg-slate-900/60 hover:border-slate-700 transition-all duration-300",
     ICON_BOX: "bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20 text-white",
     BUTTON_PRIMARY: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 transition-all active:scale-95",
+    TAB_LIST: "h-11 p-1 rounded-xl bg-slate-950/50 border border-slate-800 w-full lg:w-auto grid grid-cols-3",
+    TAB_TRIGGER: "rounded-lg text-xs font-bold data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 hover:text-slate-200"
 };
 
 export function JsonTestsClient() {
@@ -106,24 +108,16 @@ export function JsonTestsClient() {
     await updateTopics(newList);
   };
 
-  // Fixed React Hook Order: Move useMemo calculation to top level
-  const relevantTopicsForForm = React.useMemo(() => {
-    const currentSubj = editingTest?.subject;
-    if (!currentSubj) return allTopics;
-    
+  // React Hook hatasını önlemek için useMemo dışarı taşındı ve NewJsonTestForm'un içinde filtrelenmesi sağlandı.
+  // Bu prop artık sadece "tüm" konuları geçer, form içinde seçilen derse göre filtrelenir.
+  const masterTopics = React.useMemo(() => {
     const topicsSet = new Set<string>();
-    trackedBooks.forEach(book => (book.subjects || []).forEach(s => { 
-        if (s.name === currentSubj) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
-    }));
-    studyPlans.forEach(plan => (plan.subjects || []).forEach(s => { 
-        if (s.name === currentSubj) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
-    }));
-    bankQuestions.forEach(q => {
-        if (q.subject === currentSubj && q.topic) topicsSet.add(q.topic);
-    });
-    
-    return topicsSet.size > 0 ? Array.from(topicsSet).sort() : allTopics;
-  }, [allTopics, editingTest, trackedBooks, studyPlans, bankQuestions]);
+    trackedBooks.forEach(book => (book.subjects || []).forEach(s => (s.topics || []).forEach(t => topicsSet.add(t.name))));
+    studyPlans.forEach(plan => (plan.subjects || []).forEach(s => (s.topics || []).forEach(t => topicsSet.add(t.name))));
+    bankQuestions.forEach(q => { if (q.topic) topicsSet.add(q.topic); });
+    allTopics.forEach(t => topicsSet.add(t));
+    return Array.from(topicsSet).sort();
+  }, [allTopics, trackedBooks, studyPlans, bankQuestions]);
 
   if (loading) {
     return <div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin h-10 w-10 text-indigo-500" /></div>;
@@ -159,110 +153,122 @@ export function JsonTestsClient() {
         </header>
 
         <main className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-6 relative z-10">
-            {jsonTests.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {jsonTests.map(test => {
-                        const student = familyMembers.find(m => m.id === test.studentId);
-                        const isCompleted = test.status === 'Sonuçlandı';
-                        return (
-                            <Card key={test.id} className={cn("flex flex-col h-full group", themeColors.CARD_BG)}>
-                                <CardHeader className="pb-4">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5">
-                                            {test.subject}
-                                        </Badge>
-                                        <div className="flex items-center gap-1">
-                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white" onClick={() => { setReassigningTest(null); handleOpenForm(test); }}>
-                                                <Edit className="w-4 h-4" />
-                                            </Button>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white hover:bg-slate-800 rounded-lg">
-                                                        <MoreVertical className="w-4 h-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-100 w-48 rounded-xl p-1">
-                                                    <DropdownMenuItem onClick={() => router.push(`/education/${test.id}`)} className="cursor-pointer hover:bg-slate-800 rounded-lg py-2.5">
-                                                        <BookOpen className="mr-2 h-4 w-4 text-indigo-400" /> Sınavı İncele
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator className="bg-slate-800" />
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 cursor-pointer focus:text-rose-400 focus:bg-rose-50 rounded-lg py-2.5">
-                                                                <Trash2 className="mr-2 h-4 w-4" /> Testi Sil
-                                                            </DropdownMenuItem>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>Testi Sil?</AlertDialogTitle>
-                                                                <AlertDialogDescription className="text-slate-400">
-                                                                    "{test.title}" yazılı testi kalıcı olarak silinecektir.
-                                                                </AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDeleteTest(test.id)} className="bg-rose-600 hover:bg-rose-700 border-none">Evet, Sil</AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    </div>
-                                    <CardTitle className="text-lg font-bold text-slate-100 group-hover:text-indigo-400 transition-colors line-clamp-2">{test.title}</CardTitle>
-                                </CardHeader>
-                                
-                                <CardContent className="flex-grow space-y-4">
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex flex-col items-center justify-center">
-                                            <span className="text-xl font-black text-white">{test.questionCount}</span>
-                                            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Soru</span>
-                                        </div>
-                                        <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex flex-col items-center justify-center">
-                                            <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full", isCompleted ? "bg-emerald-50/10 text-emerald-400" : "bg-amber-50/10 text-amber-400")}>
-                                                {isCompleted ? "Bitti" : "Atandı"}
-                                            </span>
-                                            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mt-1">Durum</span>
-                                        </div>
-                                    </div>
-                                    
-                                    {student && (
-                                        <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/5 rounded-xl">
-                                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm" style={{backgroundColor: student.color}}>
-                                                {student.name.charAt(0)}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest leading-none">Son Atanan</p>
-                                                <p className="text-sm font-semibold text-slate-200 truncate mt-1">{student.name}</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </CardContent>
-                                
-                                <CardFooter className="p-4 pt-0 mt-auto">
-                                    <Button 
-                                        onClick={() => { setReassigningTest(test); handleOpenForm(test); }} 
-                                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black h-11 rounded-xl shadow-lg shadow-indigo-500/20"
-                                    >
-                                        <Repeat className="mr-2 h-4 w-4" /> Ödevi Ata
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        );
-                    })}
-                </div>
-            ) : (
-                <div className="flex flex-col items-center justify-center py-24 text-center bg-slate-900/30 rounded-3xl border border-dashed border-slate-800 m-auto max-w-2xl w-full">
-                    <div className="w-20 h-20 bg-slate-800/80 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                        <FileJson className="h-10 w-10 text-slate-500" />
+            <Tabs value="active" className="w-full space-y-6">
+                <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 flex flex-col gap-4">
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                        <TabsList className={themeColors.TAB_LIST}>
+                            <TabsTrigger value="active" className={themeColors.TAB_TRIGGER}>Aktif Yazılılar ({jsonTests.length})</TabsTrigger>
+                        </TabsList>
                     </div>
-                    <h3 className="text-xl font-bold text-slate-200">Yazılı Test Bulunamadı</h3>
-                    <p className="text-slate-400 mt-2 text-sm max-w-xs mx-auto">Henüz bir yazılı ödevi oluşturmamışsınız. Yeni bir tane ekleyerek başlayın.</p>
-                    <Button onClick={() => handleOpenForm(null)} className="mt-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold px-8 shadow-lg shadow-indigo-500/20">
-                        <PlusCircle className="mr-2 h-5 w-5" /> İlk Testi Oluştur
-                    </Button>
                 </div>
-            )}
+
+                <TabsContent value="active" className="m-0 animate-in fade-in zoom-in-95 duration-300">
+                    {jsonTests.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {jsonTests.map(test => {
+                                const student = familyMembers.find(m => m.id === test.studentId);
+                                const isCompleted = test.status === 'Sonuçlandı';
+                                return (
+                                    <Card key={test.id} className={cn("flex flex-col h-full group", themeColors.CARD_BG)}>
+                                        <CardHeader className="pb-4">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5">
+                                                    {test.subject}
+                                                </Badge>
+                                                <div className="flex items-center gap-1">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white" onClick={() => { setReassigningTest(null); handleOpenForm(test); }}>
+                                                        <Edit className="w-4 h-4" />
+                                                    </Button>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white hover:bg-slate-800 rounded-lg">
+                                                                <MoreVertical className="w-4 h-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-100 w-48 rounded-xl p-1">
+                                                            <DropdownMenuItem onClick={() => router.push(`/education/${test.id}`)} className="cursor-pointer hover:bg-slate-800 rounded-lg py-2.5">
+                                                                <BookOpen className="mr-2 h-4 w-4 text-indigo-400" /> Sınavı İncele
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator className="bg-slate-800" />
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-400 cursor-pointer focus:text-rose-400 focus:bg-rose-50 rounded-lg py-2.5">
+                                                                        <Trash2 className="mr-2 h-4 w-4" /> Testi Sil
+                                                                    </DropdownMenuItem>
+                                                                </AlertDialogTrigger>
+                                                                <AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
+                                                                    <AlertDialogHeader>
+                                                                        <AlertDialogTitle>Testi Sil?</AlertDialogTitle>
+                                                                        <AlertDialogDescription className="text-slate-400">
+                                                                            "{test.title}" yazılı testi kalıcı olarak silinecektir.
+                                                                        </AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+                                                                    <AlertDialogFooter>
+                                                                        <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
+                                                                        <AlertDialogAction onClick={() => handleDeleteTest(test.id)} className="bg-rose-600 hover:bg-rose-700 border-none">Evet, Sil</AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            </div>
+                                            <CardTitle className="text-lg font-bold text-slate-100 group-hover:text-indigo-400 transition-colors line-clamp-2">{test.title}</CardTitle>
+                                        </CardHeader>
+                                        
+                                        <CardContent className="flex-grow space-y-4">
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex flex-col items-center justify-center">
+                                                    <span className="text-xl font-black text-white">{test.questionCount}</span>
+                                                    <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Soru</span>
+                                                </div>
+                                                <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex flex-col items-center justify-center">
+                                                    <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full", isCompleted ? "bg-emerald-50/10 text-emerald-400" : "bg-amber-50/10 text-amber-400")}>
+                                                        {isCompleted ? "Bitti" : "Atandı"}
+                                                    </span>
+                                                    <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mt-1">Durum</span>
+                                                </div>
+                                            </div>
+                                            
+                                            {student && (
+                                                <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/5 rounded-xl">
+                                                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm" style={{backgroundColor: student.color}}>
+                                                        {student.name.charAt(0)}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest leading-none">Son Atanan</p>
+                                                        <p className="text-sm font-semibold text-slate-200 truncate mt-1">{student.name}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                        
+                                        <CardFooter className="p-4 pt-0 mt-auto">
+                                            <Button 
+                                                onClick={() => { setReassigningTest(test); handleOpenForm(test); }} 
+                                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black h-11 rounded-xl shadow-lg shadow-indigo-500/20"
+                                            >
+                                                <Repeat className="mr-2 h-4 w-4" /> Ödevi Ata
+                                            </Button>
+                                        </CardFooter>
+                                    </Card>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-24 text-center bg-slate-900/30 rounded-3xl border border-dashed border-slate-800 m-auto max-w-2xl w-full">
+                            <div className="w-20 h-20 bg-slate-800/80 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                                <FileJson className="h-10 w-10 text-slate-500" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-200">Yazılı Test Bulunamadı</h3>
+                            <p className="text-slate-400 mt-2 text-sm max-w-xs mx-auto">Henüz bir yazılı ödevi oluşturmamışsınız. Yeni bir tane ekleyerek başlayın.</p>
+                            <Button onClick={() => handleOpenForm(null)} className="mt-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold px-8 shadow-lg shadow-indigo-500/20">
+                                <PlusCircle className="mr-2 h-5 w-5" /> İlk Testi Oluştur
+                            </Button>
+                        </div>
+                    )}
+                </TabsContent>
+            </Tabs>
         </main>
 
         <Dialog open={isFormOpen} onOpenChange={(open) => { if(!open) { setEditingTest(null); setReassigningTest(null); } setIsFormOpen(open); }}>
@@ -283,9 +289,11 @@ export function JsonTestsClient() {
                         initialData={editingTest}
                         availableSubjects={allSubjects}
                         onSubjectCreated={handleCreateSubject}
-                        availableTopics={allTopics}
+                        availableTopics={masterTopics}
                         onTopicCreated={handleCreateTopic}
-                        relevantTopics={relevantTopicsForForm}
+                        trackedBooks={trackedBooks}
+                        studyPlans={studyPlans}
+                        bankQuestions={bankQuestions}
                     />
                 </div>
             </DialogContent>

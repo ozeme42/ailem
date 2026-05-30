@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { FamilyMember, Test } from "@/lib/data";
+import type { FamilyMember, Test, TrackedBook, StudyPlan, BankQuestion } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "./ui/scroll-area";
 import { Combobox } from "./ui/combobox";
@@ -63,7 +63,9 @@ type NewJsonTestFormProps = {
   onSubjectCreated: (subject: string) => void;
   availableTopics: string[];
   onTopicCreated: (topic: string) => void;
-  relevantTopics: string[];
+  trackedBooks: TrackedBook[];
+  studyPlans: StudyPlan[];
+  bankQuestions: BankQuestion[];
 };
 
 const sampleJsonPlaceholder = `[
@@ -83,7 +85,9 @@ export function NewJsonTestForm({
     onSubjectCreated,
     availableTopics,
     onTopicCreated,
-    relevantTopics
+    trackedBooks,
+    studyPlans,
+    bankQuestions
 }: NewJsonTestFormProps) {
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
@@ -100,6 +104,34 @@ export function NewJsonTestForm({
       jsonContent: initialData?.jsonQuestions ? JSON.stringify(initialData.jsonQuestions, null, 2) : "",
     },
   });
+
+  const watchedSubject = form.watch("subject");
+
+  // Hiyerarşik Konu Listesi: Seçilen derse göre filtreleme
+  const filteredTopicsOptions = React.useMemo(() => {
+    if (!watchedSubject) return [];
+    const topicsSet = new Set<string>();
+    
+    // Kitaplardan gelen bu derse ait konular
+    trackedBooks.forEach(book => (book.subjects || []).forEach(s => { 
+        if (s.name === watchedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
+    }));
+    
+    // Planlardaki bu derse ait konular
+    studyPlans.forEach(plan => (plan.subjects || []).forEach(s => { 
+        if (s.name === watchedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
+    }));
+    
+    // Daha önce bankaya bu dersle kaydedilmiş konular
+    bankQuestions.forEach(q => {
+        if (q.subject === watchedSubject && q.topic) topicsSet.add(q.topic);
+    });
+
+    // Global listeden bu dersle eşleşebilecekleri topla (v1.x'te ders-konu eşleşmesi derived olduğu için hepsini gösteriyoruz ama öncelik yukarıdakilerde)
+    availableTopics.forEach(t => topicsSet.add(t));
+    
+    return Array.from(topicsSet).sort().map(t => ({ label: t, value: t }));
+  }, [watchedSubject, trackedBooks, studyPlans, bankQuestions, availableTopics]);
 
   React.useEffect(() => {
     if (initialData) {
@@ -161,7 +193,6 @@ export function NewJsonTestForm({
   };
 
   const subjectOptions = availableSubjects.map(s => ({ label: s, value: s }));
-  const topicOptions = relevantTopics.map(t => ({ label: t, value: t }));
 
   return (
     <Form {...form}>
@@ -229,13 +260,13 @@ export function NewJsonTestForm({
                             <FormLabel className={glassColors.LABEL}><Layers className="w-3.5 h-3.5 text-indigo-400"/> Konu (Opsiyonel)</FormLabel>
                             <FormControl>
                                 <Combobox 
-                                    options={topicOptions}
+                                    options={filteredTopicsOptions}
                                     value={field.value || ""}
                                     onChange={field.onChange}
                                     onCreate={onTopicCreated}
-                                    placeholder={form.watch('subject') ? "Konu seçin veya oluşturun..." : "Önce ders seçin..."}
+                                    placeholder={watchedSubject ? "Konu seçin veya oluşturun..." : "Önce ders seçin..."}
                                     className={glassColors.INPUT_BG}
-                                    disabled={!form.watch('subject')}
+                                    disabled={!watchedSubject}
                                 />
                             </FormControl>
                             <FormMessage />
