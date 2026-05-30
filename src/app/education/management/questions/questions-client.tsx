@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -9,18 +10,18 @@ import { Input } from "@/components/ui/input";
 import { 
     ArrowLeft, Trash2, Plus, X, Edit, AlertCircle, UploadCloud, Send, 
     Calendar as CalendarIcon, FileQuestion, BookCopy, Search, CheckCircle2, 
-    Maximize2, Database, LayoutGrid, Folder, FolderOpen, ChevronRight, Loader2
+    Maximize2, Database, LayoutGrid, Folder, FolderOpen, ChevronRight, Loader2, Minus
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDropzone } from 'react-dropzone';
 import NextImage from 'next/image';
 import { addBulkBankQuestions, onBankQuestionsUpdate, onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics, deleteBankQuestion, deleteBulkBankQuestions, addTest, onMistakesUpdate, deleteMistake, onTestsUpdate, onTrackedBooksUpdate, onStudyPlansUpdate } from "@/lib/dataService";
-import { BankQuestion, FamilyMember, Test, Mistake, TrackedBook, StudyPlan } from "@/lib/data";
+import { BankQuestion, FamilyMember, Test, Mistake, TrackedBook, StudyPlan, QuickTestQuestion } from "@/lib/data";
 import { Combobox } from "@/components/ui/combobox";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/components/auth-provider";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { NewQuestionBankForm } from "@/components/new-question-bank-form";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
@@ -30,10 +31,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, addDays } from "date-fns";
 import { tr } from 'date-fns/locale';
-import { cn } from "@/lib/utils";
-import { Calendar } from "@/components/ui/calendar";
 import { motion, AnimatePresence } from "framer-motion";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Calendar } from "@/components/ui/calendar";
 
 // --- DESIGN SYSTEM ---
 const themeColors = {
@@ -48,7 +48,7 @@ const themeColors = {
 };
 
 export function QuestionsClient() {
-  const { familyMembers } = useAuth();
+  const { familyMembers, familyId } = useAuth();
   const [bankQuestions, setBankQuestions] = useState<BankQuestion[]>([]);
   const [mistakes, setMistakes] = useState<Mistake[]>([]);
   const [trackedBooks, setTrackedBooks] = useState<TrackedBook[]>([]);
@@ -85,6 +85,7 @@ export function QuestionsClient() {
   const router = useRouter();
 
   useEffect(() => {
+    if (!familyId) return;
     setIsLoading(true);
     const unsubQuestions = onBankQuestionsUpdate((questions) => { setBankQuestions(questions); setIsLoading(false); });
     const unsubSubjects = onSubjectsUpdate(setAllSubjects);
@@ -93,7 +94,7 @@ export function QuestionsClient() {
     const unsubBooks = onTrackedBooksUpdate(setTrackedBooks);
     const unsubPlans = onStudyPlansUpdate(setStudyPlans);
     return () => { unsubQuestions(); unsubSubjects(); unsubTopics(); unsubMistakes(); unsubBooks(); unsubPlans(); };
-  }, []);
+  }, [familyId]);
 
   const filteredData = useMemo(() => {
       let data: any[] = activeTab === 'bank' ? bankQuestions : mistakes;
