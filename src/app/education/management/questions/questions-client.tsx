@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
-    ArrowLeft, Trash2, Plus, X, Edit, AlertTriangle, UploadCloud, Send, 
+    ArrowLeft, Trash2, Plus, X, Edit, AlertCircle, UploadCloud, Send, 
     Calendar as CalendarIcon, FileQuestion, BookCopy, Search, CheckCircle2, 
     Maximize2, Database, LayoutGrid, Folder, FolderOpen, ChevronRight, Loader2
 } from "lucide-react";
@@ -63,7 +63,7 @@ export function QuestionsClient() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Filters & Tabs
-  const [searchQuery, setSearchQuery] = setSearchQuery("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [filterSubject, setFilterSubject] = useState("all");
   const [filterTopic, setFilterTopic] = useState("all");
   const [activeTab, setActiveTab] = useState("bank"); 
@@ -349,7 +349,7 @@ export function QuestionsClient() {
                                         <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100 rounded-3xl">
                                             <AlertDialogHeader><AlertDialogTitle>Seçilenleri Sil?</AlertDialogTitle><AlertDialogDescription>"{selectedIds.length}" adet kayıt kalıcı olarak silinecektir.</AlertDialogDescription></AlertDialogHeader>
                                             <AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 text-white">İptal</AlertDialogCancel><AlertDialogAction onClick={handleDeleteSelected} className="bg-rose-600 hover:bg-rose-700">Hepsini Sil</AlertDialogAction></AlertDialogFooter>
-                                        </AlertDialog>
+                                        </AlertDialogContent>
                                     </AlertDialog>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -433,7 +433,7 @@ function QuestionCard({ item, isSelected, onToggle, onPreview, onEdit, showEdit,
             <div className="p-5 flex flex-col flex-1 bg-white">
                 <div className="flex gap-2 mb-3 flex-wrap"><Badge className="bg-indigo-50 text-indigo-700 font-bold text-[10px] rounded-md">{item.subject}</Badge><Badge variant="outline" className="text-slate-500 text-[10px] rounded-md">{item.topic}</Badge></div>
                 <p className="text-sm font-bold text-slate-800 line-clamp-2 leading-relaxed">{item.title || item.originalFilename}</p>
-                {isMistake && (<div className="mt-auto pt-4 border-t border-slate-50 flex items-center gap-2 text-xs font-semibold text-rose-600"><div className="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center"><AlertTriangle className="w-3.5 h-3.5"/></div><span>{familyMembers.find((f:any) => f.id === item.creatorId)?.name} Yanlışı</span></div>)}
+                {isMistake && (<div className="mt-auto pt-4 border-t border-slate-50 flex items-center gap-2 text-xs font-semibold text-rose-600"><div className="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center"><AlertCircle className="w-3.5 h-3.5"/></div><span>{familyMembers.find((f:any) => f.id === item.creatorId)?.name} Yanlışı</span></div>)}
             </div>
         </div>
     )

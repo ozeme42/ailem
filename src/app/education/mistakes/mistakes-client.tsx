@@ -8,11 +8,11 @@ import {
     Layers, Search, Filter, HelpCircle, GraduationCap,
     Library, FileText, CheckCircle2, XCircle, BarChart3,
     ChevronDown, BookCopy, ListTree, TrendingUp, TrendingDown, MinusCircle,
-    Eye, ExternalLink, LayoutGrid, ClipboardList, ListX
+    Eye, ExternalLink, LayoutGrid, ClipboardList, ListX, Loader2
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { onTestsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
-import { Test, TrackedBook, FamilyMember } from "@/lib/data";
+import { Test, TrackedBook, FamilyMember, EvaluationStatus } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
