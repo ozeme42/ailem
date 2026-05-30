@@ -16,8 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useDropzone } from 'react-dropzone';
 import NextImage from 'next/image';
-import { addBulkBankQuestions, onBankQuestionsUpdate, onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics, deleteBankQuestion, deleteBulkBankQuestions, addTest, onMistakesUpdate, deleteMistake, onTestsUpdate } from "@/lib/dataService";
-import { BankQuestion, FamilyMember, Test, Mistake } from "@/lib/data";
+import { addBulkBankQuestions, onBankQuestionsUpdate, onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics, deleteBankQuestion, deleteBulkBankQuestions, addTest, onMistakesUpdate, deleteMistake, onTestsUpdate, onTrackedBooksUpdate, onStudyPlansUpdate } from "@/lib/dataService";
+import { BankQuestion, FamilyMember, Test, Mistake, TrackedBook, StudyPlan } from "@/lib/data";
 import { Combobox } from "@/components/ui/combobox";
 import { Loader2 } from "lucide-react";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
@@ -241,7 +241,7 @@ export function QuestionsClient() {
                         
                         <div className="relative w-full sm:w-72 shrink-0">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <Input placeholder="Soru veya klasör ara..." value={searchQuery} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-sm focus:bg-white" />
+                            <Input placeholder="Soru veya klasör ara..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-sm focus:bg-white" />
                         </div>
                     </div>
                 </div>
@@ -353,6 +353,9 @@ export function QuestionsClient() {
             onOpenChange={setIsBulkDialogOpen} 
             onImport={handleBulkImport} 
             existingSubjects={allSubjects} 
+            existingTopics={allTopics}
+            trackedBooks={trackedBooks}
+            studyPlans={studyPlans}
             bankQuestions={[...bankQuestions, ...mistakes]}
             onSubjectCreate={handleCreateSubject} 
             onTopicCreate={handleCreateTopic} 
@@ -381,10 +384,10 @@ export function QuestionsClient() {
 }
 
 function BulkAddImagesDialog({ 
-    open, onOpenChange, onImport, existingSubjects, bankQuestions, onSubjectCreate, onTopicCreate, type
+    open, onOpenChange, onImport, existingSubjects, existingTopics, trackedBooks, studyPlans, bankQuestions, onSubjectCreate, onTopicCreate, type
 }: { 
     open: boolean, onOpenChange: (open: boolean) => void, onImport: (questions: Partial<BankQuestion>[], type: 'mcq' | 'open_ended') => void,
-    existingSubjects: string[], bankQuestions: any[], onSubjectCreate: (name: string) => void, onTopicCreate: (name: string) => void, type: 'mcq' | 'open_ended';
+    existingSubjects: string[], existingTopics: string[], trackedBooks: TrackedBook[], studyPlans: StudyPlan[], bankQuestions: any[], onSubjectCreate: (name: string) => void, onTopicCreate: (name: string) => void, type: 'mcq' | 'open_ended';
 }) {
     const [isImporting, setIsImporting] = useState(false);
     const form = useForm<z.infer<typeof bulkAddSchema>>({ resolver: zodResolver(bulkAddSchema), defaultValues: { subject: '', topic: '', images: [] } });
@@ -394,11 +397,27 @@ function BulkAddImagesDialog({
     const filteredTopicsOptions = useMemo(() => {
         if (!selectedSubject) return [];
         const topicsSet = new Set<string>();
+        
+        // 1. Kitaplardaki bu derse ait konuları bul
+        trackedBooks.forEach(book => (book.subjects || []).forEach(s => { 
+            if (s.name === selectedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
+        }));
+
+        // 2. Planlardaki bu derse ait konuları bul
+        studyPlans.forEach(plan => (plan.subjects || []).forEach(s => { 
+            if (s.name === selectedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
+        }));
+
+        // 3. Daha önce bu dersle kaydedilmiş soruların konularını bul
         bankQuestions.forEach(q => {
             if (q.subject === selectedSubject && q.topic) topicsSet.add(q.topic);
         });
+
+        // 4. Eğer konu global listede varsa ama henüz hiçbir yerde bu dersle eşleşmemişse, yine de gösterilsin mi? 
+        // Kullanıcı "konu yoksa o anda eklenebilsin" dediği için şimdilik sadece bu dersle ilişkili olanları getirmek daha doğru (Hiyerarşi).
+
         return Array.from(topicsSet).sort().map(t => ({ label: t, value: t }));
-    }, [selectedSubject, bankQuestions]);
+    }, [selectedSubject, trackedBooks, studyPlans, bankQuestions]);
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         const currentImages = form.getValues('images') || [];
@@ -424,7 +443,7 @@ function BulkAddImagesDialog({
     return (
         <Dialog open={open} onOpenChange={(o) => { if (!o) form.reset(); onOpenChange(o); }}>
             <DialogContent className="sm:max-w-2xl bg-white border-slate-200 text-slate-900 rounded-3xl shadow-2xl p-6 md:p-8">
-                <DialogHeader className="mb-6">
+                <DialogHeader>
                     <DialogTitle className="text-2xl font-black flex items-center gap-3">
                         Toplu İçe Aktar
                         <Badge className="bg-indigo-100 text-indigo-700 font-bold border-none">{type === 'mcq' ? 'Çoktan Seçmeli' : 'Açık Uçlu'}</Badge>
@@ -476,7 +495,7 @@ function BulkAddImagesDialog({
 
                         <DialogFooter className="pt-6 mt-4">
                             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl text-slate-600 hover:bg-slate-100 font-bold px-6">İptal</Button>
-                            <Button type="submit" disabled={isImporting || form.watch('images')?.length === 0} className="h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 shadow-lg shadow-indigo-600/20 w-full sm:w-auto">
+                            <Button type="submit" disabled={isImporting || form.watch('images')?.length === 0} className="h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 shadow-lg shadow-indigo-500/20 w-full sm:w-auto">
                                 {isImporting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 'Görselleri Aktar'}
                             </Button>
                         </DialogFooter>
@@ -610,7 +629,7 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-3xl shadow-2xl p-6 md:p-8">
-        <DialogHeader className="mb-6">
+        <DialogHeader>
             <DialogTitle className="text-2xl font-black flex items-center gap-3">
                 Ödev Oluştur
                 <Badge className="bg-emerald-100 text-emerald-700 font-bold border-none">{selectedIds.length} Soru</Badge>
@@ -699,4 +718,3 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
     </Dialog>
   );
 }
-

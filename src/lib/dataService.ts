@@ -402,7 +402,7 @@ export const onSubjectsUpdate = (callback: (subjects: string[]) => void) => {
         if (!user) return callback([]);
         return onSnapshot(doc(db, 'users', user.uid), async (userDoc) => {
             const familyId = userDoc.data()?.familyId;
-            if (familyId) onSnapshot(doc(db, 'familyManagement', familyId), (doc) => callback(doc.exists() ? doc.data().educationSubjects || [] : []));
+            if (familyId) return onSnapshot(doc(db, 'familyManagement', familyId), (doc) => callback(doc.exists() ? doc.data().educationSubjects || [] : []));
             else callback([]);
         });
     });
@@ -417,7 +417,7 @@ export const onTopicsUpdate = (callback: (topics: string[]) => void) => {
         if (!user) return callback([]);
         return onSnapshot(doc(db, 'users', user.uid), async (userDoc) => {
             const familyId = userDoc.data()?.familyId;
-            if (familyId) onSnapshot(doc(db, 'familyManagement', familyId), (doc) => callback(doc.exists() ? doc.data().educationTopics || [] : []));
+            if (familyId) return onSnapshot(doc(db, 'familyManagement', familyId), (doc) => callback(doc.exists() ? doc.data().educationTopics || [] : []));
             else callback([]);
         });
     });
@@ -558,7 +558,7 @@ export const onTagsUpdate = (collectionName: string, callback: (tags: string[]) 
         if (!user) return callback([]);
         return onSnapshot(doc(db, 'users', user.uid), async (userDoc) => {
             const familyId = userDoc.data()?.familyId;
-            if (familyId) onSnapshot(doc(db, 'familyManagement', familyId), (doc) => callback(doc.exists() ? doc.data()[collectionName] || [] : []));
+            if (familyId) return onSnapshot(doc(db, 'familyManagement', familyId), (doc) => callback(doc.exists() ? doc.data()[collectionName] || [] : []));
             else callback([]);
         });
     });
@@ -618,4 +618,3 @@ export const addReadingSession = async (data: any) => {
 };
 
 export const onAmbientSoundsUpdate = (cb: (s: AmbientSound[]) => void) => onFamilyDataUpdate<AmbientSound>('ambientSounds', cb);
-

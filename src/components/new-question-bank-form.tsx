@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -11,7 +12,7 @@ import { Loader2, UploadCloud, ChevronRight, ChevronLeft, Check, LayoutGrid, Typ
 import { BankQuestion, TrackedBook, StudyPlan } from "@/lib/data";
 import { useAuth } from "./auth-provider";
 import { useToast } from "@/hooks/use-toast";
-import { addBankQuestion, updateBankQuestion, updateSubjects, updateTopics, onTrackedBooksUpdate, onStudyPlansUpdate } from "@/lib/dataService";
+import { addBankQuestion, updateBankQuestion, updateSubjects, updateTopics, onTrackedBooksUpdate, onStudyPlansUpdate, onBankQuestionsUpdate } from "@/lib/dataService";
 import { storage } from "@/lib/firebase";
 import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import Image from 'next/image';
@@ -75,6 +76,7 @@ export function NewQuestionBankForm({
   // Data for filtering
   const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
   const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([]);
+  const [bankQuestions, setBankQuestions] = React.useState<BankQuestion[]>([]);
   
   // Multiple image handling
   const [imageQueue, setImageQueue] = React.useState<string[]>([]);
@@ -85,7 +87,7 @@ export function NewQuestionBankForm({
   const [isAddingNewTopic, setIsAddingNewTopic] = React.useState(false);
   const [newItemName, setNewItemName] = React.useState("");
 
-  // DÜZELTME 1: O an eklenen konuların ilgili dersle ilişkilendirilip ekranda kalması için geçici state
+  // Oturumda eklenen konuların ilgili dersle ilişkilendirilmesi için
   const [sessionAddedTopics, setSessionAddedTopics] = React.useState<Record<string, string[]>>({});
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -109,7 +111,8 @@ export function NewQuestionBankForm({
   React.useEffect(() => {
     const unsubBooks = onTrackedBooksUpdate(setTrackedBooks);
     const unsubPlans = onStudyPlansUpdate(setStudyPlans);
-    return () => { unsubBooks(); unsubPlans(); };
+    const unsubBank = onBankQuestionsUpdate(setBankQuestions);
+    return () => { unsubBooks(); unsubPlans(); unsubBank(); };
   }, []);
 
   // Load initial data for editing mode
@@ -120,7 +123,6 @@ export function NewQuestionBankForm({
         setOptionKeys(Object.keys(opts));
         setImageQueue([initialData.imageUrl]);
         
-        // Düzenleme modundayken mevcut konunun listede görünmesini sağla
         if (initialData.subject && initialData.topic) {
             setSessionAddedTopics(prev => ({
                 ...prev,
@@ -219,9 +221,10 @@ export function NewQuestionBankForm({
         setValue('subject', name); 
         setIsAddingNewSubject(false);
     } else {
+        // Global müfredata ekle
         if (!availableTopics.includes(name)) { await updateTopics([...availableTopics, name]); onTopicCreated(name); }
         
-        // DÜZELTME 2: Eklenen konuyu o an seçili olan ders ile eşleştir
+        // Hiyerarşiye ekle (Oturum bazlı)
         if (watchedSubject) {
             setSessionAddedTopics(prev => ({
                 ...prev,
@@ -235,7 +238,6 @@ export function NewQuestionBankForm({
     setNewItemName("");
   };
 
-  // DÜZELTME 3: Sadece ilgili derse ait ve oturumda yeni eklenen konuları getir
   const relevantTopics = React.useMemo(() => {
     if (!watchedSubject) return [];
     const topicsSet = new Set<string>();
@@ -245,16 +247,21 @@ export function NewQuestionBankForm({
         if (s.name === watchedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
     }));
     
-    // Çalışma planlarından gelen bu derse ait konular
+    // Planlardaki bu derse ait konular
     studyPlans.forEach(plan => (plan.subjects || []).forEach(s => { 
         if (s.name === watchedSubject) (s.topics || []).forEach(t => topicsSet.add(t.name)); 
     }));
     
-    // Bu oturumda (form açıkken) eklenen ve bu derse ait konular
+    // Daha önce bankaya bu dersle kaydedilmiş konular
+    bankQuestions.forEach(q => {
+        if (q.subject === watchedSubject && q.topic) topicsSet.add(q.topic);
+    });
+    
+    // Bu oturumda eklenen konular
     (sessionAddedTopics[watchedSubject] || []).forEach(t => topicsSet.add(t));
     
     return Array.from(topicsSet).sort((a, b) => a.localeCompare(b, 'tr'));
-  }, [watchedSubject, trackedBooks, studyPlans, sessionAddedTopics]);
+  }, [watchedSubject, trackedBooks, studyPlans, bankQuestions, sessionAddedTopics]);
 
   const handleOptionCountChange = (newCount: number) => {
       const currentKeys = [...optionKeys];
@@ -269,22 +276,16 @@ export function NewQuestionBankForm({
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !user.uid) {
-        toast({ title: "Oturum Hatası", description: "İşlem yapmak için giriş yapmış olmalısınız.", variant: "destructive" });
-        return;
-    }
-
+    if (!user || !user.uid) return;
     setLoading(true);
     try {
       let finalImageUrl = values.imageDataUri;
-      
       if (values.imageDataUri.startsWith('data:image')) {
           const destinationPath = `users/${user.uid}/bank-questions/${Date.now()}-${currentIndex}.jpg`;
           const storageRef = ref(storage, destinationPath);
           await uploadString(storageRef, values.imageDataUri, 'data_url');
           finalImageUrl = await getDownloadURL(storageRef);
       }
-      
       const questionData: any = {
         title: values.originalFilename || values.topic,
         subject: values.subject,
@@ -293,19 +294,16 @@ export function NewQuestionBankForm({
         type: values.type,
         originalFilename: values.originalFilename || null, 
       };
-
       if (values.type === 'mcq') {
           questionData.options = values.options;
           questionData.correctAnswer = values.correctAnswer;
       }
-
       if (initialData) {
           await updateBankQuestion(initialData.id, questionData);
           toast({ title: "Güncellendi ✨" });
           onQuestionProcessed();
       } else {
           await addBankQuestion(questionData);
-          
           if (currentIndex < imageQueue.length - 1) {
               const nextIdx = currentIndex + 1;
               setCurrentIndex(nextIdx);
@@ -314,22 +312,11 @@ export function NewQuestionBankForm({
               setCurrentStep('subject'); 
               toast({ title: "Kaydedildi", description: "Sıradaki Soruya Geçildi" });
           } else {
-              toast({ title: "Tamamlandı ✨", description: "Tüm sorular başarıyla kaydedildi." });
+              toast({ title: "Tamamlandı ✨" });
               onQuestionProcessed();
           }
       }
-    } catch (error: any) {
-      console.error("Save error:", error);
-      let errorMessage = "Bilinmeyen bir hata oluştu. Lütfen tekrar deneyin.";
-      
-      if (error.code === 'storage/unauthorized') {
-          errorMessage = "Dosya yükleme yetkiniz reddedildi. Lütfen Firebase Storage güvenlik kurallarını (Rules) güncellediğinizden emin olun.";
-      }
-      
-      toast({ title: "Kaydedilemedi", description: errorMessage, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { toast({ title: "Hata", variant: "destructive" }); } finally { setLoading(false); }
   }
 
   const variants = {
@@ -340,13 +327,9 @@ export function NewQuestionBankForm({
 
   return (
     <div className="flex flex-col h-full">
-        {/* Progress Dots */}
         <div className="flex items-center justify-center gap-2 mb-8 mt-2">
             {steps.map((s, i) => (
-                <div key={s} className={cn(
-                    "h-2 rounded-full transition-all duration-300",
-                    i === stepIndex ? "w-8 bg-indigo-600 shadow-md" : "w-2 bg-slate-200 dark:bg-slate-800"
-                )} />
+                <div key={s} className={cn("h-2 rounded-full transition-all duration-300", i === stepIndex ? "w-8 bg-indigo-600 shadow-md" : "w-2 bg-slate-200 dark:bg-slate-800")} />
             ))}
         </div>
 
@@ -358,25 +341,16 @@ export function NewQuestionBankForm({
                             <motion.div key="image" custom={1} variants={variants} initial="enter" animate="center" exit="exit" className="space-y-6">
                                 <div className="text-center space-y-2">
                                     <h3 className="text-xl font-black tracking-tight">Soru Görseli</h3>
-                                    <p className="text-sm text-slate-500">Cihazından bir veya daha fazla soru seç.</p>
+                                    <p className="text-sm text-slate-500">Cihazından soru görseli seç.</p>
                                 </div>
                                 <div className="space-y-4">
-                                    <div 
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className={cn(
-                                            "aspect-video w-full rounded-3xl border-4 border-dashed transition-all flex flex-col items-center justify-center cursor-pointer group",
-                                            imageQueue.length > 0 ? "border-indigo-500/50 bg-indigo-50/10" : "border-slate-200 dark:border-slate-800 hover:border-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-900"
-                                        )}
-                                    >
+                                    <div onClick={() => fileInputRef.current?.click()} className={cn("aspect-video w-full rounded-3xl border-4 border-dashed transition-all flex flex-col items-center justify-center cursor-pointer group", imageQueue.length > 0 ? "border-indigo-500/50 bg-indigo-50/10" : "border-slate-200 dark:border-slate-800 hover:border-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-900")}>
                                         <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} multiple />
                                         <div className="flex flex-col items-center gap-3">
-                                            <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 shadow-inner">
-                                                <UploadCloud className="w-8 h-8" />
-                                            </div>
+                                            <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 shadow-inner"><UploadCloud className="w-8 h-8" /></div>
                                             <p className="font-bold text-slate-700 dark:text-slate-300">Görsel Seç</p>
                                         </div>
                                     </div>
-
                                     {imageQueue.length > 0 && (
                                         <div className="grid grid-cols-4 gap-3 p-1">
                                             {imageQueue.map((uri, idx) => (
@@ -395,7 +369,7 @@ export function NewQuestionBankForm({
                             <motion.div key="subject" custom={1} variants={variants} initial="enter" animate="center" exit="exit" className="space-y-6">
                                 <div className="text-center space-y-2">
                                     <h3 className="text-xl font-black tracking-tight">Ders Seçimi</h3>
-                                    <p className="text-sm text-slate-500">Sorunun ait olduğu dersi belirleyin.</p>
+                                    <p className="text-sm text-slate-500">Müfredatındaki derslerden birini belirle.</p>
                                 </div>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                     {availableSubjects.map((s) => {
@@ -467,7 +441,6 @@ export function NewQuestionBankForm({
                                     <h3 className="text-xl font-black tracking-tight">Soru Tipi & Cevap</h3>
                                     <p className="text-sm text-slate-500">Doğru cevabı veya tipi belirleyin.</p>
                                 </div>
-                                
                                 <div className="space-y-6">
                                     <FormField control={form.control} name="type" render={({field}) => (
                                         <FormItem className="space-y-3">
@@ -483,7 +456,6 @@ export function NewQuestionBankForm({
                                             </RadioGroup>
                                         </FormItem>
                                     )}/>
-
                                     {watchedType === 'mcq' ? (
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between px-2">
@@ -494,7 +466,6 @@ export function NewQuestionBankForm({
                                                     <Button type="button" variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleOptionCountChange(optionKeys.length + 1)} disabled={optionKeys.length >= 5}><Plus className="w-4 h-4"/></Button>
                                                 </div>
                                             </div>
-                                            
                                             <FormField control={form.control} name="correctAnswer" render={({ field }) => (
                                                 <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-2 gap-3">
                                                     {optionKeys.map((key) => {
@@ -503,13 +474,9 @@ export function NewQuestionBankForm({
                                                             <div key={key} className={cn("flex items-center gap-3 p-3 rounded-xl border transition-all", isActive ? "border-emerald-600 bg-emerald-50/50" : "border-slate-100")}>
                                                                 <FormControl><RadioGroupItem value={key} className="h-5 w-5" /></FormControl>
                                                                 <span className="text-sm font-black text-emerald-600">{key}</span>
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name={`options.${key}`}
-                                                                    render={({ field: optionField }) => (
-                                                                        <Input {...optionField} placeholder="Opsiyonel..." className="bg-transparent border-none shadow-none h-8 px-0 text-xs focus-visible:ring-0" />
-                                                                    )}
-                                                                />
+                                                                <FormField control={form.control} name={`options.${key}`} render={({ field: optionField }) => (
+                                                                    <Input {...optionField} placeholder="Opsiyonel..." className="bg-transparent border-none shadow-none h-8 px-0 text-xs focus-visible:ring-0" />
+                                                                )}/>
                                                             </div>
                                                         );
                                                     })}
@@ -520,7 +487,6 @@ export function NewQuestionBankForm({
                                         <div className="bg-emerald-50 rounded-3xl p-8 flex flex-col items-center justify-center border border-dashed border-emerald-200">
                                             <Sparkles className="w-10 h-10 text-emerald-500 mb-2" />
                                             <p className="text-sm font-bold text-emerald-700">Değerlendirme Modu Aktif</p>
-                                            <p className="text-xs text-emerald-600 text-center mt-1">Öğrencinin cevabı öğretmen tarafından puanlanacak.</p>
                                         </div>
                                     )}
                                 </div>
@@ -530,33 +496,17 @@ export function NewQuestionBankForm({
                         {currentStep === 'confirm' && (
                             <motion.div key="confirm" custom={1} variants={variants} initial="enter" animate="center" exit="exit" className="space-y-6">
                                 <div className="text-center space-y-2">
-                                    <h3 className="text-xl font-black tracking-tight">Son Onay</h3>
-                                    <p className="text-sm text-slate-500">Bilgiler doğruysa kaydedebilirsiniz.</p>
+                                    <h3 className="text-xl font-black tracking-tight">Onay</h3>
+                                    <p className="text-sm text-slate-500">Bilgileri onaylayıp bankaya kaydedin.</p>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="relative aspect-video w-full rounded-3xl overflow-hidden border-4 border-white shadow-xl bg-slate-100">
                                         <Image src={watchedImage} alt="Final" fill className="object-contain p-2" />
                                     </div>
-                                    
                                     <div className="bg-slate-50 rounded-2xl p-4 divide-y divide-slate-200 border">
-                                        <div className="flex justify-between py-2.5">
-                                            <span className="text-xs font-bold text-slate-400 uppercase">Ders</span>
-                                            <span className="text-sm font-bold text-slate-800">{watchedSubject}</span>
-                                        </div>
-                                        <div className="flex justify-between py-2.5">
-                                            <span className="text-xs font-bold text-slate-400 uppercase">Konu</span>
-                                            <span className="text-sm font-bold text-slate-800">{watchedTopic}</span>
-                                        </div>
-                                        <div className="flex justify-between py-2.5">
-                                            <span className="text-xs font-bold text-slate-400 uppercase">Soru Tipi</span>
-                                            <span className="text-sm font-bold text-slate-800">{watchedType === 'mcq' ? 'Çoktan Seçmeli' : 'Açık Uçlu'}</span>
-                                        </div>
-                                        {watchedType === 'mcq' && (
-                                            <div className="flex justify-between py-2.5">
-                                                <span className="text-xs font-bold text-slate-400 uppercase">Doğru Cevap</span>
-                                                <Badge className="bg-emerald-600">{form.getValues('correctAnswer')}</Badge>
-                                            </div>
-                                        )}
+                                        <div className="flex justify-between py-2.5"><span className="text-xs font-bold text-slate-400 uppercase">Ders</span><span className="text-sm font-bold text-slate-800">{watchedSubject}</span></div>
+                                        <div className="flex justify-between py-2.5"><span className="text-xs font-bold text-slate-400 uppercase">Konu</span><span className="text-sm font-bold text-slate-800">{watchedTopic}</span></div>
+                                        <div className="flex justify-between py-2.5"><span className="text-xs font-bold text-slate-400 uppercase">Tür</span><span className="text-sm font-bold text-slate-800">{watchedType === 'mcq' ? 'Çoktan Seçmeli' : 'Açık Uçlu'}</span></div>
                                     </div>
                                 </div>
                             </motion.div>
@@ -566,24 +516,16 @@ export function NewQuestionBankForm({
 
                 <DialogFooter className="p-6 border-t bg-slate-50/50 flex-row gap-3 mt-8">
                     {stepIndex > 0 ? (
-                        <Button type="button" variant="ghost" className="h-12 rounded-2xl font-bold flex-1" onClick={goToPrevStep} disabled={loading}>
-                            Geri
-                        </Button>
+                        <Button type="button" variant="ghost" className="h-12 rounded-2xl font-bold flex-1" onClick={goToPrevStep} disabled={loading}>Geri</Button>
                     ) : (
-                        <Button type="button" variant="ghost" className="h-12 rounded-2xl font-bold flex-1" onClick={onQuestionProcessed} disabled={loading}>
-                            İptal
-                        </Button>
+                        <Button type="button" variant="ghost" className="h-12 rounded-2xl font-bold flex-1" onClick={onQuestionProcessed} disabled={loading}>İptal</Button>
                     )}
-                    
                     {currentStep === 'confirm' ? (
-                        <Button type="submit" className="h-12 rounded-2xl font-black flex-[2] bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 text-white" disabled={loading}>
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Check className="w-5 h-5 mr-2" />}
-                            {currentIndex < imageQueue.length - 1 ? 'Sıradaki Soruya Geç' : 'Bankaya Kaydet'}
+                        <Button type="submit" className="h-12 rounded-2xl font-black flex-[2] bg-indigo-600 hover:bg-indigo-700 shadow-lg text-white" disabled={loading}>
+                            {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Check className="w-5 h-5 mr-2" />} ব্যাংকয়া Kaydet
                         </Button>
                     ) : (
-                        <Button type="button" className="h-12 rounded-2xl font-black flex-[2] bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 text-white" onClick={goToNextStep}>
-                            İlerle <ChevronRight className="w-4 h-4 ml-2" />
-                        </Button>
+                        <Button type="button" className="h-12 rounded-2xl font-black flex-[2] bg-indigo-600 hover:bg-indigo-700 shadow-lg text-white" onClick={goToNextStep}>İlerle <ChevronRight className="w-4 h-4 ml-2" /></Button>
                     )}
                 </DialogFooter>
             </form>

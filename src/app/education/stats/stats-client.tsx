@@ -164,7 +164,7 @@ const VisualGoalCard = ({
 
           <div className="mt-3 flex items-center justify-between text-[11px] font-bold">
             {isCompleted ? (
-              <span className="text-emerald-500 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded-md">Hedef Tamamlandı! 🎉</span>
+              <span className="text-emerald-500 bg-emerald-100 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md">Hedef Tamamlandı! 🎉</span>
             ) : (
               <span className="text-slate-400">
                 Kalan: <span className="text-slate-700 dark:text-slate-300">
@@ -864,7 +864,7 @@ export function StatsClient() {
               {activeFilterCount > 0 && (
                 <Button variant="ghost" size="sm" className="h-9 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl font-bold text-xs"
                   onClick={() => { setSelectedSubject('all'); setSelectedTopic('all'); setSelectedSourceType('all'); setDateFrom(undefined); setDateTo(undefined); setNetSliderValue([netBounds.min, netBounds.max]); }}>
-                  <RotateCcw className="w-3 h-3 mr-1" /> Tümünü Sıfırla
+                  <RotateCcw className="w-3 f-3 mr-1" /> Tümünü Sıfırla
                 </Button>
               )}
             </div>
@@ -1586,7 +1586,7 @@ export function StatsClient() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isAddGoalModalOpen} onOpenChange={setIsAddGoalModalOpen}>
+      <Dialog open={isAddGoalModalOpen} onOpenChange={(o) => { if(!o) setEditingGoal(null); setIsAddGoalModalOpen(o); }}>
         <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl sm:max-w-md">
             <DialogHeader>
                 <DialogTitle>Yeni Hedef Belirle</DialogTitle>
@@ -1674,4 +1674,3 @@ export function StatsClient() {
     </div>
   );
 }
-
