@@ -222,7 +222,7 @@ export const onAllTrackedBookTestsUpdate = (callback: (tests: TrackedBookTest[])
 export const onTrackedBookTestsUpdate = (id: string, cb: (t: TrackedBookTest[]) => void) => onSnapshot(query(collection(db, 'trackedBookTests'), where('bookId', '==', id)), s => cb(s.docs.map(d => ({id:d.id, ...d.data()} as any))));
 export const addTrackedBookTest = async (id: string, data: any) => { const familyId = await getCurrentFamilyId(); return addDoc(collection(db, 'trackedBookTests'), { ...data, familyId, bookId: id }); };
 export const updateTrackedBookTest = (id: string, data: any) => updateDoc(doc(db, 'trackedBookTests', id), data);
-export const deleteTrackedBookTest = (id: string) => deleteDoc(doc(db, "trackedBookTests", id));
+export const deleteTrackedBookTest = (id: string) => deleteDoc(doc(db, 'trackedBookTests', id));
 
 export const addBulkTrackedBookTests = async (bid: string, sid: string, tid: string, count: number, qCount: number, prefix: string) => {
     const familyId = await getCurrentFamilyId();

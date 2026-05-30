@@ -3,11 +3,12 @@
 
 import * as React from "react";
 import Link from 'next/link';
+import { useRouter } from "next/navigation";
 import { ArrowLeft, FileJson, PlusCircle, Trash2, Edit, Send, Repeat, Loader2, MoreVertical, BookOpen, User, Calendar as CalendarLucide, ClipboardCheck, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { onTestsUpdate, deleteTest, addTest, updateTest } from "@/lib/dataService";
+import { onTestsUpdate, deleteTest, addTest, updateTest, onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics, onTrackedBooksUpdate, onStudyPlansUpdate } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
-import { Test, FamilyMember } from "@/lib/data";
+import { Test, FamilyMember, TrackedBook, StudyPlan } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -26,6 +27,7 @@ const themeColors = {
 };
 
 export function JsonTestsClient() {
+  const router = useRouter();
   const { familyId, familyMembers } = useAuth();
   const { toast } = useToast();
   const [jsonTests, setJsonTests] = React.useState<Test[]>([]);
@@ -34,14 +36,30 @@ export function JsonTestsClient() {
   const [reassigningTest, setReassigningTest] = React.useState<Test | null>(null);
   const [loading, setLoading] = React.useState(true);
 
+  // Curriculum State
+  const [allSubjects, setAllSubjects] = React.useState<string[]>([]);
+  const [allTopics, setAllTopics] = React.useState<string[]>([]);
+  const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
+  const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([]);
+
   React.useEffect(() => {
     if (!familyId) return;
     const unsub = onTestsUpdate((allTests) => {
-      // Sadece yazılı (json) tipindeki testleri filtrele
       setJsonTests(allTests.filter(t => t.sourceType === 'json'));
       setLoading(false);
     });
-    return () => unsub();
+    const unsubSubjects = onSubjectsUpdate(setAllSubjects);
+    const unsubTopics = onTopicsUpdate(setAllTopics);
+    const unsubBooks = onTrackedBooksUpdate(setTrackedBooks);
+    const unsubPlans = onStudyPlansUpdate(setStudyPlans);
+
+    return () => {
+        unsub();
+        unsubSubjects();
+        unsubTopics();
+        unsubBooks();
+        unsubPlans();
+    };
   }, [familyId]);
 
   const handleOpenForm = (test: Test | null) => {
@@ -52,11 +70,9 @@ export function JsonTestsClient() {
   const handleFormSubmit = async (data: Omit<Test, 'id' | 'familyId'>) => {
     try {
       if (editingTest && !reassigningTest) {
-        // Mevcut olanı güncelle
         await updateTest(editingTest.id, data);
         toast({ title: "✅ Yazılı Test Güncellendi" });
       } else {
-        // Yeni oluştur veya Klonla (Atama yap)
         await addTest(data);
         toast({ title: reassigningTest ? "✅ Ödev Başarıyla Atandı" : "✅ Yazılı Test Oluşturuldu" });
       }
@@ -75,6 +91,16 @@ export function JsonTestsClient() {
     } catch (e) {
       toast({ title: "❌ Hata", variant: "destructive" });
     }
+  };
+
+  const handleCreateSubject = async (name: string) => {
+    const newList = [...new Set([...allSubjects, name])];
+    await updateSubjects(newList);
+  };
+
+  const handleCreateTopic = async (name: string) => {
+    const newList = [...new Set([...allTopics, name])];
+    await updateTopics(newList);
   };
 
   if (loading) {
@@ -233,6 +259,15 @@ export function JsonTestsClient() {
                         familyMembers={familyMembers.filter(m => m.role.includes('Çocuk'))}
                         onFormSubmit={handleFormSubmit}
                         initialData={editingTest}
+                        availableSubjects={allSubjects}
+                        onSubjectCreated={handleCreateSubject}
+                        availableTopics={allTopics}
+                        onTopicCreated={handleCreateTopic}
+                        relevantTopics={React.useMemo(() => {
+                            const watchedSubject = editingTest?.subject; // This logic needs to be inside the form or handled with current form state
+                            // For simplicity, we'll let NewJsonTestForm handle the filtering of topics based on its internal state
+                            return allTopics;
+                        }, [allTopics, editingTest])}
                     />
                 </div>
             </DialogContent>

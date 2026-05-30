@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { format, parse } from "date-fns";
 import { tr } from "date-fns/locale";
-import { CalendarIcon, Loader2, Code, FileJson, User, BookOpen, Calendar as CalendarLucide, Copy, Check, Info } from "lucide-react";
+import { CalendarIcon, Loader2, Code, FileJson, User, BookOpen, Calendar as CalendarLucide, Copy, Check, Info, Layers } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { FamilyMember, Test } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "./ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { Combobox } from "./ui/combobox";
 
 // --- DESIGN SYSTEM: Glassmorphism ---
 const glassColors = {
@@ -41,7 +41,8 @@ const jsonQuestionSchema = z.object({
 
 const formSchema = z.object({
   title: z.string().min(3, "Başlık en az 3 karakter olmalıdır."),
-  subject: z.string().min(2, "Ders adı zorunludur."),
+  subject: z.string().min(1, "Ders seçimi zorunludur."),
+  topic: z.string().optional(),
   assigneeId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
   dueDate: z.date({ required_error: "Lütfen bir bitiş tarihi seçin." }),
   jsonContent: z.string().min(1, "Lütfen JSON verisi girin.").refine((val) => {
@@ -58,6 +59,11 @@ type NewJsonTestFormProps = {
   familyMembers: FamilyMember[];
   onFormSubmit: (data: Omit<Test, 'id' | 'familyId'>) => void;
   initialData?: Test | null;
+  availableSubjects: string[];
+  onSubjectCreated: (subject: string) => void;
+  availableTopics: string[];
+  onTopicCreated: (topic: string) => void;
+  relevantTopics: string[];
 };
 
 const sampleJsonPlaceholder = `[
@@ -69,7 +75,16 @@ const sampleJsonPlaceholder = `[
   }
 ]`;
 
-export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: NewJsonTestFormProps) {
+export function NewJsonTestForm({ 
+    familyMembers, 
+    onFormSubmit, 
+    initialData,
+    availableSubjects,
+    onSubjectCreated,
+    availableTopics,
+    onTopicCreated,
+    relevantTopics
+}: NewJsonTestFormProps) {
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
@@ -79,6 +94,7 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
     defaultValues: {
       title: initialData?.title || "",
       subject: initialData?.subject || "",
+      topic: initialData?.topicId ? initialData.topicId : ((initialData as any)?.topic || ""),
       assigneeId: initialData?.studentId || undefined,
       dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       jsonContent: initialData?.jsonQuestions ? JSON.stringify(initialData.jsonQuestions, null, 2) : "",
@@ -90,7 +106,8 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
       form.reset({
         title: initialData.title,
         subject: initialData.subject,
-        assigneeId: undefined, // Atama yaparken öğrenciyi her seferinde seçtir
+        topic: initialData.topicId ? initialData.topicId : ((initialData as any)?.topic || ""),
+        assigneeId: initialData.studentId, 
         dueDate: initialData.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         jsonContent: initialData.jsonQuestions ? JSON.stringify(initialData.jsonQuestions, null, 2) : "",
       });
@@ -117,7 +134,7 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
     setLoading(true);
     try {
       const parsedQuestions = JSON.parse(values.jsonContent);
-      const testData = {
+      const testData: any = {
         title: values.title,
         subject: values.subject,
         studentId: values.assigneeId,
@@ -129,6 +146,11 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
         isArchived: false,
         jsonQuestions: parsedQuestions,
       };
+
+      if (values.topic) {
+          testData.topic = values.topic;
+      }
+
       onFormSubmit(testData);
     } catch (err: any) {
       toast({ title: 'Hata', description: 'İşlem sırasında bir sorun oluştu.', variant: 'destructive' });
@@ -137,6 +159,9 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
       setLoading(false);
     }
   };
+
+  const subjectOptions = availableSubjects.map(s => ({ label: s, value: s }));
+  const topicOptions = relevantTopics.map(t => ({ label: t, value: t }));
 
   return (
     <Form {...form}>
@@ -160,16 +185,6 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
                         </FormItem>
                     )}/>
                     
-                    <FormField control={form.control} name="subject" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel className={glassColors.LABEL}><BookOpen className="w-3.5 h-3.5 text-pink-400"/> Ders</FormLabel>
-                            <FormControl><Input placeholder="Örn: Matematik" {...field} className={glassColors.INPUT_BG}/></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}/>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <FormField control={form.control} name="assigneeId" render={({ field }) => (
                         <FormItem>
                             <FormLabel className={glassColors.LABEL}><User className="w-3.5 h-3.5 text-emerald-400"/> Öğrenci Seçin</FormLabel>
@@ -186,7 +201,49 @@ export function NewJsonTestForm({ familyMembers, onFormSubmit, initialData }: Ne
                             <FormMessage />
                         </FormItem>
                     )}/>
-                    
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <FormField control={form.control} name="subject" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className={glassColors.LABEL}><BookOpen className="w-3.5 h-3.5 text-pink-400"/> Ders</FormLabel>
+                            <FormControl>
+                                <Combobox 
+                                    options={subjectOptions}
+                                    value={field.value}
+                                    onChange={(val) => {
+                                        field.onChange(val);
+                                        form.setValue('topic', '');
+                                    }}
+                                    onCreate={onSubjectCreated}
+                                    placeholder="Ders seçin veya oluşturun..."
+                                    className={glassColors.INPUT_BG}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+
+                    <FormField control={form.control} name="topic" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className={glassColors.LABEL}><Layers className="w-3.5 h-3.5 text-indigo-400"/> Konu (Opsiyonel)</FormLabel>
+                            <FormControl>
+                                <Combobox 
+                                    options={topicOptions}
+                                    value={field.value || ""}
+                                    onChange={field.onChange}
+                                    onCreate={onTopicCreated}
+                                    placeholder={form.watch('subject') ? "Konu seçin veya oluşturun..." : "Önce ders seçin..."}
+                                    className={glassColors.INPUT_BG}
+                                    disabled={!form.watch('subject')}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <FormField control={form.control} name="dueDate" render={({ field }) => (
                         <FormItem className="flex flex-col">
                             <FormLabel className={glassColors.LABEL}><CalendarLucide className="w-3.5 h-3.5 text-blue-400"/> Bitiş Tarihi</FormLabel>
