@@ -293,27 +293,24 @@ export function AllBooksClient() {
       </div>
         
         <Dialog open={!!editingBook} onOpenChange={(open) => !open && setEditingBook(null)}>
-          <DialogContent className="w-[95vw] sm:max-w-lg flex flex-col max-h-[90dvh] rounded-[2rem] p-0 overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+          <DialogContent className="w-[95vw] md:max-w-2xl lg:max-w-3xl flex flex-col max-h-[90dvh] rounded-[2rem] p-0 overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
             <FormProvider {...formMethods}>
               <form
                 id="book-form"
                 onSubmit={formMethods.handleSubmit(handleUpdateBook)}
-                className="flex-1 flex flex-col min-h-0 h-full"
+                className="flex flex-col min-h-0 flex-1"
               >
-                <DialogHeader>
-                    <DialogTitle>Kitabı Düzenle</DialogTitle>
+                <DialogHeader className="p-6 pb-4 shrink-0 border-b border-slate-100 dark:border-slate-800">
+                  <DialogTitle className="text-xl font-bold text-slate-800 dark:text-slate-100">Kitabı Düzenle</DialogTitle>
                 </DialogHeader>
-                 <ScrollArea className="flex-1 min-h-0">
-                   <div className="pr-6 py-4">
-                     <BookForm existingTags={allTags} />
-                   </div>
-                </ScrollArea>
-                <DialogFooter className="pt-4 border-t flex-shrink-0">
-                    <Button variant="ghost" type="button" onClick={() => setEditingBook(null)} disabled={isSubmitting}>İptal</Button>
-                    <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Kaydet
-                    </Button>
+                <div className="overflow-y-auto p-6 flex-1 min-h-0">
+                  <BookForm existingTags={allTags} />
+                </div>
+                <DialogFooter className="p-4 shrink-0 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3">
+                  <Button variant="outline" type="button" onClick={() => setEditingBook(null)} disabled={isSubmitting} className="w-full sm:w-auto h-12 sm:h-10 rounded-xl">İptal</Button>
+                  <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto h-12 sm:h-10 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700">
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Kaydet
+                  </Button>
                 </DialogFooter>
               </form>
             </FormProvider>

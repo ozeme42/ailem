@@ -350,16 +350,18 @@ export function ArchiveClient() {
       <BookDetailDialog book={viewingBook} isOpen={!!viewingBook} onOpenChange={setViewingBook} onEdit={handleOpenAddDialog} onAddToLibrary={handleAddToLibrary} familyMembers={familyMembers} />
 
       <Dialog open={isAddBookDialogOpen} onOpenChange={setIsAddBookDialogOpen}>
-          <DialogContent className="w-[95vw] sm:max-w-lg flex flex-col max-h-[90dvh] bg-white dark:bg-[#1C1C1E] border-slate-100 dark:border-white/10 rounded-[2rem] p-0 overflow-hidden shadow-2xl text-slate-900 dark:text-white">
+          <DialogContent className="w-[95vw] md:max-w-2xl lg:max-w-3xl flex flex-col max-h-[90dvh] bg-white dark:bg-[#1C1C1E] border-slate-100 dark:border-white/10 rounded-[2rem] p-0 overflow-hidden shadow-2xl text-slate-900 dark:text-white">
             <FormProvider {...formMethods}>
-              <form onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)} className="flex-1 flex flex-col min-h-0">
-                <DialogHeader className="p-6 pb-2">
+              <form onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)} className="flex flex-col min-h-0 flex-1">
+                <DialogHeader className="p-6 pb-4 shrink-0 border-b border-slate-100 dark:border-white/10">
                     <DialogTitle className="text-xl font-bold">{editingBook ? 'Kitabı Düzenle' : 'Yeni Kitap'}</DialogTitle>
                 </DialogHeader>
-                 <ScrollArea className="flex-1 px-6 py-2"><BookForm existingTags={allTags} /></ScrollArea>
-                <DialogFooter className="p-4 pt-2 border-t border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-black/20 flex-row justify-end gap-2">
-                    <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} className="rounded-xl">İptal</Button>
-                    <Button type="submit" disabled={isSubmitting} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 shadow-md">
+                 <div className="overflow-y-auto px-6 py-4 flex-1 min-h-0">
+                     <BookForm existingTags={allTags} />
+                 </div>
+                <DialogFooter className="p-4 shrink-0 border-t border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-black/20 flex-col sm:flex-row gap-3">
+                    <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} className="rounded-xl w-full sm:w-auto h-12 sm:h-10">İptal</Button>
+                    <Button type="submit" disabled={isSubmitting} className="rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-md w-full sm:w-auto h-12 sm:h-10">
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {editingBook ? 'Kaydet' : 'Ekle'}
                     </Button>
                 </DialogFooter>
