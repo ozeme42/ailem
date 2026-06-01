@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/education/layout,_N_T_/education/management/layout,_N_T_/education/management/practice-exams/layout,_N_T_/education/management/practice-exams/page,_N_T_/education/management/practice-exams"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/education/management/practice-exams/__PAGE__",
+    "/education/management/practice-exams",
+    "/education/management",
+    "/education",
+    "/_index",
+    "/_head"
+  ]
+}

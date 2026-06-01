@@ -1,0 +1,3 @@
+module.exports=[993269,a=>{"use strict";var b=a.i(187924),c=a.i(572131),d=a.i(50944);function e(){let a=(0,d.useRouter)();return c.useEffect(()=>{a.replace("/education")},[a]),(0,b.jsx)("div",{className:"flex h-screen w-screen items-center justify-center",children:(0,b.jsx)("p",{children:"Yönlendiriliyor..."})})}a.s(["default",()=>e])}];
+
+//# sourceMappingURL=src_app_education_test_%5BtestId%5D_page_tsx_f3447b35._.js.map

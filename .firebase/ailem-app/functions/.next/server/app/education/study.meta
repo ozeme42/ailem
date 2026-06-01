@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/education/layout,_N_T_/education/study/layout,_N_T_/education/study/page,_N_T_/education/study"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/education/study/__PAGE__",
+    "/education/study",
+    "/education",
+    "/_index",
+    "/_head"
+  ]
+}

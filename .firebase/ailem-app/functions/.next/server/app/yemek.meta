@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/yemek/layout,_N_T_/yemek/page,_N_T_/yemek"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/yemek/__PAGE__",
+    "/yemek",
+    "/_index",
+    "/_head"
+  ]
+}

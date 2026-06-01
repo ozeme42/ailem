@@ -1,0 +1,11 @@
+{
+  "/education/management/page": "app/education/management/page.js",
+  "/education/page": "app/education/page.js",
+  "/education/study/page": "app/education/study/page.js",
+  "/join-family/page": "app/join-family/page.js",
+  "/library/archive/page": "app/library/archive/page.js",
+  "/library/page": "app/library/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/signup/page": "app/signup/page.js"
+}

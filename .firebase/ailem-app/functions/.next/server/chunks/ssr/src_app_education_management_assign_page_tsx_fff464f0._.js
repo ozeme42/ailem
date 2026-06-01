@@ -1,0 +1,3 @@
+module.exports=[782464,a=>{"use strict";var b=a.i(187924),c=a.i(572131),d=a.i(50944);function e(){let a=(0,d.useRouter)();return(0,c.useEffect)(()=>{a.replace("/education/management")},[a]),(0,b.jsx)("div",{className:"flex h-screen items-center justify-center",children:(0,b.jsx)("p",{children:"Yönlendiriliyor..."})})}a.s(["default",()=>e])}];
+
+//# sourceMappingURL=src_app_education_management_assign_page_tsx_fff464f0._.js.map

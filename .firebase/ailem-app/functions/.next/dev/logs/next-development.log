@@ -1,0 +1,300 @@
+[00:00:03.497] Server  LOG     ✓ Ready in 2.8s
+[00:00:19.560] Server  LOG     ○ Compiling / ...
+[00:00:27.506] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:27.674] Browser WARN    [2026-06-01T06:04:53.966Z]  @firebase/firestore: Firestore (11.9.0): enableIndexedDbPersistence() will be deprecated in the future, you can use `FirestoreSettings.cache` instead.
+[00:00:51.613] Browser ERROR   {"code":"auth/invalid-credential","customData":{},"name":"FirebaseError"}
+[00:03:32.212] Browser ERROR   {"code":"auth/invalid-credential","customData":{},"name":"FirebaseError"}
+[00:03:36.940] Browser ERROR   {"code":"auth/invalid-credential","customData":{},"name":"FirebaseError"}
+[00:03:42.811] Browser ERROR   {"code":"auth/invalid-credential","customData":{},"name":"FirebaseError"}
+[00:03:52.348] Browser ERROR   {"code":"auth/invalid-credential","customData":{},"name":"FirebaseError"}
+[00:05:12.535] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:05:12.716] Browser WARN    [2026-06-01T06:09:39.004Z]  @firebase/firestore: Firestore (11.9.0): enableIndexedDbPersistence() will be deprecated in the future, you can use `FirestoreSettings.cache` instead.
+[00:05:55.859] Server  LOG     ○ Compiling /library/archive ...
+[00:06:05.302] Browser WARN    Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+[00:06:05.302] Browser WARN    Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+[00:07:36.501] Server  WARN    ⚠ Fast Refresh had to perform a full reload when ./src/app/education/page.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[00:07:36.518] Server  LOG     ✓ Compiled in 451ms
+[00:07:37.456] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:07:37.583] Browser WARN    [2026-06-01T06:12:03.878Z]  @firebase/firestore: Firestore (11.9.0): enableIndexedDbPersistence() will be deprecated in the future, you can use `FirestoreSettings.cache` instead.
+[00:09:47.167] Server  LOG     ✓ Compiled in 202ms
+[00:10:53.579] Server  LOG     ✓ Compiled in 177ms
+[00:12:02.544] Server  LOG     ✓ Compiled in 270ms
+[00:12:02.648] Browser ERROR   ./src/app/education/study/page.tsx:220:40
+Parsing ecmascript source code failed
+  218 |                                         </CardContent>
+  219 |                                     </AccordionContent>
+> 220 |                                 </Card>
+      |                                        ^
+> 221 |                             </AccordionItem>
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  222 |                         )
+  223 |                     })}
+  224 |                 </Accordion>
+
+Expected '</', got 'jsx text (
+                            )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/education/study/page.tsx [Client Component Browser]
+    ./src/app/education/study/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/education/study/page.tsx [Client Component SSR]
+    ./src/app/education/study/page.tsx [Server Component]
+[00:12:08.105] Browser ERROR   ./src/app/education/study/page.tsx:220:40
+Parsing ecmascript source code failed
+  218 |                                         </CardContent>
+  219 |                                     </AccordionContent>
+> 220 |                                 </Card>
+      |                                        ^
+> 221 |                             </AccordionItem>
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  222 |                         )
+  223 |                     })}
+  224 |                 </Accordion>
+
+Expected '</', got 'jsx text (
+                            )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/education/study/page.tsx [Client Component Browser]
+    ./src/app/education/study/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/education/study/page.tsx [Client Component SSR]
+    ./src/app/education/study/page.tsx [Server Component]
+[00:12:08.105] Browser ERROR   ./src/app/education/study/page.tsx:220:40
+Parsing ecmascript source code failed
+  218 |                                         </CardContent>
+  219 |                                     </AccordionContent>
+> 220 |                                 </Card>
+      |                                        ^
+> 221 |                             </AccordionItem>
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  222 |                         )
+  223 |                     })}
+  224 |                 </Accordion>
+
+Expected '</', got 'jsx text (
+                            )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/education/study/page.tsx [Client Component Browser]
+    ./src/app/education/study/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/education/study/page.tsx [Client Component SSR]
+    ./src/app/education/study/page.tsx [Server Component]
+[00:12:09.493] Browser ERROR   ./src/app/education/study/page.tsx:220:40
+Parsing ecmascript source code failed
+  218 |                                         </CardContent>
+  219 |                                     </AccordionContent>
+> 220 |                                 </Card>
+      |                                        ^
+> 221 |                             </AccordionItem>
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  222 |                         )
+  223 |                     })}
+  224 |                 </Accordion>
+
+Expected '</', got 'jsx text (
+                            )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/education/study/page.tsx [Client Component Browser]
+    ./src/app/education/study/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/education/study/page.tsx [Client Component SSR]
+    ./src/app/education/study/page.tsx [Server Component]
+[00:12:09.836] Browser ERROR   ./src/app/education/study/page.tsx:220:40
+Parsing ecmascript source code failed
+  218 |                                         </CardContent>
+  219 |                                     </AccordionContent>
+> 220 |                                 </Card>
+      |                                        ^
+> 221 |                             </AccordionItem>
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  222 |                         )
+  223 |                     })}
+  224 |                 </Accordion>
+
+Expected '</', got 'jsx text (
+                            )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/education/study/page.tsx [Client Component Browser]
+    ./src/app/education/study/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/education/study/page.tsx [Client Component SSR]
+    ./src/app/education/study/page.tsx [Server Component]
+[00:12:11.700] Browser ERROR   ./src/app/education/study/page.tsx:220:40
+Parsing ecmascript source code failed
+  218 |                                         </CardContent>
+  219 |                                     </AccordionContent>
+> 220 |                                 </Card>
+      |                                        ^
+> 221 |                             </AccordionItem>
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  222 |                         )
+  223 |                     })}
+  224 |                 </Accordion>
+
+Expected '</', got 'jsx text (
+                            )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/education/study/page.tsx [Client Component Browser]
+    ./src/app/education/study/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/education/study/page.tsx [Client Component SSR]
+    ./src/app/education/study/page.tsx [Server Component]
+[00:12:12.265] Browser ERROR   ./src/app/education/study/page.tsx:220:40
+Parsing ecmascript source code failed
+  218 |                                         </CardContent>
+  219 |                                     </AccordionContent>
+> 220 |                                 </Card>
+      |                                        ^
+> 221 |                             </AccordionItem>
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  222 |                         )
+  223 |                     })}
+  224 |                 </Accordion>
+
+Expected '</', got 'jsx text (
+                            )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/education/study/page.tsx [Client Component Browser]
+    ./src/app/education/study/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/education/study/page.tsx [Client Component SSR]
+    ./src/app/education/study/page.tsx [Server Component]
+[00:12:16.677] Browser ERROR   ./src/app/education/study/page.tsx:220:40
+Parsing ecmascript source code failed
+  218 |                                         </CardContent>
+  219 |                                     </AccordionContent>
+> 220 |                                 </Card>
+      |                                        ^
+> 221 |                             </AccordionItem>
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  222 |                         )
+  223 |                     })}
+  224 |                 </Accordion>
+
+Expected '</', got 'jsx text (
+                            )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/education/study/page.tsx [Client Component Browser]
+    ./src/app/education/study/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/education/study/page.tsx [Client Component SSR]
+    ./src/app/education/study/page.tsx [Server Component]
+[00:12:17.672] Browser ERROR   ./src/app/education/study/page.tsx:220:40
+Parsing ecmascript source code failed
+  218 |                                         </CardContent>
+  219 |                                     </AccordionContent>
+> 220 |                                 </Card>
+      |                                        ^
+> 221 |                             </AccordionItem>
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  222 |                         )
+  223 |                     })}
+  224 |                 </Accordion>
+
+Expected '</', got 'jsx text (
+                            )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/education/study/page.tsx [Client Component Browser]
+    ./src/app/education/study/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/education/study/page.tsx [Client Component SSR]
+    ./src/app/education/study/page.tsx [Server Component]
+[00:12:18.654] Browser ERROR   ./src/app/education/study/page.tsx:220:40
+Parsing ecmascript source code failed
+  218 |                                         </CardContent>
+  219 |                                     </AccordionContent>
+> 220 |                                 </Card>
+      |                                        ^
+> 221 |                             </AccordionItem>
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  222 |                         )
+  223 |                     })}
+  224 |                 </Accordion>
+
+Expected '</', got 'jsx text (
+                            )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/education/study/page.tsx [Client Component Browser]
+    ./src/app/education/study/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/education/study/page.tsx [Client Component SSR]
+    ./src/app/education/study/page.tsx [Server Component]
+[00:15:17.474] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:15:17.606] Browser WARN    [2026-06-01T06:19:43.898Z]  @firebase/firestore: Firestore (11.9.0): enableIndexedDbPersistence() will be deprecated in the future, you can use `FirestoreSettings.cache` instead.
+[00:16:37.326] Server  LOG     ✓ Compiled in 1235ms
+[00:18:34.978] Server  LOG     ✓ Compiled in 384ms
+[00:20:26.437] Server  LOG     ✓ Compiled in 270ms
+[00:27:55.480] Browser WARN    [2026-06-01T06:32:21.283Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d03 transport errored. Name: undefined Message: undefined
+[00:27:55.480] Browser WARN    [2026-06-01T06:32:21.313Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d04 transport errored. Name: undefined Message: undefined
+[00:27:57.471] Browser WARN    [2026-06-01T06:32:22.888Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d05 transport errored. Name: undefined Message: undefined
+[00:27:59.466] Browser WARN    [2026-06-01T06:32:24.875Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d06 transport errored. Name: undefined Message: undefined
+[00:28:02.462] Browser WARN    [2026-06-01T06:32:27.865Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d07 transport errored. Name: undefined Message: undefined
+[00:28:06.466] Browser WARN    [2026-06-01T06:32:31.871Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d08 transport errored. Name: undefined Message: undefined
+[00:28:10.464] Browser WARN    [2026-06-01T06:32:35.864Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d09 transport errored. Name: undefined Message: undefined
+[00:28:16.490] Browser WARN    [2026-06-01T06:32:41.880Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d0a transport errored. Name: undefined Message: undefined
+[00:28:31.470] Browser WARN    [2026-06-01T06:32:56.884Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d0b transport errored. Name: undefined Message: undefined
+[00:28:55.463] Browser WARN    [2026-06-01T06:33:20.866Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d0c transport errored. Name: undefined Message: undefined
+[00:29:13.459] Browser WARN    [2026-06-01T06:33:38.864Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d0d transport errored. Name: undefined Message: undefined
+[00:30:02.460] Browser WARN    [2026-06-01T06:34:27.866Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d0e transport errored. Name: undefined Message: undefined
+[00:30:52.466] Browser WARN    [2026-06-01T06:35:17.878Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d0f transport errored. Name: undefined Message: undefined
+[00:32:15.470] Browser WARN    [2026-06-01T06:36:40.880Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d10 transport errored. Name: undefined Message: undefined
+[00:33:30.461] Browser WARN    [2026-06-01T06:37:55.874Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d11 transport errored. Name: undefined Message: undefined
+[00:34:58.472] Browser WARN    [2026-06-01T06:39:23.870Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d12 transport errored. Name: undefined Message: undefined
+[00:36:19.467] Browser WARN    [2026-06-01T06:40:44.873Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d13 transport errored. Name: undefined Message: undefined
+[00:37:18.462] Browser WARN    [2026-06-01T06:41:43.861Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d14 transport errored. Name: undefined Message: undefined
+[00:38:16.467] Browser WARN    [2026-06-01T06:42:41.867Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d15 transport errored. Name: undefined Message: undefined
+[00:39:40.465] Browser WARN    [2026-06-01T06:44:05.865Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d16 transport errored. Name: undefined Message: undefined
+[00:40:48.463] Browser WARN    [2026-06-01T06:45:13.866Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d17 transport errored. Name: undefined Message: undefined
+[00:42:10.460] Browser WARN    [2026-06-01T06:46:35.865Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d18 transport errored. Name: undefined Message: undefined
+[00:43:06.473] Browser WARN    [2026-06-01T06:47:31.872Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d19 transport errored. Name: undefined Message: undefined
+[00:43:59.474] Browser WARN    [2026-06-01T06:48:24.861Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d1a transport errored. Name: undefined Message: undefined
+[00:45:28.471] Browser WARN    [2026-06-01T06:49:53.876Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d1b transport errored. Name: undefined Message: undefined
+[00:46:28.465] Browser WARN    [2026-06-01T06:50:53.873Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d1c transport errored. Name: undefined Message: undefined
+[00:47:05.470] Browser WARN    [2026-06-01T06:51:30.874Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d1d transport errored. Name: undefined Message: undefined
+[00:48:19.472] Browser WARN    [2026-06-01T06:52:44.874Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d1e transport errored. Name: undefined Message: undefined
+[00:49:28.463] Browser WARN    [2026-06-01T06:53:53.874Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d1f transport errored. Name: undefined Message: undefined
+[00:50:24.460] Browser WARN    [2026-06-01T06:54:49.864Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d20 transport errored. Name: undefined Message: undefined
+[00:51:28.464] Browser WARN    [2026-06-01T06:55:53.865Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d21 transport errored. Name: undefined Message: undefined
+[00:52:37.468] Browser WARN    [2026-06-01T06:57:02.867Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d22 transport errored. Name: undefined Message: undefined
+[00:53:44.469] Browser WARN    [2026-06-01T06:58:09.870Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d23 transport errored. Name: undefined Message: undefined
+[00:54:23.462] Browser WARN    [2026-06-01T06:58:48.867Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d24 transport errored. Name: undefined Message: undefined
+[00:55:23.468] Browser WARN    [2026-06-01T06:59:48.872Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d25 transport errored. Name: undefined Message: undefined
+[00:56:33.460] Browser WARN    [2026-06-01T07:00:58.866Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d26 transport errored. Name: undefined Message: undefined
+[00:57:04.462] Browser WARN    [2026-06-01T07:01:29.870Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d27 transport errored. Name: undefined Message: undefined
+[00:57:59.469] Browser WARN    [2026-06-01T07:02:24.873Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d28 transport errored. Name: undefined Message: undefined
+[00:58:57.470] Browser WARN    [2026-06-01T07:03:22.876Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d29 transport errored. Name: undefined Message: undefined
+[01:00:22.473] Browser WARN    [2026-06-01T07:04:47.863Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d2a transport errored. Name: undefined Message: undefined
+[01:01:08.467] Browser WARN    [2026-06-01T07:05:33.864Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d2b transport errored. Name: undefined Message: undefined
+[01:02:11.465] Browser WARN    [2026-06-01T07:06:36.870Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d2c transport errored. Name: undefined Message: undefined
+[01:03:30.466] Browser WARN    [2026-06-01T07:07:55.870Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d2d transport errored. Name: undefined Message: undefined
+[01:04:57.470] Browser WARN    [2026-06-01T07:09:22.869Z]  @firebase/firestore: Firestore (11.9.0): WebChannelConnection RPC 'Listen' stream 0x8ce33d2e transport errored. Name: undefined Message: undefined

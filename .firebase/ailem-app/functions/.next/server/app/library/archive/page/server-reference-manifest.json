@@ -1,0 +1,35 @@
+{
+  "node": {
+    "40dd70af1a2a210c99f65a2c7d837275208c181722": {
+      "workers": {
+        "app/library/archive/page": {
+          "moduleId": 175154,
+          "async": false,
+          "exportedName": "searchBooks",
+          "filename": "src/ai/flows/search-books-flow.ts"
+        }
+      },
+      "layer": {
+        "app/library/archive/page": "action-browser"
+      },
+      "exportedName": "searchBooks",
+      "filename": "src/ai/flows/search-books-flow.ts"
+    },
+    "4064477681c94c60520a94cf0bc5730d6d04c07edb": {
+      "workers": {
+        "app/library/archive/page": {
+          "moduleId": 175154,
+          "async": false,
+          "exportedName": "migrateImage",
+          "filename": "src/ai/flows/migrate-image-flow.ts"
+        }
+      },
+      "layer": {
+        "app/library/archive/page": "action-browser"
+      },
+      "exportedName": "migrateImage",
+      "filename": "src/ai/flows/migrate-image-flow.ts"
+    }
+  },
+  "edge": {}
+}

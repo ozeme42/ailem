@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/prayers/layout,_N_T_/prayers/page,_N_T_/prayers"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/prayers/__PAGE__",
+    "/prayers",
+    "/_index",
+    "/_head"
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "node": {
+    "40dd70af1a2a210c99f65a2c7d837275208c181722": {
+      "workers": {
+        "app/library/archive/page": {
+          "moduleId": 175154,
+          "async": false,
+          "exportedName": "searchBooks",
+          "filename": "src/ai/flows/search-books-flow.ts"
+        }
+      },
+      "layer": {
+        "app/library/archive/page": "action-browser"
+      },
+      "filename": "src/ai/flows/search-books-flow.ts",
+      "exportedName": "searchBooks"
+    },
+    "4064477681c94c60520a94cf0bc5730d6d04c07edb": {
+      "workers": {
+        "app/library/archive/page": {
+          "moduleId": 175154,
+          "async": false,
+          "exportedName": "migrateImage",
+          "filename": "src/ai/flows/migrate-image-flow.ts"
+        }
+      },
+      "layer": {
+        "app/library/archive/page": "action-browser"
+      },
+      "filename": "src/ai/flows/migrate-image-flow.ts",
+      "exportedName": "migrateImage"
+    },
+    "40f421aaa16af1bcdea9edc44d54cd0e1afbcae8da": {
+      "workers": {
+        "app/needs/page": {
+          "moduleId": 42641,
+          "async": false,
+          "exportedName": "generateShoppingListItems",
+          "filename": "src/ai/flows/generate-shopping-list-flow.ts"
+        },
+        "app/shopping/page": {
+          "moduleId": 838175,
+          "async": false,
+          "exportedName": "generateShoppingListItems",
+          "filename": "src/ai/flows/generate-shopping-list-flow.ts"
+        }
+      },
+      "layer": {
+        "app/needs/page": "action-browser",
+        "app/shopping/page": "action-browser"
+      },
+      "filename": "src/ai/flows/generate-shopping-list-flow.ts",
+      "exportedName": "generateShoppingListItems"
+    }
+  },
+  "edge": {},
+  "encryptionKey": "2p0nnBFTp7cBTlq8kCTsr4AZy6+JI7rxp+YnrobT0Us="
+}

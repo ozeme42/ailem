@@ -1,0 +1,20 @@
+{
+  "node": {
+    "40f421aaa16af1bcdea9edc44d54cd0e1afbcae8da": {
+      "workers": {
+        "app/needs/page": {
+          "moduleId": 42641,
+          "async": false,
+          "exportedName": "generateShoppingListItems",
+          "filename": "src/ai/flows/generate-shopping-list-flow.ts"
+        }
+      },
+      "layer": {
+        "app/needs/page": "action-browser"
+      },
+      "exportedName": "generateShoppingListItems",
+      "filename": "src/ai/flows/generate-shopping-list-flow.ts"
+    }
+  },
+  "edge": {}
+}
