@@ -13,6 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/auth-provider";
 import { Account, FamilyMember, Transaction, BudgetCategory } from "@/lib/data";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -83,6 +84,7 @@ const formSchema = z.object({
   category: z.string().optional(),
   date: z.date({ required_error: "Tarih seçiniz" }),
   isInstallment: z.boolean().default(false),
+  isRecurring: z.boolean().default(false),
   installmentCount: z.coerce.number().optional(),
 });
 
@@ -101,6 +103,8 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   const [showCategoryManager, setShowCategoryManager] = React.useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
 
+  const { user } = useAuth();
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -110,6 +114,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
       category: "",
       date: new Date(),
       isInstallment: false,
+      isRecurring: false,
       installmentCount: 2,
     },
   });
@@ -123,10 +128,11 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
         category: initialData.category || "",
         date: initialData.date ? parseISO(initialData.date) : new Date(),
         isInstallment: initialData.isInstallment || false,
+        isRecurring: initialData.isRecurring || false,
         installmentCount: initialData.installmentDetails?.total || 2,
       });
     }
-  }, [initialData, form]);
+  }, [initialData, form, user]);
 
   React.useEffect(() => {
       const unsub = onBudgetCategoriesUpdate(setCategories);
@@ -261,17 +267,26 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                     {errors.accountId && <p className="text-xs font-medium text-rose-500 ml-1">{errors.accountId.message}</p>}
                 </div>
 
-                {/* Taksit (Sadece Gider) */}
+                {/* Taksit ve Abonelik (Sadece Gider) */}
                 {transactionType === 'expense' && (
                     <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-3">
-                        <FormField control={form.control} name="isInstallment" render={({ field }) => (
+                        <FormField control={form.control} name="isRecurring" render={({ field }) => (
                             <FormItem className="flex items-center justify-between space-y-0">
-                                <FormLabel className="text-sm font-medium">Taksitli İşlem</FormLabel>
+                                <FormLabel className="text-sm font-medium">Sabit Gider (Abonelik vb.)</FormLabel>
                                 <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                             </FormItem>
                         )}/>
                         
-                        {isInstallment && (
+                        {!form.watch('isRecurring') && (
+                            <FormField control={form.control} name="isInstallment" render={({ field }) => (
+                                <FormItem className="flex items-center justify-between space-y-0 pt-2 border-t border-dashed border-slate-200 dark:border-white/10">
+                                    <FormLabel className="text-sm font-medium">Taksitli İşlem</FormLabel>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                        )}
+                        
+                        {isInstallment && !form.watch('isRecurring') && (
                             <FormField control={form.control} name="installmentCount" render={({ field }) => (
                                 <FormItem className="flex items-center gap-3 space-y-0 pt-2 border-t border-dashed border-slate-200 dark:border-white/10">
                                     <FormLabel className="text-sm text-slate-500">Taksit Sayısı:</FormLabel>

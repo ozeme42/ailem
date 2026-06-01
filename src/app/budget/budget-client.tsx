@@ -1,16 +1,17 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Trash2, Banknote, Landmark, CreditCard, BarChart2, ArrowUpRight, ArrowDownLeft, Calendar as CalendarIcon, ArrowLeft } from "lucide-react";
+import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Trash2, Banknote, Landmark, CreditCard, BarChart2, ArrowUpRight, ArrowDownLeft, Calendar as CalendarIcon, ArrowLeft, ShoppingCart, Utensils, Bus, FileText, Gamepad2, HeartPulse, Shirt, GraduationCap, DollarSign, Briefcase, PlusCircle, CircleEllipsis } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import { NewAccountForm } from "@/components/new-account-form";
 import { NewTransactionForm } from "@/components/new-transaction-form";
 import { useAuth } from "@/components/auth-provider";
-import { onAccountsUpdate, deleteAccount, addAccount, updateAccount, addTransaction, updateTransaction, deleteTransaction, onTransactionsUpdate } from "@/lib/dataService";
-import type { Account, Transaction } from "@/lib/data";
+import { onAccountsUpdate, deleteAccount, addAccount, updateAccount, addTransaction, updateTransaction, deleteTransaction, onTransactionsUpdate, onBudgetCategoriesUpdate } from "@/lib/dataService";
+import type { Account, Transaction, BudgetCategory } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfYear, endOfYear, subYears, parseISO, addYears, eachMonthOfInterval, subMonths, addMonths, getYear } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -38,19 +39,19 @@ const accountIcons: { [key: string]: React.ElementType } = {
     'debt': Wallet
 };
 
-const categoryColors: {[key: string]: string} = {
-    'Market': 'bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400',
-    'Yemek': 'bg-yellow-500/10 text-yellow-600 dark:bg-yellow-500/20 dark:text-yellow-400',
-    'Ulaşım': 'bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400',
-    'Fatura': 'bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400',
-    'Eğlence': 'bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400',
-    'Sağlık': 'bg-green-500/10 text-green-600 dark:bg-green-500/20 dark:text-green-400',
-    'Giyim': 'bg-pink-500/10 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400',
-    'Eğitim': 'bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400',
-    'Maaş': 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
-    'Gelir': 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
-    'Ek Gelir': 'bg-teal-500/10 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400',
-    'Diğer': 'bg-slate-500/10 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400'
+const categoryConfig: {[key: string]: { color: string, icon: React.ElementType }} = {
+    'Market': { color: 'bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400', icon: ShoppingCart },
+    'Yemek': { color: 'bg-yellow-500/10 text-yellow-600 dark:bg-yellow-500/20 dark:text-yellow-400', icon: Utensils },
+    'Ulaşım': { color: 'bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400', icon: Bus },
+    'Fatura': { color: 'bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400', icon: FileText },
+    'Eğlence': { color: 'bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400', icon: Gamepad2 },
+    'Sağlık': { color: 'bg-green-500/10 text-green-600 dark:bg-green-500/20 dark:text-green-400', icon: HeartPulse },
+    'Giyim': { color: 'bg-pink-500/10 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400', icon: Shirt },
+    'Eğitim': { color: 'bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400', icon: GraduationCap },
+    'Maaş': { color: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400', icon: DollarSign },
+    'Gelir': { color: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400', icon: Briefcase },
+    'Ek Gelir': { color: 'bg-teal-500/10 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400', icon: PlusCircle },
+    'Diğer': { color: 'bg-slate-500/10 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400', icon: CircleEllipsis }
 };
 
 export function BudgetClient() {
@@ -61,6 +62,7 @@ export function BudgetClient() {
     const [currentDate, setCurrentDate] = React.useState(new Date());
     const [accounts, setAccounts] = React.useState<Account[]>([]);
     const [allTransactions, setAllTransactions] = React.useState<Transaction[]>([]);
+    const [categories, setCategories] = React.useState<BudgetCategory[]>([]);
     
     const [isAccountFormOpen, setIsAccountFormOpen] = React.useState(false);
     const [isTransactionFormOpen, setIsTransactionFormOpen] = React.useState(false);
@@ -74,7 +76,8 @@ export function BudgetClient() {
         if (!familyId) return;
         const unsubAccounts = onAccountsUpdate(setAccounts);
         const unsubTransactions = onTransactionsUpdate(setAllTransactions, subYears(new Date(), 5), addYears(new Date(), 5));
-        return () => { unsubAccounts(); unsubTransactions(); };
+        const unsubCategories = onBudgetCategoriesUpdate(setCategories);
+        return () => { unsubAccounts(); unsubTransactions(); unsubCategories(); };
     }, [familyId]);
     
     const handleNavDate = (direction: 'prev' | 'next') => {
@@ -216,8 +219,32 @@ export function BudgetClient() {
     }
     const openTransactionForm = (transaction: Transaction | null) => { setEditingTransaction(transaction); setIsTransactionFormOpen(true); }
 
+    // --- KATEGORİ BÜTÇE LİMİTLERİ (Aylık) ---
+    const limitedCategories = React.useMemo(() => {
+        const limited = categories.filter(c => c.limit && c.limit > 0 && c.type === 'expense');
+        
+        return limited.map(cat => {
+            const spent = allTransactions.filter(tx => 
+                tx.type === 'expense' && 
+                tx.category === cat.name &&
+                tx.date.startsWith(format(currentDate, 'yyyy-MM'))
+            ).reduce((sum, tx) => sum + tx.amount, 0);
+            
+            return {
+                ...cat,
+                spent,
+                percent: Math.min(Math.round((spent / cat.limit!) * 100), 100)
+            };
+        });
+    }, [categories, allTransactions, currentDate]);
+
+    // --- SABİT GİDERLER (Abonelikler vb.) ---
+    const recurringExpenses = React.useMemo(() => {
+        return allTransactions.filter(tx => tx.isRecurring && tx.type === 'expense');
+    }, [allTransactions]);
+
     return (
-        <div className={cn("min-h-[100dvh] font-sans pb-[calc(100px+env(safe-area-inset-bottom))] relative", themeClasses.PAGE_BG, themeClasses.TEXT_MAIN)}>
+        <div className={cn("min-h-[100dvh] font-sans pb-[calc(100px+env(safe-area-inset-bottom))] relative bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-[#1C1C1E] dark:to-purple-950/30", themeClasses.TEXT_MAIN)}>
             
             {/* MOBİL HEADER (APP BAR) */}
             <header className={cn("sticky top-0 z-40 w-full pt-[env(safe-area-inset-top)]", themeClasses.HEADER_BG)}>
@@ -240,60 +267,85 @@ export function BudgetClient() {
 
             <div className="max-w-2xl mx-auto px-4 pt-4 relative z-10 space-y-5">
                 
-                {/* --- MOBİL ÖZET KARTI (KREDİ KARTI GÖRÜNÜMÜ) --- */}
-                <div className="relative overflow-hidden rounded-[24px] p-6 shadow-lg active:scale-[0.98] transition-transform duration-200">
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#007AFF] to-[#5856D6] z-0" />
-                    <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/20 rounded-full blur-2xl pointer-events-none" />
-                    <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-black/20 rounded-full blur-2xl pointer-events-none" />
+                {/* --- MOBİL ÖZET KARTI (PREMIUM GRADIENT) --- */}
+                <div className="relative overflow-hidden rounded-[28px] p-6 shadow-xl active:scale-[0.98] transition-transform duration-300 border border-white/10">
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-rose-500 z-0" />
+                    <div className="absolute -top-20 -right-20 w-56 h-56 bg-white/20 rounded-full blur-[40px] pointer-events-none" />
+                    <div className="absolute -bottom-20 -left-20 w-56 h-56 bg-black/30 rounded-full blur-[40px] pointer-events-none" />
                     
-                    <div className="relative z-10 flex flex-col justify-between min-h-[140px]">
+                    <div className="relative z-10 flex flex-col justify-between min-h-[150px]">
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-white/80 text-[13px] font-medium uppercase tracking-wider mb-0.5">{labelTotal}</p>
-                                <h2 className="text-3xl font-bold text-white tracking-tight">
+                                <p className="text-white/80 text-[12px] font-bold uppercase tracking-widest mb-1 drop-shadow-sm">{labelTotal}</p>
+                                <h2 className="text-4xl font-extrabold text-white tracking-tight drop-shadow-md">
                                     {headerTotal.toLocaleString('tr-TR')} ₺
                                 </h2>
                             </div>
-                            <div className="bg-white/20 p-2 rounded-xl backdrop-blur-md">
-                                {headerTotal >= 0 ? <TrendingUp className="h-5 w-5 text-white" /> : <TrendingDown className="h-5 w-5 text-white" />}
+                            <div className="bg-white/20 p-2.5 rounded-2xl backdrop-blur-md shadow-sm border border-white/20">
+                                {headerTotal >= 0 ? <TrendingUp className="h-6 w-6 text-white" /> : <TrendingDown className="h-6 w-6 text-white" />}
                             </div>
                         </div>
                         
                         <div className="flex gap-4 mt-6">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-1.5 mb-1">
-                                    <div className="w-5 h-5 rounded-full bg-[#34C759] flex items-center justify-center">
-                                        <ArrowDownLeft className="h-3 w-3 text-white" />
+                            <div className="flex-1 bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10">
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                    <div className="w-6 h-6 rounded-full bg-emerald-400/20 flex items-center justify-center">
+                                        <ArrowDownLeft className="h-3.5 w-3.5 text-emerald-300" />
                                     </div>
-                                    <p className="text-[11px] text-white/80 uppercase font-bold tracking-wider">{labelIncome}</p>
+                                    <p className="text-[10px] text-white/70 uppercase font-bold tracking-widest">{labelIncome}</p>
                                 </div>
-                                <p className="text-[15px] font-semibold text-white">{headerIncome.toLocaleString('tr-TR')} ₺</p>
+                                <p className="text-[16px] font-bold text-white">{headerIncome.toLocaleString('tr-TR')} ₺</p>
                             </div>
-                            <div className="w-px bg-white/20" />
-                            <div className="flex-1">
-                                <div className="flex items-center gap-1.5 mb-1">
-                                    <div className="w-5 h-5 rounded-full bg-[#FF3B30] flex items-center justify-center">
-                                        <ArrowUpRight className="h-3 w-3 text-white" />
+                            <div className="flex-1 bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10">
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                    <div className="w-6 h-6 rounded-full bg-rose-400/20 flex items-center justify-center">
+                                        <ArrowUpRight className="h-3.5 w-3.5 text-rose-300" />
                                     </div>
-                                    <p className="text-[11px] text-white/80 uppercase font-bold tracking-wider">{labelExpense}</p>
+                                    <p className="text-[10px] text-white/70 uppercase font-bold tracking-widest">{labelExpense}</p>
                                 </div>
-                                <p className="text-[15px] font-semibold text-white">{headerExpense.toLocaleString('tr-TR')} ₺</p>
+                                <p className="text-[16px] font-bold text-white">{headerExpense.toLocaleString('tr-TR')} ₺</p>
                             </div>
                         </div>
                     </div>
+                    
+                    {/* BÜTÇE LİMİTLERİ (Aylık) */}
+                    {limitedCategories.length > 0 && (
+                        <div className="px-5 mt-6 mb-2">
+                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Bütçe Limitleri</h3>
+                            <div className="space-y-3">
+                                {limitedCategories.map(cat => (
+                                    <div key={cat.id} className="bg-white dark:bg-[#1C1C1E] p-3 rounded-2xl shadow-sm">
+                                        <div className="flex justify-between items-center mb-1.5">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-lg">{cat.icon}</span>
+                                                <span className="text-sm font-semibold">{cat.name}</span>
+                                            </div>
+                                            <span className="text-[11px] font-medium text-slate-500">{cat.spent.toLocaleString('tr-TR')} / {cat.limit!.toLocaleString('tr-TR')} ₺</span>
+                                        </div>
+                                        <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                            <div 
+                                                className={cn("h-full rounded-full transition-all duration-500", cat.percent >= 90 ? "bg-rose-500" : cat.percent >= 75 ? "bg-orange-500" : "bg-indigo-500")}
+                                                style={{ width: `${cat.percent}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* --- SEGMENTED CONTROL (IOS TARZI SEKMELER) --- */}
-                <div className="bg-[#E3E3E8] dark:bg-[#1C1C1E] p-[3px] rounded-lg flex w-full">
+                <div className="bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-[16px] flex w-full mb-4 shadow-inner">
                     <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
-                        <TabsList className="bg-transparent w-full grid grid-cols-3 p-0 h-[32px]">
-                            <TabsTrigger value="day" className="rounded-md h-full text-[13px] font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-[#2C2C2E] data-[state=active]:text-black dark:data-[state=active]:text-white data-[state=active]:shadow-sm transition-all text-[#8E8E93]">
+                        <TabsList className="bg-transparent w-full grid grid-cols-3 p-0 h-[38px] gap-1">
+                            <TabsTrigger value="day" className="rounded-xl h-full text-[13px] font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-md transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
                                 Günlük
                             </TabsTrigger>
-                            <TabsTrigger value="month" className="rounded-md h-full text-[13px] font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-[#2C2C2E] data-[state=active]:text-black dark:data-[state=active]:text-white data-[state=active]:shadow-sm transition-all text-[#8E8E93]">
+                            <TabsTrigger value="month" className="rounded-xl h-full text-[13px] font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-md transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
                                 Aylık
                             </TabsTrigger>
-                            <TabsTrigger value="accounts" className="rounded-md h-full text-[13px] font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-[#2C2C2E] data-[state=active]:text-black dark:data-[state=active]:text-white data-[state=active]:shadow-sm transition-all text-[#8E8E93]">
+                            <TabsTrigger value="accounts" className="rounded-xl h-full text-[13px] font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-md transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
                                 Hesaplar
                             </TabsTrigger>
                         </TabsList>
@@ -339,30 +391,36 @@ export function BudgetClient() {
                             <div className={cn("overflow-hidden rounded-2xl", themeClasses.CARD_BG)}>
                                 {group.transactions.map((tx, index) => {
                                     const account = accounts.find(a => a.id === tx.accountId);
-                                    const categoryStyle = categoryColors[tx.category] || 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400';
-                                    const isLast = index === group.transactions.length - 1;
+                                    const dynamicCategory = categories.find(c => c.name === tx.category);
+                                    let config = categoryConfig[tx.category];
+                                    if (!config) {
+                                        config = tx.type === 'income' 
+                                            ? { color: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400', icon: PlusCircle }
+                                            : { color: 'bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400', icon: CircleEllipsis };
+                                    }
+                                    const CategoryIcon = config.icon;
+                                    const bgClass = config.color.split(' ').find(c => c.startsWith('bg-')) || 'bg-slate-100';
+                                    const textClass = config.color.split(' ').find(c => c.startsWith('text-')) || 'text-slate-800';
 
                                     return (
-                                        <div key={tx.id} className="relative">
+                                        <div key={tx.id} className="relative mb-3 last:mb-0">
                                             <div 
-                                                className="flex items-center justify-between p-3.5 active:bg-black/5 dark:active:bg-white/5 transition-colors cursor-pointer" 
+                                                className={cn("flex items-center justify-between p-4 rounded-2xl active:scale-[0.98] transition-all cursor-pointer shadow-sm border border-white/40 dark:border-white/5", bgClass, "dark:bg-opacity-10 dark:bg-slate-800")} 
                                                 onClick={() => openTransactionForm(tx)}
                                             >
-                                                <div className="flex items-center gap-3">
-                                                    <div className={cn("h-10 w-10 rounded-full flex items-center justify-center font-bold text-lg", categoryStyle)}>
-                                                        {tx.category.charAt(0).toUpperCase()}
+                                                <div className="flex items-center gap-3.5">
+                                                    <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center font-bold text-xl shadow-sm bg-white dark:bg-slate-700", textClass)}>
+                                                        {dynamicCategory ? <span className="text-2xl">{dynamicCategory.icon}</span> : <CategoryIcon className="w-6 h-6" />}
                                                     </div>
                                                     <div>
-                                                        <p className="text-[16px] font-medium text-[#1C1C1E] dark:text-white leading-tight">{tx.category}</p>
-                                                        <p className="text-[13px] text-[#8E8E93] mt-0.5">{account?.name || 'Hesap Yok'}</p>
+                                                        <p className="text-[16px] font-bold text-slate-800 dark:text-white leading-tight">{tx.category}</p>
+                                                        <p className="text-[12px] text-slate-500 font-medium mt-0.5">{account?.name || 'Hesap Yok'}</p>
                                                     </div>
                                                 </div>
-                                                <p className={cn("font-medium text-[16px]", tx.type === 'expense' ? 'text-[#FF1E1E]' : 'text-[#34C759]')}>
+                                                <p className={cn("font-bold text-[17px]", tx.type === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400')}>
                                                     {tx.type === 'expense' ? '-' : '+'}{tx.amount.toLocaleString('tr-TR')} ₺
                                                 </p>
                                             </div>
-                                            {/* Liste ayırıcı çizgisi */}
-                                            {!isLast && <div className="absolute bottom-0 right-0 left-[60px] h-[0.5px] bg-[#C6C6C8] dark:bg-[#38383A]" />}
                                         </div>
                                     )
                                 })}
@@ -372,7 +430,49 @@ export function BudgetClient() {
 
                     {/* AYLIK GÖRÜNÜM */}
                     {mainTab === 'month' && (
-                        <div className={cn("overflow-hidden rounded-2xl", themeClasses.CARD_BG)}>
+                        <div className="px-5 space-y-6">
+                            {/* Sabit Giderler Kartı */}
+                            {recurringExpenses.length > 0 && (
+                                <div>
+                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">Sabit Giderler (Abonelikler)</h3>
+                                    <div className={cn("overflow-hidden rounded-2xl", themeClasses.CARD_BG)}>
+                                        {recurringExpenses.map((tx, index) => {
+                                            let config = categoryConfig[tx.category];
+                                            if (!config) {
+                                                config = tx.type === 'income' 
+                                                    ? { color: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400', icon: PlusCircle }
+                                                    : { color: 'bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400', icon: CircleEllipsis };
+                                            }
+                                            const CategoryIcon = config.icon;
+                                            const bgClass = config.color.split(' ').find(c => c.startsWith('bg-')) || 'bg-slate-100';
+                                            const textClass = config.color.split(' ').find(c => c.startsWith('text-')) || 'text-slate-800';
+
+                                            return (
+                                                <div key={tx.id} className="relative mb-3 last:mb-0">
+                                                    <div className={cn("flex items-center justify-between p-4 rounded-2xl border border-white/40 dark:border-white/5 shadow-sm", bgClass, "dark:bg-opacity-10 dark:bg-slate-800")}>
+                                                        <div className="flex items-center gap-3.5">
+                                                            <div className={cn("h-10 w-10 rounded-2xl flex items-center justify-center font-bold text-lg bg-white dark:bg-slate-700 shadow-sm", textClass)}>
+                                                                <CategoryIcon className="w-5 h-5" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[15px] font-bold text-slate-800 dark:text-white leading-tight">{tx.category}</p>
+                                                                <p className="text-[11px] text-slate-500 mt-0.5 uppercase tracking-wider font-semibold">Her Ay</p>
+                                                            </div>
+                                                        </div>
+                                                        <p className="font-bold text-[16px] text-rose-600 dark:text-rose-400">
+                                                            -{tx.amount.toLocaleString('tr-TR')} ₺
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div>
+                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Aylık Özet</h3>
+                                <div className={cn("overflow-hidden rounded-2xl", themeClasses.CARD_BG)}>
                             {monthlySummaries.map((summary, index) => {
                                 const isLast = index === monthlySummaries.length - 1;
                                 return (
@@ -405,6 +505,8 @@ export function BudgetClient() {
                                     </Accordion>
                                 )
                             })}
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -489,14 +591,13 @@ export function BudgetClient() {
                 </div>
             </div>
 
-            {/* --- FLOAT ACTION BUTTON (FAB) --- */}
-            {/* MOBİL ALT MENÜNÜN (h-16) ÜZERİNDE KALMASI İÇİN bottom DEĞERİ ARTIRILDI */}
-            <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-6 z-50">
+            {/* YENİ İŞLEM EKLE BUTONU (FLOATING) */}
+            <div className="fixed bottom-[110px] right-6 z-40">
                 <Button 
-                    className="rounded-full w-14 h-14 bg-[#007AFF] hover:bg-[#007AFF]/90 text-white shadow-[0_4px_14px_0_rgba(0,122,255,0.39)] transition-transform active:scale-95"
-                    onClick={() => { setEditingTransaction(null); setIsTransactionFormOpen(true); }}
+                    className="h-16 w-16 rounded-[24px] rounded-tl-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 bg-gradient-to-br from-blue-500 to-indigo-600 border border-white/20 active:scale-95 transition-all p-0 flex items-center justify-center"
+                    onClick={() => openTransactionForm(null)}
                 >
-                    <Plus className="h-7 w-7" />
+                    <Plus className="h-8 w-8 text-white drop-shadow-md" />
                 </Button>
             </div>
 

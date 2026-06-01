@@ -22,6 +22,7 @@ const categorySchema = z.object({
     name: z.string().min(2, "Kategori adı en az 2 karakter olmalıdır."),
     icon: z.string().min(1, "İkon için bir emoji ekleyin."),
     type: z.enum(['income', 'expense']).default('expense'),
+    limit: z.coerce.number().optional(),
 });
 type CategoryFormData = z.infer<typeof categorySchema>;
 
@@ -43,10 +44,10 @@ export function BudgetCategoryForm({ onBack }: { onBack: () => void }) {
      
      React.useEffect(() => {
         if(editingCategory) {
-            form.reset({ name: editingCategory.name, icon: editingCategory.icon, type: editingCategory.type });
+            form.reset({ name: editingCategory.name, icon: editingCategory.icon, type: editingCategory.type, limit: editingCategory.limit });
             setIsFormVisible(true);
         } else {
-            form.reset({ name: "", icon: "", type: "expense" });
+            form.reset({ name: "", icon: "", type: "expense", limit: undefined });
         }
      }, [editingCategory, form]);
 
@@ -100,6 +101,11 @@ export function BudgetCategoryForm({ onBack }: { onBack: () => void }) {
                                 </TabsList>
                             </Tabs>
                         )}/>
+                        {form.watch('type') === 'expense' && (
+                            <FormField name="limit" control={form.control} render={({ field }) => (
+                                <FormItem><FormLabel>Aylık Limit (Opsiyonel)</FormLabel><FormControl><Input type="number" placeholder="Örn: 5000" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                        )}
                         <DialogFooter className="pt-4">
                              <Button type="submit" className="w-full">{editingCategory ? 'Kaydet' : 'Ekle'}</Button>
                         </DialogFooter>

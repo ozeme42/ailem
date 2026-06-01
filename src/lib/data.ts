@@ -555,6 +555,7 @@ export interface Transaction {
     category: string;
     date: string;
     isInstallment: boolean;
+    isRecurring?: boolean;
     installmentDetails?: {
         current: number;
         total: number;
@@ -568,6 +569,7 @@ export interface BudgetCategory {
     name: string;
     icon: string;
     type: 'income' | 'expense';
+    limit?: number;
 }
 
 export interface Budget {
