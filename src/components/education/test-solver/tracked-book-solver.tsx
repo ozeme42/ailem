@@ -74,13 +74,10 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
             </div>
 
             {/* Soru Listesi */}
-            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-                <div className="bg-slate-50 dark:bg-slate-950 px-8 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    <span>SORU NO</span>
-                    <span>DURUM & CEVAP</span>
-                </div>
-
-                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden p-6">
+                <div className={cn(
+                    isMCQ ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" : "flex flex-col gap-4"
+                )}>
                     {Array.from({ length: test.questionCount }).map((_, i) => {
                         const qNum = (i + 1).toString();
                         const sAns = studentAnswers[qNum] || "";
@@ -106,21 +103,27 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
 
                         return (
                             <div key={qNum} className={cn(
-                                "flex flex-col gap-4 px-8 py-6 transition-all",
-                                isCorrect ? "bg-emerald-500/[0.04] dark:bg-emerald-500/[0.02]" : 
-                                isWrong ? "bg-rose-500/[0.04] dark:bg-rose-500/[0.02]" : "hover:bg-slate-50/50 dark:hover:bg-slate-800/20"
+                                "flex flex-col rounded-2xl transition-all border",
+                                isMCQ ? "p-3" : "p-5 gap-4",
+                                isCorrect ? "bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-800/50" : 
+                                isWrong ? "bg-rose-50/50 dark:bg-rose-900/10 border-rose-100 dark:border-rose-800/50" : 
+                                "bg-slate-50/50 dark:bg-slate-800/20 border-slate-100 dark:border-slate-800"
                             )}>
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+                                <div className={cn("flex", isMCQ ? "items-center justify-between gap-3" : "flex-col gap-4 w-full")}>
                                     {/* Soru No ve Durum İkonu */}
-                                    <div className="flex items-center gap-4 w-24 shrink-0">
-                                        <span className="text-sm font-black text-slate-400">{qNum}.</span>
-                                        {isReviewMode && (
+                                    <div className="flex items-center gap-2 shrink-0 w-12">
+                                        <span className={cn(
+                                            "font-black",
+                                            isMCQ ? "text-base" : "text-lg",
+                                            isReviewMode ? (isCorrect ? "text-emerald-600" : isWrong ? "text-rose-600" : "text-slate-400") : "text-slate-500"
+                                        )}>{qNum}.</span>
+                                        {isReviewMode && !isMCQ && (
                                             isCorrect ? (
-                                                <div className="bg-emerald-500 text-white p-1 rounded-full shadow-lg shadow-emerald-500/40"><CheckCircle2 className="w-4 h-4" strokeWidth={3} /></div>
+                                                <div className="bg-emerald-500 text-white p-1 rounded-full"><CheckCircle2 className="w-4 h-4" /></div>
                                             ) : isWrong ? (
-                                                <div className="bg-rose-500 text-white p-1 rounded-full shadow-lg shadow-rose-500/40"><XCircle className="w-4 h-4" strokeWidth={3} /></div>
+                                                <div className="bg-rose-500 text-white p-1 rounded-full"><XCircle className="w-4 h-4" /></div>
                                             ) : (
-                                                <div className="bg-slate-300 text-white p-1 rounded-full shadow-sm"><MinusCircle className="w-4 h-4" /></div>
+                                                <div className="bg-slate-300 text-white p-1 rounded-full"><MinusCircle className="w-4 h-4" /></div>
                                             )
                                         )}
                                     </div>
@@ -128,41 +131,39 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
                                     {/* Cevap Alanı */}
                                     <div className="flex-1 w-full">
                                         {isMCQ ? (
-                                            <div className="flex flex-col gap-4">
-                                                <div className="flex gap-2.5">
-                                                    {['A', 'B', 'C', 'D', 'E'].map(opt => {
-                                                        const isActive = sAns === opt;
-                                                        const isCorrectOpt = isReviewMode && opt === cAns;
-                                                        const isStudentWrongOpt = isReviewMode && opt === sAns && opt !== cAns;
+                                            <div className="flex items-center justify-end gap-1.5 w-full">
+                                                {['A', 'B', 'C', 'D', 'E'].map(opt => {
+                                                    const isActive = sAns === opt;
+                                                    const isCorrectOpt = isReviewMode && opt === cAns;
+                                                    const isStudentWrongOpt = isReviewMode && opt === sAns && opt !== cAns;
 
-                                                        return (
-                                                            <button
-                                                                key={opt}
-                                                                type="button"
-                                                                disabled={isReviewMode}
-                                                                onClick={() => {
-                                                                    if (isReviewMode) return;
-                                                                    const newValue = isActive ? "" : opt;
-                                                                    onAnswer(qNum, newValue);
-                                                                }}
-                                                                className={cn(
-                                                                    "w-11 h-11 md:w-12 md:h-12 rounded-xl border-2 flex items-center justify-center font-black text-base transition-all",
-                                                                    !isReviewMode ? (
-                                                                        isActive 
-                                                                            ? "bg-indigo-600 border-indigo-600 text-white shadow-lg scale-105 z-10" 
-                                                                            : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-400 hover:border-indigo-400"
-                                                                    ) : (
-                                                                        isCorrectOpt ? "bg-emerald-600 border-emerald-600 text-white shadow-lg scale-110 z-10 ring-2 ring-emerald-300 dark:ring-emerald-700" :
-                                                                        isStudentWrongOpt ? "bg-rose-600 border-rose-600 text-white shadow-md" :
-                                                                        "bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-300 opacity-30"
-                                                                    )
-                                                                )}
-                                                            >
-                                                                {opt}
-                                                            </button>
-                                                        )
-                                                    })}
-                                                </div>
+                                                    return (
+                                                        <button
+                                                            key={opt}
+                                                            type="button"
+                                                            disabled={isReviewMode}
+                                                            onClick={() => {
+                                                                if (isReviewMode) return;
+                                                                const newValue = isActive ? "" : opt;
+                                                                onAnswer(qNum, newValue);
+                                                            }}
+                                                            className={cn(
+                                                                "w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs transition-all",
+                                                                !isReviewMode ? (
+                                                                    isActive 
+                                                                        ? "bg-indigo-600 border-indigo-600 text-white shadow-md scale-110 z-10" 
+                                                                        : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-indigo-400"
+                                                                ) : (
+                                                                    isCorrectOpt ? "bg-emerald-600 border-emerald-600 text-white shadow-md scale-110 z-10" :
+                                                                    isStudentWrongOpt ? "bg-rose-600 border-rose-600 text-white shadow-sm" :
+                                                                    "bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-300 opacity-30"
+                                                                )
+                                                            )}
+                                                        >
+                                                            {opt}
+                                                        </button>
+                                                    )
+                                                })}
                                             </div>
                                         ) : (
                                             <div className="flex flex-col gap-3">
@@ -173,7 +174,7 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
                                                         onChange={(e) => onAnswer(qNum, e.target.value, true)}
                                                         placeholder="Cevabı buraya yazın..."
                                                         className={cn(
-                                                            "bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 h-12 rounded-xl focus:ring-indigo-500 font-medium transition-all",
+                                                            "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 h-12 rounded-xl focus:ring-indigo-500 font-medium transition-all shadow-sm",
                                                             isReviewMode && (
                                                                 isCorrect ? "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 text-emerald-900 dark:text-emerald-100 font-bold" :
                                                                 isWrong ? "bg-rose-50 dark:bg-rose-900/10 border-rose-200 text-rose-900 dark:text-rose-100 font-bold" :
@@ -184,7 +185,7 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
                                                 </div>
                                                 
                                                 {isReviewMode && test.studentTextAnswersFeedback?.[qNum] && (
-                                                    <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-start gap-2">
+                                                    <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/30 text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-start gap-2 shadow-sm">
                                                         <MessageSquareText className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                                                         <p>"{test.studentTextAnswersFeedback[qNum]}"</p>
                                                     </div>

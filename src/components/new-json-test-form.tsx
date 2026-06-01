@@ -59,6 +59,7 @@ type NewJsonTestFormProps = {
   familyMembers: FamilyMember[];
   onFormSubmit: (data: Omit<Test, 'id' | 'familyId'>) => void;
   initialData?: Test | null;
+  isReassigning?: boolean;
   availableSubjects: string[];
   onSubjectCreated: (subject: string) => void;
   availableTopics: string[];
@@ -87,7 +88,8 @@ export function NewJsonTestForm({
     onTopicCreated,
     trackedBooks,
     studyPlans,
-    bankQuestions
+    bankQuestions,
+    isReassigning
 }: NewJsonTestFormProps) {
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
@@ -179,11 +181,11 @@ export function NewJsonTestForm({
         subject: values.subject,
         studentId: values.assigneeId,
         questionCount: parsedQuestions.length,
-        assignedDate: format(new Date(), 'dd MMMM yyyy', { locale: tr }),
+        assignedDate: (initialData && !isReassigning) ? initialData.assignedDate : format(new Date(), 'dd MMMM yyyy', { locale: tr }),
         dueDate: format(values.dueDate, 'dd MMMM yyyy', { locale: tr }),
         sourceType: 'json' as const,
-        status: 'Atandı' as const,
-        isArchived: false,
+        status: (initialData && !isReassigning) ? initialData.status : 'Atandı',
+        isArchived: (initialData && !isReassigning) ? initialData.isArchived : false,
         jsonQuestions: parsedQuestions,
       };
 
@@ -257,6 +259,7 @@ export function NewJsonTestForm({
                                     onCreate={onSubjectCreated}
                                     placeholder="Ders seçin veya oluşturun..."
                                     className={glassColors.INPUT_BG}
+                                    contentClassName={glassColors.POPOVER_BG}
                                 />
                             </FormControl>
                             <FormMessage />
@@ -274,6 +277,7 @@ export function NewJsonTestForm({
                                     onCreate={handleCreateTopicInternal}
                                     placeholder={watchedSubject ? "Konu seçin veya oluşturun..." : "Önce ders seçin..."}
                                     className={glassColors.INPUT_BG}
+                                    contentClassName={glassColors.POPOVER_BG}
                                     disabled={!watchedSubject}
                                 />
                             </FormControl>

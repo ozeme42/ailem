@@ -188,26 +188,26 @@ const KpiCard = ({ icon: Icon, value, label, sub, color, trend }: {
   icon: any; value: string | number; label: string; sub?: string; color: string; trend?: number;
 }) => (
   <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-    className="relative rounded-2xl p-5 bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden group h-full">
+    className="relative rounded-2xl p-4 sm:p-5 bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden group h-full">
     <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
       style={{ background: `radial-gradient(160px at 10% 20%, ${color}18, transparent)` }} />
-    <div className="flex items-start justify-between mb-4">
-      <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: `${color}18` }}>
-        <Icon className="w-5 h-5" style={{ color }} />
+    <div className="flex items-start justify-between mb-2 sm:mb-4">
+      <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}18` }}>
+        <Icon className="w-4 h-4 sm:w-5 sm:h-5" style={{ color }} />
       </div>
       {trend !== undefined && (
-        <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5",
+        <span className={cn("text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-0.5",
           trend > 0 ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400"
           : trend < 0 ? "bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400"
           : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400")}>
-          {trend > 0 ? <ArrowUpRight className="w-3 h-3" /> : trend < 0 ? <ArrowDownRight className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+          {trend > 0 ? <ArrowUpRight className="w-2 h-2 sm:w-3 sm:h-3" /> : trend < 0 ? <ArrowDownRight className="w-2 h-2 sm:w-3 sm:h-3" /> : <Minus className="w-2 h-2 sm:w-3 sm:h-3" />}
           {Math.abs(trend)}%
         </span>
       )}
     </div>
-    <p className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none">{value}</p>
-    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-2 uppercase tracking-wider">{label}</p>
-    {sub && <p className="text-[10px] text-slate-400 mt-1">{sub}</p>}
+    <p className="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none truncate">{value}</p>
+    <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1 sm:mt-2 uppercase tracking-wider truncate">{label}</p>
+    {sub && <p className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5 sm:mt-1 truncate">{sub}</p>}
   </motion.div>
 );
 
@@ -381,9 +381,7 @@ export function StatsClient() {
   const activeFilterCount = [
     selectedSubject !== 'all',
     selectedTopic !== 'all',
-    selectedType !== 'all',
-    dateFrom !== undefined || dateTo !== undefined,
-    netSliderValue[0] !== netBounds.min || netSliderValue[1] !== netBounds.max,
+    selectedType !== 'all'
   ].filter(Boolean).length;
 
   const processedData = React.useMemo(() => enrichedBaseData.filter(t => {
@@ -722,7 +720,7 @@ export function StatsClient() {
       
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 h-[72px] flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 h-auto py-3 min-h-[72px] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" className="rounded-full w-9 h-9" onClick={() => router.back()}>
               <ArrowLeft className="h-5 w-5" />
@@ -735,7 +733,7 @@ export function StatsClient() {
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Performans Analizi</p>
             </div>
           </div>
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+          <div className="flex flex-wrap items-center justify-center w-full sm:w-auto gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
             {(['weekly', 'monthly', 'yearly'] as Period[]).map(p => (
               <button key={p} onClick={() => setActivePeriod(p)} className={cn('px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all', activePeriod === p ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300')}>
                 {p === 'weekly' ? 'Hafta' : p === 'monthly' ? 'Ay' : 'Yıl'}
@@ -749,121 +747,61 @@ export function StatsClient() {
         
         {/* FILTER SECTION */}
         <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden">
-          <div className="p-4 flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-500" /> Filtreler
-              </div>
-              {activeFilterCount > 0 && (
-                <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-black flex items-center justify-center">{activeFilterCount}</span>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-2 flex-1">
-              <Select value={selectedSubject} onValueChange={v => { setSelectedSubject(v); setSelectedTopic('all'); }}>
-                <SelectTrigger className="w-40 h-9 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700">
-                  <SelectValue placeholder="Ders" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tüm Dersler</SelectItem>
-                  {availableSubjectsList.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
-
-              <Select value={selectedTopic} onValueChange={setSelectedTopic} disabled={availableTopics.length === 0}>
-                <SelectTrigger className="w-40 h-9 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700">
-                  <SelectValue placeholder="Konu" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tüm Konular</SelectItem>
-                  {availableTopics.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
-
-              <Select value={selectedType} onValueChange={setSelectedSourceType}>
-                <SelectTrigger className="w-40 h-9 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700">
-                  <SelectValue placeholder="Tür" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tüm Türler</SelectItem>
-                  <SelectItem value="exam">Deneme Sınavı</SelectItem>
-                  <SelectItem value="bank">Soru Bankası</SelectItem>
-                  <SelectItem value="json">Yazılı Test</SelectItem>
-                  <SelectItem value="trackedBook">Kitap Takibi</SelectItem>
-                  <SelectItem value="mistake">Yanlış Havuzu</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn(
-                    "h-9 rounded-xl text-xs border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 font-medium gap-1.5",
-                    (dateFrom || dateTo) && "border-indigo-400 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
-                  )}>
-                    <Calendar className="w-3.5 h-3.5" />
-                    {dateFrom && dateTo
-                      ? `${format(dateFrom, 'dd MMM', { locale: tr })} – ${format(dateTo, 'dd MMM', { locale: tr })}`
-                      : dateFrom ? `${format(dateFrom, 'dd MMM', { locale: tr })} –`
-                      : dateTo ? `– ${format(dateTo, 'dd MMM', { locale: tr })}`
-                      : 'Tarih Aralığı'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 rounded-2xl shadow-xl border-slate-200 dark:border-slate-800" align="start">
-                  <div className="p-4 border-b border-slate-100 dark:border-slate-800">
-                    <p className="text-xs font-extrabold text-slate-700 dark:text-slate-200 uppercase tracking-widest mb-3">Tarih Aralığı Seç</p>
-                    <div className="flex gap-2 items-center text-xs">
-                      <span className="text-slate-400 w-10 shrink-0">Başlangıç</span>
-                      <span className="font-bold text-slate-700 dark:text-slate-200 min-w-[80px]">{dateFrom ? format(dateFrom, 'dd MMM yyyy', { locale: tr }) : '—'}</span>
-                    </div>
-                    <div className="flex gap-2 items-center text-xs mt-1">
-                      <span className="text-slate-400 w-10 shrink-0">Bitiş</span>
-                      <span className="font-bold text-slate-700 dark:text-slate-200 min-w-[80px]">{dateTo ? format(dateTo, 'dd MMM yyyy', { locale: tr }) : '—'}</span>
-                    </div>
-                  </div>
-                  <CalendarComponent mode="range" selected={{ from: dateFrom, to: dateTo }} onSelect={(range) => { setDateFrom(range?.from); setDateTo(range?.to); }} locale={tr} className="p-3" />
-                  <div className="p-3 border-t border-slate-100 dark:border-slate-800 flex gap-2">
-                    {[
-                      { label: 'Son 7 gün', from: subDays(new Date(), 6), to: new Date() },
-                      { label: 'Son 30 gün', from: subDays(new Date(), 29), to: new Date() },
-                      { label: 'Son 3 ay', from: subMonths(new Date(), 3), to: new Date() },
-                    ].map(p => (
-                      <Button key={p.label} variant="outline" size="sm" className="text-[11px] h-7 rounded-lg px-2 border-slate-200 dark:border-slate-700" onClick={() => { setDateFrom(p.from); setDateTo(p.to); setDatePickerOpen(false); }}>
-                        {p.label}
-                      </Button>
-                    ))}
-                    <Button size="sm" variant="ghost" className="text-[11px] h-7 rounded-lg ml-auto text-rose-500" onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}>Temizle</Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              <Popover open={netSliderOpen} onOpenChange={setNetSliderOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn(
-                    "h-9 rounded-xl text-xs border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 font-medium gap-1.5",
-                    (netSliderValue[0] !== netBounds.min || netSliderValue[1] !== netBounds.max) && "border-indigo-400 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
-                  )}>
-                    <Calculator className="w-3.5 h-3.5" />
-                    {netSliderValue[0] === netBounds.min && netSliderValue[1] === netBounds.max ? 'Net Eşiği' : `Net: ${netSliderValue[0]} – ${netSliderValue[1]}`}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-72 p-5 rounded-2xl shadow-xl border-slate-200 dark:border-slate-800" align="start">
-                  <p className="text-xs font-extrabold text-slate-700 dark:text-slate-200 uppercase tracking-widest mb-1">Net Aralığı</p>
-                  <p className="text-[10px] text-slate-400 mb-4">Yalnızca bu net aralığındaki testleri göster</p>
-                  <div className="flex items-center justify-between text-sm font-extrabold mb-3">
-                    <span className="text-indigo-600">{netSliderValue[0]}</span><span className="text-slate-300">—</span><span className="text-indigo-600">{netSliderValue[1]}</span>
-                  </div>
-                  <Slider min={netBounds.min} max={netBounds.max} step={1} value={netSliderValue} onValueChange={(v) => setNetSliderValue(v as [number, number])} className="mt-2" />
-                  <Button size="sm" variant="ghost" className="w-full mt-3 text-xs text-rose-500 h-8 rounded-xl" onClick={() => setNetSliderValue([netBounds.min, netBounds.max])}>Sıfırla</Button>
-                </PopoverContent>
-              </Popover>
-
-              {activeFilterCount > 0 && (
-                <Button variant="ghost" size="sm" className="h-9 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl font-bold text-xs"
-                  onClick={() => { setSelectedSubject('all'); setSelectedTopic('all'); setSelectedSourceType('all'); setDateFrom(undefined); setDateTo(undefined); setNetSliderValue([netBounds.min, netBounds.max]); }}>
-                  <RotateCcw className="w-3 f-3 mr-1" /> Tümünü Sıfırla
+          <div className="p-4">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("h-10 rounded-xl text-xs border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 font-medium gap-1.5 w-full sm:w-auto", activeFilterCount > 0 && "border-indigo-400 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300")}>
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  Filtreler
+                  {activeFilterCount > 0 && (
+                    <span className="ml-1 w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-black flex items-center justify-center">{activeFilterCount}</span>
+                  )}
                 </Button>
-              )}
-            </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 p-4 rounded-2xl shadow-xl border-slate-200 dark:border-slate-800 flex flex-col gap-3" align="start">
+                <p className="text-xs font-extrabold text-slate-700 dark:text-slate-200 uppercase tracking-widest mb-1">Filtrele</p>
+                
+                <Select value={selectedSubject} onValueChange={v => { setSelectedSubject(v); setSelectedTopic('all'); }}>
+                  <SelectTrigger className="w-full h-10 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700">
+                    <SelectValue placeholder="Ders Seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tüm Dersler</SelectItem>
+                    {availableSubjectsList.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedTopic} onValueChange={setSelectedTopic} disabled={availableTopics.length === 0}>
+                  <SelectTrigger className="w-full h-10 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700">
+                    <SelectValue placeholder="Konu Seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tüm Konular</SelectItem>
+                    {availableTopics.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedType} onValueChange={setSelectedSourceType}>
+                  <SelectTrigger className="w-full h-10 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700">
+                    <SelectValue placeholder="Tür Seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tüm Türler</SelectItem>
+                    <SelectItem value="exam">Deneme Sınavı</SelectItem>
+                    <SelectItem value="bank">Soru Bankası</SelectItem>
+                    <SelectItem value="json">Yazılı Test</SelectItem>
+                    <SelectItem value="trackedBook">Kitap Takibi</SelectItem>
+                    <SelectItem value="mistake">Yanlış Havuzu</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {activeFilterCount > 0 && (
+                  <Button variant="ghost" size="sm" className="w-full mt-2 text-xs text-rose-500 h-8 rounded-xl" onClick={() => { setSelectedSubject('all'); setSelectedTopic('all'); setSelectedSourceType('all'); }}>
+                    Tümünü Sıfırla
+                  </Button>
+                )}
+              </PopoverContent>
+            </Popover>
           </div>
 
           {activeFilterCount > 0 && (
@@ -871,15 +809,13 @@ export function StatsClient() {
               {selectedSubject !== 'all' && <FilterBadge label={`Ders: ${selectedSubject}`} onRemove={() => { setSelectedSubject('all'); setSelectedTopic('all'); }} />}
               {selectedTopic !== 'all' && <FilterBadge label={`Konu: ${selectedTopic}`} onRemove={() => setSelectedTopic('all')} />}
               {selectedType !== 'all' && <FilterBadge label={`Tür: ${translateType(selectedType)}`} onRemove={() => setSelectedSourceType('all')} />}
-              {(dateFrom || dateTo) && <FilterBadge label={`${dateFrom ? format(dateFrom, 'dd MMM', { locale: tr }) : '…'} – ${dateTo ? format(dateTo, 'dd MMM', { locale: tr }) : '…'}`} onRemove={() => { setDateFrom(undefined); setDateTo(undefined); }} />}
-              {(netSliderValue[0] !== netBounds.min || netSliderValue[1] !== netBounds.max) && <FilterBadge label={`Net: ${netSliderValue[0]}–${netSliderValue[1]}`} onRemove={() => setNetSliderValue([netBounds.min, netBounds.max])} />}
             </div>
           )}
         </section>
 
         {/* TABS MENU */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1 h-auto flex flex-wrap gap-1 w-full md:w-auto shadow-sm">
+          <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 h-auto grid grid-cols-2 sm:grid-cols-4 lg:flex lg:flex-wrap gap-1.5 w-full shadow-sm">
             {[
               { id: 'overview',    label: 'Genel Bakış', icon: Activity },
               { id: 'skill-tree',  label: 'Yetenek Ağacı',icon: Network },
@@ -891,11 +827,11 @@ export function StatsClient() {
               { id: 'activity',    label: 'Aktivite',    icon: Flame },
             ].map(tab => (
               <TabsTrigger key={tab.id} value={tab.id} className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all',
+                'flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all w-full lg:w-auto',
                 'data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-indigo-500/30',
-                'data-[state=inactive]:text-slate-500 data-[state=inactive]:hover:text-slate-700 dark:data-[state=inactive]:hover:text-slate-300'
+                'data-[state=inactive]:text-slate-500 data-[state=inactive]:hover:bg-slate-50 dark:data-[state=inactive]:hover:bg-slate-800 data-[state=inactive]:hover:text-slate-700 dark:data-[state=inactive]:hover:text-slate-300'
               )}>
-                <tab.icon className="w-3.5 h-3.5" /> {tab.label}
+                <tab.icon className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{tab.label}</span>
               </TabsTrigger>
             ))}
           </TabsList>
@@ -910,7 +846,35 @@ export function StatsClient() {
             >
               {/* 1. OVERVIEW (GENEL BAKIŞ) */}
               <TabsContent value="overview" className="space-y-6 mt-6">
-                <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                
+                {/* YAPAY ZEKA VE AKILLI İÇGÖRÜLER */}
+                {kpis.testCount > 0 && (
+                  <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 rounded-2xl p-5 sm:p-6 text-white shadow-lg shadow-indigo-500/20 flex flex-col md:flex-row items-center gap-6 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+                    <div className="w-14 h-14 shrink-0 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
+                        <Sparkles className="w-7 h-7 text-white" />
+                    </div>
+                    <div className="flex-1 text-center md:text-left z-10">
+                        <h3 className="text-lg sm:text-xl font-black mb-1.5 flex items-center justify-center md:justify-start gap-2">
+                            Akıllı Asistan Özeti
+                        </h3>
+                        <p className="text-indigo-50 text-sm font-medium leading-relaxed">
+                            {kpis.successRate > 75 
+                                ? `Harika gidiyorsun! Toplam ${kpis.testCount} testte %${kpis.successRate.toFixed(0)} genel başarı yakaladın. En güçlü yanlarını korumaya devam et.`
+                                : kpis.successRate > 50
+                                ? `İyi bir çalışma ritmin var. %${kpis.successRate.toFixed(0)} başarı oranın var, fakat ${topicStats.worst[0]?.subject || 'bazı derslerdeki'} eksiklerini kapatırsan puanını çok hızlı artırabilirsin.`
+                                : `Çalışmalarını detaylı analiz etmeliyiz. Şu anki başarı oranın %${kpis.successRate.toFixed(0)}. Önceliğini ${topicStats.worst[0]?.subject || 'eksik olduğun derslere'} vererek temelini güçlendir.`}
+                        </p>
+                    </div>
+                    <div className="shrink-0 w-full md:w-auto z-10">
+                        <Button variant="secondary" className="w-full bg-white text-indigo-600 hover:bg-slate-50 font-black rounded-xl h-11" onClick={() => setActiveTab('skill-tree')}>
+                            Yetenek Ağacını Keşfet <ChevronRight className="w-4 h-4 ml-1" />
+                        </Button>
+                    </div>
+                  </div>
+                )}
+
+                <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
                   <KpiCard icon={BarChart3}  value={kpis.totalQ}                      label="Toplam Soru"  color={C.INDIGO}  />
                   <KpiCard icon={Check}      value={kpis.totalC}                      label="Doğru"        color={C.EMERALD} />
                   <KpiCard icon={Calculator} value={kpis.totalNet.toFixed(1)}         label="Net"          color={C.PURPLE}  />
@@ -918,6 +882,24 @@ export function StatsClient() {
                   <KpiCard icon={Layers}     value={kpis.testCount}                   label="Sınav/Test"   color={C.AMBER}   />
                   <KpiCard icon={Flame}      value={streakData.current}               label="Gün Serisi"   sub={`En uzun: ${streakData.longest} gün`} color={C.ROSE} />
                 </section>
+
+                {/* AKTİF HEDEFLER ÖZETİ */}
+                {goalProgressData && goalProgressData.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {goalProgressData.slice(0, 3).map((goal, i) => (
+                      <VisualGoalCard 
+                        key={i}
+                        title={goal.label}
+                        current={goal.current}
+                        target={goal.target}
+                        unit={goal.type === 'questions' ? 'Soru' : goal.type === 'net' ? 'Net' : '%'}
+                        icon={Target}
+                        color={CHART_PALETTE[i % CHART_PALETTE.length]}
+                        deadline={goal.period === 'weekly' ? 'Bu Hafta' : goal.period === 'monthly' ? 'Bu Ay' : goal.period === 'daily' ? 'Bugün' : 'Bu Yıl'}
+                      />
+                    ))}
+                  </div>
+                )}
 
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-6">
                   <SectionHeader icon={Activity} title="Gelişim Eğrisi" desc="Soru hacmi ve başarı oranı trendi" color={C.INDIGO} />
@@ -956,9 +938,15 @@ export function StatsClient() {
                           <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94A3B8' }} />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend iconType="circle" wrapperStyle={{ fontSize: 11, fontWeight: 600 }} />
-                          <Bar dataKey="correct" name="Doğru" stackId="a" fill={C.EMERALD} radius={[0, 0, 4, 4]} maxBarSize={36} />
-                          <Bar dataKey="incorrect" name="Yanlış" stackId="a" fill={C.ROSE} maxBarSize={36} />
-                          <Bar dataKey="blank" name="Boş" stackId="a" fill="#CBD5E1" radius={[4, 4, 0, 0]} maxBarSize={36} />
+                          <Bar dataKey="correct" name="Doğru" stackId="a" fill={C.EMERALD} radius={[0, 0, 4, 4]} maxBarSize={36}>
+                            <LabelList dataKey="correct" position="center" fill="#064E3B" fontSize={11} fontWeight={800} formatter={(v: number) => v > 0 ? v : ''} />
+                          </Bar>
+                          <Bar dataKey="incorrect" name="Yanlış" stackId="a" fill="#DC2626" maxBarSize={36}>
+                            <LabelList dataKey="incorrect" position="center" fill="#FEF2F2" fontSize={11} fontWeight={800} formatter={(v: number) => v > 0 ? v : ''} />
+                          </Bar>
+                          <Bar dataKey="blank" name="Boş" stackId="a" fill="#94A3B8" radius={[4, 4, 0, 0]} maxBarSize={36}>
+                            <LabelList dataKey="blank" position="center" fill="#0F172A" fontSize={11} fontWeight={800} formatter={(v: number) => v > 0 ? v : ''} />
+                          </Bar>
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -969,7 +957,17 @@ export function StatsClient() {
                     <div className="h-[260px] flex items-center justify-center">
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
-                            <Pie data={typeBreakdown} cx="50%" cy="50%" innerRadius="52%" outerRadius="75%" paddingAngle={3} dataKey="value">
+                            <Pie 
+                              data={typeBreakdown} 
+                              cx="50%" cy="50%" 
+                              innerRadius="40%" 
+                              outerRadius="65%" 
+                              paddingAngle={3} 
+                              dataKey="value"
+                              label={({ name, percent, value }) => `${name}: ${value} (%${(percent * 100).toFixed(0)})`}
+                              labelLine={{ stroke: '#94A3B8', strokeWidth: 1 }}
+                              style={{ fontSize: '10px', fontWeight: 'bold', fill: '#64748B' }}
+                            >
                               {typeBreakdown.map((e, i) => <Cell key={i} fill={e.fill} />)}
                             </Pie>
                             <Tooltip content={<CustomTooltip />} />
@@ -982,7 +980,7 @@ export function StatsClient() {
 
               {/* 2. YETENEK AĞACI (SKILL TREE) */}
               <TabsContent value="skill-tree" className="space-y-6 mt-6">
-                <div className="bg-indigo-600 rounded-[2rem] p-8 text-white shadow-lg shadow-indigo-600/20 relative overflow-hidden">
+                <div className="bg-indigo-600 rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-8 text-white shadow-lg shadow-indigo-600/20 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
                   <div className="relative z-10 flex items-center gap-4">
                     <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/20">
@@ -993,7 +991,7 @@ export function StatsClient() {
                         <p className="text-indigo-100 text-sm font-medium">Konu kilitlerini aç, ustalığını ilerlet! Renkler konu hakimiyetini gösterir.</p>
                     </div>
                   </div>
-                  <div className="relative z-10 flex items-center gap-6 mt-6 text-sm font-bold bg-black/20 p-3 rounded-2xl w-max backdrop-blur-md">
+                  <div className="relative z-10 flex flex-wrap items-center gap-3 sm:gap-6 mt-6 text-xs sm:text-sm font-bold bg-black/20 p-3 rounded-2xl w-full sm:w-max backdrop-blur-md">
                       <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-slate-300" /> Başlanmadı</div>
                       <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500" /> Öğreniliyor (%0-69)</div>
                       <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-500" /> Usta (%70+)</div>
@@ -1001,42 +999,71 @@ export function StatsClient() {
                 </div>
 
                 <div className="space-y-6">
+                    {/* ÖNCELİKLİ EKSİKLER BÖLÜMÜ */}
+                    {topicStats.worst.length > 0 && (
+                        <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/50 rounded-[2rem] p-6 mb-8">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center">
+                                    <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                                </div>
+                                <div>
+                                    <h3 className="font-extrabold text-rose-700 dark:text-rose-400 text-lg">Öncelikli Eksikler</h3>
+                                    <p className="text-xs font-semibold text-rose-600/70 dark:text-rose-400/70">Puanını hızlı artırmak için önce bu konulara odaklanmalısın.</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                {topicStats.worst.slice(0, 3).map((t, j) => (
+                                    <div key={j} className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.subject}</p>
+                                            <p className="font-bold text-slate-800 dark:text-slate-100 text-sm line-clamp-2 leading-tight">{t.topic}</p>
+                                        </div>
+                                        <div className="mt-4 flex items-center justify-between">
+                                            <span className="text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-950/50 px-2 py-1 rounded-md">Başarı: %{t.successRate.toFixed(0)}</span>
+                                            <span className="text-[10px] font-semibold text-slate-500">{t.total} Soru</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {skillTreeData.map((subj, i) => (
                         <div key={i} className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200/70 dark:border-slate-800 p-6">
-                            <h3 className="font-extrabold text-lg text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2">
+                            <h3 className="font-extrabold text-lg text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
                                 <BookOpen className="w-5 h-5 text-indigo-500" /> {subj.subject}
                             </h3>
-                            <div className="flex overflow-x-auto pb-4 pt-14 px-2 snap-x hide-scrollbar">
-                                <div className="flex items-center gap-4 relative">
-                                    <div className="absolute top-1/2 left-4 right-4 h-1 bg-slate-100 dark:bg-slate-800 -translate-y-1/2 z-0" />
+                            <div className="flex flex-wrap gap-3 sm:gap-4">
+                                {subj.topics.map((t, j) => {
+                                    const isMaster = t.successRate >= 70;
+                                    const isLearning = t.successRate > 0 && t.successRate < 70;
                                     
-                                    {subj.topics.map((t, j) => {
-                                        const isMaster = t.successRate >= 70;
-                                        const isLearning = t.successRate > 0 && t.successRate < 70;
-                                        
-                                        let nodeColor = "bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500";
-                                        if (isMaster) nodeColor = "bg-emerald-50 border-emerald-500 text-emerald-600 dark:bg-emerald-950/50";
-                                        else if (isLearning) nodeColor = "bg-amber-50 border-amber-500 text-amber-600 dark:bg-amber-950/50";
+                                    let nodeColor = "bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-500";
+                                    if (isMaster) nodeColor = "bg-emerald-50 border-emerald-500 text-emerald-600 dark:bg-emerald-950/50";
+                                    else if (isLearning) nodeColor = "bg-amber-50 border-amber-500 text-amber-600 dark:bg-amber-950/50";
 
-                                        return (
-                                            <div key={j} className="relative z-10 snap-start group flex flex-col items-center min-w-[140px]">
-                                                <div className={cn(
-                                                    "w-12 h-12 rounded-2xl border-4 flex items-center justify-center font-black text-sm transition-all duration-300 shadow-sm",
-                                                    nodeColor,
-                                                    "group-hover:scale-110 group-hover:shadow-md cursor-help"
-                                                )}>
-                                                    {isMaster ? <CheckCircle2 className="w-6 h-6" /> : isLearning ? <Activity className="w-5 h-5" /> : "-"}
-                                                </div>
-                                                <p className="mt-3 text-xs font-bold text-center text-slate-700 dark:text-slate-300 line-clamp-2 max-w-[120px]">
+                                    return (
+                                        <div key={j} className={cn(
+                                            "relative group flex items-center gap-3 p-3 sm:p-4 rounded-2xl border-2 transition-all duration-300 w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.67rem)]",
+                                            nodeColor,
+                                            "hover:shadow-md cursor-help"
+                                        )}>
+                                            <div className="shrink-0 w-10 h-10 rounded-xl bg-white dark:bg-slate-900 flex items-center justify-center font-black shadow-sm">
+                                                {isMaster ? <CheckCircle2 className="w-5 h-5" /> : isLearning ? <Activity className="w-4 h-4" /> : <Minus className="w-4 h-4 text-slate-300" />}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 leading-tight truncate">
                                                     {t.topic}
                                                 </p>
-                                                <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-[10px] font-bold py-1.5 px-3 rounded-xl whitespace-nowrap pointer-events-none z-[60] shadow-xl">
-                                                    Başarı: %{t.successRate.toFixed(0)} <br/> ({t.total} Soru)
-                                                </div>
+                                                {t.total > 0 && (
+                                                    <p className="text-[10px] font-semibold mt-1">
+                                                        %{t.successRate.toFixed(0)} Başarı <span className="opacity-50">({t.total} Soru)</span>
+                                                    </p>
+                                                )}
                                             </div>
-                                        )
-                                    })}
-                                </div>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         </div>
                     ))}

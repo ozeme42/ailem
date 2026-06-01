@@ -284,6 +284,7 @@ export function JsonTestsClient() {
                         trackedBooks={trackedBooks}
                         studyPlans={studyPlans}
                         bankQuestions={bankQuestions}
+                        isReassigning={!!reassigningTest}
                     />
                 </div>
             </DialogContent>

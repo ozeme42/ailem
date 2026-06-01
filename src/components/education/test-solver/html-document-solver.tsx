@@ -22,23 +22,37 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
     const [isFullScreen, setIsFullScreen] = React.useState(false);
     const [isOpticalOpenMobile, setIsOpticalOpenMobile] = React.useState(false);
 
-    const getIframeDocument = (htmlContent: string) => `
+    const getIframeDocument = (htmlContent: string) => {
+        const isOnlyIframe = htmlContent.trim().toLowerCase().startsWith('<iframe') && htmlContent.trim().toLowerCase().endsWith('</iframe>');
+        const paddingStyle = isOnlyIframe ? 'padding: 0; margin: 0; overflow: hidden;' : 'padding: 1rem; md:padding: 2rem; max-width: 800px; margin: 0 auto; overflow-x: hidden;';
+
+        return `
         <!DOCTYPE html>
         <html lang="tr">
         <head>
             <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             <script src="https://cdn.tailwindcss.com"></script>
             <style>
-                body { font-family: ui-sans-serif, system-ui, sans-serif; padding: 2rem; color: #334155; line-height: 1.6; }
-                h1, h2, h3 { color: #0f172a; font-weight: 800; margin-top: 2em; margin-bottom: 1em; }
-                img { border-radius: 1.5rem; max-width: 100%; height: auto; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); margin: 2rem 0; }
+                body { font-family: ui-sans-serif, system-ui, sans-serif; color: #334155; line-height: 1.6; ${paddingStyle} }
+                h1, h2, h3 { color: #0f172a; font-weight: 800; margin-top: 1.5em; margin-bottom: 0.5em; }
+                img { border-radius: 1rem; max-width: 100%; height: auto; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); margin: 1.5rem 0; }
                 .question-box { background: #f8fafc; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; margin-bottom: 2rem; }
+                
+                /* Responsive iframes (Google Drive vb.) */
+                iframe { 
+                    max-width: 100% !important; 
+                    width: 100% !important; 
+                    ${isOnlyIframe ? 'height: 100dvh !important;' : 'min-height: 70vh !important;'} 
+                    border: none !important; 
+                    display: block;
+                }
             </style>
         </head>
         <body>${htmlContent}</body>
         </html>
-    `;
+        `;
+    };
 
     const OpticalForm = () => (
         <div className="flex flex-col h-full bg-white dark:bg-slate-900">

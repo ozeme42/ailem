@@ -8,7 +8,7 @@ import {
     MessageSquare, Gamepad2, FileText, Calendar as CalendarLucide, Clock, ChevronRight, 
     LayoutGrid, List, Filter, BookOpen, PenTool, ArrowUpDown, 
     ChevronLeft, BarChart3, GraduationCap, Repeat, Send, User,
-    MoreVertical, Loader2, CheckSquare, Calendar
+    MoreVertical, Loader2, CheckSquare, Calendar, AlertTriangle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -41,13 +41,13 @@ import { collection, getDocs, query, orderBy, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const themeColors = {
-    HEADER_BG: "bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-40",
-    CARD_BG: "bg-slate-900/40 border border-slate-800 shadow-xl backdrop-blur-md hover:bg-slate-900/60 hover:border-slate-700 transition-all duration-300",
+    HEADER_BG: "bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800/50 sticky top-0 z-40",
+    CARD_BG: "bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 shadow-xl backdrop-blur-md hover:bg-slate-50 dark:hover:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300",
     ICON_BOX: "bg-gradient-to-br from-indigo-500 to-violet-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20 text-white",
-    BUTTON_GLASS: "bg-slate-800/50 hover:bg-slate-800 text-slate-200 border border-slate-700 shadow-sm transition-all",
-    TABLE_HEADER: "bg-slate-900/80 text-slate-400 text-[11px] uppercase tracking-wider font-semibold cursor-pointer hover:text-slate-200 transition-colors select-none whitespace-nowrap",
-    TABLE_ROW: "hover:bg-slate-800/30 transition-colors border-b border-slate-800/50 last:border-0",
-    FILTER_SELECT: "w-full sm:w-[170px] h-9 rounded-lg bg-slate-900 border-slate-700 text-xs text-slate-300 focus:ring-indigo-500/50 focus:border-indigo-500/50"
+    BUTTON_GLASS: "bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm transition-all",
+    TABLE_HEADER: "bg-slate-50 dark:bg-slate-900/80 text-slate-500 dark:text-slate-600 dark:text-slate-400 text-[11px] uppercase tracking-wider font-semibold cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 transition-colors select-none whitespace-nowrap",
+    TABLE_ROW: "hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors border-b border-slate-200 dark:border-slate-800/50 last:border-0",
+    FILTER_SELECT: "w-full sm:w-[170px] h-9 rounded-lg bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 focus:ring-indigo-500/50 focus:border-indigo-500/50"
 };
 
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -62,14 +62,14 @@ const categoryIcons: { [key: string]: React.ElementType } = {
 };
 
 const categoryThemeColors: { [key: string]: { text: string, bg: string, border: string } } = {
-    'Genel Deneme Sınavları': { text: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20' },
-    'Matematik': { text: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20' },
-    'Fen Bilimleri': { text: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
-    'Türkçe': { text: 'text-rose-400', bg: 'bg-rose-400/10', border: 'border-rose-400/20' },
-    'Sosyal Bilgiler': { text: 'text-cyan-400', bg: 'bg-cyan-400/10', border: 'border-cyan-400/20' },
-    'İngilizce': { text: 'text-violet-400', bg: 'bg-violet-400/10', border: 'border-violet-400/20' },
-    'Serbest Etkinlikler': { text: 'text-fuchsia-400', bg: 'bg-fuchsia-400/10', border: 'border-fuchsia-400/20' },
-    'Diğer': { text: 'text-slate-400', bg: 'bg-slate-400/10', border: 'border-slate-400/20' },
+    'Genel Deneme Sınavları': { text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-400/10', border: 'border-amber-200 dark:border-amber-400/20' },
+    'Matematik': { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-400/10', border: 'border-blue-200 dark:border-blue-400/20' },
+    'Fen Bilimleri': { text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-400/10', border: 'border-emerald-200 dark:border-emerald-400/20' },
+    'Türkçe': { text: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-100 dark:bg-rose-400/10', border: 'border-rose-200 dark:border-rose-400/20' },
+    'Sosyal Bilgiler': { text: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-100 dark:bg-cyan-400/10', border: 'border-cyan-200 dark:border-cyan-400/20' },
+    'İngilizce': { text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-100 dark:bg-violet-400/10', border: 'border-violet-200 dark:border-violet-400/20' },
+    'Serbest Etkinlikler': { text: 'text-fuchsia-600 dark:text-fuchsia-400', bg: 'bg-fuchsia-100 dark:bg-fuchsia-400/10', border: 'border-fuchsia-200 dark:border-fuchsia-400/20' },
+    'Diğer': { text: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-400/10', border: 'border-slate-200 dark:border-slate-400/20' },
 };
 
 type TestTypeFilter = 'all' | 'bank' | 'trackedBook' | 'exam' | 'json';
@@ -130,7 +130,7 @@ export default function AllTestsPage() {
     React.useEffect(() => { setSelectedSubCategory('all'); }, [activeTestType]);
     React.useEffect(() => { setSelectedTopic('all'); }, [selectedSubject]);
     
-    const { pendingTests, completedTests, allFilteredTests, totalPages } = React.useMemo(() => {
+    const { pendingTests, completedTests, evaluationPendingTests, allFilteredTests, totalPages } = React.useMemo(() => {
         const enrichedTests = tests.map(test => {
             let sourceId = 'unknown', sourceName = 'Bilinmeyen Kaynak', topicName = null;
             let subjectName = getCategoryName(test);
@@ -179,10 +179,12 @@ export default function AllTestsPage() {
 
         const pending = sorted.filter(t => t.status === 'Atandı' || t.status === 'Değerlendirme Bekliyor');
         const completed = sorted.filter(t => t.status === 'Sonuçlandı');
+        const evaluationPending = pending.filter(t => t.status === 'Değerlendirme Bekliyor');
         
         return {
             pendingTests: pending,
             completedTests: completed,
+            evaluationPendingTests: evaluationPending,
             allFilteredTests: sorted,
             totalPages: {
                 all: Math.ceil(sorted.length / ITEMS_PER_PAGE),
@@ -208,26 +210,26 @@ export default function AllTestsPage() {
     const paginatedCompleted = completedTests.slice((pagination.completed - 1) * ITEMS_PER_PAGE, pagination.completed * ITEMS_PER_PAGE);
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative flex flex-col">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans relative flex flex-col">
             <header className={themeColors.HEADER_BG}>
                 <div className="max-w-6xl mx-auto px-4 md:px-6 h-16 sm:h-20 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 sm:gap-4">
-                        <Button onClick={() => window.history.back()} variant="ghost" size="icon" className="rounded-full hover:bg-slate-800 text-slate-400 h-9 w-9">
+                        <Button onClick={() => window.history.back()} variant="ghost" size="icon" className="rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-600 dark:text-slate-400 dark:text-slate-600 dark:text-slate-400 h-9 w-9">
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                         <div className={themeColors.ICON_BOX}><GraduationCap className="w-5 h-5" /></div>
-                        <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-100 leading-none">Ödev Yönetimi</h1>
+                        <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 leading-none">Ödev Yönetimi</h1>
                     </div>
                     <div className="flex items-center gap-2">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" className={cn("rounded-xl h-9 sm:h-10 px-3 border-slate-700 bg-slate-900 text-slate-300", selectedStudents.length > 0 && "bg-indigo-600/10 border-indigo-500/50 text-indigo-300")}>
+                                <Button variant="outline" className={cn("rounded-xl h-9 sm:h-10 px-3 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-700 dark:text-slate-300 shadow-sm", selectedStudents.length > 0 && "bg-indigo-50 dark:bg-indigo-600/10 border-indigo-200 dark:border-indigo-500/50 text-indigo-600 dark:text-indigo-300")}>
                                     <ListFilter className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Öğrenci</span> 
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-slate-800 text-slate-100 rounded-xl">
+                            <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl">
                                 <DropdownMenuLabel>Öğrenci Seçin</DropdownMenuLabel>
-                                <DropdownMenuSeparator className="bg-slate-800" />
+                                <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />
                                 {studentMembers.map(student => (
                                     <DropdownMenuCheckboxItem key={student.id} checked={selectedStudents.includes(student.id)} onCheckedChange={(checked) => setSelectedStudents(prev => checked ? [...prev, student.id] : prev.filter(id => id !== student.id))}>
                                         <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full" style={{backgroundColor: student.color}}/>{student.name}</div>
@@ -241,22 +243,74 @@ export default function AllTestsPage() {
 
             <main className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-6 space-y-6">
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full space-y-6">
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 flex flex-col gap-4">
-                        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-slate-800/60 pb-4">
-                            <TabsList className="h-10 p-1 rounded-xl bg-slate-950/50 border border-slate-800 w-full lg:w-auto grid grid-cols-3">
+                    <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col gap-4 shadow-sm">
+                        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-slate-200 dark:border-slate-800/60 pb-4">
+                            <TabsList className="h-10 p-1 rounded-xl bg-slate-100 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 w-full lg:w-auto grid grid-cols-3">
                                 <TabsTrigger value="all" className="rounded-lg text-xs">Tümü</TabsTrigger>
                                 <TabsTrigger value="pending" className="rounded-lg text-xs">Bekleyen</TabsTrigger>
                                 <TabsTrigger value="completed" className="rounded-lg text-xs">Biten</TabsTrigger>
                             </TabsList>
                             <div className="flex items-center gap-3 w-full lg:w-auto justify-end">
-                                <Tabs value={activeTestType} onValueChange={(v) => setActiveTestType(v as TestTypeFilter)}><TabsList className="h-9 p-1 bg-slate-950/50 border border-slate-800"><TabsTrigger value="all" className="text-[11px] h-7 px-2.5 rounded-md">Tümü</TabsTrigger><TabsTrigger value="bank" className="text-[11px] h-7 px-2.5 rounded-md">Soru</TabsTrigger><TabsTrigger value="trackedBook" className="text-[11px] h-7 px-2.5 rounded-md">Kitap</TabsTrigger><TabsTrigger value="exam" className="text-[11px] h-7 px-2.5 rounded-md">Deneme</TabsTrigger><TabsTrigger value="json" className="text-[11px] h-7 px-2.5 rounded-md">Yazılı</TabsTrigger></TabsList></Tabs>
-                                <div className="flex bg-slate-950/50 p-1 rounded-lg border border-slate-800">
-                                    <Button size="sm" variant="ghost" onClick={() => setViewMode('grid')} className={cn("h-7 w-8 p-0", viewMode === 'grid' ? 'bg-slate-700 text-white' : 'text-slate-500')}><LayoutGrid className="w-4 h-4" /></Button>
-                                    <Button size="sm" variant="ghost" onClick={() => setViewMode('list')} className={cn("h-7 w-8 p-0", viewMode === 'list' ? 'bg-slate-700 text-white' : 'text-slate-500')}><List className="w-4 h-4" /></Button>
+                                <Tabs value={activeTestType} onValueChange={(v) => setActiveTestType(v as TestTypeFilter)}><TabsList className="h-9 p-1 bg-slate-100 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800"><TabsTrigger value="all" className="text-[11px] h-7 px-2.5 rounded-md">Tümü</TabsTrigger><TabsTrigger value="bank" className="text-[11px] h-7 px-2.5 rounded-md">Soru</TabsTrigger><TabsTrigger value="trackedBook" className="text-[11px] h-7 px-2.5 rounded-md">Kitap</TabsTrigger><TabsTrigger value="exam" className="text-[11px] h-7 px-2.5 rounded-md">Deneme</TabsTrigger><TabsTrigger value="json" className="text-[11px] h-7 px-2.5 rounded-md">Yazılı</TabsTrigger></TabsList></Tabs>
+                                <div className="flex bg-slate-100 dark:bg-slate-950/50 p-1 rounded-lg border border-slate-200 dark:border-slate-800">
+                                    <Button size="sm" variant="ghost" onClick={() => setViewMode('grid')} className={cn("h-7 w-8 p-0", viewMode === 'grid' ? 'bg-slate-700 text-white' : 'text-slate-500 dark:text-slate-600 dark:text-slate-400')}><LayoutGrid className="w-4 h-4" /></Button>
+                                    <Button size="sm" variant="ghost" onClick={() => setViewMode('list')} className={cn("h-7 w-8 p-0", viewMode === 'list' ? 'bg-slate-700 text-white' : 'text-slate-500 dark:text-slate-600 dark:text-slate-400')}><List className="w-4 h-4" /></Button>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    {/* DEĞERLENDİRME BEKLEYENLER */}
+                    {evaluationPendingTests.length > 0 && (
+                        <section className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="flex items-center gap-2 mb-4 px-1">
+                               <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-rose-500/10 text-rose-500">
+                                  <AlertTriangle className="w-4 h-4" />
+                               </div>
+                               <p className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">İşlem Bekleyen Ödevler</p>
+                               <span className="ml-2 px-2 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-black">{evaluationPendingTests.length}</span>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {evaluationPendingTests.map(test => {
+                                    const student = familyMembers.find(m => m.id === test.studentId);
+                                    const categoryName = getCategoryName(test);
+                                    const Icon = categoryIcons[categoryName] || FileText;
+                                    const colors = categoryThemeColors[categoryName] || categoryThemeColors['Diğer'];
+                                    
+                                    return (
+                                        <div key={test.id} className="group p-5 rounded-[2rem] bg-white dark:bg-slate-900/60 border-2 border-rose-200 dark:border-rose-500/20 shadow-md hover:shadow-xl hover:border-rose-400 dark:hover:border-rose-500/50 backdrop-blur-md transition-all flex flex-col justify-between gap-4">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <div className={cn("w-6 h-6 rounded-md flex items-center justify-center shrink-0", colors.bg, colors.text)}>
+                                                            <Icon className="w-3.5 h-3.5" />
+                                                        </div>
+                                                        <span className="px-2 py-0.5 rounded border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-[9px] text-slate-600 dark:text-slate-700 dark:text-slate-300 font-black uppercase tracking-wider">
+                                                            {test.subject || categoryName}
+                                                        </span>
+                                                        {student && (
+                                                            <div className="flex items-center gap-1 text-[10px] font-bold text-slate-600 dark:text-slate-600 dark:text-slate-400 ml-auto">
+                                                                <div className="w-1.5 h-1.5 rounded-full" style={{backgroundColor: student.color}}/>
+                                                                {student.name}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 line-clamp-2">{test.title}</h3>
+                                                </div>
+                                            </div>
+                                            
+                                            <Link href={`/education/${test.id}?mode=evaluate`}>
+                                                <button className="w-full h-11 rounded-xl flex items-center justify-center gap-2 font-black text-sm bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 hover:border-indigo-500 transition-colors">
+                                                    Değerlendir <ChevronRight className="w-4 h-4" />
+                                                </button>
+                                            </Link>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </section>
+                    )}
 
                     <TabsContent value="all" className="m-0"><TestsListOrGrid tests={paginatedAll} viewMode={viewMode} familyMembers={familyMembers} onDelete={handleDeleteTest} onReassign={setReassignTest} sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort} /><PaginationControls currentPage={pagination.all} totalPages={totalPages.all} onPageChange={handlePageChange} /></TabsContent>
                     <TabsContent value="pending" className="m-0"><TestsListOrGrid tests={paginatedPending} viewMode={viewMode} familyMembers={familyMembers} onDelete={handleDeleteTest} onReassign={setReassignTest} sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort} /><PaginationControls currentPage={pagination.pending} totalPages={totalPages.pending} onPageChange={handlePageChange} /></TabsContent>
@@ -274,17 +328,17 @@ function PaginationControls({ currentPage, totalPages, onPageChange }: { current
     return (
         <div className="flex items-center justify-center gap-4 mt-8 pb-8">
             <Button variant="outline" size="sm" className={themeColors.BUTTON_GLASS} onClick={() => onPageChange('prev')} disabled={currentPage === 1}><ChevronLeft className="mr-1.5 h-4 w-4" /> Önceki</Button>
-            <span className="font-semibold text-xs text-slate-300">Sayfa <span className="text-white">{currentPage}</span> / {totalPages}</span>
+            <span className="font-semibold text-xs text-slate-600 dark:text-slate-700 dark:text-slate-300">Sayfa <span className="text-slate-900 dark:text-white">{currentPage}</span> / {totalPages}</span>
             <Button variant="outline" size="sm" className={themeColors.BUTTON_GLASS} onClick={() => onPageChange('next')} disabled={currentPage === totalPages}>Sonraki <ChevronRight className="ml-1.5 h-4 w-4" /></Button>
         </div>
     );
 }
 
 function TestsListOrGrid({ tests, viewMode, familyMembers, onDelete, onReassign, emptyMessage, sortKey, sortDirection, onSort }: any) {
-    if (tests.length === 0) return <div className="text-center py-20 bg-slate-900/30 rounded-3xl border border-dashed border-slate-800 text-slate-400">{emptyMessage || "Kayıt bulunamadı."}</div>;
+    if (tests.length === 0) return <div className="text-center py-20 bg-white dark:bg-slate-900/30 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-600 dark:text-slate-400 dark:text-slate-600 dark:text-slate-400 shadow-sm">{emptyMessage || "Kayıt bulunamadı."}</div>;
     if (viewMode === 'grid') return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">{tests.map((t: any) => <TestCard key={t.id} test={t} student={familyMembers.find((m: any) => m.id === t.studentId)} onDelete={onDelete} onReassign={onReassign} />)}</div>;
     return (
-        <div className="rounded-2xl border border-slate-800 overflow-hidden bg-slate-900/40">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900/40 shadow-sm">
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                     <thead>
@@ -309,12 +363,12 @@ function TestsListOrGrid({ tests, viewMode, familyMembers, onDelete, onReassign,
 
                             return (
                                 <tr key={test.id} className={themeColors.TABLE_ROW}>
-                                    <td className="p-4 pl-6"><span className="font-semibold text-slate-200 block truncate max-w-[200px]">{test.title}</span><Badge variant="outline" className={cn("text-[9px] h-4.5 px-1.5 uppercase font-bold", colors.text, colors.bg, colors.border)}>{categoryName}</Badge></td>
-                                    <td className="p-4 text-center hidden sm:table-cell">{student && <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-800 border border-slate-700 text-xs text-slate-300"><div className="w-2 h-2 rounded-full" style={{backgroundColor: student.color}}/>{student.name}</div>}</td>
+                                    <td className="p-4 pl-6"><span className="font-semibold text-slate-900 dark:text-slate-200 block truncate max-w-[200px]">{test.title}</span><Badge variant="outline" className={cn("text-[9px] h-4.5 px-1.5 uppercase font-bold", colors.text, colors.bg, colors.border)}>{categoryName}</Badge></td>
+                                    <td className="p-4 text-center hidden sm:table-cell">{student && <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-700 dark:text-slate-300"><div className="w-2 h-2 rounded-full" style={{backgroundColor: student.color}}/>{student.name}</div>}</td>
                                     <td className="p-4 text-center hidden lg:table-cell">
                                         <div className="flex flex-col items-center">
-                                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{isCompleted ? "Çözüldü" : "Bitiş"}</span>
-                                            <span className="text-xs text-slate-200 font-semibold">{isCompleted ? solvedDateStr : dueDateStr}</span>
+                                            <span className="text-[10px] text-slate-500 dark:text-slate-600 dark:text-slate-400 font-bold uppercase tracking-widest">{isCompleted ? "Çözüldü" : "Bitiş"}</span>
+                                            <span className="text-xs text-slate-700 dark:text-slate-200 font-semibold">{isCompleted ? solvedDateStr : dueDateStr}</span>
                                         </div>
                                     </td>
                                     <td className="p-4 text-center hidden md:table-cell">
@@ -335,8 +389,8 @@ function TestsListOrGrid({ tests, viewMode, familyMembers, onDelete, onReassign,
                                                 <Link href={`/education/${test.id}`}><Button size="sm" className="h-8 px-3 rounded-lg text-xs font-semibold bg-indigo-600 text-white">İncele</Button></Link>
                                             )}
                                             <DropdownMenu>
-                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-100 w-40"><DropdownMenuItem onClick={() => onReassign(test)}><Repeat className="mr-2 h-4 w-4" /> Tekrar Ata</DropdownMenuItem><AlertDialog><AlertDialogTrigger asChild><DropdownMenuItem onSelect={e => e.preventDefault()} className="text-rose-400"><Trash2 className="mr-2 h-4 w-4" /> Sil</DropdownMenuItem></AlertDialogTrigger><AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100"><AlertDialogHeader><AlertDialogTitle>Ödevi Sil</AlertDialogTitle><AlertDialogDescription>"{test.title}" kalıcı olarak silinecek.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(test.id)} className="bg-rose-600 hover:bg-rose-700 border-none">Evet, Sil</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></DropdownMenuContent>
+                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 dark:text-slate-600 dark:text-slate-400 dark:text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 w-40"><DropdownMenuItem onClick={() => onReassign(test)}><Repeat className="mr-2 h-4 w-4" /> Tekrar Ata</DropdownMenuItem><AlertDialog><AlertDialogTrigger asChild><DropdownMenuItem onSelect={e => e.preventDefault()} className="text-rose-400"><Trash2 className="mr-2 h-4 w-4" /> Sil</DropdownMenuItem></AlertDialogTrigger><AlertDialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"><AlertDialogHeader><AlertDialogTitle>Ödevi Sil</AlertDialogTitle><AlertDialogDescription>"{test.title}" kalıcı olarak silinecek.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(test.id)} className="bg-rose-600 hover:bg-rose-700 border-none">Evet, Sil</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
                                     </td>
@@ -359,23 +413,23 @@ function TestCard({ test, student, onDelete, onReassign }: any) {
 
     return (
         <Card className={themeColors.CARD_BG}>
-            <CardHeader className="p-5 pb-4 border-b border-slate-800/50 bg-slate-900/30 flex flex-row justify-between items-start">
+            <CardHeader className="p-5 pb-4 border-b border-slate-200 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/30 flex flex-row justify-between items-start">
                 <div className="flex flex-col gap-2">
                     <Badge variant="outline" className={cn("w-fit text-[10px] h-5 px-2 font-bold border", colors.text, colors.bg, colors.border)}>{categoryName}</Badge>
-                    {student && <div className="flex items-center gap-1.5 text-xs font-medium text-slate-300"><div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: student.color }} />{student.name}</div>}
+                    {student && <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-300"><div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: student.color }} />{student.name}</div>}
                 </div>
                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-100"><DropdownMenuItem onClick={() => onReassign(test)}><Repeat className="mr-2 h-4 w-4" /> Tekrar Ata</DropdownMenuItem><AlertDialog><AlertDialogTrigger asChild><DropdownMenuItem onSelect={e => e.preventDefault()} className="text-rose-400"><Trash2 className="mr-2 h-4 w-4" /> Sil</DropdownMenuItem></AlertDialogTrigger><AlertDialogContent className="bg-slate-900 border-slate-800 text-slate-100"><AlertDialogHeader> <AlertDialogTitle>Ödevi Sil</AlertDialogTitle><AlertDialogDescription>"{test.title}" ödevini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(test.id)} className="bg-rose-600 hover:bg-rose-700 border-none">Evet, Sil</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></DropdownMenuContent>
+                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 dark:text-slate-600 dark:text-slate-400"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"><DropdownMenuItem onClick={() => onReassign(test)}><Repeat className="mr-2 h-4 w-4" /> Tekrar Ata</DropdownMenuItem><AlertDialog><AlertDialogTrigger asChild><DropdownMenuItem onSelect={e => e.preventDefault()} className="text-rose-400"><Trash2 className="mr-2 h-4 w-4" /> Sil</DropdownMenuItem></AlertDialogTrigger><AlertDialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"><AlertDialogHeader> <AlertDialogTitle>Ödevi Sil</AlertDialogTitle><AlertDialogDescription>"{test.title}" ödevini kalıcı olarak silmek istediğinizden emin misiniz?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={() => onDelete(test.id)} className="bg-rose-600 hover:bg-rose-700 border-none">Evet, Sil</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></DropdownMenuContent>
                 </DropdownMenu>
             </CardHeader>
             <CardContent className="p-5">
-                <h3 className="text-base font-bold text-slate-100 line-clamp-2 mb-4">{test.title}</h3>
-                <div className="flex flex-col gap-1 text-xs text-slate-400">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-900 dark:text-slate-100 line-clamp-2 mb-4">{test.title}</h3>
+                <div className="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-400">
                     <div className="flex items-center gap-2"><Calendar className="w-4 h-4" />Bitiş: {test.dueDate}</div>
                     {isCompleted && solvedDateStr && <div className="flex items-center gap-2 text-emerald-400"><CheckCircle className="w-4 h-4" />Çözüldü: {solvedDateStr}</div>}
                 </div>
-                {isCompleted && <div className="mt-4 bg-slate-950/50 p-3 rounded-xl border border-slate-800 text-center"><span className="text-lg font-black text-emerald-400">%{test.score?.toFixed(0)} Başarı</span></div>}
+                {isCompleted && <div className="mt-4 bg-slate-50 dark:bg-slate-950/50 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-center"><span className="text-lg font-black text-emerald-400">%{test.score?.toFixed(0)} Başarı</span></div>}
                 {isPendingEvaluation && <div className="mt-4 bg-blue-500/10 p-3 rounded-xl border border-blue-500/20 text-center"><span className="text-sm font-bold text-blue-400">Değerlendirme Bekliyor</span></div>}
             </CardContent>
             <CardFooter className="p-4 pt-0">
@@ -441,13 +495,13 @@ function ReassignTestDialog({ test, isOpen, onOpenChange, familyMembers }: { tes
     if (!test) return null;
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
-                <DialogHeader><DialogTitle className="flex items-center gap-2"><Repeat className="w-5 h-5 text-indigo-400" /> Ödevi Tekrar Ata</DialogTitle><DialogDescription className="text-slate-400">"{test.title}" ödevini yeni bir görev olarak tanımlayın.</DialogDescription></DialogHeader>
+            <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl">
+                <DialogHeader><DialogTitle className="flex items-center gap-2"><Repeat className="w-5 h-5 text-indigo-400" /> Ödevi Tekrar Ata</DialogTitle><DialogDescription className="text-slate-600 dark:text-slate-400">"{test.title}" ödevini yeni bir görev olarak tanımlayın.</DialogDescription></DialogHeader>
                 <div className="space-y-6 py-4">
-                    <div className="space-y-2"><Label className="text-xs font-bold text-slate-500 uppercase">Öğrenci</Label><Select value={selectedStudentId} onValueChange={setSelectedStudentId}><SelectTrigger className="bg-slate-950 border-slate-800 h-11"><SelectValue placeholder="Seçin" /></SelectTrigger><SelectContent className="bg-slate-900 border-slate-800 text-slate-100">{students.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label className="text-xs font-bold text-slate-500 uppercase">Bitiş Tarihi</Label><Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-start bg-slate-950 border-slate-800 h-11"><CalendarLucide className="mr-2 h-4 w-4" />{format(dueDate, "d MMMM yyyy", { locale: tr })}</Button></PopoverTrigger><PopoverContent className="w-auto p-0 bg-slate-900 border-slate-800" align="start"><CalendarPicker mode="single" selected={dueDate} onSelect={d => d && setDueDate(d)} initialFocus className="bg-slate-900 text-slate-100" /></PopoverContent></Popover></div>
+                    <div className="space-y-2"><Label className="text-xs font-bold text-slate-500 dark:text-slate-600 dark:text-slate-400 uppercase">Öğrenci</Label><Select value={selectedStudentId} onValueChange={setSelectedStudentId}><SelectTrigger className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 h-11"><SelectValue placeholder="Seçin" /></SelectTrigger><SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">{students.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-xs font-bold text-slate-500 dark:text-slate-600 dark:text-slate-400 uppercase">Bitiş Tarihi</Label><Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-start bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 h-11"><CalendarLucide className="mr-2 h-4 w-4" />{format(dueDate, "d MMMM yyyy", { locale: tr })}</Button></PopoverTrigger><PopoverContent className="w-auto p-0 bg-slate-900 border-slate-800" align="start"><CalendarPicker mode="single" selected={dueDate} onSelect={d => d && setDueDate(d)} initialFocus className="bg-slate-900 text-slate-100" /></PopoverContent></Popover></div>
                 </div>
-                <DialogFooter><Button variant="ghost" onClick={() => onOpenChange(false)} className="text-slate-400">İptal</Button><Button onClick={handleReassignSubmit} disabled={loading} className="bg-indigo-600 text-white font-bold h-11 rounded-xl px-8">{loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}Atamayı Tamamla</Button></DialogFooter>
+                <DialogFooter><Button variant="ghost" onClick={() => onOpenChange(false)} className="text-slate-600 dark:text-slate-400">İptal</Button><Button onClick={handleReassignSubmit} disabled={loading} className="bg-indigo-600 text-white font-bold h-11 rounded-xl px-8">{loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}Atamayı Tamamla</Button></DialogFooter>
             </DialogContent>
         </Dialog>
     );

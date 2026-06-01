@@ -152,7 +152,13 @@ export function ResultsClient() {
     // Filter Options
     const { subjectOptions, topicOptions, typeOptions } = React.useMemo(() => {
         const subjects = Array.from(new Set(enrichedData.map(d => d._subjectName))).sort();
-        const topics = Array.from(new Set(enrichedData.map(d => d._topicName))).sort();
+        
+        const filteredForTopics = filterSubject === 'all' 
+            ? enrichedData 
+            : enrichedData.filter(d => d._subjectName === filterSubject);
+            
+        const topics = Array.from(new Set(filteredForTopics.map(d => d._topicName))).sort();
+        
         const types = Array.from(new Set(enrichedData.map(d => d.sourceType))).sort();
         
         return {
@@ -160,7 +166,11 @@ export function ResultsClient() {
             topicOptions: topics,
             typeOptions: types.map(t => ({ value: t, label: translateType(t) }))
         };
-    }, [enrichedData]);
+    }, [enrichedData, filterSubject]);
+
+    React.useEffect(() => {
+        setFilterTopic("all");
+    }, [filterSubject]);
 
     const filteredAndSortedData = React.useMemo(() => {
         let data = enrichedData.filter(item => {
@@ -287,57 +297,57 @@ export function ResultsClient() {
             <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 space-y-6">
                 
                 {/* Filters & Actions Panel */}
-                <div className={cn("rounded-3xl p-4 md:p-6 space-y-4", themeColors.CARD_BG)}>
+                <div className={cn("rounded-[2rem] p-5 md:p-8 flex flex-col gap-6", themeColors.CARD_BG)}>
                     <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
                         <div className="relative w-full lg:max-w-md">
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input placeholder="Sınav adı ara..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10 h-11 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 focus:bg-white transition-all" />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                            <Input placeholder="Sınav adı ara..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-12 h-14 rounded-2xl bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900 transition-all text-sm font-medium" />
                         </div>
-                        <div className="flex flex-wrap gap-2 w-full lg:w-auto justify-end">
-                            <Button variant="outline" className="rounded-xl h-11 font-bold border-slate-200 dark:border-slate-800" onClick={handleDownloadCSV}>
-                                <Download className="mr-2 h-4 w-4" /> CSV İndir
+                        <div className="flex flex-wrap gap-3 w-full lg:w-auto justify-end">
+                            <Button variant="outline" className="rounded-2xl h-14 px-6 font-bold border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" onClick={handleDownloadCSV}>
+                                <FileSpreadsheet className="mr-2 h-5 w-5 text-emerald-500" /> CSV Olarak İndir
                             </Button>
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider mr-2">
-                            <Filter className="w-3.5 h-3.5" /> Filtrele:
+                    <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800/60">
+                        <div className="flex items-center gap-2 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-4">
+                            <Filter className="w-4 h-4" /> Filtreler
                         </div>
 
                         <Select value={filterSubject} onValueChange={setFilterSubject}>
-                            <SelectTrigger className={themeColors.FILTER_SELECT}>
-                                <SelectValue placeholder="Ders" />
+                            <SelectTrigger className={cn(themeColors.FILTER_SELECT, "h-12 rounded-xl")}>
+                                <SelectValue placeholder="Ders Seçin" />
                             </SelectTrigger>
-                            <SelectContent className="bg-white dark:bg-slate-900">
-                                <SelectItem value="all">Tüm Dersler</SelectItem>
+                            <SelectContent className="bg-white dark:bg-slate-900 rounded-xl">
+                                <SelectItem value="all" className="font-bold">Tüm Dersler</SelectItem>
                                 {subjectOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                             </SelectContent>
                         </Select>
 
                         <Select value={filterTopic} onValueChange={setFilterTopic}>
-                            <SelectTrigger className={themeColors.FILTER_SELECT}>
-                                <SelectValue placeholder="Konu" />
+                            <SelectTrigger className={cn(themeColors.FILTER_SELECT, "h-12 rounded-xl")}>
+                                <SelectValue placeholder="Konu Seçin" />
                             </SelectTrigger>
-                            <SelectContent className="bg-white dark:bg-slate-900">
-                                <SelectItem value="all">Tüm Konular</SelectItem>
+                            <SelectContent className="bg-white dark:bg-slate-900 rounded-xl">
+                                <SelectItem value="all" className="font-bold">Tüm Konular</SelectItem>
                                 {topicOptions.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                             </SelectContent>
                         </Select>
 
                         <Select value={filterType} onValueChange={setFilterType}>
-                            <SelectTrigger className={themeColors.FILTER_SELECT}>
-                                <SelectValue placeholder="Tür" />
+                            <SelectTrigger className={cn(themeColors.FILTER_SELECT, "h-12 rounded-xl")}>
+                                <SelectValue placeholder="Sınav Türü" />
                             </SelectTrigger>
-                            <SelectContent className="bg-white dark:bg-slate-900">
-                                <SelectItem value="all">Tüm Türler</SelectItem>
+                            <SelectContent className="bg-white dark:bg-slate-900 rounded-xl">
+                                <SelectItem value="all" className="font-bold">Tüm Türler</SelectItem>
                                 {typeOptions.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                             </SelectContent>
                         </Select>
 
                         {(filterSubject !== 'all' || filterTopic !== 'all' || filterType !== 'all' || searchTerm) && (
-                            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-10 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl font-bold">
-                                <RotateCcw className="mr-1.5 w-3.5 h-3.5" /> Sıfırla
+                            <Button variant="ghost" onClick={clearFilters} className="h-12 px-5 ml-auto text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl font-bold transition-colors">
+                                <RotateCcw className="mr-2 w-4 h-4" /> Temizle
                             </Button>
                         )}
                     </div>
@@ -349,11 +359,11 @@ export function ResultsClient() {
                         <Table>
                             <TableHeader>
                                 <TableRow className="hover:bg-transparent border-b border-slate-200 dark:border-slate-800">
-                                    <TableHead onClick={() => handleSort('_subjectName')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-4">Ders {sortConfig.key === '_subjectName' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
-                                    <TableHead onClick={() => handleSort('_topicName')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-4">Konu {sortConfig.key === '_topicName' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
-                                    <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Tür</div></TableHead>
-                                    <TableHead onClick={() => handleSort('title')} className={cn(themeColors.TABLE_HEADER, "min-w-[200px]")}><div className="flex items-center px-4">Sınav Adı {sortConfig.key === 'title' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
-                                    <TableHead onClick={() => handleSort('_date')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-4">Tarih {sortConfig.key === '_date' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
+                                    <TableHead onClick={() => handleSort('_subjectName')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-6">Ders {sortConfig.key === '_subjectName' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
+                                    <TableHead onClick={() => handleSort('_topicName')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-6">Konu {sortConfig.key === '_topicName' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
+                                    <TableHead className={themeColors.TABLE_HEADER}><div className="px-6">Tür</div></TableHead>
+                                    <TableHead onClick={() => handleSort('title')} className={cn(themeColors.TABLE_HEADER, "min-w-[200px]")}><div className="flex items-center px-6">Sınav Adı {sortConfig.key === 'title' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
+                                    <TableHead onClick={() => handleSort('_date')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-6">Tarih {sortConfig.key === '_date' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
                                     <TableHead className={cn(themeColors.TABLE_HEADER, "text-center")}>D</TableHead>
                                     <TableHead className={cn(themeColors.TABLE_HEADER, "text-center")}>Y</TableHead>
                                     <TableHead className={cn(themeColors.TABLE_HEADER, "text-center")}>B</TableHead>
@@ -363,35 +373,35 @@ export function ResultsClient() {
                             </TableHeader>
                             <TableBody>
                                 {paginatedData.map((test) => (
-                                    <TableRow key={test.id} className={themeColors.TABLE_ROW} onClick={() => router.push(`/education/${test.id}`)}>
-                                        <TableCell className="px-4 py-4 font-bold text-slate-800 dark:text-slate-200">{test._subjectName}</TableCell>
-                                        <TableCell className="px-4 py-4 text-xs font-semibold text-slate-500">{test._topicName}</TableCell>
-                                        <TableCell className="px-4 py-4">
-                                            <Badge variant="outline" className="text-[9px] uppercase font-black px-1.5 py-0 border-slate-200 dark:border-slate-800">
+                                    <TableRow key={test.id} className={cn(themeColors.TABLE_ROW, "group h-20")} onClick={() => router.push(`/education/${test.id}`)}>
+                                        <TableCell className="px-6 py-4 font-black text-slate-800 dark:text-slate-200">{test._subjectName}</TableCell>
+                                        <TableCell className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400">{test._topicName}</TableCell>
+                                        <TableCell className="px-6 py-4">
+                                            <Badge variant="outline" className="text-[10px] uppercase font-black px-2 py-1 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
                                                 {test._translatedType}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="px-4 py-4 font-black text-sm text-indigo-700 dark:text-indigo-300 truncate max-w-[250px]">{test.title}</TableCell>
-                                        <TableCell className="px-4 py-4 text-xs text-slate-400 font-mono whitespace-nowrap">{test._dateStr}</TableCell>
+                                        <TableCell className="px-6 py-4 font-black text-sm text-indigo-700 dark:text-indigo-400 truncate max-w-[250px] group-hover:text-indigo-600 transition-colors">{test.title}</TableCell>
+                                        <TableCell className="px-6 py-4 text-xs text-slate-500 dark:text-slate-400 font-mono whitespace-nowrap font-medium">{test._dateStr}</TableCell>
                                         
-                                        <TableCell className="px-4 py-4 text-center font-black text-emerald-600">{test.status === 'Sonuçlandı' ? test.correctAnswers : '-'}</TableCell>
-                                        <TableCell className="px-4 py-4 text-center font-black text-rose-600">{test.status === 'Sonuçlandı' ? test.incorrectAnswers : '-'}</TableCell>
-                                        <TableCell className="px-4 py-4 text-center font-black text-slate-400">{test.status === 'Sonuçlandı' ? test.emptyAnswers : '-'}</TableCell>
+                                        <TableCell className="px-6 py-4 text-center font-black text-emerald-600 dark:text-emerald-500 bg-emerald-50/30 dark:bg-emerald-900/10">{test.status === 'Sonuçlandı' ? test.correctAnswers : '-'}</TableCell>
+                                        <TableCell className="px-6 py-4 text-center font-black text-rose-600 dark:text-rose-500 bg-rose-50/30 dark:bg-rose-900/10">{test.status === 'Sonuçlandı' ? test.incorrectAnswers : '-'}</TableCell>
+                                        <TableCell className="px-6 py-4 text-center font-black text-slate-400 bg-slate-50/30 dark:bg-slate-900/10">{test.status === 'Sonuçlandı' ? test.emptyAnswers : '-'}</TableCell>
                                         
-                                        <TableCell className="px-4 py-4 text-center">
+                                        <TableCell className="px-6 py-4 text-center">
                                             {test.status === 'Sonuçlandı' ? (
-                                                <div className="bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-lg text-indigo-700 dark:text-indigo-300 font-black text-sm border border-indigo-100 dark:border-indigo-800">
+                                                <div className="mx-auto w-fit bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-xl text-indigo-700 dark:text-indigo-300 font-black text-sm border border-indigo-100 dark:border-indigo-800 shadow-sm">
                                                     {test._net.toFixed(2)}
                                                 </div>
                                             ) : (
-                                                <Badge variant="outline" className="animate-pulse bg-amber-50 text-amber-600 border-amber-200 text-[10px] font-bold">Bekleniyor</Badge>
+                                                <Badge variant="outline" className="animate-pulse bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 text-[10px] font-bold px-2 py-1">Değerlendirme</Badge>
                                             )}
                                         </TableCell>
 
-                                        <TableCell className="px-4 py-4 text-center">
+                                        <TableCell className="px-6 py-4 text-center">
                                             {test.status === 'Sonuçlandı' ? (
                                                 <div className={cn(
-                                                    "px-2 py-1 rounded-lg font-black text-sm border",
+                                                    "mx-auto w-fit px-3 py-1.5 rounded-xl font-black text-sm border shadow-sm",
                                                     test._successRate >= 75 ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800" :
                                                     test._successRate >= 50 ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800" :
                                                     "bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800"

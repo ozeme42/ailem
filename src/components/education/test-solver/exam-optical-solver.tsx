@@ -254,7 +254,7 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                                 ) : (sAns ? "bg-indigo-50/20 border-indigo-100" : "bg-slate-50 dark:bg-black/20 border-slate-100 dark:border-slate-800")
                                             )}>
                                                 <div className="flex justify-between items-center px-1">
-                                                    <span className={cn("text-[9px] md:text-[10px] font-black uppercase tracking-widest", (showResult && sAns) && isCorrect ? "text-emerald-600" : (showResult && sAns) && isWrong ? "text-rose-600" : "text-slate-400")}>Soru {qNum}</span>
+                                                    <span className={cn("text-[9px] md:text-[10px] font-black uppercase tracking-widest", (showResult && sAns) && isCorrect ? "text-emerald-600" : (showResult && sAns) && isWrong ? "text-rose-600" : "text-slate-400")}>Soru {i + 1}</span>
                                                     {showResult && sAns && isCorrect && <Check className="w-3 md:w-3.5 h-3 md:h-3.5 text-emerald-500" strokeWidth={4} />}
                                                     {showResult && sAns && isWrong && <X className="w-3 md:w-3.5 h-3 md:h-3.5 text-rose-500" strokeWidth={4} />}
                                                 </div>

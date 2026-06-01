@@ -69,6 +69,7 @@ export default function BookDetailClient() {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [isBulkTestDialogOpen, setIsBulkTestDialogOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
   
   const [currentSubject, setCurrentSubject] = useState<TrackedBookSubject | null>(null);
   const [currentTopic, setCurrentTopic] = useState<Topic | null>(null);
@@ -293,11 +294,13 @@ export default function BookDetailClient() {
 
   // --- HATA GİDERİLMİŞ ATAMA (ASSIGN) FONKSİYONU ---
   const handleAssignSelectedTests = async () => {
+    if (isAssigning) return;
     if (!book || selectedTests.length === 0 || assignFormData.studentIds.length === 0) {
         toast({ title: "Eksik Bilgi", description: "Lütfen en az bir test ve bir öğrenci seçin.", variant: "destructive"});
         return;
     }
 
+    setIsAssigning(true);
     try {
         for (const testId of selectedTests) {
           const testToAssign = bookTests.find(t => t.id === testId);
@@ -347,6 +350,8 @@ export default function BookDetailClient() {
     } catch (error: any) {
         console.error("Atama Hatası:", error);
         toast({title: "Atama Hatası", description: error.message || "Bilinmeyen bir hata oluştu.", variant: "destructive"});
+    } finally {
+        setIsAssigning(false);
     }
   }
 
@@ -706,6 +711,7 @@ export default function BookDetailClient() {
                         onCreate={handleSubjectCreate}
                         placeholder="Ders seçin veya yeni oluşturun..."
                         className={glassColors.INPUT_BG}
+                        contentClassName="bg-slate-900 border-white/10 text-slate-100"
                     />
                 </div>
                 <DialogFooter>
@@ -754,8 +760,10 @@ export default function BookDetailClient() {
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="ghost" onClick={() => setIsAssignDialogOpen(false)} className="text-slate-400">İptal</Button>
-                    <Button onClick={handleAssignSelectedTests} className="bg-indigo-600">Ödevleri Ata</Button>
+                    <Button variant="ghost" onClick={() => setIsAssignDialogOpen(false)} disabled={isAssigning} className="text-slate-400">İptal</Button>
+                    <Button onClick={handleAssignSelectedTests} disabled={isAssigning} className="bg-indigo-600">
+                        {isAssigning ? "Atanıyor..." : "Ödevleri Ata"}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -816,7 +824,7 @@ export default function BookDetailClient() {
             </DialogContent>
         </Dialog>
 
-        {selectedTests.length > 0 && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-5"><span className="font-bold">{selectedTests.length} Test Seçildi</span><div className="h-4 w-px bg-white/30"></div><button onClick={() => setIsAssignDialogOpen(true)} className="hover:underline font-medium flex items-center gap-1">Ata <Send className="w-4 h-4"/></button><button onClick={() => setSelectedTests([])} className="ml-2 bg-indigo-700 rounded-full p-1"><XCircle className="w-4 h-4"/></button></div>}
+        {selectedTests.length > 0 && <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-5"><span className="font-bold">{selectedTests.length} Test Seçildi</span><div className="h-4 w-px bg-white/30"></div><button onClick={() => setIsAssignDialogOpen(true)} className="hover:underline font-medium flex items-center gap-1">Ata <Send className="w-4 h-4"/></button><button onClick={() => setSelectedTests([])} className="ml-2 bg-indigo-700 rounded-full p-1"><XCircle className="w-4 h-4"/></button></div>}
     </div>
   );
 }

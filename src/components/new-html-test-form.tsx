@@ -46,6 +46,7 @@ type NewHtmlTestFormProps = {
   familyMembers: FamilyMember[];
   onFormSubmit: (data: Omit<Test, 'id' | 'familyId'>) => void;
   initialData?: Test | null;
+  isReassigning?: boolean;
   availableSubjects: string[];
   onSubjectCreated: (subject: string) => void;
   availableTopics: string[];
@@ -65,7 +66,8 @@ export function NewHtmlTestForm({
     onTopicCreated,
     trackedBooks,
     studyPlans,
-    bankQuestions
+    bankQuestions,
+    isReassigning
 }: NewHtmlTestFormProps) {
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
@@ -131,11 +133,11 @@ export function NewHtmlTestForm({
         subject: values.subject,
         studentId: values.assigneeId,
         questionCount: values.questionCount,
-        assignedDate: initialData?.assignedDate || format(new Date(), 'dd MMMM yyyy', { locale: tr }),
+        assignedDate: (initialData && !isReassigning) ? initialData.assignedDate : format(new Date(), 'dd MMMM yyyy', { locale: tr }),
         dueDate: format(values.dueDate, 'dd MMMM yyyy', { locale: tr }),
         sourceType: 'html' as const,
-        status: initialData?.status || 'Atandı' as const,
-        isArchived: initialData?.isArchived || false,
+        status: (initialData && !isReassigning) ? initialData.status : 'Atandı',
+        isArchived: (initialData && !isReassigning) ? initialData.isArchived : false,
         htmlContent: values.htmlContent,
         answerKey: values.answerKey,
       };
@@ -204,6 +206,7 @@ export function NewHtmlTestForm({
                                     onCreate={onSubjectCreated}
                                     placeholder="Ders seçin..."
                                     className={glassColors.INPUT_BG}
+                                    contentClassName={glassColors.POPOVER_BG}
                                 />
                             </FormControl>
                             <FormMessage />
@@ -221,6 +224,7 @@ export function NewHtmlTestForm({
                                     onCreate={onTopicCreated}
                                     placeholder={watchedSubject ? "Konu seçin..." : "Önce ders seçin..."}
                                     className={glassColors.INPUT_BG}
+                                    contentClassName={glassColors.POPOVER_BG}
                                     disabled={!watchedSubject}
                                 />
                             </FormControl>

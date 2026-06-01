@@ -107,7 +107,7 @@ export function MCQWizardSolver({ test, questions, studentAnswers, onAnswer, onF
                  <Button 
                     type="button"
                     onClick={() => setIsPaletteOpen(true)}
-                    className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-slate-900 text-white shadow-2xl z-40 border border-white/10"
+                    className="fixed bottom-24 right-6 h-14 w-14 rounded-full bg-slate-900 text-white shadow-2xl z-40 border border-white/10"
                 >
                     <LayoutGrid className="w-6 h-6" />
                 </Button>

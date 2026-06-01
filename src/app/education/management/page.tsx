@@ -15,6 +15,7 @@ import { useAuth } from "@/components/auth-provider";
 import { getCategoryName } from "@/app/education/page";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 
 // ─── TEMA VE RENK SİSTEMİ (Tailwind Uyumlu) ────────────────────────────────────
 type ThemeColors = { base: string; softBg: string; text: string; border: string; gradient: string };
@@ -94,13 +95,19 @@ export default function EducationManagementPage() {
     return () => unsub();
   }, []);
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === "159753") {
+    const auth = getAuth();
+    if (!auth.currentUser?.email) {
+      setError("Kullanıcı oturumu bulunamadı.");
+      return;
+    }
+    try {
+      await signInWithEmailAndPassword(auth, auth.currentUser.email, password);
       setIsAuthenticated(true);
       setError("");
       toast({ title: "Giriş Başarılı ✓", description: "Yönetim paneline hoş geldiniz.", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800" });
-    } else {
+    } catch (err) {
       setError("Hatalı şifre. Lütfen tekrar deneyin.");
     }
   };
@@ -177,13 +184,15 @@ export default function EducationManagementPage() {
   }
 
   // ── YÖNETİM PANELİ ──────────────────────────────────────────────────────
+  const pendingEvaluations = tests.filter(t => t.status === 'Değerlendirme Bekliyor');
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans pb-28 transition-colors duration-300">
       <div className="h-[env(safe-area-inset-top,0px)]" />
 
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 supports-[backdrop-filter]:bg-white/60">
-        <div className="flex items-center justify-between px-3 md:px-6 py-3">
+        <div className="flex items-center justify-between px-3 md:px-6 py-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => window.history.back()}
@@ -191,59 +200,127 @@ export default function EducationManagementPage() {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white tracking-tight">Yönetim Paneli</p>
+            <div className="flex flex-col">
+              <p className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none">Yönetim Paneli</p>
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-1">Sistem Yönetimi & Analiz</p>
+            </div>
           </div>
 
           <Link href="/education/management/questions">
-            <button className="flex items-center gap-2 h-10 px-4 md:px-5 rounded-full text-white text-sm font-bold active:scale-95 transition-transform bg-gradient-to-r from-indigo-500 to-blue-600 shadow-sm hover:shadow-md">
-              <PlusCircle className="w-4 h-4 md:w-5 md:h-5" />
-              <span className="hidden sm:inline">Ödev Ata</span>
+            <button className="flex items-center gap-2 h-11 px-5 md:px-6 rounded-full text-white text-sm font-bold active:scale-95 transition-transform bg-gradient-to-r from-indigo-500 to-blue-600 shadow-md hover:shadow-lg">
+              <PlusCircle className="w-5 h-5" />
+              <span className="hidden sm:inline">Hızlı Ödev Ata</span>
               <span className="sm:hidden">Ata</span>
             </button>
           </Link>
         </div>
       </header>
 
-      <main className="px-3 md:px-6 pt-5 space-y-6 md:max-w-5xl md:mx-auto">
+      <main className="px-4 md:px-6 pt-6 space-y-10 md:max-w-6xl md:mx-auto">
+
+        {/* DEĞERLENDİRME BEKLEYENLER */}
+        {pendingEvaluations.length > 0 && (
+          <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center gap-2 mb-4 px-1">
+               <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                  <AlertTriangle className="w-4 h-4" />
+               </div>
+               <p className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">İşlem Bekleyen Ödevler</p>
+               <span className="ml-2 px-2 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-black">{pendingEvaluations.length}</span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {pendingEvaluations.map(test => {
+                const student = familyMembers.find(m => m.id === test.studentId);
+                const subjTheme = categoryTheme[test.subject || 'Diğer'] || categoryTheme['Diğer'];
+                
+                return (
+                  <div key={test.id} className="group p-5 rounded-[2rem] bg-white dark:bg-slate-900 border-2 border-rose-100 dark:border-rose-900/30 shadow-md hover:shadow-xl hover:border-rose-300 dark:hover:border-rose-800 transition-all flex flex-col justify-between gap-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={cn("px-2 py-0.5 rounded border text-[9px] font-black uppercase tracking-wider", subjTheme.softBg, subjTheme.text, subjTheme.border)}>
+                            {test.subject || getCategoryName(test)}
+                          </span>
+                          {student && (
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-slate-500">
+                               <div className="w-1.5 h-1.5 rounded-full" style={{backgroundColor: student.color}}/>
+                               {student.name}
+                            </div>
+                          )}
+                        </div>
+                        <h3 className="text-base font-black text-slate-800 dark:text-slate-100 line-clamp-2">{test.title}</h3>
+                      </div>
+                    </div>
+                    
+                    <Link href={`/education/${test.id}?mode=evaluate`}>
+                      <button className="w-full h-12 rounded-xl flex items-center justify-center gap-2 font-black text-sm bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white transition-colors">
+                        Değerlendir <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </Link>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
 
         {/* KPI KARTLARI */}
-        <section className="grid grid-cols-3 gap-3 md:gap-4">
-          <KpiCard label="Toplam" value={stats.total} theme={toolTheme.blue} icon={<Library className="w-4 h-4" />} href="/education/all-tests" />
-          <KpiCard label="Bekleyen" value={stats.pending} theme={toolTheme.orange} icon={<CircleDashed className="w-4 h-4" />} href="/education/all-tests" />
-          <KpiCard label="Başarı" value={`%${stats.successRate.toFixed(0)}`} theme={toolTheme.emerald} icon={<CheckCircle2 className="w-4 h-4" />} />
+        <section>
+          <div className="grid grid-cols-3 gap-3 md:gap-5">
+            <KpiCard label="Toplam" value={stats.total} theme={toolTheme.blue} icon={<Library className="w-5 h-5" />} href="/education/all-tests" />
+            <KpiCard label="Bekleyen" value={stats.pending} theme={toolTheme.orange} icon={<CircleDashed className="w-5 h-5" />} href="/education/all-tests" />
+            <KpiCard label="Başarı Oranı" value={`%${stats.successRate.toFixed(0)}`} theme={toolTheme.emerald} icon={<CheckCircle2 className="w-5 h-5" />} />
+          </div>
         </section>
 
         {/* ARAÇLAR */}
-        <section>
-          <div className="flex items-center gap-2 mb-3 md:mb-4 px-1">
-             <div className="w-6 h-6 rounded-md flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                <Settings className="w-3.5 h-3.5" />
-             </div>
-             <p className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Tanımlamalar ve Araçlar</p>
+        <section className="space-y-8">
+          
+          {/* GRUP 1: İçerik Yükleme & Ödev Oluşturma */}
+          <div>
+            <div className="flex items-center gap-2 mb-4 px-1">
+               <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                  <Layers className="w-4 h-4" />
+               </div>
+               <p className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">İçerik & Ödev Ekleme</p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+              <ToolCard href="/education/management/questions"        icon={PlusCircle}   label="Soru Bankası"  theme={toolTheme.emerald}  />
+              <ToolCard href="/education/management/practice-exams"   icon={ClipboardList}label="Denemeler"     theme={toolTheme.orange} />
+              <ToolCard href="/education/management/json-tests"       icon={FileJson}     label="Yazılılar"     theme={toolTheme.purple} />
+              <ToolCard href="/education/management/html-tests"       icon={Code}         label="HTML Test"     theme={toolTheme.blue}   />
+              <ToolCard href="/education/management/summaries"        icon={ScrollText}   label="Özetler"       theme={toolTheme.emerald} />
+            </div>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3 md:gap-4">
-            <ToolCard href="/education/results"                    icon={ListTree}     label="Sonuçlar"      theme={toolTheme.indigo} />
-            <ToolCard href="/education/all-tests"                   icon={Library}      label="Ödevler"       theme={toolTheme.indigo} />
-            <ToolCard href="/education/management/questions"        icon={PlusCircle}   label="Soru Bankası"  theme={toolTheme.emerald}  />
-            <ToolCard href="/education/management/practice-exams"   icon={ClipboardList}label="Denemeler"     theme={toolTheme.orange} />
-            <ToolCard href="/education/books"                       icon={BookMarked}   label="Kitap Takibi"  theme={toolTheme.blue}   />
-            <ToolCard href="/education/management/subjects"         icon={BookOpen}     label="Ders & Konu"   theme={toolTheme.purple} />
-            <ToolCard href="/education/management/study-plans"      icon={BookHeart}    label="Yol Haritaları"theme={toolTheme.pink}   />
-            <ToolCard href="/education/management/json-tests"       icon={FileJson}     label="Yazılılar"     theme={toolTheme.purple} />
-            <ToolCard href="/education/management/html-tests"       icon={Code}         label="HTML Test"     theme={toolTheme.blue}   />
-            <ToolCard href="/education/management/summaries"        icon={ScrollText}   label="Özetler"       theme={toolTheme.emerald} />
+
+          {/* GRUP 2: Takip & Değerlendirme */}
+          <div>
+            <div className="flex items-center gap-2 mb-4 px-1">
+               <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                  <Settings className="w-4 h-4" />
+               </div>
+               <p className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Takip & Yönetim</p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+              <ToolCard href="/education/results"                    icon={ListTree}     label="Sonuçlar"      theme={toolTheme.indigo} />
+              <ToolCard href="/education/all-tests"                   icon={Library}      label="Tüm Ödevler"   theme={toolTheme.indigo} />
+              <ToolCard href="/education/books"                       icon={BookMarked}   label="Kitap Takibi"  theme={toolTheme.blue}   />
+              <ToolCard href="/education/management/subjects"         icon={BookOpen}     label="Ders & Konu"   theme={toolTheme.purple} />
+              <ToolCard href="/education/management/study-plans"      icon={BookHeart}    label="Yol Haritaları"theme={toolTheme.pink}   />
+            </div>
           </div>
         </section>
 
         {/* DERS LİSTESİ */}
         <section>
-          <div className="flex items-center gap-2 mb-3 md:mb-4 px-1">
-             <div className="w-6 h-6 rounded-md flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                <PieChart className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-2 mb-4 px-1">
+             <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                <PieChart className="w-4 h-4" />
              </div>
-             <p className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Dersler ve İlerleme</p>
+             <p className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Ders İlerlemeleri</p>
           </div>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {Object.entries(testsBySubject).map(([subject, subjectTests]) => {
               const total = subjectTests.length;
               const completed = subjectTests.filter(t => t.status === 'Sonuçlandı');
@@ -257,46 +334,34 @@ export default function EducationManagementPage() {
               return (
                 <Link key={subject} href={`/education/category/${encodeURIComponent(subject)}`}
                   className="block active:scale-[0.98] transition-transform">
-                  <div className="rounded-[1.5rem] p-4 flex items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                    {/* Hafif renkli arka plan çizgisi */}
-                    <div className={cn("absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b", theme.gradient)} />
+                  <div className="rounded-[2rem] p-5 flex items-center gap-5 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all relative overflow-hidden group">
+                    <div className={cn("absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-b", theme.gradient)} />
 
-                    {/* İkon kutusu */}
-                    <div className={cn("w-12 h-12 rounded-[1rem] flex items-center justify-center shrink-0 ml-1", theme.softBg, theme.text)}>
-                      <Icon className="w-6 h-6" />
+                    <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ml-1", theme.softBg, theme.text)}>
+                      <Icon className="w-7 h-7" />
                     </div>
 
-                    {/* İçerik */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-base font-black text-slate-900 dark:text-white truncate">{subject}</p>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-lg font-black text-slate-900 dark:text-white truncate">{subject}</p>
                         {pending > 0 && (
-                          <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ml-2 border", theme.softBg, theme.text, theme.border)}>
-                            {pending} bekleyen
+                          <span className={cn("text-[10px] font-black px-2.5 py-1 rounded-lg shrink-0 ml-2 border", theme.softBg, theme.text, theme.border)}>
+                            {pending} Bekleyen
                           </span>
                         )}
                       </div>
 
-                      {/* İlerleme bar */}
                       <div className="flex items-center gap-3">
-                        <div className="flex-1 h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                        <div className="flex-1 h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                           <div
                             className={cn("h-full rounded-full transition-all duration-500", theme.base)}
                             style={{ width: `${rate}%` }}
                           />
                         </div>
-                        <span className={cn("text-[11px] font-black shrink-0 w-8", theme.text)}>
+                        <span className={cn("text-xs font-black shrink-0 w-10 text-right", theme.text)}>
                           %{rate.toFixed(0)}
                         </span>
-                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 shrink-0 w-8 text-right">
-                          {completed.length}/{total}
-                        </span>
                       </div>
-                    </div>
-
-                    {/* Sağ ok */}
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-slate-50 dark:bg-slate-800 text-slate-400 group-hover:bg-slate-100 dark:group-hover:bg-slate-700 transition-colors">
-                      <ChevronRight className="w-4 h-4" />
                     </div>
                   </div>
                 </Link>

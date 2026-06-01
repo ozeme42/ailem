@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle, XCircle, Edit, ListFilter, MinusCircle, Trash2, ClipboardList, BookCopy, Ruler, TestTube2, Globe, MessageSquare, Gamepad2, FileText, Calendar, Clock, ChevronRight, LayoutGrid, List, Filter, Book, Library, PenTool, ArrowUpDown, BookOpen, ChevronLeft, CheckSquare } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Edit, ListFilter, MinusCircle, Trash2, ClipboardList, BookCopy, Ruler, TestTube2, Globe, MessageSquare, Gamepad2, FileText, Calendar, Clock, ChevronRight, LayoutGrid, List, Filter, Book, Library, PenTool, ArrowUpDown, BookOpen, ChevronLeft, CheckSquare, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -223,10 +223,12 @@ export default function AllTestsPage() {
 
         const pending = sorted.filter(t => t.status === 'Atandı' || t.status === 'Değerlendirme Bekliyor');
         const completed = sorted.filter(t => t.status === 'Sonuçlandı');
+        const evaluationPending = pending.filter(t => t.status === 'Değerlendirme Bekliyor');
         
         return {
             pendingTests: pending,
             completedTests: completed,
+            evaluationPendingTests: evaluationPending,
             allFilteredTests: sorted,
             sourceOptions: uniqueSources,
             subjectOptions: uniqueSubjects,
@@ -342,6 +344,58 @@ export default function AllTestsPage() {
 
             <div className="flex-1 max-w-5xl mx-auto w-full p-4 md:p-6 relative z-10 flex flex-col min-h-0">
                 
+                {/* DEĞERLENDİRME BEKLEYENLER */}
+                {evaluationPendingTests.length > 0 && (
+                    <section className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex items-center gap-2 mb-4 px-1">
+                           <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-rose-500/10 text-rose-500">
+                              <AlertTriangle className="w-4 h-4" />
+                           </div>
+                           <p className="text-sm font-black text-slate-200 uppercase tracking-wider">İşlem Bekleyen Ödevler</p>
+                           <span className="ml-2 px-2 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-black">{evaluationPendingTests.length}</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {evaluationPendingTests.map(test => {
+                                const student = familyMembers.find(m => m.id === test.studentId);
+                                const categoryName = getCategoryName(test);
+                                const Icon = categoryIcons[categoryName] || FileText;
+                                const iconStyle = categoryIconColors[categoryName] || 'text-slate-400 bg-slate-400/10';
+                                
+                                return (
+                                    <div key={test.id} className="group p-5 rounded-[2rem] bg-slate-900/60 border-2 border-rose-500/20 shadow-md hover:shadow-xl hover:border-rose-500/50 backdrop-blur-md transition-all flex flex-col justify-between gap-4">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <div className={cn("w-6 h-6 rounded-md flex items-center justify-center shrink-0", iconStyle)}>
+                                                        <Icon className="w-3.5 h-3.5" />
+                                                    </div>
+                                                    <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5 text-[9px] text-slate-300 font-black uppercase tracking-wider">
+                                                        {test.subject || categoryName}
+                                                    </span>
+                                                    {student && (
+                                                        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 ml-auto">
+                                                            <div className="w-1.5 h-1.5 rounded-full" style={{backgroundColor: student.color}}/>
+                                                            {student.name}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <h3 className="text-sm font-bold text-slate-100 line-clamp-2">{test.title}</h3>
+                                            </div>
+                                        </div>
+                                        
+                                        <Link href={`/education/${test.id}?mode=evaluate`}>
+                                            <button className="w-full h-11 rounded-xl flex items-center justify-center gap-2 font-black text-sm bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 hover:border-indigo-500 transition-colors">
+                                                Değerlendir <ChevronRight className="w-4 h-4" />
+                                            </button>
+                                        </Link>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </section>
+                )}
+
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full space-y-6">
                     {/* DURUM TABS */}
                     <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 h-12 p-1 rounded-2xl bg-slate-900/50 border border-white/10 backdrop-blur-md">

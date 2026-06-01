@@ -276,6 +276,7 @@ export function HtmlTestsClient() {
                         trackedBooks={trackedBooks}
                         studyPlans={studyPlans}
                         bankQuestions={bankQuestions}
+                        isReassigning={!!reassigningTest}
                     />
                 </div>
             </DialogContent>

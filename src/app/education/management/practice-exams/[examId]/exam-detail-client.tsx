@@ -179,8 +179,10 @@ export function ExamDetailClient() {
         </div>
 
       <Accordion type="multiple" className="w-full space-y-4">
-        {(exam.subjects || []).map(subject => (
-          <AccordionItem key={subject.id} value={subject.id} className="border-none rounded-2xl overflow-hidden bg-white/5 border border-white/5">
+        {(exam.subjects || []).map((subject, index) => {
+          const uniqueId = subject.id || `subject-${index}-${subject.name}`;
+          return (
+          <AccordionItem key={uniqueId} value={uniqueId} className="border-none rounded-2xl overflow-hidden bg-white/5 border border-white/5">
               <div className="flex items-center justify-between pr-4 bg-slate-900/30">
                 <AccordionTrigger className="p-4 hover:no-underline flex gap-3 text-slate-200 hover:text-white transition-colors">
                     <span className="font-bold text-lg">{subject.name}</span>
@@ -233,7 +235,8 @@ export function ExamDetailClient() {
                    </div>
                </AccordionContent>
           </AccordionItem>
-        ))}
+          )
+        })}
       </Accordion>
       
       {/* Empty State */}

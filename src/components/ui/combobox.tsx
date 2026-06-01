@@ -29,6 +29,8 @@ type ComboboxProps = {
     placeholder?: string;
     notfoundText?: string;
     createText?: string;
+    className?: string;
+    contentClassName?: string;
 }
 
 export function Combobox({ 
@@ -38,7 +40,9 @@ export function Combobox({
     onCreate,
     placeholder = "Select an option...",
     notfoundText = "No option found.",
-    createText = "Create"
+    createText = "Create",
+    className,
+    contentClassName
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("")
@@ -50,7 +54,7 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between"
+          className={cn("w-full justify-between", className)}
         >
           {value
             ? options.find((option) => option.value === value)?.label
@@ -58,7 +62,7 @@ export function Combobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className={cn("w-full p-0", contentClassName)} align="start">
         <Command>
           <CommandInput 
             placeholder={placeholder} 

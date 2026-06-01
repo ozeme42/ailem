@@ -37,14 +37,18 @@ export function JSONWizardSolver({ test, questions, studentAnswers, onAnswer, on
                         {currentAnswer && <Badge className="bg-emerald-500 text-white border-none">CEVAPLANDI</Badge>}
                     </div>
                     <div className="p-6 md:p-10 space-y-8">
-                        <div className="p-8 rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 shadow-inner">
-                            <p className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 leading-relaxed text-center">
+                        <div className="relative p-8 md:p-14 rounded-[2.5rem] bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 dark:from-indigo-950/30 dark:via-slate-900 dark:to-slate-950 border border-indigo-100/50 dark:border-indigo-500/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] overflow-hidden mb-10">
+                            {/* Decorative background blurs */}
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                            <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/5 dark:bg-purple-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+                            
+                            <p className="relative z-10 text-xl md:text-3xl font-black text-slate-800 dark:text-slate-100 leading-relaxed md:leading-[1.5] text-center tracking-tight">
                                 {currentQuestion?.text || "Soru yüklenemedi."}
                             </p>
                         </div>
 
-                        <div className="space-y-3 max-w-2xl mx-auto">
-                            <RadioGroup value={currentAnswer} onValueChange={(v) => onAnswer(qNumStr, v)} className="grid grid-cols-1 gap-3">
+                        <div className="space-y-4 max-w-3xl mx-auto">
+                            <RadioGroup value={currentAnswer} onValueChange={(v) => onAnswer(qNumStr, v)} className="grid grid-cols-1 gap-4">
                                 {currentQuestion?.options.map((opt, idx) => {
                                     const label = String.fromCharCode(65 + idx);
                                     const isActive = currentAnswer === label;
@@ -54,14 +58,17 @@ export function JSONWizardSolver({ test, questions, studentAnswers, onAnswer, on
                                             <Label 
                                                 htmlFor={`q-opt-${label}`}
                                                 className={cn(
-                                                    "flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all active:scale-[0.98]",
+                                                    "flex items-center gap-5 p-5 md:p-6 rounded-2xl md:rounded-[1.5rem] border-2 cursor-pointer transition-all duration-300 active:scale-[0.98] group",
                                                     isActive 
-                                                        ? "bg-indigo-600 border-indigo-600 text-white shadow-lg" 
-                                                        : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400"
+                                                        ? "bg-indigo-600 border-indigo-600 text-white shadow-[0_10px_30px_rgba(79,70,229,0.3)] dark:shadow-[0_10px_30px_rgba(79,70,229,0.2)]" 
+                                                        : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-lg hover:-translate-y-0.5"
                                                 )}
                                             >
-                                                <span className={cn("w-8 h-8 rounded-lg flex items-center justify-center font-black", isActive ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800")}>{label}</span>
-                                                <span className="font-bold text-sm md:text-base">{opt}</span>
+                                                <span className={cn(
+                                                    "w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center font-black text-lg md:text-xl transition-colors duration-300", 
+                                                    isActive ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
+                                                )}>{label}</span>
+                                                <span className="font-bold text-base md:text-lg">{opt}</span>
                                             </Label>
                                         </div>
                                     );
@@ -105,7 +112,7 @@ export function JSONWizardSolver({ test, questions, studentAnswers, onAnswer, on
                  <Button 
                     type="button"
                     onClick={() => setIsPaletteOpen(true)}
-                    className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-slate-900 text-white shadow-2xl z-40 border border-white/10"
+                    className="fixed bottom-24 right-6 h-14 w-14 rounded-full bg-slate-900 text-white shadow-2xl z-40 border border-white/10"
                 >
                     <LayoutGrid className="w-6 h-6" />
                 </Button>
