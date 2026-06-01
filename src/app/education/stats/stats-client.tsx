@@ -720,12 +720,12 @@ export function StatsClient() {
       
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 h-auto py-3 min-h-[72px] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 h-auto py-3 min-h-[72px] flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" className="rounded-full w-9 h-9" onClick={() => router.back()}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+            <div className="hidden sm:flex w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 items-center justify-center shadow-lg shadow-indigo-500/25">
               <GraduationCap className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -733,85 +733,92 @@ export function StatsClient() {
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Performans Analizi</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center justify-center w-full sm:w-auto gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-            {(['weekly', 'monthly', 'yearly'] as Period[]).map(p => (
-              <button key={p} onClick={() => setActivePeriod(p)} className={cn('px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all', activePeriod === p ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300')}>
-                {p === 'weekly' ? 'Hafta' : p === 'monthly' ? 'Ay' : 'Yıl'}
-              </button>
-            ))}
+          
+          <div className="flex items-center">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="icon" className={cn("rounded-full w-10 h-10 relative border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 transition-colors", activeFilterCount > 0 && "border-indigo-400 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300")}>
+                  <SlidersHorizontal className="w-4 h-4" />
+                  {activeFilterCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] font-black flex items-center justify-center shadow-sm">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 p-4 rounded-2xl shadow-xl border-slate-200 dark:border-slate-800 flex flex-col gap-4" align="end">
+                <div>
+                  <p className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">Zaman Aralığı</p>
+                  <div className="flex items-center w-full gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+                    {(['weekly', 'monthly', 'yearly'] as Period[]).map(p => (
+                      <button key={p} onClick={() => setActivePeriod(p)} className={cn('flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all', activePeriod === p ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300')}>
+                        {p === 'weekly' ? 'Hafta' : p === 'monthly' ? 'Ay' : 'Yıl'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="h-px bg-slate-100 dark:bg-slate-800 w-full" />
+                
+                <div>
+                  <p className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">Filtreler</p>
+                  <div className="flex flex-col gap-2">
+                    <Select value={selectedSubject} onValueChange={v => { setSelectedSubject(v); setSelectedTopic('all'); }}>
+                      <SelectTrigger className="w-full h-10 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700">
+                        <SelectValue placeholder="Ders Seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tüm Dersler</SelectItem>
+                        {availableSubjectsList.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={selectedTopic} onValueChange={setSelectedTopic} disabled={availableTopics.length === 0}>
+                      <SelectTrigger className="w-full h-10 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700">
+                        <SelectValue placeholder="Konu Seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tüm Konular</SelectItem>
+                        {availableTopics.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={selectedType} onValueChange={setSelectedSourceType}>
+                      <SelectTrigger className="w-full h-10 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700">
+                        <SelectValue placeholder="Tür Seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tüm Türler</SelectItem>
+                        <SelectItem value="exam">Deneme Sınavı</SelectItem>
+                        <SelectItem value="bank">Soru Bankası</SelectItem>
+                        <SelectItem value="json">Yazılı Test</SelectItem>
+                        <SelectItem value="trackedBook">Kitap Takibi</SelectItem>
+                        <SelectItem value="mistake">Yanlış Havuzu</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {activeFilterCount > 0 && (
+                      <Button variant="ghost" size="sm" className="w-full mt-1 text-xs text-rose-500 h-8 rounded-xl" onClick={() => { setSelectedSubject('all'); setSelectedTopic('all'); setSelectedSourceType('all'); }}>
+                        Tümünü Sıfırla
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 md:px-8 pt-8 space-y-8">
+      <main className="max-w-7xl mx-auto px-4 md:px-8 pt-6 space-y-8">
         
-        {/* FILTER SECTION */}
-        <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden">
-          <div className="p-4">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("h-10 rounded-xl text-xs border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 font-medium gap-1.5 w-full sm:w-auto", activeFilterCount > 0 && "border-indigo-400 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300")}>
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                  Filtreler
-                  {activeFilterCount > 0 && (
-                    <span className="ml-1 w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-black flex items-center justify-center">{activeFilterCount}</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-72 p-4 rounded-2xl shadow-xl border-slate-200 dark:border-slate-800 flex flex-col gap-3" align="start">
-                <p className="text-xs font-extrabold text-slate-700 dark:text-slate-200 uppercase tracking-widest mb-1">Filtrele</p>
-                
-                <Select value={selectedSubject} onValueChange={v => { setSelectedSubject(v); setSelectedTopic('all'); }}>
-                  <SelectTrigger className="w-full h-10 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700">
-                    <SelectValue placeholder="Ders Seçin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tüm Dersler</SelectItem>
-                    {availableSubjectsList.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-
-                <Select value={selectedTopic} onValueChange={setSelectedTopic} disabled={availableTopics.length === 0}>
-                  <SelectTrigger className="w-full h-10 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700">
-                    <SelectValue placeholder="Konu Seçin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tüm Konular</SelectItem>
-                    {availableTopics.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-
-                <Select value={selectedType} onValueChange={setSelectedSourceType}>
-                  <SelectTrigger className="w-full h-10 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700">
-                    <SelectValue placeholder="Tür Seçin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tüm Türler</SelectItem>
-                    <SelectItem value="exam">Deneme Sınavı</SelectItem>
-                    <SelectItem value="bank">Soru Bankası</SelectItem>
-                    <SelectItem value="json">Yazılı Test</SelectItem>
-                    <SelectItem value="trackedBook">Kitap Takibi</SelectItem>
-                    <SelectItem value="mistake">Yanlış Havuzu</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {activeFilterCount > 0 && (
-                  <Button variant="ghost" size="sm" className="w-full mt-2 text-xs text-rose-500 h-8 rounded-xl" onClick={() => { setSelectedSubject('all'); setSelectedTopic('all'); setSelectedSourceType('all'); }}>
-                    Tümünü Sıfırla
-                  </Button>
-                )}
-              </PopoverContent>
-            </Popover>
+        {activeFilterCount > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {selectedSubject !== 'all' && <FilterBadge label={`Ders: ${selectedSubject}`} onRemove={() => { setSelectedSubject('all'); setSelectedTopic('all'); }} />}
+            {selectedTopic !== 'all' && <FilterBadge label={`Konu: ${selectedTopic}`} onRemove={() => setSelectedTopic('all')} />}
+            {selectedType !== 'all' && <FilterBadge label={`Tür: ${translateType(selectedType)}`} onRemove={() => setSelectedSourceType('all')} />}
           </div>
-
-          {activeFilterCount > 0 && (
-            <div className="px-4 pb-3 flex flex-wrap gap-2">
-              {selectedSubject !== 'all' && <FilterBadge label={`Ders: ${selectedSubject}`} onRemove={() => { setSelectedSubject('all'); setSelectedTopic('all'); }} />}
-              {selectedTopic !== 'all' && <FilterBadge label={`Konu: ${selectedTopic}`} onRemove={() => setSelectedTopic('all')} />}
-              {selectedType !== 'all' && <FilterBadge label={`Tür: ${translateType(selectedType)}`} onRemove={() => setSelectedSourceType('all')} />}
-            </div>
-          )}
-        </section>
+        )}
 
         {/* TABS MENU */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

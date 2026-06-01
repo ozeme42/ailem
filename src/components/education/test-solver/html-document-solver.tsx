@@ -157,20 +157,31 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
 
             <div className="flex-1 flex overflow-hidden">
                 {/* Document Area */}
-                <div className="flex-1 relative bg-slate-50 dark:bg-black/20 h-full">
-                    <iframe 
-                        srcDoc={getIframeDocument(test.htmlContent || "")}
-                        className="w-full h-full border-none"
-                        title="Test Content"
-                    />
-                     {/* Mobile Optic FAB */}
-                    <Button 
-                        type="button"
-                        onClick={() => setIsOpticalOpenMobile(true)}
-                        className="lg:hidden absolute bottom-6 right-6 h-14 w-14 rounded-full bg-indigo-600 text-white shadow-2xl z-40 border-4 border-white dark:border-slate-800"
-                    >
-                        <LayoutGrid className="w-6 h-6" />
-                    </Button>
+                <div className="flex-1 relative bg-slate-50 dark:bg-black/20 h-full flex flex-col">
+                    <div className="flex-1 relative">
+                        <iframe 
+                            srcDoc={getIframeDocument(test.htmlContent || "")}
+                            className="w-full h-full border-none"
+                            title="Test Content"
+                        />
+                         {/* Mobile Optic FAB */}
+                        <Button 
+                            type="button"
+                            onClick={() => setIsOpticalOpenMobile(true)}
+                            className="lg:hidden absolute bottom-6 right-6 h-14 w-14 rounded-full bg-indigo-600 text-white shadow-2xl z-40 border-4 border-white dark:border-slate-800"
+                        >
+                            <LayoutGrid className="w-6 h-6" />
+                        </Button>
+                    </div>
+
+                    {/* Mobile Sınavı Bitir Bar */}
+                    {!isReviewMode && (
+                        <div className="lg:hidden p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] pb-6 sm:pb-4">
+                            <Button type="button" className="w-full bg-emerald-600 hover:bg-emerald-500 font-black h-12 rounded-xl text-white shadow-lg shadow-emerald-600/20" onClick={onFinish}>
+                                Sınavı Bitir
+                            </Button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Optical Form Area - Desktop */}
