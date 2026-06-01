@@ -38,16 +38,16 @@ import { BookForm, BookFormData } from '@/components/new-book-form';
 import { cn } from "@/lib/utils";
 
 const appTheme = {
-    BG: "bg-[#F2F2F7] dark:bg-black transition-colors duration-300",
-    HEADER_BG: "bg-white/85 dark:bg-[#1C1C1E]/85 backdrop-blur-xl border-b border-black/[0.05] dark:border-white/[0.05] sticky top-0 z-40",
-    CARD_BG: "bg-white dark:bg-[#1C1C1E] border border-slate-100 dark:border-transparent shadow-sm dark:shadow-none rounded-3xl",
-    TEXT_MAIN: "text-[#1C1C1E] dark:text-white",
-    TEXT_MUTED: "text-[#8E8E93] dark:text-[#EBEBF5]/60",
+    BG: "bg-[#F2F2F7] dark:bg-slate-950 transition-colors duration-300",
+    HEADER_BG: "bg-white/85 dark:bg-slate-950/85 backdrop-blur-xl border-b border-black/[0.05] dark:border-white/[0.05] sticky top-0 z-40",
+    CARD_BG: "bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none rounded-3xl",
+    TEXT_MAIN: "text-slate-900 dark:text-slate-100",
+    TEXT_MUTED: "text-slate-500 dark:text-slate-400",
     ICON_BOX: "bg-indigo-50 dark:bg-indigo-500/10 p-2 rounded-2xl text-indigo-600 dark:text-indigo-400",
     FAB: "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl shadow-indigo-200 dark:shadow-none bg-indigo-600 hover:bg-indigo-700 text-white z-50 flex items-center justify-center transition-transform hover:scale-105 active:scale-95",
-    INPUT_BG: "bg-slate-100 dark:bg-[#1C1C1E] border-transparent text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#2C2C2E] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 rounded-2xl transition-all",
-    TABS_CONTAINER: "bg-slate-200/60 dark:bg-[#1C1C1E] p-1 rounded-full",
-    TAB_TRIGGER: "rounded-full px-6 py-2 text-sm font-semibold data-[state=active]:bg-white dark:data-[state=active]:bg-[#2C2C2E] data-[state=active]:text-indigo-700 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm text-slate-600 dark:text-[#EBEBF5]/60 transition-all"
+    INPUT_BG: "bg-slate-100 dark:bg-slate-900 border-transparent text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 rounded-2xl transition-all",
+    TABS_CONTAINER: "bg-slate-200/60 dark:bg-slate-900 p-1 rounded-full",
+    TAB_TRIGGER: "rounded-full px-6 py-2 text-sm font-semibold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-700 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm text-slate-600 dark:text-slate-400 transition-all"
 };
 
 const bookFormSchema = z.object({
@@ -350,16 +350,16 @@ export function ArchiveClient() {
       <BookDetailDialog book={viewingBook} isOpen={!!viewingBook} onOpenChange={setViewingBook} onEdit={handleOpenAddDialog} onAddToLibrary={handleAddToLibrary} familyMembers={familyMembers} />
 
       <Dialog open={isAddBookDialogOpen} onOpenChange={setIsAddBookDialogOpen}>
-          <DialogContent className="w-[95vw] md:max-w-2xl lg:max-w-3xl flex flex-col max-h-[90dvh] bg-white dark:bg-[#1C1C1E] border-slate-100 dark:border-white/10 rounded-[2rem] p-0 overflow-hidden shadow-2xl text-slate-900 dark:text-white">
+          <DialogContent className="w-[95vw] md:max-w-2xl lg:max-w-3xl flex flex-col max-h-[90dvh] bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 rounded-[2rem] p-0 overflow-hidden shadow-2xl text-slate-900 dark:text-white">
             <FormProvider {...formMethods}>
               <form onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)} className="flex flex-col min-h-0 flex-1">
-                <DialogHeader className="p-6 pb-4 shrink-0 border-b border-slate-100 dark:border-white/10">
+                <DialogHeader className="p-6 pb-4 shrink-0 border-b border-slate-100 dark:border-slate-800">
                     <DialogTitle className="text-xl font-bold">{editingBook ? 'Kitabı Düzenle' : 'Yeni Kitap'}</DialogTitle>
                 </DialogHeader>
                  <div className="overflow-y-auto px-6 py-4 flex-1 min-h-0">
                      <BookForm existingTags={allTags} />
                  </div>
-                <DialogFooter className="p-4 shrink-0 border-t border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-black/20 flex flex-row justify-end gap-2 sm:gap-3">
+                <DialogFooter className="p-4 shrink-0 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex flex-row justify-end gap-2 sm:gap-3">
                     <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} className="rounded-full font-medium px-5">İptal</Button>
                     <Button type="submit" disabled={isSubmitting} className="rounded-full font-medium px-6 bg-indigo-600 text-white hover:bg-indigo-700 shadow-md">
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {editingBook ? 'Kaydet' : 'Ekle'}
@@ -371,7 +371,7 @@ export function ArchiveClient() {
       </Dialog>
       
       <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-[#1C1C1E] border-slate-100 dark:border-white/10 rounded-[2rem] p-6 shadow-2xl text-slate-900 dark:text-white">
+        <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 rounded-[2rem] p-6 shadow-2xl text-slate-900 dark:text-white">
             <DialogHeader><DialogTitle className="text-xl font-bold">Kitap Ara</DialogTitle></DialogHeader>
             <div className="flex gap-2 pt-2">
                 <Input placeholder="Kitap veya yazar adı..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchQuery)} className={appTheme.INPUT_BG}/>
