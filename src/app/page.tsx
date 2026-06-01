@@ -731,9 +731,9 @@ export default function Home() {
                     <div className="overflow-y-auto p-6 flex-1 min-h-0">
                         <BookForm existingTags={allTags} />
                     </div>
-                    <DialogFooter className="p-4 shrink-0 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3">
-                        <Button variant="outline" type="button" className="w-full sm:w-auto h-12 sm:h-10 rounded-xl" onClick={() => setIsAddBookDialogOpen(false)} disabled={isSubmittingBook}>İptal</Button>
-                        <Button type="submit" className="w-full sm:w-auto h-12 sm:h-10 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700" disabled={isSubmittingBook}>
+                    <DialogFooter className="p-4 shrink-0 border-t border-slate-100 dark:border-slate-800 flex flex-row justify-end gap-2 sm:gap-3">
+                        <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} disabled={isSubmittingBook} className="rounded-full font-medium px-5">İptal</Button>
+                        <Button type="submit" disabled={isSubmittingBook} className="rounded-full font-medium px-6 bg-indigo-600 text-white hover:bg-indigo-700 shadow-md">
                             {isSubmittingBook && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Kaydet
                         </Button>

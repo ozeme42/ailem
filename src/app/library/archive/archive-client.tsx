@@ -359,9 +359,9 @@ export function ArchiveClient() {
                  <div className="overflow-y-auto px-6 py-4 flex-1 min-h-0">
                      <BookForm existingTags={allTags} />
                  </div>
-                <DialogFooter className="p-4 shrink-0 border-t border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-black/20 flex-col sm:flex-row gap-3">
-                    <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} className="rounded-xl w-full sm:w-auto h-12 sm:h-10">İptal</Button>
-                    <Button type="submit" disabled={isSubmitting} className="rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-md w-full sm:w-auto h-12 sm:h-10">
+                <DialogFooter className="p-4 shrink-0 border-t border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-black/20 flex flex-row justify-end gap-2 sm:gap-3">
+                    <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} className="rounded-full font-medium px-5">İptal</Button>
+                    <Button type="submit" disabled={isSubmitting} className="rounded-full font-medium px-6 bg-indigo-600 text-white hover:bg-indigo-700 shadow-md">
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {editingBook ? 'Kaydet' : 'Ekle'}
                     </Button>
                 </DialogFooter>
