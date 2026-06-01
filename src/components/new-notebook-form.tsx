@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Palette, Type, Edit3, Smile } from 'lucide-react';
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // --- DESIGN SYSTEM ---
 const glassColors = {
@@ -36,14 +37,17 @@ const formSchema = z.object({
   description: z.string().optional(),
   color: z.string().optional(),
   icon: z.string().optional(),
+  parentId: z.string().optional(),
 });
 
 type NewNotebookFormProps = {
     onSubmit: (data: Omit<Notebook, 'id' | 'familyId' | 'createdAt' | 'ownerId'>) => void;
     initialData?: Notebook | null;
+    availableFolders?: Notebook[];
+    currentFolderId?: string | null;
 }
 
-export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps) {
+export function NewNotebookForm({ onSubmit, initialData, availableFolders, currentFolderId }: NewNotebookFormProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
 
@@ -53,20 +57,30 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
       title: initialData?.title || '',
       description: initialData?.description || '',
       color: initialData?.color || notebookColors[0].class,
-      icon: initialData?.icon || '🗒️'
+      icon: initialData?.icon || '🗒️',
+      parentId: initialData?.parentId || currentFolderId || 'root'
     },
   });
   
    useEffect(() => {
     if (initialData) {
       form.reset({
-        title: initialData.title,
+        title: initialData.title || '',
         description: initialData.description || '',
         color: initialData.color || notebookColors[0].class,
-        icon: initialData.icon || '🗒️'
+        icon: initialData.icon || '🗒️',
+        parentId: initialData.parentId || currentFolderId || 'root'
       });
+    } else {
+        form.reset({
+            title: '',
+            description: '',
+            color: notebookColors[0].class,
+            icon: '🗒️',
+            parentId: currentFolderId || 'root'
+        })
     }
-  }, [initialData, form]);
+  }, [initialData, form, currentFolderId]);
 
   const handleFormSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
@@ -91,6 +105,28 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col flex-1">
             <div className="px-6 py-6 space-y-6 flex-1 overflow-y-auto">
+                
+                {availableFolders && availableFolders.length > 0 && (
+                    <FormField name="parentId" control={form.control} render={({field}) => (
+                        <FormItem>
+                            <FormLabel className="text-slate-700 dark:text-slate-300 font-bold ml-1">Bulunduğu Klasör (Taşı)</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                <FormControl>
+                                    <SelectTrigger className={glassColors.INPUT_BG}>
+                                        <SelectValue placeholder="Klasör seçin" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="z-[100]">
+                                    <SelectItem value="root" className="font-bold">Ana Dizin</SelectItem>
+                                    {availableFolders.filter(f => f.id !== initialData?.id).map(nb => (
+                                        <SelectItem key={nb.id} value={nb.id} className="font-medium">{nb.title}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </FormItem>
+                    )}/>
+                )}
+
                 {/* Title & Icon Row */}
                 <div className="flex gap-4">
                     <FormField

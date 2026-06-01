@@ -17,6 +17,7 @@ import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import {
   DndContext,
@@ -28,7 +29,7 @@ import {
   DragOverlay,
   defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
-import { SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 // --- TASARIM SABİTLERİ ---
@@ -42,18 +43,29 @@ const notebookThemes = [
 ];
 
 const noteColors = [
-    { id: 'yellow', class: 'bg-[#FFF9C4] text-[#78600C]', preview: 'bg-[#FFF9C4]', ring: 'ring-[#FDE047]' },
-    { id: 'blue',   class: 'bg-[#E0F2FE] text-[#0C4A6E]', preview: 'bg-[#E0F2FE]', ring: 'ring-[#7DD3FC]' },
-    { id: 'green',  class: 'bg-[#DCFCE7] text-[#064E3B]', preview: 'bg-[#DCFCE7]', ring: 'ring-[#6EE7B7]' },
-    { id: 'pink',   class: 'bg-[#FCE7F3] text-[#831843]', preview: 'bg-[#FCE7F3]', ring: 'ring-[#F472B6]' },
-    { id: 'purple', class: 'bg-[#F3E8FF] text-[#4C1D95]', preview: 'bg-[#F3E8FF]', ring: 'ring-[#D8B4FE]' },
-    { id: 'gray',   class: 'bg-[#F1F5F9] text-[#0F172A]', preview: 'bg-[#F1F5F9]', ring: 'ring-[#CBD5E1]' },
+    { id: 'yellow',  class: 'bg-yellow-100 text-yellow-900 dark:bg-yellow-900/40 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800/50', preview: 'bg-yellow-400', ring: 'ring-yellow-400' },
+    { id: 'amber',   class: 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200 border-amber-200 dark:border-amber-800/50', preview: 'bg-amber-400', ring: 'ring-amber-400' },
+    { id: 'orange',  class: 'bg-orange-100 text-orange-900 dark:bg-orange-900/40 dark:text-orange-200 border-orange-200 dark:border-orange-800/50', preview: 'bg-orange-400', ring: 'ring-orange-400' },
+    { id: 'rose',    class: 'bg-rose-100 text-rose-900 dark:bg-rose-900/40 dark:text-rose-200 border-rose-200 dark:border-rose-800/50', preview: 'bg-rose-400', ring: 'ring-rose-400' },
+    { id: 'pink',    class: 'bg-pink-100 text-pink-900 dark:bg-pink-900/40 dark:text-pink-200 border-pink-200 dark:border-pink-800/50', preview: 'bg-pink-400', ring: 'ring-pink-400' },
+    { id: 'fuchsia', class: 'bg-fuchsia-100 text-fuchsia-900 dark:bg-fuchsia-900/40 dark:text-fuchsia-200 border-fuchsia-200 dark:border-fuchsia-800/50', preview: 'bg-fuchsia-400', ring: 'ring-fuchsia-400' },
+    { id: 'purple',  class: 'bg-purple-100 text-purple-900 dark:bg-purple-900/40 dark:text-purple-200 border-purple-200 dark:border-purple-800/50', preview: 'bg-purple-400', ring: 'ring-purple-400' },
+    { id: 'violet',  class: 'bg-violet-100 text-violet-900 dark:bg-violet-900/40 dark:text-violet-200 border-violet-200 dark:border-violet-800/50', preview: 'bg-violet-400', ring: 'ring-violet-400' },
+    { id: 'indigo',  class: 'bg-indigo-100 text-indigo-900 dark:bg-indigo-900/40 dark:text-indigo-200 border-indigo-200 dark:border-indigo-800/50', preview: 'bg-indigo-400', ring: 'ring-indigo-400' },
+    { id: 'blue',    class: 'bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-200 border-blue-200 dark:border-blue-800/50', preview: 'bg-blue-400', ring: 'ring-blue-400' },
+    { id: 'sky',     class: 'bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-200 border-sky-200 dark:border-sky-800/50', preview: 'bg-sky-400', ring: 'ring-sky-400' },
+    { id: 'cyan',    class: 'bg-cyan-100 text-cyan-900 dark:bg-cyan-900/40 dark:text-cyan-200 border-cyan-200 dark:border-cyan-800/50', preview: 'bg-cyan-400', ring: 'ring-cyan-400' },
+    { id: 'teal',    class: 'bg-teal-100 text-teal-900 dark:bg-teal-900/40 dark:text-teal-200 border-teal-200 dark:border-teal-800/50', preview: 'bg-teal-400', ring: 'ring-teal-400' },
+    { id: 'emerald', class: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/50', preview: 'bg-emerald-400', ring: 'ring-emerald-400' },
+    { id: 'green',   class: 'bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-200 border-green-200 dark:border-green-800/50', preview: 'bg-green-400', ring: 'ring-green-400' },
+    { id: 'slate',   class: 'bg-slate-100 text-slate-900 dark:bg-slate-800/60 dark:text-slate-200 border-slate-200 dark:border-slate-700/50', preview: 'bg-slate-400', ring: 'ring-slate-400' },
 ];
 
 const noteFormSchema = z.object({
     title: z.string().default(""),
     content: z.string().optional().default(""),
     color: z.string().optional(),
+    notebookId: z.string().optional(),
 });
 type NoteFormData = z.infer<typeof noteFormSchema>;
 
@@ -88,12 +100,13 @@ export function NotesClient() {
     useEffect(() => {
         if (editingNote) {
             noteForm.reset({
-                title: editingNote.title || '',
-                content: (editingNote.content?.[0]?.data || ''),
+                title: editingNote.title,
+                content: editingNote.content[0]?.data || '',
                 color: editingNote.color || noteColors[0].class,
+                notebookId: editingNote.notebookId || currentFolderId || 'root'
             });
         }
-    }, [editingNote, noteForm]);
+    }, [editingNote, noteForm, currentFolderId]);
 
     // Data Helpers
     const currentFolder = useMemo(() => notebooks.find(n => n.id === currentFolderId) || null, [notebooks, currentFolderId]);
@@ -149,9 +162,10 @@ export function NotesClient() {
                 title: data.title.trim() || 'İsimsiz Not',
                 content: [{ id: '1', type: 'text' as const, data: data.content || '' }],
                 color: data.color || noteColors[0].class,
+                notebookId: data.notebookId || currentFolderId || 'root',
             };
 
-            const targetNotebookId = currentFolderId || 'root';
+            const targetNotebookId = notePayload.notebookId;
 
             if (editingNote && editingNote.id) {
                 await updateNoteInSection(editingNote.notebookId, editingNote.id, notePayload);
@@ -288,12 +302,12 @@ export function NotesClient() {
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                 <div className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full relative z-10 space-y-6">
                     
-                    <SortableContext items={dndItems} strategy={rectSortingStrategy}>
+                    <SortableContext items={dndItems} strategy={verticalListSortingStrategy}>
                         
                         {displayedFolders.length > 0 && (
                             <div className="mb-6">
                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Klasörler</h3>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                                <div className="space-y-2">
                                     {displayedFolders.map((folder, i) => (
                                         <SortableFolder 
                                             key={folder.id} 
@@ -312,7 +326,7 @@ export function NotesClient() {
                         {displayedNotes.length > 0 && (
                             <div>
                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Notlar</h3>
-                                <div className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
+                                <div className="space-y-2">
                                     {displayedNotes.map((note) => (
                                         <SortableNote 
                                             key={note.id} 
@@ -381,7 +395,12 @@ export function NotesClient() {
                             {editingNotebook ? "Klasörü Düzenle" : "Yeni Klasör"}
                         </DialogTitle>
                     </DialogHeader>
-                    <NewNotebookForm onSubmit={handleFolderSubmit} initialData={editingNotebook} />
+                    <NewNotebookForm 
+                        onSubmit={handleFolderSubmit} 
+                        initialData={editingNotebook} 
+                        availableFolders={notebooks}
+                        currentFolderId={currentFolderId}
+                    />
                 </DialogContent>
             </Dialog>
 
@@ -401,8 +420,30 @@ export function NotesClient() {
                                 <Button type="submit" variant="ghost" className="text-indigo-600 hover:bg-black/5 font-black rounded-full px-4 active:scale-95">Bitti</Button>
                             </div>
 
-                           <div className="flex-1 overflow-y-auto w-full [scrollbar-width:none]">
+                            <div className="flex-1 overflow-y-auto w-full [scrollbar-width:none]">
                                 <div className="max-w-3xl mx-auto p-5 md:p-8 flex flex-col min-h-full">
+                                    
+                                    <div className="mb-6 flex justify-end">
+                                        <FormField name="notebookId" control={noteForm.control} render={({ field }) => (
+                                            <FormItem className="w-48">
+                                                <Select onValueChange={field.onChange} defaultValue={field.value || currentFolderId || 'root'} value={field.value || currentFolderId || 'root'}>
+                                                    <FormControl>
+                                                        <SelectTrigger className="h-8 text-xs bg-slate-100/50 dark:bg-slate-800/50 border-none rounded-full px-3 text-slate-500 font-bold focus:ring-0">
+                                                            <Folder className="w-3.5 h-3.5 mr-2 opacity-50" />
+                                                            <SelectValue placeholder="Klasör seçin" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent className="z-[100]">
+                                                        <SelectItem value="root" className="font-bold">Ana Dizin</SelectItem>
+                                                        {notebooks.map(nb => (
+                                                            <SelectItem key={nb.id} value={nb.id} className="font-medium">{nb.title}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </FormItem>
+                                        )} />
+                                    </div>
+
                                      <FormField name="title" control={noteForm.control} render={({ field }) => (
                                         <FormItem className="mb-4">
                                             <FormControl>
@@ -410,7 +451,7 @@ export function NotesClient() {
                                                     {...field} 
                                                     autoFocus={!editingNote?.id}
                                                     placeholder="Başlık" 
-                                                    className="w-full text-2xl md:text-3xl font-black bg-transparent outline-none border-none p-0 placeholder:text-black/30 text-black/90" 
+                                                    className="w-full text-2xl md:text-3xl font-black bg-transparent outline-none border-none p-0 placeholder:opacity-50 text-inherit" 
                                                 />
                                             </FormControl>
                                         </FormItem>
@@ -421,7 +462,7 @@ export function NotesClient() {
                                                 <textarea 
                                                     {...field} 
                                                     placeholder="Not yazmaya başla..." 
-                                                    className="w-full h-full min-h-[50vh] bg-transparent outline-none border-none resize-none p-0 text-base md:text-lg font-medium leading-relaxed placeholder:text-black/30 text-black/80" 
+                                                    className="w-full h-full min-h-[50vh] bg-transparent outline-none border-none resize-none p-0 text-base md:text-lg font-medium leading-relaxed placeholder:opacity-50 text-inherit" 
                                                 />
                                             </FormControl>
                                         </FormItem>
@@ -473,23 +514,26 @@ function SortableFolder({ folder, index, noteCount, onClick, onEdit, onDelete }:
     const theme = notebookThemes[index % notebookThemes.length];
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} className={cn("relative group flex flex-col justify-between h-28 rounded-2xl border p-3.5 cursor-pointer transition-all active:scale-95 shadow-sm hover:shadow-md", theme.bg, theme.border)} onClick={onClick}>
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full bg-white/50" onClick={(e) => { e.stopPropagation(); onEdit(); }}><Edit className="w-3.5 h-3.5 text-slate-600" /></Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full bg-white/50" onClick={(e) => { e.stopPropagation(); onDelete(); }}><Trash2 className="w-3.5 h-3.5 text-rose-500" /></Button>
-            </div>
+        <div ref={setNodeRef} style={style} {...attributes} className={cn("relative group flex items-center justify-between h-16 rounded-2xl border px-4 cursor-pointer transition-all active:scale-95 shadow-sm hover:shadow-md", theme.bg, theme.border)} onClick={onClick}>
             
-            <div className="flex items-center justify-between mb-2">
-                <div className={cn("p-2 rounded-xl bg-white shadow-sm border border-black/5", theme.icon)}>
-                    <Folder className="w-6 h-6" strokeWidth={2.5} />
-                </div>
-                <div {...listeners} className="p-1 cursor-grab opacity-30 hover:opacity-100">
+            <div className="flex items-center gap-4 flex-1 overflow-hidden">
+                <div {...listeners} className="p-1 cursor-grab opacity-30 hover:opacity-100 shrink-0 -ml-2">
                     <GripVertical className="w-4 h-4" />
                 </div>
+                <div className={cn("p-2 rounded-xl bg-white shadow-sm border border-black/5 shrink-0", theme.icon)}>
+                    <Folder className="w-5 h-5" strokeWidth={2.5} />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <h3 className={cn("font-bold text-base leading-tight truncate", theme.text)}>{folder.title}</h3>
+                </div>
             </div>
-            <div>
-                <h3 className={cn("font-bold text-sm leading-tight truncate", theme.text)}>{folder.title}</h3>
-                <p className={cn("text-[10px] font-bold uppercase tracking-wider", theme.meta)}>{noteCount} İçerik</p>
+
+            <div className="flex items-center gap-3 shrink-0 ml-4">
+                <p className={cn("text-[11px] font-bold uppercase tracking-wider hidden sm:block", theme.meta)}>{noteCount} İçerik</p>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/50" onClick={(e) => { e.stopPropagation(); onEdit(); }}><Edit className="w-4 h-4 text-slate-600" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/50" onClick={(e) => { e.stopPropagation(); onDelete(); }}><Trash2 className="w-4 h-4 text-rose-500" /></Button>
+                </div>
             </div>
         </div>
     );
@@ -502,30 +546,57 @@ function SortableNote({ note, onEdit, onDelete }: any) {
     });
     const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, zIndex: isDragging ? 50 : 1 };
     
-    const colorClass = note.color || noteColors[0].class;
+    const colorMapping: Record<string, string> = {
+        'bg-[#FFF9C4] text-[#78600C]': 'bg-yellow-100 text-yellow-900 dark:bg-yellow-900/40 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800/50',
+        'bg-[#E0F2FE] text-[#0C4A6E]': 'bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-200 border-sky-200 dark:border-sky-800/50',
+        'bg-[#DCFCE7] text-[#064E3B]': 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/50',
+        'bg-[#FCE7F3] text-[#831843]': 'bg-pink-100 text-pink-900 dark:bg-pink-900/40 dark:text-pink-200 border-pink-200 dark:border-pink-800/50',
+        'bg-[#F3E8FF] text-[#4C1D95]': 'bg-purple-100 text-purple-900 dark:bg-purple-900/40 dark:text-purple-200 border-purple-200 dark:border-purple-800/50',
+        'bg-[#F1F5F9] text-[#0F172A]': 'bg-slate-100 text-slate-900 dark:bg-slate-800/60 dark:text-slate-200 border-slate-200 dark:border-slate-700/50',
+        'border-amber-400': 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200 border-amber-200 dark:border-amber-800/50',
+        'border-sky-400': 'bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-200 border-sky-200 dark:border-sky-800/50',
+        'border-emerald-400': 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/50',
+        'border-pink-400': 'bg-pink-100 text-pink-900 dark:bg-pink-900/40 dark:text-pink-200 border-pink-200 dark:border-pink-800/50',
+        'border-purple-400': 'bg-purple-100 text-purple-900 dark:bg-purple-900/40 dark:text-purple-200 border-purple-200 dark:border-purple-800/50',
+        'border-slate-400': 'bg-slate-100 text-slate-900 dark:bg-slate-800/60 dark:text-slate-200 border-slate-200 dark:border-slate-700/50',
+    };
+    
+    const rawColor = note.color || noteColors[0].class;
+    const mappedColor = colorMapping[rawColor] || rawColor; // Fallback to raw if not mapped
     const contentText = Array.isArray(note.content) ? (note.content.find((b: any) => b.type === 'text')?.data || '') : '';
     const plainText = typeof contentText === 'string' ? contentText.replace(/<[^>]+>/g, '') : '';
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} onClick={onEdit} className={cn("break-inside-avoid relative group flex flex-col rounded-[1.25rem] transition-all duration-200 cursor-pointer overflow-hidden p-4 shadow-sm hover:shadow-md border border-black/5 active:scale-95", colorClass)}>
+        <div ref={setNodeRef} style={style} {...attributes} onClick={onEdit} className={cn("relative group flex items-center h-[4.5rem] rounded-[1rem] transition-all duration-300 cursor-pointer overflow-hidden px-4 shadow-sm hover:shadow-md border active:scale-95 hover:-translate-y-0.5", mappedColor)}>
             
-            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div {...listeners} className="p-1 cursor-grab opacity-50 hover:opacity-100 bg-black/5 rounded-full" onClick={e=>e.stopPropagation()}><GripVertical className="w-4 h-4" /></div>
-                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-rose-100 bg-black/5" onClick={(e) => { e.stopPropagation(); onDelete(); }}><Trash2 className="w-3.5 h-3.5 text-rose-500" /></Button>
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div {...listeners} className="p-1.5 cursor-grab opacity-30 hover:opacity-100 bg-transparent shrink-0 -ml-2 rounded-full" onClick={e=>e.stopPropagation()}>
+                    <GripVertical className="w-4 h-4" />
+                </div>
+                
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <h3 className="font-bold text-[15px] leading-tight truncate">
+                        {note.title || "İsimsiz Not"}
+                    </h3>
+                    <p className="text-[13px] font-medium truncate opacity-70 mt-0.5">
+                        {plainText || "Boş not..."}
+                    </p>
+                </div>
             </div>
             
-            {note.title && (
-                <h3 className="font-black text-[15px] leading-tight mb-2 pr-10 tracking-tight opacity-90">{note.title}</h3>
-            )}
-            <div className="flex-1 overflow-hidden relative">
-                <p className={cn("text-[13px] leading-relaxed font-medium whitespace-pre-wrap opacity-75", note.title ? "line-clamp-4" : "line-clamp-6")}>{plainText || "Boş not..."}</p>
-                <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-[var(--tw-gradient-from)] to-transparent pointer-events-none" />
-            </div>
-            <div className="mt-3 pt-3 border-t border-black/5 flex items-center gap-1.5 opacity-50">
-                <CalendarClock className="w-3 h-3" />
-                <span className="text-[9px] font-black tracking-widest uppercase">
-                    {note.updatedAt ? new Date(note.updatedAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) : ''}
-                </span>
+            <div className="flex items-center gap-3 shrink-0 ml-4">
+                <div className="flex items-center gap-1.5 opacity-60 hidden sm:flex">
+                    <CalendarClock className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-bold tracking-widest uppercase">
+                        {note.updatedAt ? new Date(note.updatedAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) : ''}
+                    </span>
+                </div>
+
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/30 dark:bg-black/20 hover:bg-rose-500 hover:text-white transition-colors" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+                        <Trash2 className="w-4 h-4" />
+                    </Button>
+                </div>
             </div>
         </div>
     );
