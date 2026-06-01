@@ -24,6 +24,7 @@ import Image from 'next/image';
 import { useMemo, useRef, useState } from 'react';
 import { Combobox } from "./ui/combobox";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 // SCHEMAS & TYPES
 const bookFormSchema = z.object({
@@ -198,25 +199,6 @@ export const BookForm = ({ existingTags }: { existingTags: string[] }) => {
                 <FormItem className="pt-2">
                     <FormLabel className="text-slate-700 dark:text-slate-300 ml-1">Kategoriler / Raflar</FormLabel>
                     
-                    {/* Hızlı Kategori Seçimi (Tüm mevcut kategoriler kaydırılabilir yatay liste) */}
-                    {Object.keys(hierarchicalShelves).length > 0 && (
-                        <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide -mx-2 px-2 snap-x">
-                            {Object.entries(hierarchicalShelves).map(([main, subs]) => (
-                                <Badge
-                                    key={main}
-                                    variant="outline"
-                                    onClick={() => handleToggleTag(main)}
-                                    className={cn(
-                                        "snap-start shrink-0 rounded-xl cursor-pointer text-[13px] px-3 py-1.5 transition-colors border-slate-200 dark:border-white/10",
-                                        (field.value || []).includes(main) ? "bg-indigo-600 text-white border-transparent dark:bg-indigo-600 dark:text-white" : "bg-white dark:bg-[#1C1C1E] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#2C2C2E]"
-                                    )}
-                                >
-                                    {main}
-                                </Badge>
-                            ))}
-                        </div>
-                    )}
-
                     {/* Seçili Etiketler Çipler Halinde */}
                     <div className="flex flex-wrap gap-2 mb-2 mt-1">
                         {(field.value || []).length === 0 && (
@@ -232,21 +214,49 @@ export const BookForm = ({ existingTags }: { existingTags: string[] }) => {
                         ))}
                     </div>
 
-                    {/* Yeni Raf Ekleme Modülü */}
-                    <div className="bg-slate-100 dark:bg-[#2C2C2E] p-4 rounded-3xl mt-4 space-y-3">
-                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Kendi Rafını Oluştur</p>
-                        <div className="flex flex-col sm:flex-row gap-3">
-                            <Input
-                                placeholder="Raf Adı (örn: Felsefe, Tarih)"
-                                value={newShelfMain}
-                                onChange={(e) => setNewShelfMain(e.target.value)}
-                                className="h-12 rounded-2xl bg-white dark:bg-[#1C1C1E] border-transparent px-4 shadow-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 text-[15px]"
-                            />
-                            <Button type="button" onClick={handleAddShelf} className="h-12 rounded-2xl bg-slate-800 dark:bg-white text-white dark:text-black font-semibold w-full sm:w-auto px-6">
-                                Ekle
-                            </Button>
-                        </div>
-                    </div>
+                    <Accordion type="single" collapsible className="w-full bg-slate-100 dark:bg-[#2C2C2E] rounded-3xl mt-2 overflow-hidden px-4">
+                        <AccordionItem value="categories" className="border-b-0">
+                            <AccordionTrigger className="py-4 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:no-underline">
+                                Kategori Ekle veya Yeni Raf Oluştur
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-4">
+                                {/* Tüm mevcut kategoriler */}
+                                {Object.keys(hierarchicalShelves).length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                        {Object.entries(hierarchicalShelves).map(([main, subs]) => (
+                                            <Badge
+                                                key={main}
+                                                variant="outline"
+                                                onClick={() => handleToggleTag(main)}
+                                                className={cn(
+                                                    "shrink-0 rounded-xl cursor-pointer text-[13px] px-3 py-1.5 transition-colors border-slate-200 dark:border-white/10",
+                                                    (field.value || []).includes(main) ? "bg-indigo-600 text-white border-transparent dark:bg-indigo-600 dark:text-white" : "bg-white dark:bg-[#1C1C1E] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#2C2C2E]"
+                                                )}
+                                            >
+                                                {main}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
+                                
+                                {/* Yeni Raf Ekleme Modülü */}
+                                <div className="space-y-2 pt-4 border-t border-slate-200 dark:border-white/10">
+                                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Yeni Raf Oluştur</p>
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <Input
+                                            placeholder="Raf Adı (örn: Felsefe, Tarih)"
+                                            value={newShelfMain}
+                                            onChange={(e) => setNewShelfMain(e.target.value)}
+                                            className="h-12 rounded-2xl bg-white dark:bg-[#1C1C1E] border-transparent px-4 shadow-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 text-[15px]"
+                                        />
+                                        <Button type="button" onClick={handleAddShelf} className="h-12 rounded-2xl bg-slate-800 dark:bg-white text-white dark:text-black font-semibold w-full sm:w-auto px-6">
+                                            Ekle
+                                        </Button>
+                                    </div>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
 
                     <FormMessage className="ml-1" />
                 </FormItem>
