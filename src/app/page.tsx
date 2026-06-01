@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewFamilyMemberForm } from "@/components/new-family-member-form";
 import { EditFamilyMemberForm } from "@/components/edit-family-member-form";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, onStudyPlansUpdate, addBookToMemberLibrary, onMemorizationItemsUpdate, onMemorizationProgressUpdate, onPrayerProgressUpdate, onVideosUpdate, onReadingSessionsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
+import { onShoppingListsUpdate, onMealPlanUpdate, onCalendarEventsUpdate, onTasksUpdate, onUserLibrariesUpdate, onBooksUpdate, onTestsUpdate, onStudyAssignmentsUpdate, onGoalsUpdate, updateGoal, onStudyPlansUpdate, addBookToMemberLibrary, onMemorizationItemsUpdate, onMemorizationProgressUpdate, onPrayerProgressUpdate, onVideosUpdate, onReadingSessionsUpdate, onTrackedBooksUpdate, updateBook, updateTags, onTagsUpdate } from "@/lib/dataService";
 import { format, isWithinInterval, startOfMonth, endOfMonth, parseISO, compareAsc, isFuture, differenceInDays, isToday, startOfWeek, endOfWeek, addDays, subMonths, addMonths } from "date-fns";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -35,6 +35,8 @@ import { Input } from '@/components/ui/input';
 import { MemberDashboardCard } from "@/components/member-dashboard-card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { FormProvider } from "react-hook-form";
+import { BookForm, BookFormData } from "@/components/new-book-form";
 
 // --- TASARIM SİSTEMİ: DİNAMİK TEMA SINIFLARI ---
 const themeClasses = {
@@ -51,6 +53,20 @@ const themeClasses = {
 
 const progressFormSchema = z.object({
   progress: z.coerce.number().min(1, "En az 1 birim ilerleme girilmelidir."),
+});
+
+const bookFormSchema = z.object({
+  title: z.string().min(2, "Kitap adı en az 2 karakter olmalıdır."),
+  author: z.string().optional(),
+  pageCount: z.preprocess(
+    (val) => (val === "" || val === null ? undefined : val),
+    z.coerce.number().min(1, "Sayfa sayısı pozitif bir sayı olmalı.").optional()
+  ),
+  isForChildren: z.boolean().default(false),
+  image: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  description: z.string().optional(),
+  rating: z.number().optional(),
 });
 
 export default function Home() {
@@ -85,11 +101,15 @@ export default function Home() {
   const [isAddBookDialogOpen, setIsAddBookDialogOpen] = React.useState(false);
   const [editingBook, setEditingBook] = React.useState<Book | null>(null);
   const [editingGoal, setEditingGoal] = React.useState<{ goal: Goal; section: GoalSection } | null>(null);
+  const [allTags, setAllTags] = React.useState<string[]>([]);
+  const [isSubmittingBook, setIsSubmittingBook] = React.useState(false);
 
   const progressForm = useForm<z.infer<typeof progressFormSchema>>({
       resolver: zodResolver(progressFormSchema),
       defaultValues: { progress: '' as any },
   });
+
+  const bookFormMethods = useForm<BookFormData>({ resolver: zodResolver(bookFormSchema) });
 
   React.useEffect(() => {
       if (familyMembers.length > 0 && !activeMemberId) {
@@ -121,12 +141,13 @@ export default function Home() {
       const unsubSessions = onReadingSessionsUpdate(setReadingSessions);
       const unsubLibraries = onUserLibrariesUpdate(familyId, setUserLibraries);
       const unsubTrackedBooks = onTrackedBooksUpdate(setTrackedBooks);
+      const unsubTags = onTagsUpdate(setAllTags);
 
       return () => {
           unsubShopping(); unsubMeal(); unsubCalendar(); unsubTasks(); unsubTests();
           unsubStudyAssignments(); unsubStudyPlans(); unsubLibraries(); unsubBooks();
           unsubVideos(); unsubGoals(); unsubMemorizationItems(); unsubMemorizationProgress();
-          unsubPrayerProgress(); unsubSessions(); unsubTrackedBooks();
+          unsubPrayerProgress(); unsubSessions(); unsubTrackedBooks(); unsubTags();
       };
   }, [familyId]);
 
@@ -205,7 +226,42 @@ export default function Home() {
   const activeMember = familyMembers.find(m => m.id === activeMemberId) || familyMembers[0];
   const upcomingDays = React.useMemo(() => Array.from({ length: 7 }).map((_, i) => addDays(new Date(), i)), []);
 
-  const handleOpenEditDialog = (bookToEdit: Book) => { setEditingBook(bookToEdit); setIsAddBookDialogOpen(true); };
+  const handleOpenEditDialog = (bookToEdit: Book) => { 
+      setEditingBook(bookToEdit); 
+      bookFormMethods.reset({
+        title: bookToEdit.title,
+        author: bookToEdit.author,
+        pageCount: bookToEdit.pageCount,
+        image: bookToEdit.image,
+        isForChildren: bookToEdit.isForChildren,
+        tags: bookToEdit.tags || [],
+        description: bookToEdit.description || '',
+        rating: bookToEdit.rating || 0,
+      });
+      setIsAddBookDialogOpen(true); 
+  };
+  
+  const handleUpdateBook = async (formData: BookFormData) => {
+      if (!editingBook) return;
+      setIsSubmittingBook(true);
+      try {
+          const bookData: any = { ...formData };
+          if (bookData.pageCount === undefined) delete bookData.pageCount;
+          
+          const newTags = new Set([...allTags, ...(bookData.tags || [])]);
+          await updateTags(Array.from(newTags));
+          await updateBook(editingBook.id, bookData);
+          
+          toast({ title: "Başarılı", description: "Kitap güncellendi.", className: "bg-emerald-100 text-emerald-800" });
+          setIsAddBookDialogOpen(false);
+          setEditingBook(null);
+      } catch (e) {
+          toast({ title: "Hata", description: "Güncellenirken bir sorun oluştu", variant: 'destructive' });
+      } finally {
+          setIsSubmittingBook(false);
+      }
+  };
+
   const handleAddToLibrary = async (bookId: string, memberId: string) => {
       if (!familyId) return;
       try {
@@ -661,6 +717,29 @@ export default function Home() {
                   </div>
               </section>
           </div>
+
+          {/* DÜZENLEME MODALI */}
+          <Dialog open={isAddBookDialogOpen} onOpenChange={(open) => { setIsAddBookDialogOpen(open); if(!open) setEditingBook(null); }}>
+            <DialogContent className="sm:max-w-lg flex flex-col h-full max-h-[90vh] bg-white dark:bg-slate-900 rounded-3xl overflow-hidden p-0">
+                <FormProvider {...bookFormMethods}>
+                  <form onSubmit={bookFormMethods.handleSubmit(handleUpdateBook)} className="flex-1 flex flex-col min-h-0 h-full">
+                    <DialogHeader className="p-6 pb-2 border-b border-slate-100 dark:border-slate-800">
+                        <DialogTitle>Kitabı Düzenle</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-y-auto p-6">
+                        <BookForm existingTags={allTags} />
+                    </div>
+                    <DialogFooter className="p-4 border-t border-slate-100 dark:border-slate-800 flex-shrink-0 flex flex-col sm:flex-row gap-3">
+                        <Button variant="outline" type="button" className="w-full sm:w-auto h-12 sm:h-10 rounded-xl" onClick={() => setIsAddBookDialogOpen(false)} disabled={isSubmittingBook}>İptal</Button>
+                        <Button type="submit" className="w-full sm:w-auto h-12 sm:h-10 rounded-xl" disabled={isSubmittingBook}>
+                            {isSubmittingBook && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Kaydet
+                        </Button>
+                    </DialogFooter>
+                  </form>
+                </FormProvider>
+            </DialogContent>
+          </Dialog>
 
           {/* --- Dialoglar (Mobilde Alt Taraftan Çıkan Sheet Gibi Kullanılabilir ama Dialog Olarak Tutuldu) --- */}
           <Dialog open={isMemberFormOpen} onOpenChange={setIsMemberFormOpen}>

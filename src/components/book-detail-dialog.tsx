@@ -33,7 +33,7 @@ export function BookDetailDialog({ book, isOpen, onOpenChange, onEdit, onAddToLi
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[625px] max-h-[90vh] flex flex-col p-0 sm:p-6">
+      <DialogContent className="w-[95vw] sm:max-w-[625px] max-h-[85vh] sm:max-h-[90vh] rounded-3xl overflow-hidden flex flex-col p-0 sm:p-6">
         <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 flex-grow min-h-0">
           <div className="hidden sm:block">
             <Image
@@ -47,16 +47,18 @@ export function BookDetailDialog({ book, isOpen, onOpenChange, onEdit, onAddToLi
           </div>
           <div className="flex flex-col p-0 sm:p-0 flex-grow min-h-0">
              <ScrollArea className="flex-grow">
-                <div className="p-6 sm:pr-0">
-                    <div className="sm:hidden mb-4">
-                        <Image
-                        src={book.image || 'https://placehold.co/300x450.png'}
-                        alt={book.title}
-                        width={300}
-                        height={450}
-                        className="w-full h-auto object-cover rounded-md aspect-[2/3]"
-                        data-ai-hint="book cover"
-                        />
+                <div className="p-6 pt-10 sm:pt-0 sm:pr-0">
+                    <div className="sm:hidden flex justify-center mb-6">
+                        <div className="relative w-32 shadow-xl rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800">
+                          <Image
+                          src={book.image || 'https://placehold.co/300x450.png'}
+                          alt={book.title}
+                          width={150}
+                          height={225}
+                          className="w-full h-auto object-cover aspect-[2/3]"
+                          data-ai-hint="book cover"
+                          />
+                        </div>
                     </div>
                     <DialogHeader>
                     <Badge variant="secondary" className="w-fit mb-2">Kitap</Badge>
@@ -78,16 +80,16 @@ export function BookDetailDialog({ book, isOpen, onOpenChange, onEdit, onAddToLi
                     </div>
                 </div>
             </ScrollArea>
-             <DialogFooter className="mt-auto p-6 sm:p-0 sm:pt-4 sm:justify-start gap-2 flex-shrink-0 border-t sm:border-0">
+             <DialogFooter className="mt-auto p-4 sm:p-0 sm:pt-4 flex flex-col sm:flex-row gap-3 flex-shrink-0 border-t border-slate-100 dark:border-slate-800 sm:border-0 bg-slate-50 dark:bg-slate-900 sm:bg-transparent">
               {onEdit && (
-                 <Button variant="outline" onClick={handleEditClick}>
+                 <Button variant="outline" className="w-full sm:w-auto h-12 sm:h-10 rounded-xl" onClick={handleEditClick}>
                     <Edit className="mr-2 h-4 w-4"/> Düzenle
                 </Button>
               )}
                {onAddToLibrary && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button>
+                    <Button className="w-full sm:w-auto h-12 sm:h-10 rounded-xl shadow-md">
                       <UserPlus className="mr-2 h-4 w-4"/> Kitaplığıma Ekle
                     </Button>
                   </DropdownMenuTrigger>
