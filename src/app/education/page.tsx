@@ -8,7 +8,7 @@ import {
   Layers, PieChart, GraduationCap, AlertCircle, Timer, 
   BookOpen, ChevronDown, ChevronRight, Check, Sparkles, TrendingUp, 
   TrendingDown, PlayCircle, CalendarClock, Target, BarChart,
-  User, Settings, ScrollText, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, FileText, ClipboardList, ListTree
+  User, Settings, ScrollText, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, FileText, ClipboardList, ListTree, LayoutGrid, CalendarDays
 } from "lucide-react";
 
 import { Test, StudyAssignment, StudyPlan, TrackedBook } from "@/lib/data";
@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { onTestsUpdate, onStudyAssignmentsUpdate, onStudyPlansUpdate, onTrackedBooksUpdate, updateStudyAssignment } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
-import { parse, isPast, isToday, differenceInDays } from 'date-fns';
+import { parse, isPast, isToday, differenceInDays, startOfWeek, addDays, isSameDay, format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -117,6 +117,7 @@ export default function EducationPage() {
   const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([]);
   const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
   const [expandedBooks, setExpandedBooks] = React.useState<Set<string>>(new Set());
+  const [todoViewMode, setTodoViewMode] = React.useState<'list' | 'week'>('list');
 
   const studentMembers = React.useMemo(() =>
     familyMembers.filter(m => m.role.includes('Çocuk')), [familyMembers]);
@@ -158,14 +159,14 @@ export default function EducationPage() {
       .sort((a, b) => (b.total - b.completed) - (a.total - a.completed));
   }, [assignments, studyPlans]);
 
-  const groupedPendingTests = React.useMemo(() => {
-    const groups: Record<string, Test[]> = {};
-    tests.filter(t => t.status === 'Atandı').forEach(t => {
-      const cat = getCategoryName(t);
-      if (!groups[cat]) groups[cat] = [];
-      groups[cat].push(t);
-    });
-    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  const pendingTests = React.useMemo(() => {
+    return tests
+      .filter(t => t.status === 'Atandı')
+      .sort((a, b) => {
+        const dateA = new Date(parse(a.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr })).getTime();
+        const dateB = new Date(parse(b.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr })).getTime();
+        return dateA - dateB;
+      });
   }, [tests]);
 
   const focusTask = React.useMemo(() => {
@@ -438,7 +439,7 @@ export default function EducationPage() {
             </Link>
         </section>
 
-        {groupedPendingTests.length > 0 && (
+        {pendingTests.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-5 px-1">
               <div className="flex items-center gap-2">
@@ -446,51 +447,148 @@ export default function EducationPage() {
                     <Layers className="w-4 h-4" />
                 </div>
                 <h2 className="text-xl font-black text-slate-900 dark:text-white">Yapılacaklar</h2>
+                <span className="hidden sm:inline-flex text-[10px] font-black px-3 py-1 ml-2 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800 uppercase tracking-widest">
+                  {pendingTests.length} Görev
+                </span>
               </div>
-              <span className="text-[10px] font-black px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800 uppercase tracking-widest">
-                {groupedPendingTests.reduce((s, [, t]) => s + t.length, 0)} Görev
-              </span>
+              
+              <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex items-center shadow-inner">
+                <button 
+                  onClick={() => setTodoViewMode('list')}
+                  className={cn("px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5", todoViewMode === 'list' ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" /> Liste
+                </button>
+                <button 
+                  onClick={() => setTodoViewMode('week')}
+                  className={cn("px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5", todoViewMode === 'week' ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}
+                >
+                  <CalendarDays className="w-3.5 h-3.5" /> Hafta
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-              {groupedPendingTests.map(([category, categoryTests]) => {
+            
+            {todoViewMode === 'week' ? (
+              <div className="overflow-x-auto pb-4 hide-scrollbar snap-x snap-mandatory">
+                <div className="flex gap-4 min-w-max">
+                  {Array.from({length: 7}).map((_, i) => {
+                    const currentDay = addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), i);
+                    const isDayToday = isToday(currentDay);
+                    
+                    const dayTasks = pendingTests.filter(t => {
+                      const tDate = parse(t.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                      
+                      // For Today, include tasks strictly due today OR tasks that are overdue
+                      if (isDayToday) {
+                        return isSameDay(tDate, currentDay) || (isPast(tDate) && !isToday(tDate));
+                      }
+                      
+                      return isSameDay(tDate, currentDay);
+                    });
+
+                    return (
+                      <div key={i} className={cn("w-72 flex-shrink-0 snap-center rounded-3xl p-4 border bg-slate-50/50 dark:bg-slate-900/50", isDayToday ? "border-indigo-300 dark:border-indigo-700 bg-indigo-50/30 dark:bg-indigo-900/10 shadow-sm" : "border-slate-200 dark:border-slate-800")}>
+                        <div className="flex items-center justify-between mb-4 px-1">
+                          <div>
+                            <p className={cn("text-sm font-black", isDayToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-slate-200")}>
+                              {format(currentDay, 'EEEE', { locale: tr })}
+                            </p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
+                              {format(currentDay, 'd MMMM', { locale: tr })}
+                            </p>
+                          </div>
+                          {isDayToday && <Badge className="bg-indigo-500 text-white border-none text-[9px] uppercase tracking-wider px-2 py-0.5">Bugün</Badge>}
+                        </div>
+                        
+                        <div className="space-y-3">
+                          {dayTasks.length > 0 ? dayTasks.map(test => {
+                            const category = getCategoryName(test);
+                            const theme = categoryThemes[category] || categoryThemes['Diğer'];
+                            const Icon = theme.icon;
+                            const tDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                            const overdue = isPast(tDate) && !isToday(tDate);
+                            const duration = test.durationMinutes || Math.ceil(test.questionCount * 1.5);
+                            
+                            return (
+                              <Link href={`/education/${test.id}`} key={test.id} className="block group">
+                                <div className={cn("bg-white dark:bg-slate-950 rounded-2xl p-3.5 border transition-all shadow-sm hover:shadow-md", theme.border, isDayToday && overdue ? "border-rose-300 dark:border-rose-800 bg-rose-50/30 dark:bg-rose-950/20" : "")}>
+                                  <div className="flex items-start justify-between mb-2 gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-1.5 mb-1">
+                                        <div className={cn("w-1.5 h-1.5 rounded-full", theme.accent)} />
+                                        <span className={cn("text-[9px] font-black uppercase tracking-widest truncate", theme.text)}>{category}</span>
+                                      </div>
+                                      <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight">{test.title}</h4>
+                                    </div>
+                                    <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border bg-white dark:bg-slate-900", theme.border)}>
+                                      <Icon className={cn("w-4 h-4", theme.text)} />
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                    <div className="flex gap-2">
+                                      <span className="text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{test.questionCount} Soru</span>
+                                      <span className="text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{duration} dk</span>
+                                    </div>
+                                    {isDayToday && overdue && <span className="text-[9px] font-black text-rose-500 uppercase animate-pulse">Gecikti</span>}
+                                  </div>
+                                </div>
+                              </Link>
+                            )
+                          }) : (
+                            <div className="h-24 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-slate-400 gap-1 opacity-50">
+                              <CheckCircle2 className="w-5 h-5" />
+                              <span className="text-[10px] font-bold uppercase tracking-widest">Görev Yok</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {pendingTests.map(test => {
+                const category = getCategoryName(test);
                 const theme = categoryThemes[category] || categoryThemes['Diğer'];
                 const Icon = theme.icon;
-
-                return categoryTests.map(test => {
-                  const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
                   const overdue = isPast(dueDate) && !isToday(dueDate);
                   const dueToday = isToday(dueDate);
                   const daysDiff = differenceInDays(dueDate, new Date());
                   const duration = test.durationMinutes || Math.ceil(test.questionCount * 1.5);
 
                   return (
-                    <div key={test.id} className={cn("relative overflow-hidden rounded-[2rem] p-5 border transition-all duration-300 group flex flex-col justify-between bg-white dark:bg-slate-900 shadow-sm hover:shadow-xl hover:-translate-y-1", theme.border)}>
-                      <div className={cn("absolute top-0 left-0 w-full h-1", theme.accent)} />
+                    <div key={test.id} className={cn("relative overflow-hidden rounded-[2rem] p-5 border-2 transition-all duration-300 group flex flex-col justify-between shadow-sm hover:shadow-xl hover:-translate-y-1", theme.border, theme.bg)}>
+                      <div className={cn("absolute top-0 left-0 w-full h-1.5", theme.accent)} />
                       <div className="relative z-10">
                         <div className="flex justify-between items-start mb-4">
-                           <div className="flex flex-col gap-1">
+                           <div className="flex flex-col gap-1.5">
                                 <div className="flex items-center gap-2">
-                                    <div className={cn("w-2 h-2 rounded-full", theme.accent)} />
+                                    <div className={cn("w-2.5 h-2.5 rounded-full", theme.accent)} />
                                     <span className={cn("text-[10px] font-black uppercase tracking-widest", theme.text)}>{category}</span>
                                 </div>
                                 <h3 className={cn("text-lg font-bold leading-tight line-clamp-2 pr-4 text-slate-800 dark:text-slate-100")}>{test.title}</h3>
                            </div>
-                           <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border", theme.bg, theme.border)}>
-                               <Icon className={cn("w-5 h-5", theme.text)} />
+                           <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border-2 bg-white dark:bg-slate-900", theme.border)}>
+                               <Icon className={cn("w-6 h-6", theme.text)} />
                            </div>
                         </div>
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                                <CalendarIcon className="w-3.5 h-3.5" />
-                                <span className="text-[11px] font-bold">{test.dueDate}</span>
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-800/50 text-slate-600 dark:text-slate-300">
+                                <CalendarIcon className="w-4 h-4" />
+                                <span className="text-xs font-bold">{test.dueDate}</span>
                             </div>
                             {overdue ? (
-                                <Badge className="bg-rose-500 text-white text-[10px] font-black uppercase px-2 h-6 border-none">Gecikti</Badge>
+                                <Badge className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-black px-3 py-1.5 shadow-md shadow-rose-500/20 border-none animate-pulse">Gecikti!</Badge>
                             ) : dueToday ? (
-                                <Badge className="bg-amber-500 text-white text-[10px] font-black uppercase px-2 h-6 border-none">Bugün</Badge>
+                                <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-black px-3 py-1.5 shadow-md shadow-amber-500/20 border-none animate-pulse">Bugün Son</Badge>
+                            ) : daysDiff <= 2 ? (
+                                <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-black px-3 py-1.5 shadow-md shadow-orange-500/20 border-none">{daysDiff + 1} Gün Kaldı</Badge>
                             ) : (
-                                <span className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">{daysDiff + 1} gün kaldı</span>
+                                <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black px-3 py-1.5 shadow-sm border-none">{daysDiff + 1} Gün Kaldı</Badge>
                             )}
                         </div>
                       </div>
@@ -514,9 +612,9 @@ export default function EducationPage() {
                       </div>
                     </div>
                   );
-                });
               })}
             </div>
+            )}
           </section>
         )}
 
@@ -623,7 +721,7 @@ export default function EducationPage() {
           </section>
         )}
 
-        {groupedPendingTests.length === 0 && assignmentsByBook.length === 0 && (
+        {pendingTests.length === 0 && assignmentsByBook.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 text-center bg-white dark:bg-[#1E293B] rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed">
             <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
               <CheckCircle2 className="w-8 h-8 text-emerald-500" />

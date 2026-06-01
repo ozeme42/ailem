@@ -728,9 +728,10 @@ export function StatsClient() {
             <div className="hidden sm:flex w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 items-center justify-center shadow-lg shadow-indigo-500/25">
               <GraduationCap className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <h1 className="text-lg font-extrabold leading-tight text-slate-900 dark:text-white">{student?.name || 'Öğrenci'}</h1>
-              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Performans Analizi</p>
+            <div className="flex flex-row items-center gap-1.5 sm:gap-2">
+              <h1 className="text-sm sm:text-lg font-extrabold leading-none text-slate-900 dark:text-white truncate max-w-[110px] sm:max-w-none">{student?.name || 'Öğrenci'}</h1>
+              <span className="text-slate-300 dark:text-slate-600 opacity-50">•</span>
+              <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap mt-0.5">Performans Analizi</p>
             </div>
           </div>
           
@@ -822,7 +823,7 @@ export function StatsClient() {
 
         {/* TABS MENU */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 h-auto grid grid-cols-1 sm:grid-cols-3 lg:flex lg:flex-wrap gap-1.5 w-full shadow-sm">
+          <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 h-auto grid grid-cols-3 lg:flex lg:flex-wrap gap-1.5 w-full shadow-sm">
             {[
               { id: 'overview',    label: 'Genel Bakış', icon: Activity },
               { id: 'analysis',    label: 'Analizler',   icon: Search },
@@ -1439,13 +1440,17 @@ export function StatsClient() {
                         </div>
                     )}
 
-                    {skillTreeData.map((subj, i) => (
-                        <div key={i} className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200/70 dark:border-slate-800 p-6">
-                            <h3 className="font-extrabold text-lg text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                <BookOpen className="w-5 h-5 text-indigo-500" /> {subj.subject}
-                            </h3>
-                            <div className="flex flex-wrap gap-3 sm:gap-4">
-                                {subj.topics.map((t, j) => {
+                    <Accordion type="multiple" className="space-y-6">
+                        {skillTreeData.map((subj, i) => (
+                            <AccordionItem key={i} value={`subject-${i}`} className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200/70 dark:border-slate-800 overflow-hidden shadow-sm">
+                                <AccordionTrigger className="px-6 py-5 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                    <div className="font-extrabold text-lg text-slate-800 dark:text-slate-100 flex items-center gap-2 m-0">
+                                        <BookOpen className="w-5 h-5 text-indigo-500" /> {subj.subject}
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="px-6 pb-6 pt-2">
+                                    <div className="flex flex-wrap gap-3 sm:gap-4">
+                                        {subj.topics.map((t, j) => {
                                     const isMaster = t.successRate >= 70;
                                     const isLearning = t.successRate > 0 && t.successRate < 70;
                                     
@@ -1475,9 +1480,11 @@ export function StatsClient() {
                                         </div>
                                     )
                                 })}
-                            </div>
-                        </div>
-                    ))}
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
                 </div>
               
                 </TabsContent>
