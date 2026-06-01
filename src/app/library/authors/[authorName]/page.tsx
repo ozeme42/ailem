@@ -56,7 +56,7 @@ export default function AuthorBooksPage() {
       setBooks(allBooks.filter(book => book.author === authorName));
       setLoading(false);
     });
-    const unsubscribeTags = onTagsUpdate(setAllTags);
+    const unsubscribeTags = onTagsUpdate("libraryTags", setAllTags);
     return () => {
         unsubscribeBooks();
         unsubscribeTags();

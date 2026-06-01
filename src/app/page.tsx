@@ -141,7 +141,7 @@ export default function Home() {
       const unsubSessions = onReadingSessionsUpdate(setReadingSessions);
       const unsubLibraries = onUserLibrariesUpdate(familyId, setUserLibraries);
       const unsubTrackedBooks = onTrackedBooksUpdate(setTrackedBooks);
-      const unsubTags = onTagsUpdate(setAllTags);
+      const unsubTags = onTagsUpdate("libraryTags", setAllTags);
 
       return () => {
           unsubShopping(); unsubMeal(); unsubCalendar(); unsubTasks(); unsubTests();

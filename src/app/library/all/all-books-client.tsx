@@ -69,7 +69,7 @@ export function AllBooksClient() {
       setBooks(allBooks);
       setLoading(false);
     });
-    const unsubscribeTags = onTagsUpdate(setAllTags);
+    const unsubscribeTags = onTagsUpdate("libraryTags", setAllTags);
     return () => {
         unsubscribeBooks();
         unsubscribeTags();
