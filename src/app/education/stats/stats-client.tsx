@@ -815,16 +815,11 @@ export function StatsClient() {
 
         {/* TABS MENU */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 h-auto grid grid-cols-2 sm:grid-cols-4 lg:flex lg:flex-wrap gap-1.5 w-full shadow-sm">
+          <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 h-auto grid grid-cols-1 sm:grid-cols-3 lg:flex lg:flex-wrap gap-1.5 w-full shadow-sm">
             {[
               { id: 'overview',    label: 'Genel Bakış', icon: Activity },
-              { id: 'skill-tree',  label: 'Yetenek Ağacı',icon: Network },
-              { id: 'subjects',    label: 'Dersler',     icon: BookOpen },
-              { id: 'topics',      label: 'Konular',     icon: Target },
-              { id: 'compare',     label: 'Karşılaştır', icon: GitCompareArrows },
-              { id: 'habits',      label: 'Çalışma',     icon: Clock },
-              { id: 'goals',       label: 'Hedefler',    icon: Flag },
-              { id: 'activity',    label: 'Aktivite',    icon: Flame },
+              { id: 'analysis',    label: 'Analizler',   icon: Search },
+              { id: 'progress',    label: 'Yetenek & Hedef', icon: Target },
             ].map(tab => (
               <TabsTrigger key={tab.id} value={tab.id} className={cn(
                 'flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all w-full lg:w-auto',
@@ -844,8 +839,10 @@ export function StatsClient() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              {/* 1. OVERVIEW (GENEL BAKIŞ) */}
+              
+              {/* 1. GENEL BAKIŞ */}
               <TabsContent value="overview" className="space-y-6 mt-6">
+                
                 
                 {/* YAPAY ZEKA VE AKILLI İÇGÖRÜLER */}
                 {kpis.testCount > 0 && (
@@ -976,102 +973,49 @@ export function StatsClient() {
                     </div>
                   </div>
                 </div>
-              </TabsContent>
-
-              {/* 2. YETENEK AĞACI (SKILL TREE) */}
-              <TabsContent value="skill-tree" className="space-y-6 mt-6">
-                <div className="bg-indigo-600 rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-8 text-white shadow-lg shadow-indigo-600/20 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-                  <div className="relative z-10 flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/20">
-                        <Network className="w-8 h-8 text-white" />
-                    </div>
-                    <div>
-                        <h2 className="text-2xl font-black mb-1">Yetenek Ağacı</h2>
-                        <p className="text-indigo-100 text-sm font-medium">Konu kilitlerini aç, ustalığını ilerlet! Renkler konu hakimiyetini gösterir.</p>
-                    </div>
-                  </div>
-                  <div className="relative z-10 flex flex-wrap items-center gap-3 sm:gap-6 mt-6 text-xs sm:text-sm font-bold bg-black/20 p-3 rounded-2xl w-full sm:w-max backdrop-blur-md">
-                      <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-slate-300" /> Başlanmadı</div>
-                      <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500" /> Öğreniliyor (%0-69)</div>
-                      <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-500" /> Usta (%70+)</div>
-                  </div>
+              
+                <div className="pt-6 mt-6 border-t border-slate-200 dark:border-slate-800">
+                  <h2 className="text-xl font-bold mb-4">Aktivite Geçmişi</h2>
+                  
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {[
+                    { icon: Flame,    value: streakData.current, label: 'Mevcut Seri',      color: C.ROSE },
+                    { icon: Trophy,   value: streakData.longest, label: 'En Uzun Seri',     color: C.AMBER },
+                    { icon: Calendar, value: new Set(enrichedBaseData.map(t => format(t._solvedDate, 'yyyy-MM-dd'))).size, label: 'Toplam Aktif Gün', color: C.INDIGO },
+                  ].map((item, i) => <KpiCard key={i} icon={item.icon} value={item.value} label={item.label} color={item.color} />)}
                 </div>
 
-                <div className="space-y-6">
-                    {/* ÖNCELİKLİ EKSİKLER BÖLÜMÜ */}
-                    {topicStats.worst.length > 0 && (
-                        <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/50 rounded-[2rem] p-6 mb-8">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center">
-                                    <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
-                                </div>
-                                <div>
-                                    <h3 className="font-extrabold text-rose-700 dark:text-rose-400 text-lg">Öncelikli Eksikler</h3>
-                                    <p className="text-xs font-semibold text-rose-600/70 dark:text-rose-400/70">Puanını hızlı artırmak için önce bu konulara odaklanmalısın.</p>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                {topicStats.worst.slice(0, 3).map((t, j) => (
-                                    <div key={j} className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.subject}</p>
-                                            <p className="font-bold text-slate-800 dark:text-slate-100 text-sm line-clamp-2 leading-tight">{t.topic}</p>
-                                        </div>
-                                        <div className="mt-4 flex items-center justify-between">
-                                            <span className="text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-950/50 px-2 py-1 rounded-md">Başarı: %{t.successRate.toFixed(0)}</span>
-                                            <span className="text-[10px] font-semibold text-slate-500">{t.total} Soru</span>
-                                        </div>
+                <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200/70 dark:border-slate-800 shadow-sm p-8 mt-6">
+                    <SectionHeader icon={Activity} title="Son 30 Gün Aktivite Isı Haritası" desc="Her kutucuk bir günü temsil eder. Renk koyulaştıkça o gün çözülen soru sayısı artar." color={C.EMERALD} />
+                    <div className="flex flex-wrap gap-3 mt-6 max-w-4xl">
+                        {activityHeatmap.map((day, i) => {
+                            let bgClass = "bg-slate-100 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700"; 
+                            if (day.count > 0 && day.count <= 20) bgClass = "bg-emerald-200 border-emerald-300 dark:bg-emerald-900/60 dark:border-emerald-800";
+                            else if (day.count > 20 && day.count <= 50) bgClass = "bg-emerald-300 border-emerald-400 dark:bg-emerald-700/80 dark:border-emerald-600";
+                            else if (day.count > 50 && day.count <= 100) bgClass = "bg-emerald-400 border-emerald-500 dark:bg-emerald-600 dark:border-emerald-500";
+                            else if (day.count > 100) bgClass = "bg-emerald-500 border-emerald-600 dark:bg-emerald-500 dark:border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.4)]";
+
+                            return (
+                                <div 
+                                    key={i} 
+                                    title={`${format(day.date, 'dd MMM yyyy', {locale: tr})}: ${day.count} Soru`}
+                                    className={cn("w-7 h-7 rounded-[8px] border transition-all hover:scale-125 cursor-pointer relative group", bgClass)}
+                                >
+                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-[10px] font-bold py-1 px-2 rounded-lg whitespace-nowrap pointer-events-none z-50">
+                                        {format(day.date, 'dd MMM', {locale: tr})} <br/> {day.count} Soru
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {skillTreeData.map((subj, i) => (
-                        <div key={i} className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200/70 dark:border-slate-800 p-6">
-                            <h3 className="font-extrabold text-lg text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                <BookOpen className="w-5 h-5 text-indigo-500" /> {subj.subject}
-                            </h3>
-                            <div className="flex flex-wrap gap-3 sm:gap-4">
-                                {subj.topics.map((t, j) => {
-                                    const isMaster = t.successRate >= 70;
-                                    const isLearning = t.successRate > 0 && t.successRate < 70;
-                                    
-                                    let nodeColor = "bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-500";
-                                    if (isMaster) nodeColor = "bg-emerald-50 border-emerald-500 text-emerald-600 dark:bg-emerald-950/50";
-                                    else if (isLearning) nodeColor = "bg-amber-50 border-amber-500 text-amber-600 dark:bg-amber-950/50";
-
-                                    return (
-                                        <div key={j} className={cn(
-                                            "relative group flex items-center gap-3 p-3 sm:p-4 rounded-2xl border-2 transition-all duration-300 w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.67rem)]",
-                                            nodeColor,
-                                            "hover:shadow-md cursor-help"
-                                        )}>
-                                            <div className="shrink-0 w-10 h-10 rounded-xl bg-white dark:bg-slate-900 flex items-center justify-center font-black shadow-sm">
-                                                {isMaster ? <CheckCircle2 className="w-5 h-5" /> : isLearning ? <Activity className="w-4 h-4" /> : <Minus className="w-4 h-4 text-slate-300" />}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 leading-tight truncate">
-                                                    {t.topic}
-                                                </p>
-                                                {t.total > 0 && (
-                                                    <p className="text-[10px] font-semibold mt-1">
-                                                        %{t.successRate.toFixed(0)} Başarı <span className="opacity-50">({t.total} Soru)</span>
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    ))}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+              
                 </div>
               </TabsContent>
 
-              {/* 3. SUBJECTS (DERSLER) */}
-              <TabsContent value="subjects" className="space-y-6 mt-6">
+              {/* 2. ANALİZLER */}
+              <TabsContent value="analysis" className="space-y-6 mt-6">
+                
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-6">
                         <SectionHeader icon={Target} title="Ders Yatkınlığı" desc="Radar – Başarı dengesi" color={C.INDIGO} />
@@ -1160,10 +1104,9 @@ export function StatsClient() {
                     </table>
                   </div>
                 </div>
-              </TabsContent>
-
-              {/* 4. TOPICS (KONULAR) */}
-              <TabsContent value="topics" className="space-y-6 mt-6">
+              
+                <div className="pt-6 mt-6 border-t border-slate-200 dark:border-slate-800"></div>
+                
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Card className="rounded-[2.5rem] border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
                       <CardHeader className="bg-rose-50/50 dark:bg-rose-950/20 border-b border-rose-100 dark:border-rose-900/30 flex flex-row items-center justify-between pb-4">
@@ -1238,44 +1181,8 @@ export function StatsClient() {
                   </Card>
                 </div>
 
-                {topicStats.rusting.length > 0 && (
-                    <Card className="rounded-[2.5rem] border-amber-200 dark:border-amber-800 shadow-xl overflow-hidden bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 mt-6">
-                        <CardHeader className="pb-4">
-                            <CardTitle className="text-xl font-black text-amber-700 dark:text-amber-500 flex items-center gap-3">
-                                <History className="w-6 h-6" /> Paslanan Konular (Akıllı Tekrar)
-                            </CardTitle>
-                            <CardDescription className="text-amber-800/70 dark:text-amber-400/70 font-medium">
-                                Bu konularda aslında iyiydin ancak <b>14 günden uzun süredir</b> hiç soru çözmedin. Unutmamak için hızlı bir tekrar testi çözmelisin!
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {topicStats.rusting.map((t, i) => (
-                                    <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-amber-100 dark:border-amber-800/50 shadow-sm flex flex-col justify-between">
-                                        <div>
-                                            <p className="text-[10px] font-extrabold text-amber-500 uppercase tracking-widest mb-1">{t.subject}</p>
-                                            <p className="text-sm font-bold text-slate-800 dark:text-slate-100 line-clamp-2">{t.topic}</p>
-                                        </div>
-                                        <div className="mt-4 flex items-end justify-between">
-                                            <div>
-                                                <p className="text-xs text-slate-400 font-medium">Eski Başarın</p>
-                                                <p className="text-lg font-black text-emerald-500">%{t.successRate.toFixed(0)}</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-xs text-slate-400 font-medium">Son Çözüm</p>
-                                                <p className="text-sm font-bold text-rose-500">{differenceInDays(new Date(), t.lastPracticed)} Gün Önce</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-              </TabsContent>
-
-              {/* 5. COMPARE (KARŞILAŞTIRMA) */}
-              <TabsContent value="compare" className="space-y-6 mt-6">
+                
+                
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-6">
                     <SectionHeader icon={LibraryBig} title="Kaynak & Yayınevi Verimlilik Analizi" desc="Hangi kitapta/kaynakta daha başarılısın?" color={C.EMERALD} />
                     
@@ -1391,10 +1298,9 @@ export function StatsClient() {
                     </div>
                   </div>
                 </div>
-              </TabsContent>
-
-              {/* 6. HABITS (ÇALIŞMA ALIŞKANLIKLARI) */}
-              <TabsContent value="habits" className="space-y-6 mt-6">
+              
+                <div className="pt-6 mt-6 border-t border-slate-200 dark:border-slate-800"></div>
+                
                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   
                   <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-6">
@@ -1468,92 +1374,108 @@ export function StatsClient() {
                   </div>
 
                  </div>
+              
               </TabsContent>
 
-              {/* 7. GOALS (HEDEFLER) */}
-              <TabsContent value="goals" className="space-y-6 mt-0">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-indigo-600 rounded-[2rem] p-8 text-white shadow-lg shadow-indigo-600/20 relative overflow-hidden">
+              {/* 3. YETENEK & HEDEF */}
+              <TabsContent value="progress" className="space-y-6 mt-6">
+                <div className="mb-8">
+                  <PerformanceGoals member={student!} solvedTests={processedData} availableSubjects={availableSubjectsList} />
+                </div>
+              
+                
+                <div className="bg-indigo-600 rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-8 text-white shadow-lg shadow-indigo-600/20 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-                  <div className="relative z-10">
-                    <h2 className="text-2xl font-black mb-1">Hedeflerine Odaklan! 🚀</h2>
-                    <p className="text-indigo-100 text-sm font-medium">Bu hafta belirlediğin hedeflerin durumunu buradan takip edebilirsin. Küçük adımlar büyük başarılar getirir.</p>
-                  </div>
-                  <Button onClick={() => setIsAddGoalModalOpen(true)} className="relative z-10 bg-white text-indigo-600 hover:bg-slate-50 rounded-xl font-bold border-0 shadow-sm">
-                    <Plus className="w-4 h-4 mr-2" /> Yeni Hedef Ekle
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {goalProgressData.length > 0 ? goalProgressData.map((goal) => {
-                      const typeIcon = goal.type === 'questions' ? Target : goal.type === 'successRate' ? Sparkles : Calculator;
-                      const unit = goal.type === 'questions' ? 'Soru' : goal.type === 'successRate' ? '%' : 'Net';
-                      const themeColor = goal.isCompleted ? C.EMERALD : (goal.type === 'questions' ? C.INDIGO : goal.type === 'successRate' ? C.PURPLE : C.ORANGE);
-                      
-                      return (
-                        <VisualGoalCard 
-                            key={goal.id}
-                            title={goal.label} 
-                            current={goal.current} 
-                            target={goal.target} 
-                            unit={unit}
-                            icon={typeIcon} 
-                            color={themeColor}
-                            deadline={goal.period === 'weekly' ? 'Haftalık' : goal.period === 'monthly' ? 'Aylık' : 'Günlük'}
-                        />
-                      );
-                  }) : (
-                    <div className="col-span-full py-20 text-center bg-white dark:bg-slate-900 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-slate-800">
-                        <Flag className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-700 mb-4" />
-                        <p className="font-bold text-slate-500 dark:text-slate-400">Henüz aktif bir performans hedefi belirlenmemiş.</p>
+                  <div className="relative z-10 flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/20">
+                        <Network className="w-8 h-8 text-white" />
                     </div>
-                  )}
-                </div>
-
-                <div className="mt-8">
-                  <SectionHeader icon={Layers} title=" Tüm Hedefler ve Detaylar" desc="Geçmiş ve mevcut tüm hedeflerin listesi" color={C.SLATE} />
-                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-2">
-                    <PerformanceGoals member={student!} solvedTests={processedData} availableSubjects={availableSubjectsList} />
+                    <div>
+                        <h2 className="text-2xl font-black mb-1">Yetenek Ağacı</h2>
+                        <p className="text-indigo-100 text-sm font-medium">Konu kilitlerini aç, ustalığını ilerlet! Renkler konu hakimiyetini gösterir.</p>
+                    </div>
+                  </div>
+                  <div className="relative z-10 flex flex-wrap items-center gap-3 sm:gap-6 mt-6 text-xs sm:text-sm font-bold bg-black/20 p-3 rounded-2xl w-full sm:w-max backdrop-blur-md">
+                      <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-slate-300" /> Başlanmadı</div>
+                      <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500" /> Öğreniliyor (%0-69)</div>
+                      <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-500" /> Usta (%70+)</div>
                   </div>
                 </div>
-              </TabsContent>
 
-              {/* 8. ACTIVITY (AKTİVİTE) */}
-              <TabsContent value="activity" className="space-y-6 mt-6">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {[
-                    { icon: Flame,    value: streakData.current, label: 'Mevcut Seri',      color: C.ROSE },
-                    { icon: Trophy,   value: streakData.longest, label: 'En Uzun Seri',     color: C.AMBER },
-                    { icon: Calendar, value: new Set(enrichedBaseData.map(t => format(t._solvedDate, 'yyyy-MM-dd'))).size, label: 'Toplam Aktif Gün', color: C.INDIGO },
-                  ].map((item, i) => <KpiCard key={i} icon={item.icon} value={item.value} label={item.label} color={item.color} />)}
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200/70 dark:border-slate-800 shadow-sm p-8 mt-6">
-                    <SectionHeader icon={Activity} title="Son 30 Gün Aktivite Isı Haritası" desc="Her kutucuk bir günü temsil eder. Renk koyulaştıkça o gün çözülen soru sayısı artar." color={C.EMERALD} />
-                    <div className="flex flex-wrap gap-3 mt-6 max-w-4xl">
-                        {activityHeatmap.map((day, i) => {
-                            let bgClass = "bg-slate-100 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700"; 
-                            if (day.count > 0 && day.count <= 20) bgClass = "bg-emerald-200 border-emerald-300 dark:bg-emerald-900/60 dark:border-emerald-800";
-                            else if (day.count > 20 && day.count <= 50) bgClass = "bg-emerald-300 border-emerald-400 dark:bg-emerald-700/80 dark:border-emerald-600";
-                            else if (day.count > 50 && day.count <= 100) bgClass = "bg-emerald-400 border-emerald-500 dark:bg-emerald-600 dark:border-emerald-500";
-                            else if (day.count > 100) bgClass = "bg-emerald-500 border-emerald-600 dark:bg-emerald-500 dark:border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.4)]";
-
-                            return (
-                                <div 
-                                    key={i} 
-                                    title={`${format(day.date, 'dd MMM yyyy', {locale: tr})}: ${day.count} Soru`}
-                                    className={cn("w-7 h-7 rounded-[8px] border transition-all hover:scale-125 cursor-pointer relative group", bgClass)}
-                                >
-                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-[10px] font-bold py-1 px-2 rounded-lg whitespace-nowrap pointer-events-none z-50">
-                                        {format(day.date, 'dd MMM', {locale: tr})} <br/> {day.count} Soru
-                                    </div>
+                <div className="space-y-6">
+                    {/* ÖNCELİKLİ EKSİKLER BÖLÜMÜ */}
+                    {topicStats.worst.length > 0 && (
+                        <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/50 rounded-[2rem] p-6 mb-8">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center">
+                                    <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
                                 </div>
-                            );
-                        })}
-                    </div>
+                                <div>
+                                    <h3 className="font-extrabold text-rose-700 dark:text-rose-400 text-lg">Öncelikli Eksikler</h3>
+                                    <p className="text-xs font-semibold text-rose-600/70 dark:text-rose-400/70">Puanını hızlı artırmak için önce bu konulara odaklanmalısın.</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                {topicStats.worst.slice(0, 3).map((t, j) => (
+                                    <div key={j} className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.subject}</p>
+                                            <p className="font-bold text-slate-800 dark:text-slate-100 text-sm line-clamp-2 leading-tight">{t.topic}</p>
+                                        </div>
+                                        <div className="mt-4 flex items-center justify-between">
+                                            <span className="text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-950/50 px-2 py-1 rounded-md">Başarı: %{t.successRate.toFixed(0)}</span>
+                                            <span className="text-[10px] font-semibold text-slate-500">{t.total} Soru</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {skillTreeData.map((subj, i) => (
+                        <div key={i} className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200/70 dark:border-slate-800 p-6">
+                            <h3 className="font-extrabold text-lg text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+                                <BookOpen className="w-5 h-5 text-indigo-500" /> {subj.subject}
+                            </h3>
+                            <div className="flex flex-wrap gap-3 sm:gap-4">
+                                {subj.topics.map((t, j) => {
+                                    const isMaster = t.successRate >= 70;
+                                    const isLearning = t.successRate > 0 && t.successRate < 70;
+                                    
+                                    let nodeColor = "bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-500";
+                                    if (isMaster) nodeColor = "bg-emerald-50 border-emerald-500 text-emerald-600 dark:bg-emerald-950/50";
+                                    else if (isLearning) nodeColor = "bg-amber-50 border-amber-500 text-amber-600 dark:bg-amber-950/50";
+
+                                    return (
+                                        <div key={j} className={cn(
+                                            "relative group flex items-center gap-3 p-3 sm:p-4 rounded-2xl border-2 transition-all duration-300 w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.67rem)]",
+                                            nodeColor,
+                                            "hover:shadow-md cursor-help"
+                                        )}>
+                                            <div className="shrink-0 w-10 h-10 rounded-xl bg-white dark:bg-slate-900 flex items-center justify-center font-black shadow-sm">
+                                                {isMaster ? <CheckCircle2 className="w-5 h-5" /> : isLearning ? <Activity className="w-4 h-4" /> : <Minus className="w-4 h-4 text-slate-300" />}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 leading-tight truncate">
+                                                    {t.topic}
+                                                </p>
+                                                {t.total > 0 && (
+                                                    <p className="text-[10px] font-semibold mt-1">
+                                                        %{t.successRate.toFixed(0)} Başarı <span className="opacity-50">({t.total} Soru)</span>
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    ))}
                 </div>
-              </TabsContent>
+              
+                </TabsContent>
             </motion.div>
-          </AnimatePresence>
+</AnimatePresence>
         </Tabs>
       </main>
 
