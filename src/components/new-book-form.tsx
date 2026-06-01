@@ -129,39 +129,65 @@ export const BookForm = ({ existingTags }: { existingTags: string[] }) => {
   }, [hierarchicalShelves]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5 pb-4">
         <FormField control={control} name="title" render={({ field }) => (
-            <FormItem><FormLabel>Kitap Adı</FormLabel><FormControl><Input placeholder="Kitabın adını girin..." {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem>
+                <FormLabel className="text-slate-700 dark:text-slate-300 ml-1">Kitap Adı</FormLabel>
+                <FormControl>
+                    <Input placeholder="Kitabın adını girin..." className="h-14 rounded-2xl bg-slate-100 dark:bg-[#2C2C2E] border-transparent px-4 text-[15px] shadow-none focus-visible:bg-white dark:focus-visible:bg-black focus-visible:ring-2 focus-visible:ring-indigo-500/20" {...field} />
+                </FormControl>
+                <FormMessage className="ml-1" />
+            </FormItem>
         )} />
-        <FormField control={control} name="author" render={({ field }) => (
-            <FormItem><FormLabel>Yazar</FormLabel><FormControl><Input placeholder="Yazar Adı (Opsiyonel)" {...field} /></FormControl><FormMessage /></FormItem>
-        )} />
-        <FormField control={control} name="pageCount" render={({ field }) => (
-            <FormItem><FormLabel>Sayfa Sayısı</FormLabel><FormControl><Input type="number" placeholder="Toplam Sayfa" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-        )} />
+        <div className="grid grid-cols-2 gap-4">
+            <FormField control={control} name="author" render={({ field }) => (
+                <FormItem>
+                    <FormLabel className="text-slate-700 dark:text-slate-300 ml-1">Yazar</FormLabel>
+                    <FormControl>
+                        <Input placeholder="İsteğe bağlı" className="h-14 rounded-2xl bg-slate-100 dark:bg-[#2C2C2E] border-transparent px-4 text-[15px] shadow-none focus-visible:bg-white dark:focus-visible:bg-black focus-visible:ring-2 focus-visible:ring-indigo-500/20" {...field} />
+                    </FormControl>
+                    <FormMessage className="ml-1" />
+                </FormItem>
+            )} />
+            <FormField control={control} name="pageCount" render={({ field }) => (
+                <FormItem>
+                    <FormLabel className="text-slate-700 dark:text-slate-300 ml-1">Sayfa Sayısı</FormLabel>
+                    <FormControl>
+                        <Input type="number" placeholder="Örn: 250" className="h-14 rounded-2xl bg-slate-100 dark:bg-[#2C2C2E] border-transparent px-4 text-[15px] shadow-none focus-visible:bg-white dark:focus-visible:bg-black focus-visible:ring-2 focus-visible:ring-indigo-500/20" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage className="ml-1" />
+                </FormItem>
+            )} />
+        </div>
         
-        <FormItem>
-            <FormLabel>Kapak Resmi</FormLabel>
+        <FormItem className="pt-2">
+            <FormLabel className="text-slate-700 dark:text-slate-300 ml-1">Kapak Resmi</FormLabel>
             <FormControl>
                 <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
             </FormControl>
-            <Card 
-                className="aspect-video w-full border-2 border-dashed flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer"
+            <div 
+                className="w-full h-32 bg-slate-100 dark:bg-[#2C2C2E] rounded-3xl flex items-center gap-5 px-5 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors active:scale-[0.98]"
                 onClick={() => fileInputRef.current?.click()}
             >
-                {imageValue && imageValue.startsWith('data:image') ? (
-                    <Image src={imageValue} alt="Kapak önizlemesi" width={150} height={225} className="max-h-full w-auto object-contain rounded-md" data-ai-hint="book cover"/>
-                ) : imageValue ? (
-                    <Image src={imageValue} alt="Kapak" width={150} height={225} className="max-h-full w-auto object-contain rounded-md" data-ai-hint="book cover"/>
+                {imageValue ? (
+                    <div className="relative w-20 h-24 rounded-xl overflow-hidden shadow-md shrink-0 bg-white dark:bg-[#1C1C1E]">
+                        <Image src={imageValue} alt="Kapak önizlemesi" fill className="object-cover" data-ai-hint="book cover"/>
+                    </div>
                 ) : (
-                    <>
-                        <UploadCloud className="h-10 w-10"/>
-                        <p className="mt-2 text-sm">Resim Yükle</p>
-                        <p className="text-xs">Tıkla veya sürükle bırak</p>
-                    </>
+                    <div className="w-20 h-24 bg-white dark:bg-[#1C1C1E] rounded-xl shadow-sm flex items-center justify-center shrink-0 border border-slate-200 dark:border-transparent">
+                        <UploadCloud className="h-7 w-7 text-indigo-400"/>
+                    </div>
                 )}
-            </Card>
-            <FormMessage />
+                <div className="flex flex-col">
+                    <p className="font-semibold text-slate-800 dark:text-slate-200 text-base">
+                        {imageValue ? 'Kapağı Değiştir' : 'Kapak Ekle'}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                        {imageValue ? 'Farklı bir resim yüklemek için dokunun.' : 'Cihazınızdan kapak fotoğrafı seçin.'}
+                    </p>
+                </div>
+            </div>
+            <FormMessage className="ml-1" />
         </FormItem>
 
 
@@ -169,109 +195,71 @@ export const BookForm = ({ existingTags }: { existingTags: string[] }) => {
             control={control}
             name="tags"
             render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Raflar</FormLabel>
-                    <Card className="p-4 bg-muted/50">
-                        <CardTitle className="text-base mb-2">Yeni Raf Ekle</CardTitle>
-                        <div className="space-y-2">
-                             <Combobox
-                                options={mainShelfOptions}
-                                value={newShelfMain}
-                                onChange={setNewShelfMain}
-                                onCreate={(newValue) => { setNewShelfMain(newValue); }}
-                                placeholder="Ana Raf Adı (örn: Yazarlar)"
-                                notfoundText="Raf bulunamadı."
-                                createText="Yeni raf oluştur:"
-                            />
-                            <Input
-                                placeholder="Alt Raf Adı (opsiyonel, örn: Dostoyevski)"
-                                value={newShelfSub}
-                                onChange={(e) => setNewShelfSub(e.target.value)}
-                            />
-                            <Button type="button" size="sm" onClick={handleAddShelf}>
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Raf Ekle
-                            </Button>
+                <FormItem className="pt-2">
+                    <FormLabel className="text-slate-700 dark:text-slate-300 ml-1">Kategoriler / Raflar</FormLabel>
+                    
+                    {/* Hızlı Kategori Seçimi (Tüm mevcut kategoriler kaydırılabilir yatay liste) */}
+                    {Object.keys(hierarchicalShelves).length > 0 && (
+                        <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide -mx-2 px-2 snap-x">
+                            {Object.entries(hierarchicalShelves).map(([main, subs]) => (
+                                <Badge
+                                    key={main}
+                                    variant="outline"
+                                    onClick={() => handleToggleTag(main)}
+                                    className={cn(
+                                        "snap-start shrink-0 rounded-xl cursor-pointer text-[13px] px-3 py-1.5 transition-colors border-slate-200 dark:border-white/10",
+                                        (field.value || []).includes(main) ? "bg-indigo-600 text-white border-transparent dark:bg-indigo-600 dark:text-white" : "bg-white dark:bg-[#1C1C1E] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#2C2C2E]"
+                                    )}
+                                >
+                                    {main}
+                                </Badge>
+                            ))}
                         </div>
-                    </Card>
+                    )}
 
-                    <div className="pt-2">
-                        <FormLabel className="text-xs text-muted-foreground">Seçili Raflar</FormLabel>
-                        <div className="flex flex-wrap gap-1.5 mt-1.5 min-h-[26px]">
-                            {(field.value || []).map((tag) => (
-                            <Badge key={tag} variant="secondary" className="gap-1.5 py-1 px-2.5">
+                    {/* Seçili Etiketler Çipler Halinde */}
+                    <div className="flex flex-wrap gap-2 mb-2 mt-1">
+                        {(field.value || []).length === 0 && (
+                            <span className="text-sm text-slate-400 dark:text-slate-500 ml-1 italic">Henüz seçili kategori yok.</span>
+                        )}
+                        {(field.value || []).map((tag) => (
+                            <Badge key={tag} className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:hover:bg-indigo-500/30 rounded-xl px-3 py-1.5 text-sm gap-2 font-medium border-0">
                                 {tag}
-                                <button type="button" aria-label={`${tag} rafını kaldır`} onClick={() => removeTag(tag)}>
+                                <button type="button" onClick={() => removeTag(tag)} className="bg-indigo-200/50 dark:bg-black/20 rounded-full p-0.5 hover:bg-white/50">
                                     <X className="h-3.5 w-3.5" />
                                 </button>
                             </Badge>
-                            ))}
+                        ))}
+                    </div>
+
+                    {/* Yeni Raf Ekleme Modülü */}
+                    <div className="bg-slate-100 dark:bg-[#2C2C2E] p-4 rounded-3xl mt-4 space-y-3">
+                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Kendi Rafını Oluştur</p>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <Input
+                                placeholder="Raf Adı (örn: Felsefe, Tarih)"
+                                value={newShelfMain}
+                                onChange={(e) => setNewShelfMain(e.target.value)}
+                                className="h-12 rounded-2xl bg-white dark:bg-[#1C1C1E] border-transparent px-4 shadow-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 text-[15px]"
+                            />
+                            <Button type="button" onClick={handleAddShelf} className="h-12 rounded-2xl bg-slate-800 dark:bg-white text-white dark:text-black font-semibold w-full sm:w-auto px-6">
+                                Ekle
+                            </Button>
                         </div>
                     </div>
 
-                    {Object.keys(hierarchicalShelves).length > 0 && (
-                        <div className="pt-4 space-y-2">
-                            <FormLabel className="text-xs text-muted-foreground">Mevcut Raflar</FormLabel>
-                            <ScrollArea className="h-48 rounded-md border p-2">
-                                <div className="space-y-2">
-                                    {Object.entries(hierarchicalShelves).map(([main, subs]) => (
-                                        <div key={main}>
-                                            <div className="flex items-center gap-1">
-                                                <Badge
-                                                    variant={(field.value || []).includes(main) ? 'default' : 'outline'}
-                                                    onClick={() => handleToggleTag(main)}
-                                                    className="cursor-pointer text-sm flex-grow justify-start text-left"
-                                                >
-                                                    {main}
-                                                </Badge>
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-6 w-6 shrink-0"
-                                                                onClick={() => handleUseShelfAsTemplate(main)}
-                                                            >
-                                                                <PlusCircle className="mr-2 h-4 w-4" />
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            <p>Bu rafa alt raf ekle</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                            </div>
-                                            {(subs as string[]).length > 0 && (
-                                                <div className="flex flex-wrap gap-1.5 mt-2 ml-4 pl-2 border-l">
-                                                    {(subs as string[]).map(sub => (
-                                                        <Badge
-                                                            key={sub}
-                                                            variant={(field.value || []).includes(`${main}/${sub}`) ? 'default' : 'outline'}
-                                                            onClick={() => handleToggleTag(`${main}/${sub}`)}
-                                                            className="cursor-pointer text-xs"
-                                                        >
-                                                            {sub}
-                                                        </Badge>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </ScrollArea>
-                        </div>
-                    )}
-                    <FormMessage />
+                    <FormMessage className="ml-1" />
                 </FormItem>
             )}
         />
 
         <FormField control={control} name="isForChildren" render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-            <div className="space-y-0.5"><FormLabel>Çocuk Kitabı</FormLabel></div>
-            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+            <FormItem className="flex flex-row items-center justify-between rounded-3xl bg-slate-100 dark:bg-[#2C2C2E] p-4 shadow-none mt-2">
+                <div className="space-y-0.5">
+                    <FormLabel className="text-[15px] font-semibold text-slate-800 dark:text-slate-200 ml-1">Çocuk Kitabı</FormLabel>
+                    <p className="text-[13px] text-slate-500 dark:text-slate-400 ml-1">Sadece çocuklar rafında göster.</p>
+                </div>
+                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-indigo-600" /></FormControl>
             </FormItem>
         )} />
     </div>
