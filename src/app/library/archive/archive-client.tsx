@@ -37,18 +37,17 @@ import { BookDetailDialog } from '@/components/book-detail-dialog';
 import { BookForm, BookFormData } from '@/components/new-book-form';
 import { cn } from "@/lib/utils";
 
-// --- DESIGN SYSTEM: Modern Native App (Light Theme) ---
 const appTheme = {
-    BG: "bg-slate-50",
-    HEADER_BG: "bg-white/90 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-40",
-    CARD_BG: "bg-white border border-slate-100 shadow-sm rounded-3xl",
-    TEXT_MAIN: "text-slate-900",
-    TEXT_MUTED: "text-slate-500",
-    ICON_BOX: "bg-indigo-50 p-2 rounded-2xl text-indigo-600",
-    FAB: "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl shadow-indigo-200 bg-indigo-600 hover:bg-indigo-700 text-white z-50 flex items-center justify-center transition-transform hover:scale-105 active:scale-95",
-    INPUT_BG: "bg-slate-100 border-transparent text-slate-900 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 rounded-2xl transition-all",
-    TABS_CONTAINER: "bg-slate-200/60 p-1 rounded-full",
-    TAB_TRIGGER: "rounded-full px-6 py-2 text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm text-slate-600 transition-all"
+    BG: "bg-[#F2F2F7] dark:bg-black transition-colors duration-300",
+    HEADER_BG: "bg-white/85 dark:bg-[#1C1C1E]/85 backdrop-blur-xl border-b border-black/[0.05] dark:border-white/[0.05] sticky top-0 z-40",
+    CARD_BG: "bg-white dark:bg-[#1C1C1E] border border-slate-100 dark:border-transparent shadow-sm dark:shadow-none rounded-3xl",
+    TEXT_MAIN: "text-[#1C1C1E] dark:text-white",
+    TEXT_MUTED: "text-[#8E8E93] dark:text-[#EBEBF5]/60",
+    ICON_BOX: "bg-indigo-50 dark:bg-indigo-500/10 p-2 rounded-2xl text-indigo-600 dark:text-indigo-400",
+    FAB: "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl shadow-indigo-200 dark:shadow-none bg-indigo-600 hover:bg-indigo-700 text-white z-50 flex items-center justify-center transition-transform hover:scale-105 active:scale-95",
+    INPUT_BG: "bg-slate-100 dark:bg-[#1C1C1E] border-transparent text-slate-900 dark:text-white focus:bg-white dark:focus:bg-[#2C2C2E] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 rounded-2xl transition-all",
+    TABS_CONTAINER: "bg-slate-200/60 dark:bg-[#1C1C1E] p-1 rounded-full",
+    TAB_TRIGGER: "rounded-full px-6 py-2 text-sm font-semibold data-[state=active]:bg-white dark:data-[state=active]:bg-[#2C2C2E] data-[state=active]:text-indigo-700 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm text-slate-600 dark:text-[#EBEBF5]/60 transition-all"
 };
 
 const bookFormSchema = z.object({
@@ -247,7 +246,7 @@ export function ArchiveClient() {
       <header className={cn("py-3 px-4 transition-all duration-300", appTheme.HEADER_BG)}>
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                  <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full text-slate-600 hover:bg-slate-100">
+                  <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#2C2C2E]">
                       <ArrowLeft className="w-6 h-6" />
                   </Button>
                   <div>
@@ -259,19 +258,19 @@ export function ArchiveClient() {
               <div className="flex items-center gap-1">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="rounded-full text-slate-600 hover:bg-slate-100">
+                        <Button variant="ghost" size="icon" className="rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#2C2C2E]">
                             <MoreVertical className="w-5 h-5" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-white border-slate-100 rounded-2xl shadow-xl w-48 p-1">
-                        <DropdownMenuItem onClick={() => setView(view === 'books' ? 'management' : 'books')} className="rounded-xl cursor-pointer py-2.5">
-                            <Settings className="mr-2 h-4 w-4 text-slate-500"/> {view === 'books' ? 'Raf Yönetimi' : 'Kitaplara Dön'}
+                    <DropdownMenuContent align="end" className="bg-white dark:bg-[#1C1C1E] border-slate-100 dark:border-white/10 rounded-2xl shadow-xl w-48 p-1 text-slate-900 dark:text-white">
+                        <DropdownMenuItem onClick={() => setView(view === 'books' ? 'management' : 'books')} className="rounded-xl cursor-pointer py-2.5 dark:focus:bg-[#2C2C2E]">
+                            <Settings className="mr-2 h-4 w-4 text-slate-500 dark:text-slate-400"/> {view === 'books' ? 'Raf Yönetimi' : 'Kitaplara Dön'}
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-slate-100 my-1" />
-                        <DropdownMenuItem onClick={() => setIsBulkJsonDialogOpen(true)} className="rounded-xl cursor-pointer py-2.5">
-                            <FilePlus className="mr-2 h-4 w-4 text-slate-500"/> Toplu Ekle (JSON)
+                        <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/10 my-1" />
+                        <DropdownMenuItem onClick={() => setIsBulkJsonDialogOpen(true)} className="rounded-xl cursor-pointer py-2.5 dark:focus:bg-[#2C2C2E]">
+                            <FilePlus className="mr-2 h-4 w-4 text-slate-500 dark:text-slate-400"/> Toplu Ekle (JSON)
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleDownloadList} className="rounded-xl cursor-pointer py-2.5 text-indigo-600 focus:text-indigo-700">
+                        <DropdownMenuItem onClick={handleDownloadList} className="rounded-xl cursor-pointer py-2.5 text-indigo-600 dark:text-indigo-400 focus:text-indigo-700 dark:focus:text-indigo-300 dark:focus:bg-[#2C2C2E]">
                             <Download className="mr-2 h-4 w-4"/> Listeyi İndir (CSV)
                         </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -308,19 +307,19 @@ export function ArchiveClient() {
         </Tabs>
       ) : (
         <div className="animate-in fade-in duration-300">
-            <h2 className="text-xl font-bold text-slate-800 mb-4 px-2">Raf Yönetimi</h2>
+            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-4 px-2">Raf Yönetimi</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {allTags.map((tag) => (
-                    <div key={tag} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                    <div key={tag} className="flex items-center justify-between p-4 bg-white dark:bg-[#1C1C1E] rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm dark:shadow-none">
                         <div className="flex items-center gap-3">
-                            <div className="bg-indigo-50 p-2 rounded-xl text-indigo-500"><FolderOpen className="w-5 h-5" /></div>
-                            <p className="font-semibold text-slate-700">{tag}</p>
+                            <div className="bg-indigo-50 dark:bg-indigo-500/10 p-2 rounded-xl text-indigo-500"><FolderOpen className="w-5 h-5" /></div>
+                            <p className="font-semibold text-slate-700 dark:text-slate-200">{tag}</p>
                         </div>
                         <AlertDialog>
-                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-full"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
-                            <AlertDialogContent className="bg-white rounded-[2rem] border-slate-100 p-6">
-                                <AlertDialogHeader><AlertDialogTitle className="text-slate-900 text-xl">Rafı Sil</AlertDialogTitle><AlertDialogDescription className="text-slate-500">"{tag}" rafı tüm kitaplardan kaldırılacak. Kitaplar silinmez, sadece bu etiket kalkar.</AlertDialogDescription></AlertDialogHeader>
-                                <AlertDialogFooter className="mt-4"><AlertDialogCancel className="rounded-xl border-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteTag("libraryTags", tag, "book")} className="rounded-xl bg-rose-600 hover:bg-rose-700 shadow-md">Rafı Sil</AlertDialogAction></AlertDialogFooter>
+                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-full"><Trash2 className="w-4 h-4"/></Button></AlertDialogTrigger>
+                            <AlertDialogContent className="bg-white dark:bg-[#1C1C1E] rounded-[2rem] border-slate-100 dark:border-white/10 p-6 text-slate-900 dark:text-white">
+                                <AlertDialogHeader><AlertDialogTitle className="text-xl">Rafı Sil</AlertDialogTitle><AlertDialogDescription className="text-slate-500 dark:text-slate-400">"{tag}" rafı tüm kitaplardan kaldırılacak. Kitaplar silinmez, sadece bu etiket kalkar.</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooter className="mt-4"><AlertDialogCancel className="rounded-xl border-slate-200 dark:border-white/10 dark:text-white">İptal</AlertDialogCancel><AlertDialogAction onClick={() => deleteTag("libraryTags", tag, "book")} className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-md">Rafı Sil</AlertDialogAction></AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
                     </div>
@@ -337,12 +336,12 @@ export function ArchiveClient() {
                 <Plus className="w-7 h-7" />
             </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" sideOffset={15} className="bg-white border-slate-100 rounded-2xl shadow-2xl p-2 w-56 mb-4">
-            <DropdownMenuItem onClick={() => setIsSearchDialogOpen(true)} className="rounded-xl cursor-pointer py-3 text-[15px] font-medium text-slate-700">
-                <Search className="mr-3 h-5 w-5 text-indigo-500"/> İnternette Ara
+        <DropdownMenuContent align="end" sideOffset={15} className="bg-white dark:bg-[#1C1C1E] border-slate-100 dark:border-white/10 rounded-2xl shadow-2xl p-2 w-56 mb-4 text-slate-900 dark:text-white">
+            <DropdownMenuItem onClick={() => setIsSearchDialogOpen(true)} className="rounded-xl cursor-pointer py-3 text-[15px] font-medium text-slate-700 dark:text-slate-200 dark:focus:bg-[#2C2C2E]">
+                <Search className="mr-3 h-5 w-5 text-indigo-500 dark:text-indigo-400"/> İnternette Ara
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleOpenAddDialog()} className="rounded-xl cursor-pointer py-3 text-[15px] font-medium text-slate-700">
-                <Edit className="mr-3 h-5 w-5 text-indigo-500"/> Manuel Ekle
+            <DropdownMenuItem onClick={() => handleOpenAddDialog()} className="rounded-xl cursor-pointer py-3 text-[15px] font-medium text-slate-700 dark:text-slate-200 dark:focus:bg-[#2C2C2E]">
+                <Edit className="mr-3 h-5 w-5 text-indigo-500 dark:text-indigo-400"/> Manuel Ekle
             </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -351,14 +350,14 @@ export function ArchiveClient() {
       <BookDetailDialog book={viewingBook} isOpen={!!viewingBook} onOpenChange={setViewingBook} onEdit={handleOpenAddDialog} onAddToLibrary={handleAddToLibrary} familyMembers={familyMembers} />
 
       <Dialog open={isAddBookDialogOpen} onOpenChange={setIsAddBookDialogOpen}>
-          <DialogContent className="sm:max-w-lg flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] bg-white border-slate-100 rounded-t-[2rem] sm:rounded-[2rem] p-0 mt-auto sm:mt-0 overflow-hidden shadow-2xl">
+          <DialogContent className="sm:max-w-lg flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] bg-white dark:bg-[#1C1C1E] border-slate-100 dark:border-white/10 rounded-t-[2rem] sm:rounded-[2rem] p-0 mt-auto sm:mt-0 overflow-hidden shadow-2xl text-slate-900 dark:text-white">
             <FormProvider {...formMethods}>
               <form onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)} className="flex-1 flex flex-col min-h-0">
                 <DialogHeader className="p-6 pb-2">
-                    <DialogTitle className="text-xl text-slate-900 font-bold">{editingBook ? 'Kitabı Düzenle' : 'Yeni Kitap'}</DialogTitle>
+                    <DialogTitle className="text-xl font-bold">{editingBook ? 'Kitabı Düzenle' : 'Yeni Kitap'}</DialogTitle>
                 </DialogHeader>
                  <ScrollArea className="flex-1 px-6 py-2"><BookForm existingTags={allTags} /></ScrollArea>
-                <DialogFooter className="p-4 pt-2 border-t border-slate-100 bg-slate-50/50 flex-row justify-end gap-2">
+                <DialogFooter className="p-4 pt-2 border-t border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-black/20 flex-row justify-end gap-2">
                     <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} className="rounded-xl">İptal</Button>
                     <Button type="submit" disabled={isSubmitting} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 shadow-md">
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {editingBook ? 'Kaydet' : 'Ekle'}
@@ -370,12 +369,12 @@ export function ArchiveClient() {
       </Dialog>
       
       <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
-        <DialogContent className="sm:max-w-md bg-white border-slate-100 rounded-t-[2rem] sm:rounded-[2rem] p-6 mt-auto sm:mt-0 shadow-2xl">
-            <DialogHeader><DialogTitle className="text-xl text-slate-900 font-bold">Kitap Ara</DialogTitle></DialogHeader>
+        <DialogContent className="sm:max-w-md bg-white dark:bg-[#1C1C1E] border-slate-100 dark:border-white/10 rounded-t-[2rem] sm:rounded-[2rem] p-6 mt-auto sm:mt-0 shadow-2xl text-slate-900 dark:text-white">
+            <DialogHeader><DialogTitle className="text-xl font-bold">Kitap Ara</DialogTitle></DialogHeader>
             <div className="flex gap-2 pt-2">
                 <Input placeholder="Kitap veya yazar adı..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchQuery)} className={appTheme.INPUT_BG}/>
-                <Button disabled={isSearching} onClick={() => handleSearch(searchQuery)} className="bg-indigo-600 hover:bg-indigo-700 rounded-xl px-5 shadow-md">
-                    {isSearching ? <Loader2 className="animate-spin w-5 h-5 text-white" /> : <Search className="w-5 h-5 text-white" />}
+                <Button disabled={isSearching} onClick={() => handleSearch(searchQuery)} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-5 shadow-md">
+                    {isSearching ? <Loader2 className="animate-spin w-5 h-5" /> : <Search className="w-5 h-5" />}
                 </Button>
             </div>
             
@@ -384,21 +383,21 @@ export function ArchiveClient() {
             <ScrollArea className="h-[50vh] sm:h-72 mt-4">
                 <div className="space-y-3 pr-3">
                   {searchResults.map((book, idx) => (
-                    <div key={idx} onClick={() => handleSelectSearchResult(book)} className="flex items-start gap-4 p-3 bg-white border border-slate-100 shadow-sm rounded-2xl cursor-pointer hover:border-indigo-300 transition-all active:scale-[0.98]">
-                      <div className="w-12 h-16 relative rounded-lg overflow-hidden shrink-0 shadow-sm border border-slate-100 bg-slate-50">
+                    <div key={idx} onClick={() => handleSelectSearchResult(book)} className="flex items-start gap-4 p-3 bg-white dark:bg-[#2C2C2E] border border-slate-100 dark:border-transparent shadow-sm rounded-2xl cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-500 transition-all active:scale-[0.98]">
+                      <div className="w-12 h-16 relative rounded-lg overflow-hidden shrink-0 shadow-sm border border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-black">
                           <Image src={book.image || 'https://placehold.co/80x120.png'} alt={book.title || ''} fill className="object-cover" />
                       </div>
                       <div className="flex-grow pt-1">
-                          <p className="font-bold text-sm text-slate-800 line-clamp-2 leading-tight mb-1">{book.title}</p>
-                          <p className="text-[11px] font-medium text-slate-500">{book.author}</p>
+                          <p className="font-bold text-sm text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight mb-1">{book.title}</p>
+                          <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{book.author}</p>
                       </div>
-                      <div className="bg-indigo-50 p-1.5 rounded-full text-indigo-600 mt-1">
+                      <div className="bg-indigo-50 dark:bg-indigo-500/20 p-1.5 rounded-full text-indigo-600 dark:text-indigo-400 mt-1">
                           <ChevronRight className="w-4 h-4" />
                       </div>
                     </div>
                   ))}
                   {searchResults.length === 0 && !isSearching && searchQuery && !searchError && (
-                      <p className="text-center text-slate-500 mt-10">Sonuç bulunamadı.</p>
+                      <p className="text-center text-slate-500 dark:text-slate-400 mt-10">Sonuç bulunamadı.</p>
                   )}
                 </div>
             </ScrollArea>
@@ -422,10 +421,10 @@ function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers, onV
   }, [books]);
   
   if (books.length === 0) return (
-      <div className="p-12 mt-10 flex flex-col items-center text-center bg-slate-100/50 border border-dashed border-slate-300 rounded-[2rem]">
-          <BookOpen className="w-10 h-10 text-slate-400 mb-3" />
-          <h3 className="text-slate-700 font-bold text-lg">Bu Bölüm Boş</h3>
-          <p className="text-slate-500 text-sm mt-1">Sağ alt köşedeki + butonundan kitap ekleyebilirsiniz.</p>
+      <div className="p-12 mt-10 flex flex-col items-center text-center bg-slate-100/50 dark:bg-[#1C1C1E]/50 border border-dashed border-slate-300 dark:border-slate-700 rounded-[2rem]">
+          <BookOpen className="w-10 h-10 text-slate-400 dark:text-slate-600 mb-3" />
+          <h3 className="text-slate-700 dark:text-slate-300 font-bold text-lg">Bu Bölüm Boş</h3>
+          <p className="text-slate-500 dark:text-slate-500 text-sm mt-1">Sağ alt köşedeki + butonundan kitap ekleyebilirsiniz.</p>
       </div>
   );
   
@@ -434,8 +433,8 @@ function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers, onV
       {shelves.map(([name, shelfBooks]) => (
         <div key={name} className="flex flex-col">
             <div className="flex items-center justify-between mb-4 px-2">
-                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    {name} <span className="text-xs font-semibold bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">{shelfBooks.length}</span>
+                <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    {name} <span className="text-xs font-semibold bg-slate-200 dark:bg-[#2C2C2E] text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full">{shelfBooks.length}</span>
                 </h2>
                 <ChevronRight className="w-5 h-5 text-slate-400" />
             </div>
@@ -447,7 +446,7 @@ function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers, onV
                         {/* Kitap Kapağı */}
                         <div 
                             onClick={() => onViewDetails(book)} 
-                            className="relative aspect-[2/3] rounded-xl shadow-md border border-slate-100 overflow-hidden cursor-pointer bg-slate-100 transition-transform active:scale-95"
+                            className="relative aspect-[2/3] rounded-xl shadow-md border border-slate-100 dark:border-transparent overflow-hidden cursor-pointer bg-slate-100 dark:bg-slate-800 transition-transform active:scale-95"
                         >
                             <Image src={book.image || `https://placehold.co/300x450.png`} alt={book.title} fill sizes="(max-width: 640px) 110px, 128px" className="object-cover" />
                         </div>
@@ -455,26 +454,26 @@ function BookShelf({ books, onEdit, onDelete, onAddToLibrary, familyMembers, onV
                         {/* Kitap Bilgisi ve Menü */}
                         <div className="flex items-start justify-between gap-1 px-1">
                             <div className="flex flex-col">
-                                <span className="text-[12px] font-bold text-slate-800 line-clamp-2 leading-tight" title={book.title}>{book.title}</span>
-                                <span className="text-[10px] font-medium text-slate-500 line-clamp-1 mt-0.5">{book.author || "Bilinmiyor"}</span>
+                                <span className="text-[12px] font-bold text-slate-800 dark:text-slate-200 line-clamp-2 leading-tight" title={book.title}>{book.title}</span>
+                                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">{book.author || "Bilinmiyor"}</span>
                             </div>
                             
                             {/* Mobilde Hover Olmadığı İçin Native 3 Nokta Menüsü */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full -mr-2 text-slate-400 shrink-0 hover:bg-slate-100 hover:text-slate-700">
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full -mr-2 text-slate-400 dark:text-slate-500 shrink-0 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300">
                                         <MoreVertical className="w-4 h-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="bg-white rounded-2xl shadow-xl border-slate-100 w-40 p-1">
-                                    <DropdownMenuItem onClick={() => onViewDetails(book)} className="rounded-xl py-2 cursor-pointer font-medium text-slate-700">
-                                        <BookOpen className="w-4 h-4 mr-2 text-indigo-500"/> İncele
+                                <DropdownMenuContent align="end" className="bg-white dark:bg-[#1C1C1E] rounded-2xl shadow-xl border-slate-100 dark:border-white/10 w-40 p-1 text-slate-900 dark:text-white">
+                                    <DropdownMenuItem onClick={() => onViewDetails(book)} className="rounded-xl py-2 cursor-pointer font-medium text-slate-700 dark:text-slate-200 dark:focus:bg-[#2C2C2E]">
+                                        <BookOpen className="w-4 h-4 mr-2 text-indigo-500 dark:text-indigo-400"/> İncele
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => onEdit(book)} className="rounded-xl py-2 cursor-pointer font-medium text-slate-700">
-                                        <Edit className="w-4 h-4 mr-2 text-indigo-500"/> Düzenle
+                                    <DropdownMenuItem onClick={() => onEdit(book)} className="rounded-xl py-2 cursor-pointer font-medium text-slate-700 dark:text-slate-200 dark:focus:bg-[#2C2C2E]">
+                                        <Edit className="w-4 h-4 mr-2 text-indigo-500 dark:text-indigo-400"/> Düzenle
                                     </DropdownMenuItem>
-                                    <DropdownMenuSeparator className="bg-slate-100 my-1"/>
-                                    <DropdownMenuItem onClick={() => onDelete(book.id)} className="rounded-xl py-2 cursor-pointer font-medium text-rose-600 focus:bg-rose-50 focus:text-rose-700">
+                                    <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/10 my-1"/>
+                                    <DropdownMenuItem onClick={() => onDelete(book.id)} className="rounded-xl py-2 cursor-pointer font-medium text-rose-600 dark:text-rose-400 focus:bg-rose-50 dark:focus:bg-rose-500/10 focus:text-rose-700 dark:focus:text-rose-300">
                                         <Trash2 className="w-4 h-4 mr-2"/> Sil
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
