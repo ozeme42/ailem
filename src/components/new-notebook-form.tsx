@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 
 // --- DESIGN SYSTEM ---
 const glassColors = {
-    INPUT_BG: "bg-slate-950/50 border-white/10 text-slate-100 focus:border-indigo-500/50 focus:ring-indigo-500/20 placeholder:text-slate-500",
+    INPUT_BG: "bg-slate-100/50 dark:bg-slate-950/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-100 focus:border-indigo-500/50 focus:ring-indigo-500/20 placeholder:text-slate-400 dark:placeholder:text-slate-500",
 };
 
 const notebookColors = [
@@ -83,9 +83,9 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
 
   return (
     <div className="flex flex-col h-full">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b border-white/5">
-            <DialogTitle className="text-xl text-slate-100">{initialData ? "Defteri Düzenle" : "Yeni Not Defteri"}</DialogTitle>
-            <DialogDescription className="text-slate-400">Notlarınızı düzenlemek için bir defter oluşturun.</DialogDescription>
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-100 dark:border-white/5">
+            <DialogTitle className="text-xl text-slate-900 dark:text-slate-100">{initialData ? "Klasörü Düzenle" : "Yeni Klasör"}</DialogTitle>
+            <DialogDescription className="text-slate-500 dark:text-slate-400">Notlarınızı düzenlemek için bir klasör oluşturun.</DialogDescription>
         </DialogHeader>
         
         <Form {...form}>
@@ -98,7 +98,7 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
                       name="icon"
                       render={({ field }) => (
                         <FormItem className="w-24 shrink-0">
-                          <FormLabel className="text-slate-300 flex items-center gap-2"><Smile className="w-4 h-4"/> İkon</FormLabel>
+                          <FormLabel className="text-slate-700 dark:text-slate-300 flex items-center gap-2"><Smile className="w-4 h-4"/> İkon</FormLabel>
                           <FormControl>
                               <div className="relative">
                                   <Input 
@@ -118,7 +118,7 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
                       name="title"
                       render={({ field }) => (
                         <FormItem className="flex-1">
-                          <FormLabel className="text-slate-300 flex items-center gap-2"><Type className="w-4 h-4"/> Defter Adı</FormLabel>
+                          <FormLabel className="text-slate-700 dark:text-slate-300 flex items-center gap-2"><Type className="w-4 h-4"/> Klasör Adı</FormLabel>
                           <FormControl>
                               <Input placeholder="Proje Notları" {...field} className={cn("h-12 rounded-xl", glassColors.INPUT_BG)} />
                           </FormControl>
@@ -128,30 +128,14 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
                     />
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-slate-300 flex items-center gap-2"><Edit3 className="w-4 h-4"/> Açıklama</FormLabel>
-                      <FormControl>
-                          <Textarea 
-                            placeholder="Bu defterin içeriği hakkında kısa bir bilgi..." 
-                            {...field} 
-                            className={cn("min-h-[80px] rounded-xl resize-none", glassColors.INPUT_BG)} 
-                          />
-                      </FormControl>
-                      <FormMessage className="text-rose-400" />
-                    </FormItem>
-                  )}
-                />
+
 
                 <FormField
                     control={form.control}
                     name="color"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel className="text-slate-300 flex items-center gap-2"><Palette className="w-4 h-4"/> Renk Teması</FormLabel>
+                            <FormLabel className="text-slate-700 dark:text-slate-300 flex items-center gap-2"><Palette className="w-4 h-4"/> Renk Teması</FormLabel>
                             <FormControl>
                                 <div className="grid grid-cols-4 gap-3">
                                     {notebookColors.map(color => (
@@ -175,10 +159,10 @@ export function NewNotebookForm({ onSubmit, initialData }: NewNotebookFormProps)
                 />
             </div>
 
-            <DialogFooter className="px-6 py-4 border-t border-white/5 bg-slate-900/50 backdrop-blur-sm">
+            <DialogFooter className="px-6 py-4 border-t border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-slate-900/50 backdrop-blur-sm">
                 <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-12 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {initialData ? "Değişiklikleri Kaydet" : "Defteri Oluştur"}
+                {initialData ? "Değişiklikleri Kaydet" : "Klasörü Oluştur"}
                 </Button>
             </DialogFooter>
           </form>
