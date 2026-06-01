@@ -139,7 +139,7 @@ export const BookForm = ({ existingTags }: { existingTags: string[] }) => {
                 <FormMessage className="ml-1" />
             </FormItem>
         )} />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField control={control} name="author" render={({ field }) => (
                 <FormItem>
                     <FormLabel className="text-slate-700 dark:text-slate-300 ml-1">Yazar</FormLabel>
@@ -166,7 +166,7 @@ export const BookForm = ({ existingTags }: { existingTags: string[] }) => {
                 <Input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
             </FormControl>
             <div 
-                className="w-full h-32 bg-slate-100 dark:bg-[#2C2C2E] rounded-3xl flex items-center gap-5 px-5 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors active:scale-[0.98]"
+                className="w-full h-auto min-h-[8rem] py-4 bg-slate-100 dark:bg-[#2C2C2E] rounded-3xl flex flex-row items-center gap-4 sm:gap-5 px-4 sm:px-5 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors active:scale-[0.98]"
                 onClick={() => fileInputRef.current?.click()}
             >
                 {imageValue ? (
@@ -178,11 +178,11 @@ export const BookForm = ({ existingTags }: { existingTags: string[] }) => {
                         <UploadCloud className="h-7 w-7 text-indigo-400"/>
                     </div>
                 )}
-                <div className="flex flex-col">
-                    <p className="font-semibold text-slate-800 dark:text-slate-200 text-base">
+                <div className="flex flex-col flex-1 min-w-0">
+                    <p className="font-semibold text-slate-800 dark:text-slate-200 text-base sm:text-lg truncate">
                         {imageValue ? 'Kapağı Değiştir' : 'Kapak Ekle'}
                     </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                    <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug break-words">
                         {imageValue ? 'Farklı bir resim yüklemek için dokunun.' : 'Cihazınızdan kapak fotoğrafı seçin.'}
                     </p>
                 </div>

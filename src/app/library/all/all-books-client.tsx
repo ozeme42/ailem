@@ -293,7 +293,7 @@ export function AllBooksClient() {
       </div>
         
         <Dialog open={!!editingBook} onOpenChange={(open) => !open && setEditingBook(null)}>
-          <DialogContent className="sm:max-w-lg flex flex-col h-full max-h-[90vh]">
+          <DialogContent className="w-[95vw] sm:max-w-lg flex flex-col max-h-[90dvh] rounded-[2rem] p-0 overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
             <FormProvider {...formMethods}>
               <form
                 id="book-form"

@@ -719,8 +719,8 @@ export default function Home() {
           </div>
 
           {/* DÜZENLEME MODALI */}
-          <Dialog open={isAddBookDialogOpen} onOpenChange={(open) => { setIsAddBookDialogOpen(open); if(!open) setEditingBook(null); }}>
-            <DialogContent className="sm:max-w-lg flex flex-col h-full max-h-[90vh] bg-white dark:bg-slate-900 rounded-3xl overflow-hidden p-0">
+          <Dialog open={isAddBookDialogOpen} onOpenChange={setIsAddBookDialogOpen}>
+            <DialogContent className="w-[95vw] sm:max-w-lg flex flex-col max-h-[90dvh] bg-white dark:bg-slate-900 rounded-[2rem] border-slate-200 dark:border-slate-800 overflow-hidden p-0">
                 <FormProvider {...bookFormMethods}>
                   <form onSubmit={bookFormMethods.handleSubmit(handleUpdateBook)} className="flex-1 flex flex-col min-h-0 h-full">
                     <DialogHeader className="p-6 pb-2 border-b border-slate-100 dark:border-slate-800">

@@ -350,7 +350,7 @@ export function ArchiveClient() {
       <BookDetailDialog book={viewingBook} isOpen={!!viewingBook} onOpenChange={setViewingBook} onEdit={handleOpenAddDialog} onAddToLibrary={handleAddToLibrary} familyMembers={familyMembers} />
 
       <Dialog open={isAddBookDialogOpen} onOpenChange={setIsAddBookDialogOpen}>
-          <DialogContent className="sm:max-w-lg flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] bg-white dark:bg-[#1C1C1E] border-slate-100 dark:border-white/10 rounded-t-[2rem] sm:rounded-[2rem] p-0 mt-auto sm:mt-0 overflow-hidden shadow-2xl text-slate-900 dark:text-white">
+          <DialogContent className="w-[95vw] sm:max-w-lg flex flex-col max-h-[90dvh] bg-white dark:bg-[#1C1C1E] border-slate-100 dark:border-white/10 rounded-[2rem] p-0 overflow-hidden shadow-2xl text-slate-900 dark:text-white">
             <FormProvider {...formMethods}>
               <form onSubmit={formMethods.handleSubmit(handleAddOrUpdateBook)} className="flex-1 flex flex-col min-h-0">
                 <DialogHeader className="p-6 pb-2">
@@ -369,7 +369,7 @@ export function ArchiveClient() {
       </Dialog>
       
       <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
-        <DialogContent className="sm:max-w-md bg-white dark:bg-[#1C1C1E] border-slate-100 dark:border-white/10 rounded-t-[2rem] sm:rounded-[2rem] p-6 mt-auto sm:mt-0 shadow-2xl text-slate-900 dark:text-white">
+        <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-[#1C1C1E] border-slate-100 dark:border-white/10 rounded-[2rem] p-6 shadow-2xl text-slate-900 dark:text-white">
             <DialogHeader><DialogTitle className="text-xl font-bold">Kitap Ara</DialogTitle></DialogHeader>
             <div className="flex gap-2 pt-2">
                 <Input placeholder="Kitap veya yazar adı..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchQuery)} className={appTheme.INPUT_BG}/>
