@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -73,7 +72,7 @@ export function ResultsClient() {
     const [filterType, setFilterType] = React.useState("all");
     
     const [currentPage, setCurrentPage] = React.useState(1);
-    const [sortConfig, setSortConfig] = React.useState<{ key: keyof Test | '_date' | '_net' | '_subjectName' | '_topicName' | 'title', direction: 'asc' | 'desc' }>({ key: '_date', direction: 'desc' });
+    const [sortConfig, setSortConfig] = React.useState<{ key: keyof Test | '_date' | '_net' | '_successRate' | '_subjectName' | '_topicName' | 'title', direction: 'asc' | 'desc' }>({ key: '_date', direction: 'desc' });
 
     // Initial student selection
     React.useEffect(() => {
@@ -112,8 +111,10 @@ export function ResultsClient() {
             const correct = test.correctAnswers || 0;
             const incorrect = test.incorrectAnswers || 0;
             const empty = test.emptyAnswers || 0;
+            const totalQuestions = correct + incorrect + empty;
             
             const net = isCompleted ? (correct - (incorrect / 3)) : 0;
+            const successRate = isCompleted && totalQuestions > 0 ? Math.max(0, (net / totalQuestions) * 100) : 0;
             
             // --- GÜÇLÜ TARİH PARSING ---
             let sortableDate = 0;
@@ -140,6 +141,7 @@ export function ResultsClient() {
                 _subjectName: subjectName,
                 _topicName: topicName,
                 _net: net,
+                _successRate: successRate,
                 _date: sortableDate,
                 _dateStr: dateDisplay,
                 _translatedType: translateType(test.sourceType)
@@ -206,7 +208,7 @@ export function ResultsClient() {
     };
 
     const handleDownloadCSV = () => {
-        const headers = ["Ders", "Konu", "Tür", "Sınav Adı", "Tarih", "Doğru", "Yanlış", "Boş", "Net"];
+        const headers = ["Ders", "Konu", "Tür", "Sınav Adı", "Tarih", "Doğru", "Yanlış", "Boş", "Net", "Başarı (%)"];
         const rows = filteredAndSortedData.map(d => [
             `"${d._subjectName}"`,
             `"${d._topicName}"`,
@@ -216,7 +218,8 @@ export function ResultsClient() {
             d.correctAnswers || 0,
             d.incorrectAnswers || 0,
             d.emptyAnswers || 0,
-            d._net.toFixed(2)
+            d._net.toFixed(2),
+            `"%${d._successRate.toFixed(1)}"`
         ]);
         const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
         const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -355,6 +358,7 @@ export function ResultsClient() {
                                     <TableHead className={cn(themeColors.TABLE_HEADER, "text-center")}>Y</TableHead>
                                     <TableHead className={cn(themeColors.TABLE_HEADER, "text-center")}>B</TableHead>
                                     <TableHead onClick={() => handleSort('_net')} className={cn(themeColors.TABLE_HEADER, "text-center text-indigo-600 dark:text-indigo-400")}><div className="flex items-center justify-center">Net {sortConfig.key === '_net' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
+                                    <TableHead onClick={() => handleSort('_successRate')} className={cn(themeColors.TABLE_HEADER, "text-center text-emerald-600 dark:text-emerald-500")}><div className="flex items-center justify-center">Başarı {sortConfig.key === '_successRate' && <ArrowUpDown className="ml-1 w-3 h-3 text-emerald-500"/>}</div></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -381,6 +385,21 @@ export function ResultsClient() {
                                                 </div>
                                             ) : (
                                                 <Badge variant="outline" className="animate-pulse bg-amber-50 text-amber-600 border-amber-200 text-[10px] font-bold">Bekleniyor</Badge>
+                                            )}
+                                        </TableCell>
+
+                                        <TableCell className="px-4 py-4 text-center">
+                                            {test.status === 'Sonuçlandı' ? (
+                                                <div className={cn(
+                                                    "px-2 py-1 rounded-lg font-black text-sm border",
+                                                    test._successRate >= 75 ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800" :
+                                                    test._successRate >= 50 ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800" :
+                                                    "bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800"
+                                                )}>
+                                                    %{test._successRate.toFixed(1)}
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-400 font-bold">-</span>
                                             )}
                                         </TableCell>
                                     </TableRow>

@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, ArrowLeft, BookCopy, FileText, HelpCircle, ClipboardList, Plus, Settings } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, ArrowLeft, BookCopy, FileText, HelpCircle, ClipboardList, Plus, Settings, FileJson, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
 import { onPracticeExamsUpdate, addPracticeExam, updatePracticeExam, deletePracticeExam } from '@/lib/dataService';
 import type { PracticeExam } from '@/lib/data';
@@ -21,15 +21,22 @@ const themeColors = {
     CARD_BG: "bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-300",
     ICON_BOX: "bg-gradient-to-br from-amber-500 to-orange-500 p-2.5 rounded-xl shadow-md shadow-orange-500/20 text-white",
     BUTTON_GLASS: "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm transition-all",
+    INPUT_BG: "bg-slate-50 border border-slate-200 text-slate-900 focus:border-indigo-500 transition-all",
 };
 
 export function PracticeExamsClient() {
     const { familyId } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
+    
+    // States
     const [exams, setExams] = useState<PracticeExam[]>([]);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingExam, setEditingExam] = useState<PracticeExam | null>(null);
+    
+    // Bulk Import States
+    const [importModal, setImportModal] = useState<{isOpen: boolean, exam: PracticeExam | null}>({ isOpen: false, exam: null });
+    const [jsonInput, setJsonInput] = useState("");
 
     useEffect(() => {
         if (!familyId) return;
@@ -74,8 +81,56 @@ export function PracticeExamsClient() {
         router.push(`/education/management/practice-exams/${examId}`);
     }
 
+    // JSON İçe Aktarma İşlemi
+    const handleImportJson = async () => {
+        if (!importModal.exam || !jsonInput.trim()) return;
+        
+        try {
+            const parsedData = JSON.parse(jsonInput);
+            
+            // Temel Format Doğrulaması
+            if (!parsedData.subjects || !Array.isArray(parsedData.subjects)) {
+                throw new Error("Geçersiz format: JSON verisi bir 'subjects' dizisi içermelidir.");
+            }
+
+            // Sınavı Güncelle
+            await updatePracticeExam(importModal.exam.id, { 
+                subjects: parsedData.subjects 
+            });
+            
+            toast({ 
+                title: "Toplu Veri Aktarıldı ✅", 
+                description: `${importModal.exam.name} başarıyla güncellendi.` 
+            });
+            
+            setImportModal({ isOpen: false, exam: null });
+            setJsonInput("");
+        } catch (error: any) {
+            toast({ 
+                title: "JSON Ayrıştırma Hatası", 
+                description: error.message || "Geçersiz JSON formatı.", 
+                variant: "destructive" 
+            });
+        }
+    };
+
+    const sampleJson = `{
+  "subjects": [
+    {
+      "name": "Türkçe",
+      "questionCount": 40,
+      "answerKey": ["A", "B", "C", "D", "A", "B"]
+    },
+    {
+      "name": "Matematik",
+      "questionCount": 40,
+      "answerKey": ["E", "D", "C", "B", "A"]
+    }
+  ]
+}`;
+
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans relative overflow-hidden flex flex-col">
+        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans relative overflow-hidden flex flex-col pb-24">
              {/* Açık Tema Arka Plan */}
             <div className="fixed inset-0 bg-slate-50 -z-50" />
             
@@ -143,7 +198,8 @@ export function PracticeExamsClient() {
                                             <span className="font-medium">{totalQuestions} Toplam Soru</span>
                                         </div>
                                     </CardContent>
-                                    <CardFooter className="flex justify-end items-center gap-1.5 pt-4 border-t border-slate-100 bg-slate-50/50 mt-auto">
+                                    
+                                    <CardFooter className="flex flex-wrap justify-end items-center gap-1.5 pt-4 border-t border-slate-100 bg-slate-50/50 mt-auto">
                                         <Button 
                                             size="sm" 
                                             className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-sm mr-auto" 
@@ -152,6 +208,20 @@ export function PracticeExamsClient() {
                                             Yönet
                                         </Button>
                                         
+                                        {/* JSON İçe Aktar Butonu */}
+                                        <Button 
+                                            size="icon" 
+                                            variant="ghost" 
+                                            title="JSON İle Toplu Veri Ekle"
+                                            className="h-8 w-8 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg" 
+                                            onClick={() => {
+                                                setJsonInput("");
+                                                setImportModal({ isOpen: true, exam });
+                                            }}
+                                        >
+                                            <FileJson className="h-4 w-4"/>
+                                        </Button>
+
                                         <Button 
                                             size="icon" 
                                             variant="ghost" 
@@ -175,8 +245,8 @@ export function PracticeExamsClient() {
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter className="mt-4">
-                                                    <AlertDialogCancel className="bg-white border-slate-300 hover:bg-slate-50 text-slate-700">İptal</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteExam(exam.id)} className="bg-rose-600 hover:bg-rose-700 text-white border-none shadow-sm">Evet, Sil</AlertDialogAction>
+                                                    <AlertDialogCancel className="bg-white border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl">İptal</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteExam(exam.id)} className="bg-rose-600 hover:bg-rose-700 text-white border-none shadow-sm rounded-xl">Evet, Sil</AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
@@ -200,12 +270,64 @@ export function PracticeExamsClient() {
                 </div>
             </main>
             
+            {/* Sınav Düzenleme/Ekleme Modalı */}
              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl">
                     <NewPracticeExamForm
                         onSubmit={handleFormSubmit}
                         initialData={editingExam}
                     />
+                </DialogContent>
+            </Dialog>
+
+            {/* JSON İçe Aktar Modalı */}
+            <Dialog open={importModal.isOpen} onOpenChange={(open) => setImportModal({ ...importModal, isOpen: open })}>
+                <DialogContent className="sm:max-w-2xl bg-white border-slate-200 text-slate-900 rounded-3xl shadow-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2 text-slate-800">
+                            <FileJson className="w-5 h-5 text-emerald-500" />
+                            Toplu Veri İçe Aktar
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-500">
+                            <strong>{importModal.exam?.name}</strong> denemesine dersleri, soru sayılarını ve cevap anahtarlarını JSON formatında tek seferde ekleyin.
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="py-4 space-y-4">
+                        <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4">
+                            <div className="flex gap-2 items-start text-blue-800">
+                                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                                <div className="text-sm">
+                                    <p className="font-semibold mb-1">Örnek JSON Formatı:</p>
+                                    <pre className="bg-white/60 p-2 rounded-lg border border-blue-100 text-xs overflow-x-auto whitespace-pre-wrap">
+                                        {sampleJson}
+                                    </pre>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">JSON Verisini Buraya Yapıştırın</label>
+                            <textarea
+                                autoFocus
+                                value={jsonInput}
+                                onChange={(e) => setJsonInput(e.target.value)}
+                                placeholder='{"subjects": [...]}'
+                                className={cn(
+                                    "w-full h-64 p-4 rounded-xl text-sm font-mono resize-none outline-none shadow-inner",
+                                    themeColors.INPUT_BG
+                                )}
+                                spellCheck={false}
+                            />
+                        </div>
+                    </div>
+                    
+                    <DialogFooter className="gap-2 sm:gap-0 mt-2">
+                        <Button variant="ghost" onClick={() => setImportModal({ isOpen: false, exam: null })} className="rounded-xl text-slate-600">Vazgeç</Button>
+                        <Button onClick={handleImportJson} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 px-8">
+                            Verileri Aktar
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -6,14 +5,13 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Trash2, BookMarked, Library, FileText, HelpCircle, CheckCircle, XCircle, Edit, MoreVertical, ArrowRight } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, BookMarked, Library, FileText, HelpCircle, CheckCircle, XCircle, Edit, MoreVertical, ArrowRight, FileJson, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { onTrackedBooksUpdate, addTrackedBook, deleteTrackedBook, updateTrackedBook, onAllTrackedBookTestsUpdate, onTestsUpdate } from "@/lib/dataService";
+import { onTrackedBooksUpdate, addTrackedBook, deleteTrackedBook, updateTrackedBook, onAllTrackedBookTestsUpdate, onTestsUpdate, addTrackedBookTest } from "@/lib/dataService";
 import type { TrackedBook, TrackedBookTest, Test } from "@/lib/data";
-import { PageHeader } from "@/components/page-header";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -45,9 +43,15 @@ export function BooksClient() {
   const [allBookTests, setAllBookTests] = useState<TrackedBookTest[]>([]);
   const [allTests, setAllTests] = useState<Test[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Book Form States
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<TrackedBook | null>(null);
   const [newBook, setNewBook] = useState({ title: "", publisher: "", bookType: "standard" as "standard" | "open_ended" });
+
+  // Bulk Import States
+  const [importModal, setImportModal] = useState<{isOpen: boolean, book: TrackedBook | null}>({ isOpen: false, book: null });
+  const [jsonInput, setJsonInput] = useState("");
 
   useEffect(() => {
     const unsubBooks = onTrackedBooksUpdate((books) => {
@@ -122,7 +126,6 @@ export function BooksClient() {
       setIsDialogOpen(false);
       setEditingBook(null);
     } catch (error: any) {
-      console.error('Error processing book:', error);
       toast({
         title: "Hata",
         description: error.message || 'İşlem sırasında bir hata oluştu!',
@@ -136,7 +139,6 @@ export function BooksClient() {
       await deleteTrackedBook(id);
       toast({ title: "Kitap silindi!", variant: "destructive" });
     } catch (error: any) {
-      console.error('Error deleting book:', error);
       toast({
         title: "Hata",
         description: error.message || 'Kitap silinemedi!',
@@ -153,7 +155,128 @@ export function BooksClient() {
       setEditingBook(book);
       setIsDialogOpen(true);
   }
-  
+
+  // --- HATA GİDERİLMİŞ JSON IMPORT MANTIĞI ---
+  const handleImportJson = async () => {
+    if (!importModal.book || !jsonInput.trim()) return;
+    const targetBook = importModal.book;
+    
+    try {
+        const parsedData = JSON.parse(jsonInput);
+        if (!parsedData.subjects || !Array.isArray(parsedData.subjects)) {
+            throw new Error("Geçersiz format: JSON verisi bir 'subjects' dizisi içermelidir.");
+        }
+
+        // Mevcut veriyi kopyala
+        const existingSubjects = targetBook.subjects || [];
+        const updatedSubjects = JSON.parse(JSON.stringify(existingSubjects)); 
+        const testsToCreate: any[] = [];
+
+        // 1. Önce bozuk/eksik ID'si olan MEVCUT verileri temizle ve onar
+        updatedSubjects.forEach((s: any) => {
+            if (!s.id) s.id = "s_" + Date.now().toString() + Math.random().toString(36).substring(2, 9);
+            if (s.topics && Array.isArray(s.topics)) {
+                s.topics.forEach((t: any) => {
+                    if (!t.id) t.id = "t_" + Date.now().toString() + Math.random().toString(36).substring(2, 9);
+                });
+            }
+        });
+
+        // 2. Yeni JSON verilerini ayrıştır ve ekle
+        for (const subjData of parsedData.subjects) {
+            if (!subjData.name) continue;
+
+            let subject = updatedSubjects.find((s: any) => s.name?.toLocaleLowerCase('tr-TR') === subjData.name.toLocaleLowerCase('tr-TR'));
+            if (!subject) {
+                subject = { 
+                    id: "s_" + Date.now().toString() + Math.random().toString(36).substring(2, 9), 
+                    name: subjData.name, 
+                    topics: [] 
+                };
+                updatedSubjects.push(subject);
+            }
+
+            if (subjData.topics && Array.isArray(subjData.topics)) {
+                if (!subject.topics) subject.topics = [];
+                
+                for (const topicData of subjData.topics) {
+                    if (!topicData.name) continue;
+
+                    let topic = subject.topics.find((t: any) => t.name?.toLocaleLowerCase('tr-TR') === topicData.name.toLocaleLowerCase('tr-TR'));
+                    if (!topic) {
+                        topic = { 
+                            id: "t_" + Date.now().toString() + Math.random().toString(36).substring(2, 9), 
+                            name: topicData.name 
+                        };
+                        subject.topics.push(topic);
+                    }
+
+                    if (topicData.tests && Array.isArray(topicData.tests)) {
+                        for (const testData of topicData.tests) {
+                            // Firebase "undefined" reddetmesini engellemek için SIKI TÜR DÖNÜŞÜMÜ (Strict String Cast)
+                            const safeSubjectId = subject.id ? String(subject.id) : ("s_" + Date.now());
+                            const safeTopicId = topic.id ? String(topic.id) : ("t_" + Date.now());
+
+                            const testPayload: any = {
+                                subjectId: safeSubjectId,
+                                topicId: safeTopicId,
+                                name: String(testData.name || "İsimsiz Test"),
+                                questionCount: Number(testData.questionCount) || 20,
+                            };
+                            
+                            if (targetBook.bookType !== 'open_ended') {
+                                testPayload.answerKey = {};
+                                if (testData.answerKey) {
+                                    if (Array.isArray(testData.answerKey)) {
+                                        testData.answerKey.forEach((ans: any, idx: number) => { 
+                                            // undefined/null array elemanlarını engelle
+                                            if (ans !== undefined && ans !== null && ans !== "") {
+                                                testPayload.answerKey[String(idx + 1)] = String(ans); 
+                                            }
+                                        });
+                                    } else if (typeof testData.answerKey === 'object') {
+                                        Object.entries(testData.answerKey).forEach(([k, v]) => {
+                                            if (v !== undefined && v !== null && v !== "") {
+                                                testPayload.answerKey[k] = String(v);
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                            // Testleri sıraya al
+                            testsToCreate.push(testPayload);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Veritabanı Kayıt İşlemleri
+        // Önce kitap hiyerarşisini (Ders ve Konuları) kaydet ki Firebase tarafında bütünlük sağlansın
+        await updateTrackedBook(targetBook.id, { subjects: updatedSubjects });
+        
+        // Sonra test belgelerini teker teker ilgili koleksiyona kaydet
+        if (testsToCreate.length > 0) {
+             for (const testPayload of testsToCreate) {
+                await addTrackedBookTest(targetBook.id, testPayload);
+             }
+        }
+        
+        toast({ title: "Toplu Veri Aktarıldı ✅", description: `${targetBook.title} kitabına ${testsToCreate.length} test eklendi.` });
+        setJsonInput("");
+        setImportModal({ isOpen: false, book: null });
+    } catch (error: any) {
+        toast({ title: "Veri Aktarım Hatası", description: error.message || "Geçersiz JSON formatı.", variant: "destructive" });
+    }
+  };
+
+  const getSampleJson = (bookType: string = 'standard') => {
+      if (bookType === 'open_ended') {
+          return `{\n  "subjects": [\n    {\n      "name": "Matematik",\n      "topics": [\n        {\n          "name": "Üslü Sayılar",\n          "tests": [\n            { "name": "Klasik Sorular Testi 1", "questionCount": 5 },\n            { "name": "Klasik Sorular Testi 2", "questionCount": 8 }\n          ]\n        }\n      ]\n    }\n  ]\n}`;
+      }
+      return `{\n  "subjects": [\n    {\n      "name": "Matematik",\n      "topics": [\n        {\n          "name": "Üslü Sayılar",\n          "tests": [\n            { \n              "name": "Test 1", \n              "questionCount": 12, \n              "answerKey": ["A", "B", "C", "D", "E"] \n            }\n          ]\n        }\n      ]\n    }\n  ]\n}`;
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-hidden flex flex-col">
         {/* FIXED BACKGROUND */}
@@ -277,9 +400,23 @@ export function BooksClient() {
                     </div>
                 )}
               </CardContent>
-              <CardFooter className="p-4 pt-0 relative z-10">
-                <Button className="w-full bg-white/90 text-slate-900 hover:bg-white font-bold shadow-lg" onClick={() => handleManageBook(book.id)}>
+              <CardFooter className="p-4 pt-0 relative z-10 flex gap-2">
+                <Button className="flex-1 bg-white/90 text-slate-900 hover:bg-white font-bold shadow-lg" onClick={() => handleManageBook(book.id)}>
                     Kitabı Yönet <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                
+                {/* JSON İçe Aktar Butonu */}
+                <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    title="JSON İle Toplu İçerik Ekle"
+                    className="h-10 w-10 text-slate-300 hover:text-emerald-400 hover:bg-emerald-500/20 rounded-xl bg-white/5 border border-white/10 shrink-0 transition-colors" 
+                    onClick={() => {
+                        setJsonInput("");
+                        setImportModal({ isOpen: true, book });
+                    }}
+                >
+                    <FileJson className="h-5 w-5"/>
                 </Button>
               </CardFooter>
             </Card>
@@ -288,13 +425,14 @@ export function BooksClient() {
       )}
       </div>
 
+       {/* Kitap Düzenleme/Ekleme Modalı */}
        <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!open) setEditingBook(null); setIsDialogOpen(open)}}>
-            <DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl shadow-2xl">
-                <DialogHeader>
+            <DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl shadow-2xl max-h-[90dvh] flex flex-col p-4 sm:p-6 overflow-hidden">
+                <DialogHeader className="shrink-0">
                     <DialogTitle>{editingBook ? "Kitabı Düzenle" : "Yeni Kitap Ekle"}</DialogTitle>
                     <DialogDescription className="text-slate-400">{editingBook ? "Kitap bilgilerini güncelleyin." : "Takip edilecek yeni bir kitap oluşturun."}</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
+                <div className="space-y-4 py-4 overflow-y-auto pr-1">
                     <div className="space-y-2">
                         <Label htmlFor="title" className="text-xs font-semibold text-slate-300 uppercase">Kitap Adı</Label>
                         <Input
@@ -333,9 +471,65 @@ export function BooksClient() {
                         </RadioGroup>
                     </div>
                 </div>
-                <DialogFooter>
+                <DialogFooter className="shrink-0 mt-2">
                     <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="text-slate-400 hover:text-white hover:bg-white/10 rounded-xl">İptal</Button>
                     <Button onClick={handleAddOrUpdateBook} className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl px-6">{editingBook ? "Güncelle" : "Ekle"}</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        {/* JSON İçe Aktar Modalı */}
+        <Dialog open={importModal.isOpen} onOpenChange={(open) => setImportModal({ ...importModal, isOpen: open })}>
+            <DialogContent className="sm:max-w-2xl w-[95vw] max-h-[90dvh] flex flex-col bg-slate-900 border-white/10 text-slate-100 rounded-3xl shadow-2xl p-4 sm:p-6 overflow-hidden">
+                <DialogHeader className="shrink-0">
+                    <DialogTitle className="text-xl font-bold flex items-center gap-2 text-slate-100">
+                        <FileJson className="w-5 h-5 text-emerald-400" />
+                        Toplu İçerik İçe Aktar
+                    </DialogTitle>
+                    <DialogDescription className="text-slate-400">
+                        <strong className="text-white">{importModal.book?.title}</strong> kitabına ait dersleri, konuları ve testleri JSON formatında tek seferde ekleyin.
+                    </DialogDescription>
+                </DialogHeader>
+                
+                <div className="py-2 space-y-4 overflow-y-auto flex-1 pr-1 custom-scrollbar">
+                    <div className="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-3 sm:p-4">
+                        <div className="flex gap-2 items-start text-indigo-200">
+                            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-indigo-400" />
+                            <div className="text-sm w-full">
+                                <p className="font-semibold mb-1 text-indigo-300">
+                                    Örnek JSON Formatı 
+                                    <span className="opacity-70 text-[10px] sm:text-xs ml-1 sm:ml-2 font-normal">
+                                        ({importModal.book?.bookType === 'open_ended' ? 'Açık Uçlu - Soru Sayılı' : 'Standart - Cevap Anahtarlı'})
+                                    </span>:
+                                </p>
+                                <pre className="bg-slate-950 p-3 rounded-lg border border-indigo-500/20 text-[10px] sm:text-xs overflow-x-auto whitespace-pre-wrap text-slate-300 font-mono max-h-32 sm:max-h-none overflow-y-auto">
+                                    {getSampleJson(importModal.book?.bookType)}
+                                </pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2 flex flex-col h-full">
+                        <Label className="text-xs font-semibold text-slate-300 uppercase tracking-widest shrink-0">JSON Verisini Buraya Yapıştırın</Label>
+                        <textarea
+                            autoFocus
+                            value={jsonInput}
+                            onChange={(e) => setJsonInput(e.target.value)}
+                            placeholder='{"subjects": [...]}'
+                            className={cn(
+                                "w-full min-h-[150px] sm:min-h-[250px] p-3 sm:p-4 rounded-xl text-xs sm:text-sm font-mono resize-none outline-none shadow-inner",
+                                glassColors.INPUT_BG
+                            )}
+                            spellCheck={false}
+                        />
+                    </div>
+                </div>
+                
+                <DialogFooter className="gap-2 sm:gap-0 mt-4 shrink-0">
+                    <Button variant="ghost" onClick={() => setImportModal({ isOpen: false, book: null })} className="rounded-xl text-slate-400 hover:text-white hover:bg-white/10 w-full sm:w-auto">Vazgeç</Button>
+                    <Button onClick={handleImportJson} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 px-8 w-full sm:w-auto mt-2 sm:mt-0">
+                        Verileri Aktar
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

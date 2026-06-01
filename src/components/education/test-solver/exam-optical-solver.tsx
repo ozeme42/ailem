@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -137,6 +136,9 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
             {/* Ders Bazlı Optik Listesi */}
             <Accordion type="single" collapsible className="space-y-4" value={openSubject || undefined} onValueChange={setOpenSubject}>
                 {examDetails.subjects.map((subject, sIdx) => {
+                    // subject.id tanımsızsa döngü indeksi ile string bir ID oluşturuyoruz
+                    const safeSubjectId = subject.id ? String(subject.id) : `subject-${sIdx}`;
+                    
                     let offset = 0;
                     for (let i = 0; i < sIdx; i++) {
                         offset += examDetails.subjects[i].questionCount;
@@ -151,10 +153,10 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
 
                     const threshold = Math.ceil(subject.questionCount * 0.9);
                     const isThresholdReached = answeredInSubject >= threshold;
-                    const isRevealed = isReviewMode || (test.revealedSubjectIds || []).includes(subject.id);
+                    const isRevealed = isReviewMode || (test.revealedSubjectIds || []).includes(safeSubjectId);
 
                     return (
-                        <AccordionItem key={subject.id} value={subject.id} className="border-none rounded-[1.5rem] md:rounded-[2rem] overflow-hidden bg-white dark:bg-slate-900 shadow-md border border-slate-200 dark:border-slate-800">
+                        <AccordionItem key={safeSubjectId} value={safeSubjectId} className="border-none rounded-[1.5rem] md:rounded-[2rem] overflow-hidden bg-white dark:bg-slate-900 shadow-md border border-slate-200 dark:border-slate-800">
                             <div className="flex flex-col sm:flex-row items-center justify-between pr-0 sm:pr-4 bg-slate-50/50 dark:bg-slate-950/50 hover:bg-slate-100 transition-colors border-b border-slate-100 dark:border-slate-800">
                                 <AccordionTrigger className="flex-1 px-4 md:px-6 py-4 md:py-5 hover:no-underline w-full">
                                     <div className="flex items-center gap-3 md:gap-4 text-left min-w-0">
@@ -191,7 +193,7 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                                                     <AlertDialogFooter className="mt-4 gap-2">
                                                         <AlertDialogCancel className="rounded-xl h-11 bg-slate-100 dark:bg-slate-800 border-none hover:bg-slate-200 dark:hover:bg-slate-700 font-bold m-0 flex-1">Vazgeç</AlertDialogCancel>
                                                         <AlertDialogAction 
-                                                            onClick={() => handleConfirmReveal(subject.id)}
+                                                            onClick={() => handleConfirmReveal(safeSubjectId)}
                                                             className="rounded-xl h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-bold m-0 shadow-lg shadow-indigo-500/20 flex-1"
                                                         >
                                                             Onayla ve Gör

@@ -1,0 +1,7 @@
+src/app/actions/
+src/app/budget/
+src/app/calendar/
+src/app/goals/
+src/app/actions/
+.next/
+.idx/

@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+// cn fonksiyonunu lib/utils dizininden import ediyoruz
+import { cn } from "@/lib/utils"; 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 

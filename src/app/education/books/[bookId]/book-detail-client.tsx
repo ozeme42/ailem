@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Edit, Trash2, Send, Check, FileText, HelpCircle, CheckCircle, XCircle, Library, BookOpen, ChevronRight, CheckSquare, ListX, BookCopy, AlertTriangle, FileOutput, MinusCircle, Filter, Clock } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Send, Check, FileText, HelpCircle, CheckCircle, XCircle, Library, BookOpen, ChevronRight, CheckSquare, ListX, BookCopy, AlertTriangle, FileOutput, MinusCircle, Filter, Clock, FileJson } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { onTrackedBookUpdate, updateTrackedBook, onTrackedBookTestsUpdate, addTrackedBookTest, updateTrackedBookTest, deleteTrackedBookTest, addTest, addBulkTrackedBookTests, deleteTrackedBookTopic, deleteTrackedBookSubject, onTestsUpdate, onSubjectsUpdate, updateSubjects } from "@/lib/dataService";
 import type { TrackedBook, TrackedBookSubject, TrackedBookTest, FamilyMember, Topic, Test } from "@/lib/data";
@@ -28,7 +27,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Combobox } from "@/components/ui/combobox";
-
 
 // --- DESIGN SYSTEM: Glassmorphism ---
 const glassColors = {
@@ -70,6 +68,7 @@ export default function BookDetailClient() {
   const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [isBulkTestDialogOpen, setIsBulkTestDialogOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   
   const [currentSubject, setCurrentSubject] = useState<TrackedBookSubject | null>(null);
   const [currentTopic, setCurrentTopic] = useState<Topic | null>(null);
@@ -77,6 +76,7 @@ export default function BookDetailClient() {
   
   const [newSubjectName, setNewSubjectName] = useState("");
   const [newTopicName, setNewTopicName] = useState("");
+  const [jsonInput, setJsonInput] = useState("");
   
   const [testFormData, setTestFormData] = useState<{name: string, questionCount: number, answerKey: {[key:string]: string}}>({ name: "", questionCount: 20, answerKey: {} });
   const [bulkTestFormData, setBulkTestFormData] = useState({ testCount: 10, questionCount: 20, prefix: "Test" });
@@ -124,9 +124,7 @@ export default function BookDetailClient() {
       if (!subject || !topic) continue;
 
       if (!test.openEnded) {
-          // Çoktan Seçmeli Analizi
           if (!test.studentAnswers || !testDefinition.answerKey) continue;
-          
           for (const qNum in test.studentAnswers) {
             const studentAnswer = test.studentAnswers[qNum];
             const correctAnswer = testDefinition.answerKey[qNum];
@@ -137,9 +135,7 @@ export default function BookDetailClient() {
             }
           }
       } else {
-          // Açık Uçlu Analizi
           if (!test.studentTextAnswersEvaluation) continue;
-
           for (const qNum in test.studentTextAnswersEvaluation) {
               const evalStatus = test.studentTextAnswersEvaluation[qNum];
               if (evalStatus === 'incorrect') {
@@ -171,9 +167,7 @@ export default function BookDetailClient() {
 
     const subjects = Array.from(new Set(flatList.map(m => m.subjectName))).sort();
     const topics = Array.from(new Set(
-        flatList
-            .filter(m => mistakeFilterSubject === 'all' || m.subjectName === mistakeFilterSubject)
-            .map(m => m.topicName)
+        flatList.filter(m => mistakeFilterSubject === 'all' || m.subjectName === mistakeFilterSubject).map(m => m.topicName)
     )).sort();
 
     return { filteredMistakes: filtered, subjectOptions: subjects, topicOptions: topics };
@@ -245,23 +239,35 @@ export default function BookDetailClient() {
 
   const handleTestSave = async () => {
     if (!book || !currentSubject || !currentTopic || !testFormData.name.trim()) return;
+    
+    if (!currentSubject.id || !currentTopic.id) {
+        toast({ title: "Veri Hatası", description: "Ders veya Konu ID'si bozuk. Lütfen sayfayı yenileyin.", variant: "destructive" });
+        return;
+    }
+
     const testPayload: Partial<Omit<TrackedBookTest, 'id'>> = {
-      subjectId: currentSubject.id,
-      topicId: currentTopic.id,
+      subjectId: String(currentSubject.id),
+      topicId: String(currentTopic.id),
       name: testFormData.name,
       questionCount: testFormData.questionCount,
     };
+    
     if (book.bookType !== 'open_ended') testPayload.answerKey = testFormData.answerKey;
 
     if (currentTest) await updateTrackedBookTest(currentTest.id, testPayload);
     else await addTrackedBookTest(book.id, testPayload);
+    
     setIsTestDialogOpen(false);
   };
   
   const handleBulkTestSave = async () => {
     if (!book || !currentSubject || !currentTopic) return;
+    if (!currentSubject.id || !currentTopic.id) {
+        toast({ title: "Veri Hatası", description: "Ders veya Konu ID'si bozuk. Lütfen sayfayı yenileyin.", variant: "destructive" });
+        return;
+    }
     const { testCount, questionCount, prefix } = bulkTestFormData;
-    await addBulkTrackedBookTests(book.id, currentSubject.id, currentTopic.id, testCount, questionCount, prefix);
+    await addBulkTrackedBookTests(book.id, String(currentSubject.id), String(currentTopic.id), testCount, questionCount, prefix);
     toast({ title: "Toplu Testler Eklendi", description: `${testCount} adet test başarıyla oluşturuldu.`});
     setIsBulkTestDialogOpen(false);
   };
@@ -285,37 +291,63 @@ export default function BookDetailClient() {
     }
   }
 
+  // --- HATA GİDERİLMİŞ ATAMA (ASSIGN) FONKSİYONU ---
   const handleAssignSelectedTests = async () => {
     if (!book || selectedTests.length === 0 || assignFormData.studentIds.length === 0) {
         toast({ title: "Eksik Bilgi", description: "Lütfen en az bir test ve bir öğrenci seçin.", variant: "destructive"});
         return;
     }
-    for (const testId of selectedTests) {
-      const testToAssign = bookTests.find(t => t.id === testId);
-      if (!testToAssign) continue;
-      for (const studentId of assignFormData.studentIds) {
-          const testData: any = {
-              title: `${book.title} - ${testToAssign.name}`,
-              subject: book.subjects?.find(s => s.id === testToAssign.subjectId)?.name || "Bilinmiyor",
-              topicId: testToAssign.topicId,
-              studentId: studentId,
-              questionCount: testToAssign.questionCount,
-              assignedDate: format(assignFormData.assignedDate, 'dd MMMM yyyy', { locale: tr }),
-              dueDate: format(assignFormData.dueDate, 'dd MMMM yyyy', { locale: tr }),
-              sourceType: 'trackedBook' as const,
-              sourceId: testToAssign.id,
-              status: 'Atandı' as const,
-              openEnded: book.bookType === 'open_ended',
-              answerKey: book.bookType !== 'open_ended' ? testToAssign.answerKey : undefined,
-          };
-          if (testData.answerKey === undefined) delete testData.answerKey;
-          await addTest(testData);
-      }
+
+    try {
+        for (const testId of selectedTests) {
+          const testToAssign = bookTests.find(t => t.id === testId);
+          if (!testToAssign) continue;
+
+          // Ders ve Konu adını güvenli şekilde buluyoruz
+          const subjectObj = book.subjects?.find(s => String(s.id) === String(testToAssign.subjectId));
+          const subjectName = subjectObj?.name || "Genel Ders";
+          const topicObj = subjectObj?.topics?.find(t => String(t.id) === String(testToAssign.topicId));
+          const topicName = topicObj?.name || "Genel Konu";
+
+          for (const studentId of assignFormData.studentIds) {
+              const testData: any = {
+                  title: `${book.title} - ${testToAssign.name || 'İsimsiz Test'}`,
+                  subject: subjectName,
+                  topic: topicName, 
+                  topicId: testToAssign.topicId || "genel",
+                  studentId: studentId,
+                  questionCount: Number(testToAssign.questionCount) || 20,
+                  assignedDate: format(assignFormData.assignedDate, 'dd MMMM yyyy', { locale: tr }),
+                  dueDate: format(assignFormData.dueDate, 'dd MMMM yyyy', { locale: tr }),
+                  sourceType: 'trackedBook',
+                  sourceId: testToAssign.id,
+                  status: 'Atandı',
+                  openEnded: book.bookType === 'open_ended',
+              };
+              
+              if (book.bookType !== 'open_ended') {
+                  testData.answerKey = testToAssign.answerKey || {};
+              }
+
+              // Firebase'in çökmesini engelleyen Derin Temizlik (Deep Clean)
+              Object.keys(testData).forEach(key => {
+                  if (testData[key] === undefined) {
+                      delete testData[key];
+                  }
+              });
+
+              await addTest(testData);
+          }
+        }
+        
+        toast({title: "Ödevler Atandı!", description: `${selectedTests.length} test başarıyla atandı.`});
+        setIsAssignDialogOpen(false);
+        setSelectedTests([]);
+        setAssignFormData(prev => ({ ...prev, studentIds: [] }));
+    } catch (error: any) {
+        console.error("Atama Hatası:", error);
+        toast({title: "Atama Hatası", description: error.message || "Bilinmeyen bir hata oluştu.", variant: "destructive"});
     }
-    toast({title: "Ödevler Atandı!", description: `${selectedTests.length} test başarıyla atandı.`});
-    setIsAssignDialogOpen(false);
-    setSelectedTests([]);
-    setAssignFormData(prev => ({ ...prev, studentIds: [] }));
   }
 
   const toggleTestSelection = (testId: string) => {
@@ -356,7 +388,123 @@ export default function BookDetailClient() {
     toast({ title: "Başarılı", description: "Yanlış analizi indirildi." });
   };
 
+  // --- JSON IMPORT MANTIĞI ---
+  const handleImportJson = async () => {
+    if (!book || !jsonInput.trim()) return;
+    
+    try {
+        const parsedData = JSON.parse(jsonInput);
+        if (!parsedData.subjects || !Array.isArray(parsedData.subjects)) {
+            throw new Error("Geçersiz format: JSON verisi bir 'subjects' dizisi içermelidir.");
+        }
+
+        const existingSubjects = book.subjects || [];
+        const updatedSubjects = JSON.parse(JSON.stringify(existingSubjects)); 
+        const testsToCreate: any[] = [];
+
+        updatedSubjects.forEach((s: any) => {
+            if (!s.id) s.id = "s_" + Date.now().toString() + Math.random().toString(36).substring(2, 9);
+            if (s.topics && Array.isArray(s.topics)) {
+                s.topics.forEach((t: any) => {
+                    if (!t.id) t.id = "t_" + Date.now().toString() + Math.random().toString(36).substring(2, 9);
+                });
+            }
+        });
+
+        for (const subjData of parsedData.subjects) {
+            if (!subjData.name) continue;
+
+            let subject = updatedSubjects.find((s: any) => s.name?.toLocaleLowerCase('tr-TR') === subjData.name.toLocaleLowerCase('tr-TR'));
+            if (!subject) {
+                subject = { 
+                    id: "s_" + Date.now().toString() + Math.random().toString(36).substring(2, 9), 
+                    name: subjData.name, 
+                    topics: [] 
+                };
+                updatedSubjects.push(subject);
+            }
+
+            if (subjData.topics && Array.isArray(subjData.topics)) {
+                if (!subject.topics) subject.topics = [];
+                
+                for (const topicData of subjData.topics) {
+                    if (!topicData.name) continue;
+
+                    let topic = subject.topics.find((t: any) => t.name?.toLocaleLowerCase('tr-TR') === topicData.name.toLocaleLowerCase('tr-TR'));
+                    if (!topic) {
+                        topic = { 
+                            id: "t_" + Date.now().toString() + Math.random().toString(36).substring(2, 9), 
+                            name: topicData.name 
+                        };
+                        subject.topics.push(topic);
+                    }
+
+                    if (topicData.tests && Array.isArray(topicData.tests)) {
+                        for (const testData of topicData.tests) {
+                            const safeSubjectId = subject.id ? String(subject.id) : ("s_" + Date.now());
+                            const safeTopicId = topic.id ? String(topic.id) : ("t_" + Date.now());
+
+                            const testPayload: any = {
+                                subjectId: safeSubjectId,
+                                topicId: safeTopicId,
+                                name: String(testData.name || "İsimsiz Test"),
+                                questionCount: Number(testData.questionCount) || 20,
+                            };
+                            
+                            if (book.bookType !== 'open_ended') {
+                                testPayload.answerKey = {};
+                                if (testData.answerKey) {
+                                    if (Array.isArray(testData.answerKey)) {
+                                        testData.answerKey.forEach((ans: any, idx: number) => { 
+                                            if (ans !== undefined && ans !== null && ans !== "") {
+                                                testPayload.answerKey[String(idx + 1)] = String(ans); 
+                                            }
+                                        });
+                                    } else if (typeof testData.answerKey === 'object') {
+                                        Object.entries(testData.answerKey).forEach(([k, v]) => {
+                                            if (v !== undefined && v !== null && v !== "") {
+                                                testPayload.answerKey[k] = String(v);
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                            testsToCreate.push(testPayload);
+                        }
+                    }
+                }
+            }
+        }
+
+        await updateTrackedBook(book.id, { subjects: updatedSubjects });
+        if (testsToCreate.length > 0) {
+             for (const testPayload of testsToCreate) {
+                await addTrackedBookTest(book.id, testPayload);
+             }
+        }
+        
+        toast({ title: "Toplu Veri Aktarıldı ✅", description: `${book.title} kitabına ${testsToCreate.length} test eklendi.` });
+        setJsonInput("");
+        setIsImportModalOpen(false);
+    } catch (error: any) {
+        toast({ title: "Veri Aktarım Hatası", description: error.message || "Geçersiz JSON formatı.", variant: "destructive" });
+    }
+  };
+
+  const getSampleJson = (bookType: string = 'standard') => {
+      if (bookType === 'open_ended') {
+          return `{\n  "subjects": [\n    {\n      "name": "Matematik",\n      "topics": [\n        {\n          "name": "Üslü Sayılar",\n          "tests": [\n            { "name": "Klasik Sorular Testi 1", "questionCount": 5 },\n            { "name": "Klasik Sorular Testi 2", "questionCount": 8 }\n          ]\n        }\n      ]\n    }\n  ]\n}`;
+      }
+      return `{\n  "subjects": [\n    {\n      "name": "Matematik",\n      "topics": [\n        {\n          "name": "Üslü Sayılar",\n          "tests": [\n            { \n              "name": "Test 1", \n              "questionCount": 12, \n              "answerKey": ["A", "B", "C", "D", "E"] \n            }\n          ]\n        }\n      ]\n    }\n  ]\n}`;
+  };
+
   if (!book) return <div className="flex h-screen items-center justify-center bg-slate-950"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div></div>;
+
+  // SADECE ÇOCUK / ÖĞRENCİ OLANLARI FİLTRELE
+  const renderStudents = familyMembers.filter(m => {
+    const role = m.role?.toLowerCase() || "";
+    return role.includes("çocuk") || role.includes("öğrenci") || role.includes("child") || role.includes("student");
+  });
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-hidden flex flex-col">
@@ -381,6 +529,9 @@ export default function BookDetailClient() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <Button onClick={() => setIsImportModalOpen(true)} className="bg-emerald-600/80 hover:bg-emerald-500 text-white border border-emerald-500/50 shadow-lg h-9">
+                        <FileJson className="mr-1.5 h-4 w-4" /> <span className="hidden sm:inline">JSON Aktar</span>
+                    </Button>
                     <Button onClick={() => { setCurrentSubject(null); setNewSubjectName(""); setIsSubjectDialogOpen(true); }} className={glassColors.BUTTON_GLASS}>
                         <Plus className="mr-1.5 h-4 w-4" /> <span className="hidden sm:inline">Ders Ekle</span>
                     </Button>
@@ -402,8 +553,10 @@ export default function BookDetailClient() {
 
                  <TabsContent value="contents" className="animate-in fade-in zoom-in-95 duration-300">
                     <Accordion type="multiple" className="w-full space-y-4">
-                        {(book.subjects || []).map(subject => (
-                            <AccordionItem key={subject.id} value={subject.id} className="border-none rounded-2xl overflow-hidden bg-white/5 border border-white/5">
+                        {(book.subjects || []).map((subject, sIndex) => {
+                            const subjectKey = subject.id || `subject-${sIndex}`;
+                            return (
+                            <AccordionItem key={subjectKey} value={subjectKey} className="border-none rounded-2xl overflow-hidden bg-white/5 border border-white/5">
                                 <div className="flex items-center justify-between bg-slate-900/30 pr-2">
                                     <AccordionTrigger className="p-4 hover:no-underline flex gap-3 text-slate-200 hover:text-white transition-colors w-full">
                                         <span className="font-bold text-lg flex items-center gap-2"><BookCopy className="w-5 h-5 text-cyan-400"/> {subject.name}</span>
@@ -417,7 +570,7 @@ export default function BookDetailClient() {
                                             <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-rose-400"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                                             <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
                                                 <AlertDialogHeader><AlertDialogTitle>Dersi Sil?</AlertDialogTitle><AlertDialogDescription className="text-slate-400">"{subject.name}" dersi tüm konuları ve testleriyle silinecek.</AlertDialogDescription></AlertDialogHeader>
-                                                <AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteSubject(subject.id)} className="bg-rose-600 hover:bg-rose-700">Sil</AlertDialogAction></AlertDialogFooter>
+                                                <AlertDialogFooter><AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteSubject(String(subject.id))} className="bg-rose-600 hover:bg-rose-700">Sil</AlertDialogAction></AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
                                     </div>
@@ -425,10 +578,11 @@ export default function BookDetailClient() {
                                 <AccordionContent className="p-0 border-t border-white/5 bg-black/20">
                                     <div className="p-3 space-y-2">
                                         <Accordion type="multiple" className="space-y-2">
-                                            {(subject.topics || []).map(topic => {
+                                            {(subject.topics || []).map((topic, tIndex) => {
+                                                const topicKey = topic.id || `topic-${sIndex}-${tIndex}`;
                                                 const topicTests = bookTests.filter(t => t.topicId === topic.id);
                                                 return (
-                                                    <AccordionItem key={topic.id} value={topic.id} className="border-none rounded-xl bg-slate-900/40 overflow-hidden">
+                                                    <AccordionItem key={topicKey} value={topicKey} className="border-none rounded-xl bg-slate-900/40 overflow-hidden">
                                                         <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-white/5">
                                                             <div className="flex items-center justify-between w-full pr-4">
                                                                 <div className="flex items-center gap-2"><FileText className="w-4 h-4 text-blue-400" /><span className="font-semibold text-slate-200">{topic.name}</span></div>
@@ -437,7 +591,8 @@ export default function BookDetailClient() {
                                                         </AccordionTrigger>
                                                         <AccordionContent className="px-3 pb-3 pt-1 bg-black/20">
                                                             <div className="space-y-2 mt-2">
-                                                                {topicTests.map(test => {
+                                                                {topicTests.map((test, testIndex) => {
+                                                                    const testKey = test.id || `test-${sIndex}-${tIndex}-${testIndex}`;
                                                                     const allAssignedToTest = allAssignedTests.filter(t => t.sourceId === test.id);
                                                                     const isAssigned = allAssignedToTest.some(t => t.status === 'Atandı');
                                                                     const isCompletedAny = allAssignedToTest.some(t => t.status === 'Sonuçlandı');
@@ -449,7 +604,7 @@ export default function BookDetailClient() {
                                                                         successRate = total > 0 ? ((lastResult.correctAnswers || 0) / total) * 100 : 0;
                                                                     }
                                                                     return (
-                                                                        <div key={test.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 transition-colors ml-2 group/test gap-3">
+                                                                        <div key={testKey} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 transition-colors ml-2 group/test gap-3">
                                                                             <div className="flex items-center gap-3 flex-1 min-w-0">
                                                                                 <Checkbox checked={selectedTests.includes(test.id)} onCheckedChange={() => toggleTestSelection(test.id)} className="border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500" />
                                                                                 <div className="flex flex-col min-w-0">
@@ -489,7 +644,8 @@ export default function BookDetailClient() {
                                     </div>
                                 </AccordionContent>
                             </AccordionItem>
-                        ))}
+                            );
+                        })}
                     </Accordion>
                  </TabsContent>
                  
@@ -561,7 +717,105 @@ export default function BookDetailClient() {
 
         <Dialog open={isTopicDialogOpen} onOpenChange={setIsTopicDialogOpen}><DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl"><DialogHeader><DialogTitle>{currentTopic ? 'Konuyu Düzenle' : 'Yeni Konu Ekle'}</DialogTitle></DialogHeader><div className="py-4"><Input value={newTopicName} onChange={(e) => setNewTopicName(e.target.value)} placeholder="Konu Adı" className={glassColors.INPUT_BG}/></div><DialogFooter><Button variant="ghost" onClick={() => setIsTopicDialogOpen(false)} className="text-slate-400">İptal</Button><Button onClick={handleTopicSave} className="bg-indigo-600">Kaydet</Button></DialogFooter></Dialog></Dialog>
         <Dialog open={isTestDialogOpen} onOpenChange={setIsTestDialogOpen}><DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl"><DialogHeader><DialogTitle>{currentTest ? 'Testi Düzenle' : 'Yeni Test Ekle'}</DialogTitle></DialogHeader><div className="space-y-4 py-4"><div className="space-y-2"><Label className="text-xs font-bold text-slate-400">Test Adı</Label><Input value={testFormData.name} onChange={(e) => setTestFormData(prev => ({...prev, name: e.target.value}))} className={glassColors.INPUT_BG}/></div><div className="space-y-2"><Label className="text-xs font-bold text-slate-400">Soru Sayısı</Label><Input type="number" value={testFormData.questionCount} onChange={(e) => setTestFormData(prev => ({...prev, questionCount: parseInt(e.target.value) || 0}))} className={glassColors.INPUT_BG}/></div>{book.bookType !== 'open_ended' && (<div className="space-y-2"><Label className="text-xs font-bold text-slate-400">Cevap Anahtarı</Label><div className="bg-black/20 p-2 rounded-lg max-h-40 overflow-y-auto"><AnswerKeyForm totalQuestions={testFormData.questionCount} answerKey={testFormData.answerKey} onSave={(key) => setTestFormData(prev => ({...prev, answerKey: key}))} /></div></div>)}</div><DialogFooter><Button variant="ghost" onClick={() => setIsTestDialogOpen(false)} className="text-slate-400">İptal</Button><Button onClick={handleTestSave} className="bg-indigo-600">Kaydet</Button></DialogFooter></Dialog></Dialog>
-        <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}><DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl"><DialogHeader><DialogTitle>Ödev Ata</DialogTitle></DialogHeader><div className="space-y-4 py-4"><div className="space-y-2"><Label className="text-xs font-bold text-slate-400">Öğrenci(ler)</Label><div className="space-y-2 p-3 bg-black/20 rounded-xl max-h-40 overflow-y-auto">{familyMembers.filter(m => m.role.includes("Çocuk")).map(s => (<div key={s.id} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg cursor-pointer" onClick={() => handleAssignDialogStudentSelection(s.id, !assignFormData.studentIds.includes(s.id))}><Checkbox checked={assignFormData.studentIds.includes(s.id)} onCheckedChange={(checked) => handleAssignDialogStudentSelection(s.id, !!checked)} /><label className="font-medium text-slate-200 cursor-pointer text-sm">{s.name}</label></div>))}</div></div><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label className="text-xs font-bold text-slate-400">Bitiş</Label><Popover><PopoverTrigger asChild><Button variant={"outline"} className="w-full justify-start text-left bg-white/5 border-white/10"><CalendarIcon className="mr-2 h-4 w-4" />{format(assignFormData.dueDate, "d MMM yyyy", { locale: tr })}</Button></PopoverTrigger><PopoverContent className="w-auto p-0 bg-slate-900 border-white/10"><Calendar mode="single" selected={assignFormData.dueDate} onSelect={(d) => setAssignFormData(prev => ({...prev, dueDate: d || prev.dueDate}))} className="bg-slate-900 text-slate-100" /></PopoverContent></Popover></div></div></div><DialogFooter><Button variant="ghost" onClick={() => setIsAssignDialogOpen(false)} className="text-slate-400">İptal</Button><Button onClick={handleAssignSelectedTests} className="bg-indigo-600">Ödevleri Ata</Button></DialogFooter></Dialog></Dialog>
+        
+        <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+            <DialogContent className="bg-slate-900 border-white/10 text-slate-100 sm:max-w-md rounded-2xl">
+                <DialogHeader><DialogTitle>Ödev Ata</DialogTitle></DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label className="text-xs font-bold text-slate-400">Öğrenci(ler)</Label>
+                        <div className="space-y-2 p-3 bg-black/20 rounded-xl max-h-40 overflow-y-auto">
+                            {renderStudents.length > 0 ? (
+                                renderStudents.map(s => (
+                                    <div key={s.id} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg cursor-pointer" onClick={() => handleAssignDialogStudentSelection(s.id, !assignFormData.studentIds.includes(s.id))}>
+                                        <Checkbox checked={assignFormData.studentIds.includes(s.id)} onCheckedChange={(checked) => handleAssignDialogStudentSelection(s.id, !!checked)} />
+                                        <label className="font-medium text-slate-200 cursor-pointer text-sm">{s.name}</label>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-xs text-slate-500 italic text-center py-2">Atanabilecek çocuk/öğrenci profili bulunamadı.</p>
+                            )}
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold text-slate-400">Bitiş</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant={"outline"} className="w-full justify-start text-left bg-white/5 border-white/10">
+                                        <CalendarIcon className="mr-2 h-4 w-4" />{format(assignFormData.dueDate, "d MMM yyyy", { locale: tr })}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0 bg-slate-900 border-white/10">
+                                    <Calendar mode="single" selected={assignFormData.dueDate} onSelect={(d) => setAssignFormData(prev => ({...prev, dueDate: d || prev.dueDate}))} className="bg-slate-900 text-slate-100" />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={() => setIsAssignDialogOpen(false)} className="text-slate-400">İptal</Button>
+                    <Button onClick={handleAssignSelectedTests} className="bg-indigo-600">Ödevleri Ata</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+        
+        {/* JSON İçe Aktar Modalı */}
+        <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
+            <DialogContent className="sm:max-w-2xl w-[95vw] max-h-[90dvh] flex flex-col bg-slate-900 border-white/10 text-slate-100 rounded-3xl shadow-2xl p-4 sm:p-6 overflow-hidden">
+                <DialogHeader className="shrink-0">
+                    <DialogTitle className="text-xl font-bold flex items-center gap-2 text-slate-100">
+                        <FileJson className="w-5 h-5 text-emerald-400" />
+                        Toplu İçerik İçe Aktar
+                    </DialogTitle>
+                    <DialogDescription className="text-slate-400">
+                        <strong className="text-white">{book?.title}</strong> kitabına ait dersleri, konuları ve testleri JSON formatında tek seferde ekleyin.
+                    </DialogDescription>
+                </DialogHeader>
+                
+                <div className="py-2 space-y-4 overflow-y-auto flex-1 pr-1 custom-scrollbar">
+                    <div className="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-3 sm:p-4">
+                        <div className="flex gap-2 items-start text-indigo-200">
+                            <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-indigo-400" />
+                            <div className="text-sm w-full">
+                                <p className="font-semibold mb-1 text-indigo-300">
+                                    Örnek JSON Formatı 
+                                    <span className="opacity-70 text-[10px] sm:text-xs ml-1 sm:ml-2 font-normal">
+                                        ({book?.bookType === 'open_ended' ? 'Açık Uçlu - Soru Sayılı' : 'Standart - Cevap Anahtarlı'})
+                                    </span>:
+                                </p>
+                                <pre className="bg-slate-950 p-3 rounded-lg border border-indigo-500/20 text-[10px] sm:text-xs overflow-x-auto whitespace-pre-wrap text-slate-300 font-mono max-h-32 sm:max-h-none overflow-y-auto">
+                                    {getSampleJson(book?.bookType)}
+                                </pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2 flex flex-col h-full">
+                        <Label className="text-xs font-semibold text-slate-300 uppercase tracking-widest shrink-0">JSON Verisini Buraya Yapıştırın</Label>
+                        <textarea
+                            autoFocus
+                            value={jsonInput}
+                            onChange={(e) => setJsonInput(e.target.value)}
+                            placeholder='{"subjects": [...]}'
+                            className={cn(
+                                "w-full min-h-[150px] sm:min-h-[250px] p-3 sm:p-4 rounded-xl text-xs sm:text-sm font-mono resize-none outline-none shadow-inner",
+                                glassColors.INPUT_BG
+                            )}
+                            spellCheck={false}
+                        />
+                    </div>
+                </div>
+                
+                <DialogFooter className="gap-2 sm:gap-0 mt-4 shrink-0">
+                    <Button variant="ghost" onClick={() => setIsImportModalOpen(false)} className="rounded-xl text-slate-400 hover:text-white hover:bg-white/10 w-full sm:w-auto">Vazgeç</Button>
+                    <Button onClick={handleImportJson} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 px-8 w-full sm:w-auto mt-2 sm:mt-0">
+                        Verileri Aktar
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
         {selectedTests.length > 0 && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-5"><span className="font-bold">{selectedTests.length} Test Seçildi</span><div className="h-4 w-px bg-white/30"></div><button onClick={() => setIsAssignDialogOpen(true)} className="hover:underline font-medium flex items-center gap-1">Ata <Send className="w-4 h-4"/></button><button onClick={() => setSelectedTests([])} className="ml-2 bg-indigo-700 rounded-full p-1"><XCircle className="w-4 h-4"/></button></div>}
     </div>
   );

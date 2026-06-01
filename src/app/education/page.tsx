@@ -194,6 +194,7 @@ export default function EducationPage() {
       testCount: tests.length,
       pendingCount: (tests.length - completedTests.length) + (assignments.length - completedAssignments.length),
       successRate,
+      averageScore: totalQ > 0 ? (totalC / totalQ) * 5 : 0,
       overdueCount,
       completedAssignmentsRate: completedRate
     };
@@ -315,7 +316,7 @@ export default function EducationPage() {
             </div>
             <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
               <p className="text-xs font-bold text-slate-500 uppercase">Ortalama Puan</p>
-              <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">4.25<span className="text-sm font-medium text-slate-400">/5</span></p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{stats.averageScore.toFixed(2)}<span className="text-sm font-medium text-slate-400">/5</span></p>
               <MiniBarChart color={C.TEAL} />
             </div>
             <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
