@@ -451,7 +451,7 @@ export default function EducationPage() {
                              <span className="text-[10px] font-bold text-slate-500 uppercase">İlerleme</span>
                              <span className="text-xs font-black text-emerald-500">%{progress}</span>
                           </div>
-                          <Progress value={progress} className="h-1.5 bg-slate-100 dark:bg-slate-800" indicatorColor="bg-emerald-500" />
+                          <Progress value={progress} className="h-1.5 bg-slate-100 dark:bg-slate-800" indicatorClassName="bg-emerald-500" />
                           <p className="text-[10px] font-bold text-slate-400 mt-2 text-right">{book.completed} / {book.total} Görev</p>
                        </div>
                     </div>
