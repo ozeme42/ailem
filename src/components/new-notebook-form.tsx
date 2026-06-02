@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Palette, Type, Edit3, Smile } from 'lucide-react';
+import { Loader2, Palette, Type, Edit3, Smile, Lock } from 'lucide-react';
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -38,6 +38,7 @@ const formSchema = z.object({
   color: z.string().optional(),
   icon: z.string().optional(),
   parentId: z.string().optional(),
+  password: z.string().optional(),
 });
 
 type NewNotebookFormProps = {
@@ -58,7 +59,8 @@ export function NewNotebookForm({ onSubmit, initialData, availableFolders, curre
       description: initialData?.description || '',
       color: initialData?.color || notebookColors[0].class,
       icon: initialData?.icon || '🗒️',
-      parentId: initialData?.parentId || currentFolderId || 'root'
+      parentId: initialData?.parentId || currentFolderId || 'root',
+      password: initialData?.password || ''
     },
   });
   
@@ -69,7 +71,8 @@ export function NewNotebookForm({ onSubmit, initialData, availableFolders, curre
         description: initialData.description || '',
         color: initialData.color || notebookColors[0].class,
         icon: initialData.icon || '🗒️',
-        parentId: initialData.parentId || currentFolderId || 'root'
+        parentId: initialData.parentId || currentFolderId || 'root',
+        password: initialData.password || ''
       });
     } else {
         form.reset({
@@ -77,7 +80,8 @@ export function NewNotebookForm({ onSubmit, initialData, availableFolders, curre
             description: '',
             color: notebookColors[0].class,
             icon: '🗒️',
-            parentId: currentFolderId || 'root'
+            parentId: currentFolderId || 'root',
+            password: ''
         })
     }
   }, [initialData, form, currentFolderId]);
@@ -163,7 +167,21 @@ export function NewNotebookForm({ onSubmit, initialData, availableFolders, curre
                       )}
                     />
                 </div>
-
+                {form.watch('parentId') === 'root' && (
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem className="mt-4">
+                          <FormLabel className="text-slate-700 dark:text-slate-300 flex items-center gap-2"><Lock className="w-4 h-4"/> Şifre (İsteğe Bağlı)</FormLabel>
+                          <FormControl>
+                              <Input type="password" autoComplete="new-password" placeholder="Bu ana klasörü kilitlemek için şifre belirleyin..." {...field} className={cn("h-12 rounded-xl", glassColors.INPUT_BG)} />
+                          </FormControl>
+                          <FormMessage className="text-rose-400" />
+                        </FormItem>
+                      )}
+                    />
+                )}
 
 
                 <FormField

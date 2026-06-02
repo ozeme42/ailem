@@ -374,7 +374,7 @@ export default function EducationPage() {
                   <p className="text-white font-black text-base leading-tight mb-2">{focusTask.title}</p>
                   <p className="text-slate-400 text-sm flex items-center gap-1.5"><CalendarIcon className="w-3.5 h-3.5"/> {focusTask.dueDateStr}</p>
                 </div>
-                <Link href={focusTask.type === 'test' ? `/education/${focusTask.id}` : (focusTask.planLink || `/education/study`)} target={focusTask.type === 'study' && focusTask.planLink ? "_blank" : undefined}>
+                <Link href={focusTask.type === 'test' ? `/education/${focusTask.id}` : (focusTask.planLink || `/education/study`)} target={focusTask.type === 'study' ? "_blank" : undefined}>
                   <button className="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                     <PlayCircle className="w-3.5 h-3.5" /> Başla
                   </button>
@@ -531,7 +531,7 @@ export default function EducationPage() {
                             const overdue = isPast(tDate) && !isToday(tDate);
                             const duration = task.durationMinutes;
                             return (
-                              <Link href={task.type === 'test' ? `/education/${task.id}` : (task.planLink || `/education/study`)} target={task.type === 'study' && task.planLink ? "_blank" : undefined} key={task.id} className="block group">
+                              <Link href={task.type === 'test' ? `/education/${task.id}` : (task.planLink || `/education/study`)} target={task.type === 'study' ? "_blank" : undefined} key={task.id} className="block group">
                                 <div className={cn("bg-white dark:bg-slate-950 rounded-2xl p-3 border transition-all shadow-sm hover:shadow-md", theme.border, isDayToday && overdue ? "border-rose-300 dark:border-rose-800 bg-rose-50/30 dark:bg-rose-950/20" : "")}>
                                   <div className="flex items-start justify-between mb-2 gap-2">
                                     <div className="flex-1 min-w-0">
@@ -632,7 +632,7 @@ export default function EducationPage() {
                             <p className="text-sm font-black text-slate-700 dark:text-slate-200">{duration} dk</p>
                           </div>
                         </div>
-                        <Link href={task.type === 'test' ? `/education/${task.id}` : (task.planLink || `/education/study`)} target={task.type === 'study' && task.planLink ? "_blank" : undefined} className="block w-full">
+                        <Link href={task.type === 'test' ? `/education/${task.id}` : (task.planLink || `/education/study`)} target={task.type === 'study' ? "_blank" : undefined} className="block w-full">
                           <button className={cn("w-full py-2.5 rounded-xl font-black text-xs uppercase tracking-widest text-center transition-all shadow-md active:scale-95", task.type === 'test' ? "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20" : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20")}>
                             {task.type === 'test' ? 'Ödevi Çöz' : 'Konuya Çalış'}
                           </button>
@@ -706,7 +706,7 @@ export default function EducationPage() {
                             <p className="text-sm font-black text-slate-700 dark:text-slate-200">{duration} dk</p>
                           </div>
                         </div>
-                        <Link href={task.type === 'test' ? `/education/${task.id}` : (task.planLink || `/education/study`)} target={task.type === 'study' && task.planLink ? "_blank" : undefined} className="block w-full">
+                        <Link href={task.type === 'test' ? `/education/${task.id}` : (task.planLink || `/education/study`)} target={task.type === 'study' ? "_blank" : undefined} className="block w-full">
                           <button className={cn("w-full py-2.5 rounded-xl font-black text-xs uppercase tracking-widest text-center transition-all shadow-md active:scale-95", task.type === 'test' ? "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20" : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20")}>
                             {task.type === 'test' ? 'Ödevi Çöz' : 'Konuya Çalış'}
                           </button>

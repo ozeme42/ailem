@@ -25,18 +25,18 @@ const navConfig = [
     activeText: "text-blue-600 dark:text-blue-400"
   },
   { 
-    href: "/library", 
-    label: "Kitaplık", 
-    icon: Library,
-    activeBg: "bg-amber-50 dark:bg-amber-500/20",
-    activeText: "text-amber-600 dark:text-amber-400"
-  },
-  { 
     href: "/shopping", 
     label: "Alışveriş", 
     icon: ShoppingCart,
     activeBg: "bg-emerald-50 dark:bg-emerald-500/20",
     activeText: "text-emerald-600 dark:text-emerald-400"
+  },
+  { 
+    href: "/library", 
+    label: "Kitaplık", 
+    icon: Library,
+    activeBg: "bg-amber-50 dark:bg-amber-500/20",
+    activeText: "text-amber-600 dark:text-amber-400"
   },
   { 
     href: "/budget", 

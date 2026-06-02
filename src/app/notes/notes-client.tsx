@@ -7,7 +7,7 @@ import { onNotebooksUpdate, addNotebook, deleteNotebook, updateNotebook, onNotes
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, Edit, Search, MoreVertical, Folder, ChevronLeft, CalendarClock, PenLine, GripVertical, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from '@/components/ui/dialog';
 import { NewNotebookForm } from '@/components/new-notebook-form';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,8 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragOverlay,
@@ -82,6 +83,8 @@ export function NotesClient() {
     // UI State
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [passwordPrompt, setPasswordPrompt] = useState<{ folderId: string, expected: string } | null>(null);
+    const [passwordInput, setPasswordInput] = useState("");
     
     // Dialogs
     const [isFolderFormOpen, setIsFolderFormOpen] = useState(false);
@@ -114,7 +117,7 @@ export function NotesClient() {
     const currentFolder = useMemo(() => notebooks.find(n => n.id === currentFolderId) || null, [notebooks, currentFolderId]);
     
     const displayedFolders = useMemo(() => {
-        let filtered = notebooks.filter(n => (n.parentId || null) === currentFolderId);
+        let filtered = notebooks.filter(n => (n.parentId === 'root' ? null : (n.parentId || null)) === currentFolderId);
         if (searchTerm) {
             filtered = notebooks.filter(n => n.title.toLowerCase().includes(searchTerm.toLowerCase()));
         }
@@ -135,9 +138,11 @@ export function NotesClient() {
     const handleFolderSubmit = async (data: Omit<NotebookType, 'id' | 'familyId' | 'createdAt' | 'ownerId'>) => {
         if (!user) return;
         try {
-            const payload = { ...data, parentId: currentFolderId || undefined };
+            const finalParentId = data.parentId === 'root' ? null : data.parentId;
+            const payload = { ...data, parentId: finalParentId };
+            
             if (editingNotebook) {
-                await updateNotebook(editingNotebook.id, data); // updating doesn't change parentId here unless specified
+                await updateNotebook(editingNotebook.id, payload);
                 toast({ title: 'Klasör Güncellendi!', className: "bg-indigo-100 text-indigo-800" });
             } else {
                 await addNotebook(payload);
@@ -189,7 +194,7 @@ export function NotesClient() {
     };
 
     const goBack = () => {
-        if (currentFolder && currentFolder.parentId) {
+        if (currentFolder && currentFolder.parentId && currentFolder.parentId !== 'root') {
             setCurrentFolderId(currentFolder.parentId);
         } else if (currentFolderId) {
             setCurrentFolderId(null);
@@ -200,7 +205,8 @@ export function NotesClient() {
 
     // Drag and Drop implementation
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
         useSensor(KeyboardSensor)
     );
 
@@ -293,6 +299,7 @@ export function NotesClient() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500" />
                         <Input
                             placeholder="Ara..."
+                            autoComplete="off"
                             className="pl-9 h-10 bg-slate-100/50 border-slate-200 focus:bg-white rounded-full text-sm shadow-inner"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -317,7 +324,13 @@ export function NotesClient() {
                                             folder={folder} 
                                             index={i}
                                             noteCount={getNoteCount(folder.id)}
-                                            onClick={() => setCurrentFolderId(folder.id)}
+                                            onClick={() => {
+                                if (folder.password) {
+                                    setPasswordPrompt({ folderId: folder.id, expected: folder.password });
+                                } else {
+                                    setCurrentFolderId(folder.id);
+                                }
+                            }}
                                             onEdit={() => { setEditingNotebook(folder); setIsFolderFormOpen(true); }}
                                             onDelete={() => handleDeleteFolder(folder.id)}
                                         />
@@ -379,7 +392,7 @@ export function NotesClient() {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" sideOffset={10} className="w-48 rounded-2xl bg-white p-2 shadow-2xl border border-slate-100">
-                        <DropdownMenuItem onClick={() => { setEditingNote(null); setIsNoteFormOpen(true); }} className="rounded-xl py-3 px-4 font-bold text-slate-700 focus:bg-slate-50 focus:text-indigo-600 cursor-pointer text-base">
+                        <DropdownMenuItem onClick={() => { setEditingNote(null); noteForm.reset({ title: "", content: "", color: noteColors[0].class, notebookId: currentFolderId || 'root' }); setIsNoteFormOpen(true); }} className="rounded-xl py-3 px-4 font-bold text-slate-700 focus:bg-slate-50 focus:text-indigo-600 cursor-pointer text-base">
                             <PenLine className="w-5 h-5 mr-3" /> Yeni Not
                         </DropdownMenuItem>
                         <DropdownMenuSeparator className="my-1 bg-slate-100" />
@@ -437,8 +450,7 @@ export function NotesClient() {
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent className="z-[100]">
-                                                        <SelectItem value="root" className="font-bold">Ana Dizin</SelectItem>
-                                                        {notebooks.map(nb => (
+                                                        {notebooks.filter(nb => nb.parentId && nb.parentId !== 'root').map(nb => (
                                                             <SelectItem key={nb.id} value={nb.id} className="font-medium">{nb.title}</SelectItem>
                                                         ))}
                                                     </SelectContent>
@@ -502,10 +514,52 @@ export function NotesClient() {
                 </DialogContent>
             </Dialog>
 
+            {/* ŞİFRE PENCERESİ */}
+            <Dialog open={!!passwordPrompt} onOpenChange={(open) => { if (!open) { setPasswordPrompt(null); setPasswordInput(""); } }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Şifreli Klasör</DialogTitle>
+                        <DialogDescription>Bu klasörü açmak için şifre girmeniz gerekiyor.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Input 
+                            type="password" 
+                            placeholder="Şifreniz..." 
+                            autoComplete="new-password"
+                            value={passwordInput} 
+                            onChange={(e) => setPasswordInput(e.target.value)} 
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    if (passwordInput === passwordPrompt?.expected) {
+                                        setCurrentFolderId(passwordPrompt.folderId);
+                                        setPasswordPrompt(null);
+                                        setPasswordInput("");
+                                    } else {
+                                        toast({ title: 'Hatalı Şifre', variant: 'destructive' });
+                                    }
+                                }
+                            }}
+                            className="h-12 rounded-xl"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => { setPasswordPrompt(null); setPasswordInput(""); }}>İptal</Button>
+                        <Button onClick={() => {
+                            if (passwordInput === passwordPrompt?.expected) {
+                                setCurrentFolderId(passwordPrompt.folderId);
+                                setPasswordPrompt(null);
+                                setPasswordInput("");
+                            } else {
+                                toast({ title: 'Hatalı Şifre', variant: 'destructive' });
+                            }
+                        }} className="bg-indigo-600 hover:bg-indigo-700 text-white">Giriş Yap</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
         </div>
     );
 }
-
 
 // --- DND SORTABLE COMPONENTS ---
 function SortableFolder({ folder, index, noteCount, onClick, onEdit, onDelete }: any) {
@@ -526,16 +580,17 @@ function SortableFolder({ folder, index, noteCount, onClick, onEdit, onDelete }:
                 <div className={cn("p-2 rounded-xl bg-white shadow-sm border border-black/5 shrink-0", theme.icon)}>
                     <Folder className="w-5 h-5" strokeWidth={2.5} />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 flex items-center gap-2">
+                    {folder.password && <span className="flex items-center justify-center w-5 h-5 bg-slate-100 dark:bg-slate-800 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>}
                     <h3 className={cn("font-bold text-base leading-tight truncate", theme.text)}>{folder.title}</h3>
                 </div>
             </div>
 
             <div className="flex items-center gap-3 shrink-0 ml-4">
                 <p className={cn("text-[11px] font-bold uppercase tracking-wider hidden sm:block", theme.meta)}>{noteCount} İçerik</p>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/50" onClick={(e) => { e.stopPropagation(); onEdit(); }}><Edit className="w-4 h-4 text-slate-600" /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/50" onClick={(e) => { e.stopPropagation(); onDelete(); }}><Trash2 className="w-4 h-4 text-rose-500" /></Button>
+                <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 sm:bg-white/50" onClick={(e) => { e.stopPropagation(); onEdit(); }}><Edit className="w-4 h-4 text-slate-600" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 sm:bg-white/50" onClick={(e) => { e.stopPropagation(); onDelete(); }}><Trash2 className="w-4 h-4 text-rose-500" /></Button>
                 </div>
             </div>
         </div>
@@ -595,8 +650,8 @@ function SortableNote({ note, onEdit, onDelete }: any) {
                     </span>
                 </div>
 
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/30 dark:bg-black/20 hover:bg-rose-500 hover:text-white transition-colors" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+                <div className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-rose-100/50 dark:bg-rose-900/30 sm:bg-white/30 sm:dark:bg-black/20 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
                         <Trash2 className="w-4 h-4" />
                     </Button>
                 </div>

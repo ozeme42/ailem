@@ -270,6 +270,7 @@ export interface Notebook {
     description?: string;
     icon?: string;
     color?: string;
+    password?: string;
     parentId?: string; // NEW: For nested sub-folders
     sections: NotebookSection[];
     createdAt: string;

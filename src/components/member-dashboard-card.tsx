@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { BookOpen, BrainCircuit, Check, Flame, GraduationCap, Users, ListChecks, Gamepad2, Youtube, Heart, Clock, Trophy, CheckCircle2, Sparkles, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { updateTask, checkAndAwardBadges, updateFamilyMemberInFamily, updateHabitCompletion } from '@/lib/dataService';
+import { updateTask, checkAndAwardBadges, updateFamilyMemberInFamily, updateHabitCompletion, updatePrayerProgress } from '@/lib/dataService';
 import { FamilyMember, Task, Test, StudyAssignment, UserLibrary, MemorizationProgress, MemorizationItem, Book as BookType, StudyPlan, PrayerProgress, Video, TrackedBook } from '@/lib/data';
 import { Progress } from './ui/progress';
 import { format, isToday, parseISO, subDays, isValid } from 'date-fns';
@@ -234,6 +234,39 @@ export function MemberDashboardCard({
             toast({ title: 'Hata', variant: 'destructive'});
         }
     };
+
+    const handlePrayerCompletion = async (prayerName: string) => {
+        if (!familyId || !member) return;
+        const todayKey = format(new Date(), 'yyyy-MM-dd');
+        const memberPrayerData = prayerProgress.find(p => p.memberId === member.id);
+        const currentCompletions = memberPrayerData?.completions || {};
+        const todaysCompletions = [...(currentCompletions[todayKey] || [])];
+        
+        let newTodaysCompletions;
+        let isCompleting = false;
+        if (todaysCompletions.includes(prayerName)) {
+            newTodaysCompletions = todaysCompletions.filter(p => p !== prayerName);
+        } else {
+            newTodaysCompletions = [...todaysCompletions, prayerName];
+            isCompleting = true;
+        }
+
+        const newCompletions = { ...currentCompletions, [todayKey]: newTodaysCompletions };
+
+        try {
+            await updatePrayerProgress(member.id, newCompletions);
+            if (isCompleting) {
+                const xpChange = 5;
+                await updateFamilyMemberInFamily(familyId, member.id, {
+                    xp: (member.xp || 0) + xpChange,
+                    level: Math.floor(((member.xp || 0) + xpChange) / 1000) + 1,
+                });
+                toast({ title: '🎉 Harika!', description: `${prayerName} namazı kılındı. +${xpChange} XP`, className: "bg-teal-100 dark:bg-teal-900 border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-200" });
+            }
+        } catch (error) {
+            toast({ title: 'Hata', variant: 'destructive' });
+        }
+    };
     
     const theme = roleThemes[member.role] || defaultTheme;
     const allPendingItems = [...habits, ...pendingTasks, ...pendingTests, ...pendingStudies, ...readingBooks, ...pendingMemorization, ...pendingVideos, ...todaysPrayers.filter(p => !p.completed)];
@@ -336,7 +369,7 @@ export function MemberDashboardCard({
                             </h4>
                             <div className="flex justify-between items-center gap-1 p-1.5 md:p-2 bg-white dark:bg-slate-900 rounded-[1.2rem] border border-teal-100 dark:border-teal-900/50 shadow-sm">
                                 {todaysPrayers.map(prayer => (
-                                    <div key={prayer.name} className="flex flex-col items-center gap-1 flex-1 py-1 group">
+                                    <div key={prayer.name} className="flex flex-col items-center gap-1 flex-1 py-1 group cursor-pointer" onClick={() => handlePrayerCompletion(prayer.name)}>
                                                  <div className={cn(
                                                 "w-8 h-8 md:w-10 md:h-10 rounded-[12px] flex items-center justify-center transition-all duration-300 shadow-sm",
                                                 prayer.completed 
