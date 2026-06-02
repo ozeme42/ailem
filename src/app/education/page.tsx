@@ -249,7 +249,223 @@ export default function EducationPage() {
   );
 
   return (
+    <>
+<div className="md:hidden">
+
     <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] font-sans pb-28 text-slate-800 dark:text-slate-200">
+      <div className="h-[env(safe-area-inset-top,0px)]" />
+
+      {/* 1. Header (Simplified) */}
+      <header className="sticky top-0 z-50 bg-white/80 dark:bg-[#0F172A]/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800">
+        <div className="px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-blue-500/20">
+              <GraduationCap className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-black text-slate-900 dark:text-white leading-none">Eğitim Paneli</h1>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {/* Student selection - Compact */}
+            <div className="flex -space-x-2">
+              {studentMembers.map((s, i) => {
+                const active = selectedStudent?.id === s.id;
+                return (
+                  <button key={s.id} onClick={() => setSelectedStudent(s)}
+                    className={cn(
+                      "w-8 h-8 rounded-full border-2 flex items-center justify-center overflow-hidden transition-all",
+                      active ? "border-blue-500 z-10 scale-110" : "border-white dark:border-slate-800 z-0 opacity-70"
+                    )}>
+                    <div className="w-full h-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                       <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{s.name.charAt(0)}</span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+            <Link href="/education/management" className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 border border-transparent dark:border-slate-700">
+              <Settings className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main className="px-4 pt-4 space-y-6">
+        
+        {/* 2. Hero Card */}
+        {selectedStudent && (
+          <section>
+            <div className="rounded-3xl p-5 relative overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-600 shadow-xl shadow-indigo-500/20">
+                <div className="absolute -right-10 -top-10 w-32 h-32 bg-white/20 rounded-full blur-2xl" />
+                <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+                
+                <div className="relative z-10 flex justify-between items-start mb-4">
+                  <div>
+                    <h2 className="text-white font-black text-xl leading-none">{selectedStudent.name}</h2>
+                    <p className="text-white/70 text-xs font-bold uppercase tracking-wider mt-1 flex items-center gap-1">Öğrenci Profili</p>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <p className="text-white/80 text-[10px] font-bold uppercase">Başarı</p>
+                    <p className="text-white font-black text-2xl leading-none">% {Math.floor(stats.successRate)}</p>
+                  </div>
+                </div>
+
+                <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="w-3.5 h-3.5 text-blue-300" />
+                    <h3 className="text-[11px] font-black text-white/90 uppercase tracking-widest">Günün Odağı</h3>
+                  </div>
+                  {focusTask ? (
+                    <div className="flex items-center justify-between gap-3">
+                       <div className="min-w-0">
+                         <p className="text-white font-bold text-sm leading-tight truncate">{focusTask.title}</p>
+                         <p className="text-white/60 text-xs mt-0.5">{focusTask.dueDateStr}</p>
+                       </div>
+                       <Link href={focusTask.type === 'test' ? `/education/${focusTask.id}` : (focusTask.planLink || `/education/study`)} className="shrink-0 w-8 h-8 rounded-full bg-white text-indigo-600 flex items-center justify-center shadow-md">
+                         <PlayCircle className="w-4 h-4" />
+                       </Link>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-white/80 text-sm font-medium">
+                       <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Görev yok
+                    </div>
+                  )}
+                </div>
+            </div>
+          </section>
+        )}
+
+        {/* 3. Stats Grid (2x2) */}
+        <section className="grid grid-cols-2 gap-3">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 border border-slate-100 dark:border-slate-800 shadow-sm">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tamamlama</p>
+              <p className="text-lg font-black text-slate-800 dark:text-slate-100 mt-1">%{stats.completedAssignmentsRate.toFixed(0)}</p>
+              <MiniBarChart color={C.BLUE} />
+            </div>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 border border-slate-100 dark:border-slate-800 shadow-sm">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ortalama Puan</p>
+              <p className="text-lg font-black text-slate-800 dark:text-slate-100 mt-1">{stats.averageScore.toFixed(2)}</p>
+              <MiniBarChart color={C.TEAL} />
+            </div>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 border border-slate-100 dark:border-slate-800 shadow-sm">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Toplam Görev</p>
+              <p className="text-lg font-black text-slate-800 dark:text-slate-100 mt-1">{stats.testCount}</p>
+              <MiniBarChart color={C.PURPLE} />
+            </div>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 border border-rose-100 dark:border-rose-900/30 shadow-sm bg-rose-50/30 dark:bg-rose-950/20">
+              <p className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Geciken</p>
+              <p className="text-lg font-black text-rose-600 dark:text-rose-400 mt-1">{stats.overdueCount}</p>
+              <div className="w-full h-8 mt-2 opacity-50 relative z-10">
+                 <svg viewBox="0 0 100 30" className="w-full h-full fill-none stroke-rose-500 stroke-2" preserveAspectRatio="none">
+                    <path d="M0,25 Q20,5 40,20 T80,10 T100,20" />
+                 </svg>
+              </div>
+            </div>
+        </section>
+
+        {/* 4. Quick Access (2x2) */}
+        <section className="grid grid-cols-2 gap-3">
+            <Link href="/education/summaries" className="bg-gradient-to-br from-emerald-500 to-teal-600 p-3 rounded-2xl text-white flex flex-col justify-between min-h-[90px] shadow-md shadow-emerald-500/20 active:scale-95 transition-transform">
+                <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-sm mb-2"><ScrollText className="w-3.5 h-3.5" /></div>
+                <h3 className="text-sm font-black leading-tight">Ders Özetleri</h3>
+            </Link>
+            <Link href="/education/results" className="bg-gradient-to-br from-indigo-500 to-blue-600 p-3 rounded-2xl text-white flex flex-col justify-between min-h-[90px] shadow-md shadow-indigo-500/20 active:scale-95 transition-transform">
+                <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-sm mb-2"><ListTree className="w-3.5 h-3.5" /></div>
+                <h3 className="text-sm font-black leading-tight">Sonuçlarım</h3>
+            </Link>
+            <Link href="/education/study" className="bg-gradient-to-br from-purple-500 to-indigo-600 p-3 rounded-2xl text-white flex flex-col justify-between min-h-[90px] shadow-md shadow-purple-500/20 active:scale-95 transition-transform">
+                <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-sm mb-2"><BookOpen className="w-3.5 h-3.5" /></div>
+                <h3 className="text-sm font-black leading-tight">Konu Çalışma</h3>
+            </Link>
+            <Link href="/education/mistakes" className="bg-gradient-to-br from-rose-500 to-pink-600 p-3 rounded-2xl text-white flex flex-col justify-between min-h-[90px] shadow-md shadow-rose-500/20 active:scale-95 transition-transform">
+                <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-sm mb-2"><AlertCircle className="w-3.5 h-3.5" /></div>
+                <h3 className="text-sm font-black leading-tight">Yanlışlarım</h3>
+            </Link>
+        </section>
+
+        {/* 5. Pending Tasks (List Mode Mobile) */}
+        {pendingTasks.length > 0 && (
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+               <h2 className="text-lg font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                 <Layers className="w-4 h-4 text-indigo-500" /> Yapılacaklar
+               </h2>
+               <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 border-none">{pendingTasks.length}</Badge>
+            </div>
+            
+            <div className="space-y-3">
+              {pendingTasks.map(task => {
+                const category = task.subject;
+                const theme = categoryThemes[category] || categoryThemes['Diğer'];
+                const Icon = theme.icon;
+                const dueDate = task.dueDateObj;
+                const overdue = isPast(dueDate) && !isToday(dueDate);
+                const dueToday = isToday(dueDate);
+                
+                return (
+                  <Link href={task.type === 'test' ? `/education/${task.id}` : (task.planLink || `/education/study`)} key={task.id} className="block active:scale-[0.98] transition-transform">
+                    <div className={cn("bg-white dark:bg-slate-900 rounded-2xl p-3 flex gap-3 border shadow-sm relative overflow-hidden", theme.border, overdue ? "border-rose-300 dark:border-rose-800" : "")}>
+                       {overdue && <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500" />}
+                       
+                       <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border-2 bg-slate-50 dark:bg-slate-950", theme.border)}>
+                          <Icon className={cn("w-5 h-5", theme.text)} />
+                       </div>
+                       
+                       <div className="flex-1 min-w-0 flex flex-col justify-center">
+                          <div className="flex items-center gap-1.5 mb-1">
+                             <span className={cn("text-[9px] font-black uppercase tracking-widest", theme.text)}>{category}</span>
+                             {overdue && <span className="text-[9px] font-black text-rose-500 uppercase">Gecikti</span>}
+                             {!overdue && dueToday && <span className="text-[9px] font-black text-amber-500 uppercase">Bugün</span>}
+                          </div>
+                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{task.title}</h4>
+                          <div className="flex items-center gap-3 mt-1.5 text-[10px] font-bold text-slate-500">
+                             <span className="flex items-center gap-1"><CalendarIcon className="w-3 h-3" /> {task.dueDateStr}</span>
+                             <span className="flex items-center gap-1"><Timer className="w-3 h-3" /> {task.durationMinutes} dk</span>
+                             {task.questionCount && <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {task.questionCount} Soru</span>}
+                          </div>
+                       </div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* 6. Study Plans (Horizontal Scroll) */}
+        {assignmentsByBook.length > 0 && (
+          <section className="space-y-4">
+             <h2 className="text-lg font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                 <BookOpen className="w-4 h-4 text-emerald-500" /> Çalışma Planları
+             </h2>
+             <div className="flex overflow-x-auto gap-3 pb-4 snap-x snap-mandatory hide-scrollbar">
+                {assignmentsByBook.map((book) => {
+                  const progress = Math.round((book.completed / book.total) * 100);
+                  return (
+                    <div key={book.id} className="w-64 shrink-0 snap-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col">
+                       <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 line-clamp-2 min-h-[40px] mb-3">{book.title}</h3>
+                       <div className="mt-auto">
+                          <div className="flex justify-between items-end mb-1.5">
+                             <span className="text-[10px] font-bold text-slate-500 uppercase">İlerleme</span>
+                             <span className="text-xs font-black text-emerald-500">%{progress}</span>
+                          </div>
+                          <Progress value={progress} className="h-1.5 bg-slate-100 dark:bg-slate-800" indicatorColor="bg-emerald-500" />
+                          <p className="text-[10px] font-bold text-slate-400 mt-2 text-right">{book.completed} / {book.total} Görev</p>
+                       </div>
+                    </div>
+                  )
+                })}
+             </div>
+          </section>
+        )}
+      </main>
+    </div>
+
+</div>
+<div className="hidden md:block">
+<div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] font-sans pb-28 text-slate-800 dark:text-slate-200">
       <div className="h-[env(safe-area-inset-top,0px)]" />
 
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-[#0F172A]/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800">
@@ -839,5 +1055,8 @@ export default function EducationPage() {
         )}
       </main>
     </div>
-  );
+  
+</div>
+</>
+);
 }

@@ -376,7 +376,7 @@ return (
             <div className="relative z-10 grid grid-cols-2 gap-2 mt-4">
               {[
                 { label: "Bekleyen Görev", value: tasks.filter(t => !t.completed).length, emoji: "📋" },
-                { label: "Aktif Hedef",    value: activeGoals.length,                     emoji: "🎯" },
+                { label: "Eğitim Ödevleri",value: pendingTests.length,                    emoji: "🎯" },
                 { label: "Alışveriş",      value: shoppingSummary.totalPending,            emoji: "🛒" },
                 { label: "Kütüphane",      value: books.length,                            emoji: "📚" },
               ].map((item) => (

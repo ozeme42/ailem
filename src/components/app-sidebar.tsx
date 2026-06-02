@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { 
   Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, 
   ShoppingCart, UtensilsCrossed, Target, User, LogOut, 
-  CheckCircle, Notebook, Youtube, Columns3, Wallet, Timer, PanelLeft, ScrollText 
+  CheckCircle, Notebook, Youtube, Columns3, Wallet, Timer, PanelLeft, ScrollText, X 
 } from "lucide-react";
 import { 
   Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, 
@@ -97,41 +97,57 @@ export function AppSidebar() {
   const profileLink = user ? `/profile/${user.uid}` : `/login`;
 
   return (
+    
     <Sidebar 
         collapsible="icon" 
         className={cn("border-r-0", sidebarStyles.BASE)}
         style={{ "--sidebar-background": "rgba(255, 255, 255, 0.85)" } as React.CSSProperties}
     >
-      <SidebarHeader className={cn("px-4 py-5 h-[72px] flex justify-center", sidebarStyles.HEADER)}>
-        <div className="flex items-center w-full justify-between group-data-[collapsible=icon]:justify-center">
-            <div className={cn("flex items-center gap-3 transition-all duration-300", isCollapsed ? "hidden w-0 opacity-0" : "flex w-auto opacity-100")}>
-                <div className={cn("p-2 rounded-xl flex items-center justify-center shrink-0", sidebarStyles.ICON_BOX)}>
-                    <ChevronsRight className="w-5 h-5" />
-                </div>
-                <div className="flex flex-col overflow-hidden">
-                    <h2 className="text-lg font-black tracking-tight text-slate-800 dark:text-slate-100 leading-none whitespace-nowrap">Ailem</h2>
-                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-0.5 whitespace-nowrap">Yönetim Paneli</span>
-                </div>
-            </div>
-            <Button 
-                onClick={toggleSidebar} 
-                variant="ghost" 
-                size="icon" 
-                className={cn(
-                    "h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-800 rounded-lg transition-all",
-                    isCollapsed && "h-9 w-9 bg-white text-indigo-600 hover:bg-indigo-50 fixed left-4 top-5 z-50 shadow-md border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-indigo-400 dark:hover:bg-slate-800"
-                )}
-            >
-                <PanelLeft className="w-5 h-5" />
-            </Button>
-        </div>
-      </SidebarHeader>
+      {isMobile ? (
+         <SidebarHeader className="px-5 py-6 bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-b-3xl mb-2 relative shadow-lg">
+           <button onClick={() => setOpenMobile(false)} className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full backdrop-blur-md transition-all active:scale-90">
+               <X className="w-5 h-5 text-white" />
+           </button>
+           <div className="flex flex-col items-start mt-4">
+              <div className="w-16 h-16 rounded-full bg-white/20 border-2 border-white/50 flex items-center justify-center backdrop-blur-md mb-3 overflow-hidden shadow-inner">
+                 <User className="w-8 h-8 text-white/90" />
+              </div>
+              <h2 className="text-xl font-black leading-none">{user?.displayName || 'Kullanıcı'}</h2>
+              <p className="text-indigo-100 text-xs font-medium mt-1">{user?.email || 'Hoş geldiniz'}</p>
+           </div>
+         </SidebarHeader>
+      ) : (
+         <SidebarHeader className={cn("px-4 py-5 h-[72px] flex justify-center", sidebarStyles.HEADER)}>
+          <div className="flex items-center w-full justify-between group-data-[collapsible=icon]:justify-center">
+              <div className={cn("flex items-center gap-3 transition-all duration-300", isCollapsed ? "hidden w-0 opacity-0" : "flex w-auto opacity-100")}>
+                  <div className={cn("p-2 rounded-xl flex items-center justify-center shrink-0", sidebarStyles.ICON_BOX)}>
+                      <ChevronsRight className="w-5 h-5" />
+                  </div>
+                  <div className="flex flex-col overflow-hidden">
+                      <h2 className="text-lg font-black tracking-tight text-slate-800 dark:text-slate-100 leading-none whitespace-nowrap">Ailem</h2>
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-0.5 whitespace-nowrap">Yönetim Paneli</span>
+                  </div>
+              </div>
+              <Button 
+                  onClick={toggleSidebar} 
+                  variant="ghost" 
+                  size="icon" 
+                  className={cn(
+                      "h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-800 rounded-lg transition-all",
+                      isCollapsed && "h-9 w-9 bg-white text-indigo-600 hover:bg-indigo-50 fixed left-4 top-5 z-50 shadow-md border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-indigo-400 dark:hover:bg-slate-800"
+                  )}
+              >
+                  <PanelLeft className="w-5 h-5" />
+              </Button>
+          </div>
+        </SidebarHeader>
+      )}
 
-      <SidebarContent className="px-3 py-4 custom-scrollbar">
+      <SidebarContent className="px-4 py-2 custom-scrollbar">
         <SidebarMenu>
           {menuItems.map((item, index) => {
             if (item.section) {
-                return <div key={index} className={cn(sidebarStyles.SECTION_LABEL, "dark:text-slate-500")}>{item.section}</div>;
+                return <div key={index} className={cn(sidebarStyles.SECTION_LABEL, "dark:text-slate-500", isMobile ? "mt-6 text-xs" : "")}>{item.section}</div>;
             }
 
             const isSubItemActive = item.subItems?.some(sub => pathname === sub.href);
@@ -144,17 +160,17 @@ export function AppSidebar() {
                             isActive={isActive}
                             tooltip={item.label}
                             className={cn(
-                                "rounded-xl py-2.5 h-auto mb-1 group-data-[collapsible=icon]:justify-center transition-all duration-200", 
-                                isActive ? sidebarStyles.ITEM_ACTIVE : cn(sidebarStyles.ITEM_DEFAULT, "dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800")
+                                "rounded-2xl py-3.5 md:py-2.5 h-auto mb-1.5 md:mb-1 group-data-[collapsible=icon]:justify-center transition-all duration-200", 
+                                isActive ? sidebarStyles.ITEM_ACTIVE : cn(sidebarStyles.ITEM_DEFAULT, "dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800", isMobile ? "text-slate-700" : "")
                             )}
                         >
-                            {item.icon && <item.icon className={cn("w-5 h-5 shrink-0", isActive ? "text-white" : "opacity-60 group-hover:opacity-100 text-slate-500 dark:text-slate-400")} />}
-                            <span className="text-sm font-medium ml-3 group-data-[collapsible=icon]:hidden transition-all duration-300">{item.label}</span>
+                            {item.icon && <item.icon className={cn("w-6 h-6 md:w-5 md:h-5 shrink-0", isActive ? "text-white" : "opacity-70 group-hover:opacity-100 text-slate-500 dark:text-slate-400")} />}
+                            <span className={cn("font-bold md:font-medium ml-3 group-data-[collapsible=icon]:hidden transition-all duration-300", isMobile ? "text-base" : "text-sm")}>{item.label}</span>
                         </SidebarMenuButton>
                     </Link>
 
                     {item.subItems && (
-                        <SidebarMenuSub className="border-l-slate-200 dark:border-l-slate-800 ml-5 pl-2 my-1 space-y-1 group-data-[collapsible=icon]:hidden">
+                        <SidebarMenuSub className="border-l-slate-200 dark:border-l-slate-800 ml-6 md:ml-5 pl-2 my-1 space-y-1 group-data-[collapsible=icon]:hidden">
                             {item.subItems.map(subItem => {
                                 const isSubActive = pathname === subItem.href;
                                 return (
@@ -163,13 +179,13 @@ export function AppSidebar() {
                                             <SidebarMenuSubButton 
                                                 isActive={isSubActive}
                                                 className={cn(
-                                                    "rounded-lg transition-colors h-9",
+                                                    "rounded-xl transition-colors h-10 md:h-9",
                                                     isSubActive 
                                                         ? sidebarStyles.SUB_ITEM_ACTIVE 
                                                         : cn(sidebarStyles.SUB_ITEM_DEFAULT, "dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800/50 dark:border-transparent")
                                                 )}
                                             >
-                                                <span>{subItem.label}</span>
+                                                <span className={isMobile ? "text-sm font-semibold" : ""}>{subItem.label}</span>
                                             </SidebarMenuSubButton>
                                         </Link>
                                     </SidebarMenuSubItem>
@@ -191,18 +207,18 @@ export function AppSidebar() {
                         isActive={pathname.startsWith('/profile/')}
                         tooltip="Profilim"
                         className={cn(
-                            "rounded-xl h-12 mb-2 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:justify-center border border-transparent", 
+                            "rounded-2xl md:rounded-xl h-14 md:h-12 mb-2 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:justify-center border border-transparent", 
                             pathname.startsWith('/profile/') ? sidebarStyles.ITEM_ACTIVE : "hover:bg-white dark:hover:bg-slate-800 hover:border-slate-200 dark:hover:border-slate-700 hover:shadow-sm"
                         )}
                     >
-                        <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-tr from-indigo-500 to-fuchsia-500 p-[1.5px] mr-2 group-data-[collapsible=icon]:mr-0 transition-all">
+                        <div className="w-10 h-10 md:w-8 md:h-8 shrink-0 rounded-full bg-gradient-to-tr from-indigo-500 to-fuchsia-500 p-[1.5px] mr-3 md:mr-2 group-data-[collapsible=icon]:mr-0 transition-all">
                             <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 flex items-center justify-center">
-                                <User className="w-4 h-4 text-slate-600 dark:text-slate-300 group-data-[collapsible=icon]:w-3 group-data-[collapsible=icon]:h-3" />
+                                <User className="w-5 h-5 md:w-4 md:h-4 text-slate-600 dark:text-slate-300 group-data-[collapsible=icon]:w-3 group-data-[collapsible=icon]:h-3" />
                             </div>
                         </div>
                         <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden">
-                            <span className={cn("font-bold text-sm leading-none", pathname.startsWith('/profile/') ? "text-white" : "text-slate-700 dark:text-slate-200")}>Profilim</span>
-                            <span className={cn("text-[10px] mt-0.5 font-normal", pathname.startsWith('/profile/') ? "text-indigo-100" : "text-slate-400 dark:text-slate-500")}>Hesap Ayarları</span>
+                            <span className={cn("font-black md:font-bold text-base md:text-sm leading-none", pathname.startsWith('/profile/') ? "text-white" : "text-slate-700 dark:text-slate-200")}>Profilim</span>
+                            <span className={cn("text-[11px] md:text-[10px] mt-0.5 font-normal", pathname.startsWith('/profile/') ? "text-indigo-100" : "text-slate-400 dark:text-slate-500")}>Hesap Ayarları</span>
                         </div>
                     </SidebarMenuButton>
                 </Link>
@@ -210,9 +226,9 @@ export function AppSidebar() {
             <SidebarMenuItem>
                 <SidebarMenuButton 
                     onClick={() => { logout(); handleLinkClick(); }}
-                    className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl h-10 transition-colors justify-center font-medium"
+                    className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-2xl md:rounded-xl h-12 md:h-10 transition-colors justify-center font-bold"
                 >
-                    <LogOut className="w-4 h-4 mr-2 group-data-[collapsible=icon]:mr-0" />
+                    <LogOut className="w-5 h-5 md:w-4 md:h-4 mr-2 group-data-[collapsible=icon]:mr-0" />
                     <span className="group-data-[collapsible=icon]:hidden">Çıkış Yap</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
