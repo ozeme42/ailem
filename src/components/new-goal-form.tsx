@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -20,11 +19,13 @@ import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { DialogFooter } from "./ui/dialog";
 
 // --- DESIGN SYSTEM ---
-const glassColors = {
-    INPUT_BG: "bg-slate-950/50 border-white/10 text-slate-100 focus:border-indigo-500/50 focus:ring-indigo-500/20 placeholder:text-slate-500",
-    CARD_BG: "bg-white/5 border border-white/10",
-    TAB_LIST: "bg-slate-950/50 border border-white/10 p-1",
-    TAB_TRIGGER: "data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-400 hover:text-slate-200",
+const appColors = {
+    inputBg: "bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-100 focus:border-indigo-500/50 focus:ring-indigo-500/20 placeholder:text-slate-400 dark:placeholder:text-slate-500",
+    cardBg: "bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm",
+    tabList: "bg-slate-100 dark:bg-slate-950/50 border border-slate-200 dark:border-white/10 p-1",
+    tabTrigger: "data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200",
+    label: "text-slate-700 dark:text-slate-300 font-bold",
+    icon: "text-slate-400 dark:text-slate-500",
 };
 
 const sectionSchema = z.object({
@@ -155,7 +156,7 @@ export function NewGoalForm({ familyMembers, onCreate, initialData, formId }: Ne
     <Form {...form}>
       <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <ScrollArea className="flex-1 w-full">
-              <div className="px-4 md:px-6 py-4 space-y-6">
+              <div className="px-4 md:px-8 py-6 space-y-8">
                   {/* Type Selection */}
                   <FormField
                       control={form.control}
@@ -163,12 +164,12 @@ export function NewGoalForm({ familyMembers, onCreate, initialData, formId }: Ne
                       render={({ field }) => (
                           <FormItem>
                               <Tabs onValueChange={field.onChange} defaultValue={field.value} className="w-full">
-                                  <TabsList className={cn("grid w-full grid-cols-2 rounded-xl h-12", glassColors.TAB_LIST)}>
-                                      <TabsTrigger value="book" className={cn("rounded-lg h-10 transition-all", glassColors.TAB_TRIGGER)}>
-                                          <BookOpen className="w-4 h-4 mr-2" /> Kitap
+                                  <TabsList className={cn("grid w-full grid-cols-2 rounded-2xl h-14", appColors.tabList)}>
+                                      <TabsTrigger value="book" className={cn("rounded-xl h-12 transition-all text-sm font-bold", appColors.tabTrigger)}>
+                                          <BookOpen className="w-5 h-5 mr-2" /> Kitap
                                       </TabsTrigger>
-                                      <TabsTrigger value="video" className={cn("rounded-lg h-10 transition-all", glassColors.TAB_TRIGGER)}>
-                                          <Youtube className="w-4 h-4 mr-2" /> Video
+                                      <TabsTrigger value="video" className={cn("rounded-xl h-12 transition-all text-sm font-bold", appColors.tabTrigger)}>
+                                          <Youtube className="w-5 h-5 mr-2" /> Video
                                       </TabsTrigger>
                                   </TabsList>
                               </Tabs>
@@ -177,49 +178,49 @@ export function NewGoalForm({ familyMembers, onCreate, initialData, formId }: Ne
                   />
 
                   {/* Basic Info */}
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                       <FormField
                           control={form.control}
                           name="title"
                           render={({ field }) => (
                               <FormItem>
-                                  <FormLabel className="text-slate-300">Başlık</FormLabel>
+                                  <FormLabel className={appColors.label}>Başlık</FormLabel>
                                   <FormControl>
                                       <div className="relative">
-                                          <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                                          <Input placeholder={goalType === 'book' ? "Kitap adı..." : "Playlist adı..."} {...field} className={cn("pl-10 h-11 rounded-xl", glassColors.INPUT_BG)} />
+                                          <Type className={cn("absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5", appColors.icon)} />
+                                          <Input placeholder={goalType === 'book' ? "Kitap adı..." : "Playlist adı..."} {...field} className={cn("pl-12 h-14 rounded-2xl text-base font-medium", appColors.inputBg)} />
                                       </div>
                                   </FormControl>
-                                  <FormMessage className="text-rose-400" />
+                                  <FormMessage className="text-rose-500" />
                               </FormItem>
                           )}
                       />
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                           <FormField
                               control={form.control}
                               name="assigneeId"
                               render={({ field }) => (
                                   <FormItem>
-                                  <FormLabel className="text-slate-300">Sorumlu Kişi</FormLabel>
+                                  <FormLabel className={appColors.label}>Sorumlu Kişi</FormLabel>
                                   <Select onValueChange={field.onChange} value={field.value}>
                                       <FormControl>
-                                          <SelectTrigger className={cn("h-11 rounded-xl", glassColors.INPUT_BG)}>
-                                              <div className="flex items-center gap-2">
-                                                  <User className="h-4 w-4 text-slate-500" />
+                                          <SelectTrigger className={cn("h-14 pl-4 rounded-2xl text-base font-medium", appColors.inputBg)}>
+                                              <div className="flex items-center gap-3">
+                                                  <User className={cn("h-5 w-5", appColors.icon)} />
                                                   <SelectValue placeholder="Seçiniz" />
                                               </div>
                                           </SelectTrigger>
                                       </FormControl>
-                                      <SelectContent className="bg-slate-900 border-white/10 text-slate-100">
+                                      <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-100 rounded-2xl">
                                           {familyMembers.map((member) => (
-                                              <SelectItem key={member.id} value={member.id} className="cursor-pointer hover:bg-white/10 focus:bg-white/10 focus:text-white">
+                                              <SelectItem key={member.id} value={member.id} className="cursor-pointer hover:bg-slate-100 dark:hover:bg-white/10 focus:bg-slate-100 dark:focus:bg-white/10 rounded-xl py-2.5 px-3 m-1 font-medium">
                                                   {member.name}
                                               </SelectItem>
                                           ))}
                                       </SelectContent>
                                   </Select>
-                                  <FormMessage className="text-rose-400" />
+                                  <FormMessage className="text-rose-500" />
                                   </FormItem>
                               )}
                           />
@@ -230,14 +231,14 @@ export function NewGoalForm({ familyMembers, onCreate, initialData, formId }: Ne
                                   name="videoUrl"
                                   render={({ field }) => (
                                       <FormItem>
-                                          <FormLabel className="text-slate-300">Video Linki</FormLabel>
+                                          <FormLabel className={appColors.label}>Video Linki</FormLabel>
                                           <FormControl>
                                               <div className="relative">
-                                                  <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                                                  <Input placeholder="youtube.com/..." {...field} className={cn("pl-10 h-11 rounded-xl", glassColors.INPUT_BG)} />
+                                                  <Youtube className={cn("absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5", appColors.icon)} />
+                                                  <Input placeholder="youtube.com/..." {...field} className={cn("pl-12 h-14 rounded-2xl text-base font-medium", appColors.inputBg)} />
                                               </div>
                                           </FormControl>
-                                          <FormMessage className="text-rose-400" />
+                                          <FormMessage className="text-rose-500" />
                                       </FormItem>
                                   )}
                               />
@@ -247,14 +248,14 @@ export function NewGoalForm({ familyMembers, onCreate, initialData, formId }: Ne
                                   name="description"
                                   render={({ field }) => (
                                       <FormItem>
-                                      <FormLabel className="text-slate-300">Açıklama</FormLabel>
+                                      <FormLabel className={appColors.label}>Açıklama</FormLabel>
                                       <FormControl>
                                           <div className="relative">
-                                              <Edit3 className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
-                                              <Textarea placeholder="Kısa not..." {...field} className={cn("pl-10 min-h-[44px] h-11 py-2.5 rounded-xl resize-none", glassColors.INPUT_BG)} />
+                                              <Edit3 className={cn("absolute left-4 top-4 h-5 w-5", appColors.icon)} />
+                                              <Textarea placeholder="Kısa not..." {...field} className={cn("pl-12 min-h-[56px] h-14 py-4 rounded-2xl resize-none text-base font-medium", appColors.inputBg)} />
                                           </div>
                                       </FormControl>
-                                      <FormMessage className="text-rose-400" />
+                                      <FormMessage className="text-rose-500" />
                                       </FormItem>
                                   )}
                               />
@@ -263,36 +264,36 @@ export function NewGoalForm({ familyMembers, onCreate, initialData, formId }: Ne
                   </div>
 
                   {/* Configuration Card */}
-                  <Card className={cn("rounded-2xl overflow-hidden", glassColors.CARD_BG)}>
-                      <CardHeader className="px-5 py-4 border-b border-white/5 bg-white/5">
+                  <Card className={cn("rounded-2xl overflow-hidden", appColors.cardBg)}>
+                      <CardHeader className="px-6 py-4 border-b border-slate-200 dark:border-white/5 bg-slate-100/50 dark:bg-white/5">
                           <div className="flex items-center gap-2">
-                              <Layers className="w-5 h-5 text-indigo-400" />
-                              <CardTitle className="text-base text-slate-200">Yapılandırma</CardTitle>
+                              <Layers className="w-5 h-5 text-indigo-500" />
+                              <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-200">Yapılandırma</CardTitle>
                           </div>
                       </CardHeader>
-                      <CardContent className="p-5 space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
+                      <CardContent className="p-6 space-y-5">
+                          <div className="grid grid-cols-2 gap-5">
                               <FormField control={form.control} name="totalUnits" render={({ field }) => (
                                   <FormItem>
-                                      <FormLabel className="text-slate-400 text-xs uppercase font-bold tracking-wider">Miktar</FormLabel>
-                                      <FormControl><Input type="number" placeholder="300" {...field} className={glassColors.INPUT_BG} /></FormControl>
-                                      <FormMessage className="text-rose-400" />
+                                      <FormLabel className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-black tracking-widest block mb-1.5">Miktar</FormLabel>
+                                      <FormControl><Input type="number" placeholder="300" {...field} className={cn("h-12 rounded-xl text-center text-lg font-bold", appColors.inputBg)} /></FormControl>
+                                      <FormMessage className="text-rose-500" />
                                   </FormItem>
                               )}/>
                               <FormField control={form.control} name="unitName" render={({ field }) => (
                                   <FormItem>
-                                      <FormLabel className="text-slate-400 text-xs uppercase font-bold tracking-wider">Birim</FormLabel>
-                                      <FormControl><Input placeholder="sayfa" {...field} disabled={goalType === 'video'} className={glassColors.INPUT_BG} /></FormControl>
-                                      <FormMessage className="text-rose-400" />
+                                      <FormLabel className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-black tracking-widest block mb-1.5">Birim</FormLabel>
+                                      <FormControl><Input placeholder="sayfa" {...field} disabled={goalType === 'video'} className={cn("h-12 rounded-xl text-center text-base font-bold", appColors.inputBg)} /></FormControl>
+                                      <FormMessage className="text-rose-500" />
                                   </FormItem>
                               )}/>
                           </div>
                           {goalType === 'book' && (
                               <FormField control={form.control} name="sectionCount" render={({ field }) => (
                                   <FormItem>
-                                      <FormLabel className="text-slate-400 text-xs uppercase font-bold tracking-wider">Bölüm Sayısı</FormLabel>
-                                      <FormControl><Input type="number" {...field} className={glassColors.INPUT_BG} /></FormControl>
-                                      <FormMessage className="text-rose-400" />
+                                      <FormLabel className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-black tracking-widest block mb-1.5">Bölüm Sayısı</FormLabel>
+                                      <FormControl><Input type="number" {...field} className={cn("h-12 rounded-xl text-base font-bold", appColors.inputBg)} /></FormControl>
+                                      <FormMessage className="text-rose-500" />
                                   </FormItem>
                               )}/>
                           )}
@@ -301,24 +302,24 @@ export function NewGoalForm({ familyMembers, onCreate, initialData, formId }: Ne
 
                   {/* Section Customization */}
                   {goalType === 'book' && (
-                      <div className="space-y-3 pb-6">
-                          <FormLabel className="text-slate-300 pl-1 block">Bölüm İsimleri</FormLabel>
+                      <div className="space-y-4 pb-6">
+                          <FormLabel className="text-slate-700 dark:text-slate-300 font-bold pl-1 block">Bölüm İsimleri</FormLabel>
                           <div className="grid grid-cols-1 gap-3">
                               {fields.map((sectionField, sectionIndex) => {
                                   return (
-                                      <div key={sectionField.id} className="flex items-center gap-2">
+                                      <div key={sectionField.id} className="flex items-center gap-3">
                                           <div className="flex-1">
                                               <FormField control={form.control} name={`sections.${sectionIndex}.title`} render={({ field }) => (
                                                   <FormItem>
                                                       <FormControl>
-                                                          <Input {...field} className={cn("h-10 rounded-lg", glassColors.INPUT_BG)} placeholder={`Bölüm ${sectionIndex + 1}`} />
+                                                          <Input {...field} className={cn("h-12 rounded-xl text-base font-medium", appColors.inputBg)} placeholder={`Bölüm ${sectionIndex + 1}`} />
                                                       </FormControl>
-                                                      <FormMessage className="text-rose-400" />
+                                                      <FormMessage className="text-rose-500" />
                                                   </FormItem>
                                               )}/>
                                           </div>
-                                          <Button type="button" variant="ghost" size="icon" className="h-10 w-10 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg" onClick={() => remove(sectionIndex)}>
-                                              <Trash2 className="h-4 w-4"/>
+                                          <Button type="button" variant="ghost" size="icon" className="h-12 w-12 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl" onClick={() => remove(sectionIndex)}>
+                                              <Trash2 className="h-5 w-5"/>
                                           </Button>
                                       </div>
                                   )
