@@ -280,550 +280,595 @@ export default function Home() {
 
   if (loading) return <div className="p-8 flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div></div>;
 
-  return (
-    <div className={cn("min-h-screen font-sans pb-24 md:pb-10 relative overflow-x-hidden transition-colors duration-300", themeClasses.PAGE_BG, themeClasses.TEXT_MAIN)}>
-            
-           {/* AMBIENT BACKGROUND */}
-           <div className="fixed inset-0 z-0 pointer-events-none opacity-40 dark:opacity-20">
-              <div className="absolute top-[-10%] left-[-10%] w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-indigo-200/60 dark:bg-indigo-900/40 rounded-full blur-[100px] md:blur-[120px]" />
-              <div className="absolute bottom-[20%] right-[-5%] w-[250px] md:w-[400px] h-[250px] md:h-[400px] bg-fuchsia-200/60 dark:bg-fuchsia-900/40 rounded-full blur-[80px] md:blur-[120px]" />
-           </div>
+return (
+    <div className={cn("min-h-screen font-sans pb-28 md:pb-10 relative overflow-x-hidden transition-colors duration-300", themeClasses.PAGE_BG, themeClasses.TEXT_MAIN)}>
 
-          {/* --- HEADER (Mobil Uyumlu App Bar) --- */}
-          <div className={cn("sticky top-0 z-50 w-full transition-all duration-300", themeClasses.HEADER_BG)}>
-              <div className="w-full px-3 md:px-6">
-                  <div className="flex items-center justify-between py-3 md:py-4">
-                      <div className="flex items-center gap-2 md:gap-3">
-                          
-                          {/* MOBİL İÇİN MENÜ BUTONU */}
-                          <SidebarTrigger className="md:hidden text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 rounded-full transition-colors active:bg-slate-200 dark:active:bg-slate-700">
-                              <Menu className="w-5 h-5" />
-                          </SidebarTrigger>
+      {/* AMBIENT BACKGROUND */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-30 dark:opacity-20">
+        <div className="absolute top-[-10%] left-[-10%] w-[400px] h-[400px] bg-indigo-300/60 dark:bg-indigo-900/40 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[20%] right-[-5%] w-[350px] h-[350px] bg-fuchsia-300/60 dark:bg-fuchsia-900/40 rounded-full blur-[100px]" />
+      </div>
 
-                          {/* DESKTOP İÇİN LOGO */}
-                          <SidebarTrigger className={cn("hidden md:flex p-2.5 rounded-xl text-white", "bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md shadow-indigo-500/20")}>
-                               <GraduationCap className="w-5 h-5" />
-                          </SidebarTrigger>
-                          
-                          <div className="flex flex-col ml-1 md:ml-0">
-                              <h1 className="text-lg md:text-xl font-black tracking-tight text-slate-800 dark:text-slate-100 leading-none">
-                                  Özgürdere
-                              </h1>
-                              <span className={cn("text-[9px] md:text-[10px] font-bold uppercase tracking-widest", themeClasses.TEXT_MUTED)}>Ailesi</span>
-                          </div>
-                      </div>
-
-                      <div className="flex items-center gap-1 md:gap-3">
-                           <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 md:h-10 md:w-10 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 active:scale-95">
-                                  <Sun className="h-4 w-4 md:h-5 md:w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                                  <Moon className="absolute h-4 w-4 md:h-5 md:w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                                  <span className="sr-only">Toggle theme</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="dark:bg-slate-900 dark:border-slate-800">
-                                <DropdownMenuItem onClick={() => setTheme("light")} className="dark:hover:bg-slate-800 py-3 md:py-2">Açık</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setTheme("dark")} className="dark:hover:bg-slate-800 py-3 md:py-2">Koyu</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setTheme("system")} className="dark:hover:bg-slate-800 py-3 md:py-2">Sistem</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-
-                          <Link href="/education">
-                              <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 md:h-10 md:w-10 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 relative active:scale-95">
-                                  <GraduationCap className="h-5 w-5" />
-                                  {pendingTests.length > 0 && <span className="absolute top-2 right-2 md:top-2.5 md:right-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900"></span>}
-                              </Button>
-                          </Link>
-
-                          <div className="h-8 w-8 md:h-10 md:w-10 ml-1 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-[2px] shadow-sm cursor-pointer hover:scale-105 active:scale-95 transition-transform">
-                               <div className="h-full w-full rounded-full bg-white dark:bg-slate-900 flex items-center justify-center">
-                                  <span className="text-transparent bg-clip-text bg-gradient-to-br from-indigo-500 to-purple-600 font-bold text-xs md:text-sm">
-                                      {user?.displayName?.charAt(0) || "A"}
-                                  </span>
-                               </div>
-                          </div>
-                      </div>
-                  </div>
+      {/* ──────────────────────────────
+          HEADER
+      ────────────────────────────── */}
+      <div className={cn("sticky top-0 z-50 w-full transition-all duration-300", themeClasses.HEADER_BG)}>
+        <div className="w-full px-4 md:px-6">
+          <div className="flex items-center justify-between py-3 md:py-4">
+            <div className="flex items-center gap-2 md:gap-3">
+              <SidebarTrigger className="md:hidden text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 rounded-full transition-colors">
+                <Menu className="w-5 h-5" />
+              </SidebarTrigger>
+              <SidebarTrigger className={cn("hidden md:flex p-2.5 rounded-xl text-white", "bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md shadow-indigo-500/20")}>
+                <GraduationCap className="w-5 h-5" />
+              </SidebarTrigger>
+              <div className="flex flex-col ml-1 md:ml-0">
+                <h1 className="text-lg md:text-xl font-black tracking-tight text-slate-800 dark:text-slate-100 leading-none">Özgürdere</h1>
+                <span className={cn("text-[9px] md:text-[10px] font-bold uppercase tracking-widest", themeClasses.TEXT_MUTED)}>Ailesi</span>
               </div>
+            </div>
+
+            <div className="flex items-center gap-1 md:gap-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400">
+                    <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                    <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl">
+                  <DropdownMenuItem onClick={() => setTheme("light")} className="rounded-xl m-1 py-3">Açık</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("dark")} className="rounded-xl m-1 py-3">Koyu</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("system")} className="rounded-xl m-1 py-3">Sistem</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <Link href="/education">
+                <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 relative">
+                  <GraduationCap className="h-5 w-5" />
+                  {pendingTests.length > 0 && <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />}
+                </Button>
+              </Link>
+
+              <div className="h-9 w-9 ml-1 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-[2px] shadow-sm cursor-pointer hover:scale-105 active:scale-95 transition-transform">
+                <div className="h-full w-full rounded-full bg-white dark:bg-slate-900 flex items-center justify-center">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-br from-indigo-500 to-purple-600 font-bold text-xs">
+                    {user?.displayName?.charAt(0) || "A"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative z-10 space-y-6 pt-5 md:pt-8">
+
+        {/* ──────────────────────────────
+            HERO — Kişisel Karşılama
+        ────────────────────────────── */}
+
+        <div className="px-4 md:px-6">
+          <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 p-5 md:p-8 text-white shadow-xl shadow-indigo-500/20">
+            <div className="absolute -top-8 -right-8 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
+            <div className="absolute -bottom-10 -left-6 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+
+            {/* Tarih + Selamlama */}
+            <div className="relative z-10 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-white/70 text-xs font-semibold mb-0.5">
+                  {format(new Date(), "d MMMM, EEEE", { locale: tr })}
+                </p>
+                <h2 className="text-xl md:text-3xl font-black leading-tight">
+                  {new Date().getHours() < 12 ? "Günaydın ☀️" : new Date().getHours() < 18 ? "İyi günler 🌤️" : "İyi akşamlar 🌙"}
+                </h2>
+                <p className="text-white/80 text-sm font-medium mt-0.5 truncate">
+                  {user?.displayName || "Hoş geldiniz"}!
+                </p>
+              </div>
+              {/* Kullanıcı avatarı */}
+              <div className="shrink-0 w-12 h-12 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center text-xl font-black backdrop-blur-sm">
+                {user?.displayName?.charAt(0)?.toUpperCase() || "👋"}
+              </div>
+            </div>
+
+            {/* 2×2 İstatistik Grid — kaydırma olmadan sığar */}
+            <div className="relative z-10 grid grid-cols-2 gap-2 mt-4">
+              {[
+                { label: "Bekleyen Görev", value: tasks.filter(t => !t.completed).length, emoji: "📋" },
+                { label: "Aktif Hedef",    value: activeGoals.length,                     emoji: "🎯" },
+                { label: "Alışveriş",      value: shoppingSummary.totalPending,            emoji: "🛒" },
+                { label: "Kütüphane",      value: books.length,                            emoji: "📚" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl border border-white/20 bg-white/15 backdrop-blur-sm">
+                  <span className="text-lg leading-none">{item.emoji}</span>
+                  <div className="min-w-0">
+                    <p className="text-base font-black leading-none">{item.value}</p>
+                    <p className="text-[10px] font-bold text-white/75 leading-tight mt-0.5 truncate">{item.label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+
+        {/* ──────────────────────────────
+            ANA ÖZELLİK KARTLARI (2×2)
+        ────────────────────────────── */}
+        <div className="px-4 md:px-6">
+          <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
+
+            {/* Alışveriş */}
+            <Link href="/shopping" className="group block">
+              <div className={cn("relative overflow-hidden rounded-[1.75rem] p-5 h-full flex flex-col min-h-[140px] md:min-h-[160px]", themeClasses.CARD_BG, themeClasses.CARD_HOVER)}>
+                <div className="absolute -top-4 -right-4 opacity-[0.07]">
+                  <ShoppingCart className="w-24 h-24 text-emerald-500" />
+                </div>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3 shadow-sm bg-gradient-to-br from-emerald-500 to-teal-500">
+                  <ShoppingCart className="w-5 h-5 text-white" />
+                </div>
+                <h3 className={cn("font-black text-sm md:text-base mb-1", themeClasses.TEXT_MAIN)}>Alışveriş</h3>
+                <div className="mt-auto">
+                  {shoppingSummary.totalPending > 0 ? (
+                    <p className="text-emerald-600 dark:text-emerald-400 text-xs font-bold">{shoppingSummary.totalPending} ürün bekliyor</p>
+                  ) : (
+                    <p className="text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-1"><Check className="w-3.5 h-3.5" /> Tamamlandı</p>
+                  )}
+                </div>
+              </div>
+            </Link>
+
+            {/* Menü */}
+            <div className={cn("relative overflow-hidden rounded-[1.75rem] group h-full min-h-[140px] md:min-h-[160px]", themeClasses.CARD_BG, themeClasses.CARD_HOVER)}>
+              <div className="absolute -top-4 -right-4 opacity-[0.07] pointer-events-none">
+                <UtensilsCrossed className="w-24 h-24 text-orange-500" />
+              </div>
+              <Carousel opts={{ loop: true }} className="w-full h-full">
+                <CarouselContent className="h-full">
+                  {upcomingDays.map((day, index) => {
+                    const dayKey = format(day, 'yyyy-MM-dd');
+                    const plan = mealPlan[dayKey];
+                    const isTodayDay = isToday(day);
+                    return (
+                      <CarouselItem key={index} className="h-full">
+                        <Link href="/yemek" className="block h-full p-5 flex flex-col">
+                          <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3 shadow-sm bg-gradient-to-br from-orange-500 to-amber-500">
+                            <UtensilsCrossed className="w-5 h-5 text-white" />
+                          </div>
+                          <h3 className={cn("font-black text-sm md:text-base mb-1", themeClasses.TEXT_MAIN)}>
+                            {isTodayDay ? "Bugünkü Menü" : format(day, 'EEEE', { locale: tr }).slice(0, 3) + " Menüsü"}
+                          </h3>
+                          <p className={cn("text-xs font-semibold mt-auto truncate", themeClasses.TEXT_MUTED)}>
+                            {plan?.['Akşam Yemeği']?.title || "Planlanmadı"}
+                          </p>
+                        </Link>
+                      </CarouselItem>
+                    );
+                  })}
+                </CarouselContent>
+              </Carousel>
+            </div>
+
+            {/* Takvim */}
+            <Link href="/calendar" className="group block">
+              <div className={cn("relative overflow-hidden rounded-[1.75rem] p-5 h-full flex flex-col min-h-[140px] md:min-h-[160px]", themeClasses.CARD_BG, themeClasses.CARD_HOVER)}>
+                <div className="absolute -top-4 -right-4 opacity-[0.07]">
+                  <Calendar className="w-24 h-24 text-pink-500" />
+                </div>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3 shadow-sm bg-gradient-to-br from-pink-500 to-rose-500">
+                  <Calendar className="w-5 h-5 text-white" />
+                </div>
+                <h3 className={cn("font-black text-sm md:text-base mb-1", themeClasses.TEXT_MAIN)}>Etkinlik</h3>
+                <div className="mt-auto">
+                  {calendarSummary.upcomingEvents.length > 0 ? (
+                    <div>
+                      <p className={cn("text-xs font-semibold truncate", themeClasses.TEXT_MAIN)}>{calendarSummary.upcomingEvents[0].title}</p>
+                      <p className="text-pink-600 dark:text-pink-400 text-[10px] font-bold mt-0.5">
+                        {calendarSummary.upcomingEvents[0].daysLeft === 0 ? "Bugün!" : `${calendarSummary.upcomingEvents[0].daysLeft} gün sonra`}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className={cn("text-xs font-medium", themeClasses.TEXT_MUTED)}>Yaklaşan etkinlik yok</p>
+                  )}
+                </div>
+              </div>
+            </Link>
+
+            {/* Görevler */}
+            <Link href="/tasks" className="group block">
+              <div className={cn("relative overflow-hidden rounded-[1.75rem] p-5 h-full flex flex-col min-h-[140px] md:min-h-[160px]", themeClasses.CARD_BG, themeClasses.CARD_HOVER)}>
+                <div className="absolute -top-4 -right-4 opacity-[0.07]">
+                  <ListChecks className="w-24 h-24 text-violet-500" />
+                </div>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3 shadow-sm bg-gradient-to-br from-violet-500 to-purple-600">
+                  <ListChecks className="w-5 h-5 text-white" />
+                </div>
+                <h3 className={cn("font-black text-sm md:text-base mb-1", themeClasses.TEXT_MAIN)}>Görevler</h3>
+                <div className="mt-auto flex items-end gap-2">
+                  <span className="text-3xl font-black text-violet-600 dark:text-violet-400 leading-none">{tasks.filter(t => !t.completed).length}</span>
+                  <span className={cn("text-[10px] font-bold uppercase tracking-wider mb-1", themeClasses.TEXT_MUTED)}>Bekleyen</span>
+                </div>
+              </div>
+            </Link>
           </div>
 
-          <div className="w-full space-y-6 md:space-y-8 relative z-10 pt-4 md:pt-8">
-              
+          {/* İkinci Satır: Notlar ve Videolar */}
+          <div className="grid grid-cols-2 gap-3 md:gap-4 mt-3 md:mt-4">
+            <Link href="/notes" className={cn("group block rounded-[1.75rem] p-5 relative overflow-hidden", themeClasses.CARD_BG, themeClasses.CARD_HOVER)}>
+              <div className="absolute -top-4 -right-4 opacity-[0.07]"><BookCheck className="w-20 h-20 text-amber-500" /></div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm shrink-0 bg-gradient-to-br from-amber-400 to-amber-600">
+                  <BookCheck className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className={cn("font-black text-sm", themeClasses.TEXT_MAIN)}>Notlar</h3>
+                  <p className={cn("text-[10px] font-medium", themeClasses.TEXT_MUTED)}>Çalışma notları</p>
+                </div>
+              </div>
+            </Link>
 
+            <Link href="/videos" className={cn("group block rounded-[1.75rem] p-5 relative overflow-hidden", themeClasses.CARD_BG, themeClasses.CARD_HOVER)}>
+              <div className="absolute -top-4 -right-4 opacity-[0.07]"><PlaySquare className="w-20 h-20 text-rose-500" /></div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm shrink-0 bg-gradient-to-br from-rose-400 to-rose-600">
+                  <PlaySquare className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className={cn("font-black text-sm", themeClasses.TEXT_MAIN)}>Videolar</h3>
+                  <p className={cn("text-[10px] font-medium", themeClasses.TEXT_MUTED)}>Eğitim videoları</p>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
 
-              {/* --- GRID DASHBOARD (Mobilde 2 Sütun, Kompakt) --- */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 px-3 md:px-6">
-                    
-                    {/* Alışveriş Kartı */}
-                    <Link href="/shopping" className="group block h-full">
-                      <div className={cn("relative overflow-hidden rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 h-full flex flex-col", themeClasses.CARD_BG, themeClasses.CARD_HOVER)}>
-                          <div className="absolute -top-2 -right-2 md:top-0 md:right-0 p-4 opacity-10 transition-transform group-hover:scale-110">
-                              <ShoppingCart className="w-16 h-16 md:w-24 md:h-24 text-emerald-500" />
-                          </div>
-                          <div className="relative z-10 flex-grow flex flex-col">
-                              <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
-                                  <div className={cn(themeClasses.ICON_BOX, "from-emerald-500 to-teal-500")}>
-                                      <ShoppingCart className="w-4 h-4 md:w-6 md:h-6" />
-                                  </div>
-                                  <h3 className={cn("font-bold text-sm md:text-lg", themeClasses.TEXT_MAIN)}>Alışveriş</h3>
-                              </div>
-                              <div className="space-y-2 mt-auto">
-                                  {shoppingSummary.totalPending > 0 ? (
-                                      <>
-                                          <div className="flex flex-wrap gap-1.5 md:gap-2">
-                                              {shoppingSummary.itemsToShow.map(item => (
-                                                  <span key={item.id} className="inline-flex items-center px-2 py-0.5 md:px-2.5 md:py-1 rounded-md text-[10px] md:text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-800 truncate max-w-[80px] md:max-w-full">
-                                                      {item.name}
-                                                  </span>
-                                              ))}
-                                          </div>
-                                          {shoppingSummary.totalPending > 2 && (
-                                              <p className="text-[10px] md:text-xs text-emerald-600 dark:text-emerald-400 font-bold">+ {shoppingSummary.totalPending - 2} ürün</p>
-                                          )}
-                                      </>
-                                  ) : (
-                                      <div className="flex items-center gap-1.5 text-emerald-600/70 dark:text-emerald-400/70">
-                                          <Check className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                                          <p className="text-xs md:text-sm font-medium">Tamamlandı</p>
-                                      </div>
-                                  )}
-                              </div>
-                          </div>
-                      </div>
-                  </Link>
-
-                  {/* Yemek Kartı */}
-                  <div className={cn("relative overflow-hidden rounded-[1.5rem] md:rounded-[2rem] group h-full", themeClasses.CARD_BG, themeClasses.CARD_HOVER)}>
-                      <div className="absolute -top-2 -right-2 md:top-0 md:right-0 p-4 opacity-10 transition-transform group-hover:scale-110 pointer-events-none">
-                          <UtensilsCrossed className="w-16 h-16 md:w-24 md:h-24 text-orange-500" />
-                      </div>
-                      
-                      <Carousel opts={{ loop: true }} className="w-full h-full">
-                          <CarouselContent className="h-full">
-                              {upcomingDays.map((day, index) => {
-                                  const dayKey = format(day, 'yyyy-MM-dd');
-                                  const plan = mealPlan[dayKey];
-                                  const isTodayDay = isToday(day);
-
-                                  return (
-                                      <CarouselItem key={index} className="h-full">
-                                          <Link href="/yemek" className="block h-full p-4 md:p-6 relative z-10 flex flex-col">
-                                              <div className="flex justify-between items-start mb-3 md:mb-2">
-                                                  <div className="flex items-center gap-2 md:gap-3">
-                                                      <div className={cn(themeClasses.ICON_BOX, "from-orange-500 to-amber-500")}>
-                                                          <UtensilsCrossed className="w-4 h-4 md:w-6 md:h-6" />
-                                                      </div>
-                                                      <div>
-                                                          <h3 className={cn("font-bold text-sm md:text-lg leading-tight", themeClasses.TEXT_MAIN)}>Menü</h3>
-                                                          <p className={cn("text-[9px] md:text-xs font-bold uppercase tracking-wider", isTodayDay ? "text-orange-600 dark:text-orange-400" : themeClasses.TEXT_MUTED)}>
-                                                              {isTodayDay ? "Bugün" : format(day, 'EEEE', { locale: tr }).slice(0,3)}
-                                                          </p>
-                                                      </div>
-                                                  </div>
-                                              </div>
-
-                                              <div className="space-y-1.5 md:space-y-3 mt-auto">
-                                                  <div className="bg-slate-50 dark:bg-slate-800/50 p-2 md:p-2.5 rounded-lg md:rounded-xl border border-slate-200/50 dark:border-slate-800/50">
-                                                      <p className="text-[9px] md:text-[10px] uppercase tracking-wider text-orange-400 font-bold mb-0.5">Akşam</p>
-                                                      <p className={cn("text-xs md:text-sm font-semibold truncate", themeClasses.TEXT_MAIN)}>
-                                                          {plan?.['Akşam Yemeği']?.title || "Planlanmadı"}
-                                                      </p>
-                                                  </div>
-                                              </div>
-                                          </Link>
-                                      </CarouselItem>
-                                  );
-                              })}
-                          </CarouselContent>
-                          {/* Sadece masaüstünde oklar görünsün */}
-                          <CarouselPrevious className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-100 dark:hover:bg-slate-700" />
-                          <CarouselNext className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-100 dark:hover:bg-slate-700" />
-                      </Carousel>
+        {/* ──────────────────────────────
+            KÜTÜPHANEarband
+        ────────────────────────────── */}
+        <div className="px-4 md:px-6">
+          <div className={cn("rounded-[2rem] p-5 md:p-6", themeClasses.CARD_BG)}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm bg-gradient-to-br from-amber-500 to-orange-500">
+                  <BookOpen className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className={cn("font-black text-base", themeClasses.TEXT_MAIN)}>Kütüphane</h2>
+                  <p className={cn("text-[10px] font-bold uppercase tracking-wider", themeClasses.TEXT_MUTED)}>{books.length} kitap</p>
+                </div>
+              </div>
+              <Link href="/library/archive" className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-3 py-1.5 rounded-full border border-indigo-100 dark:border-indigo-900 hover:bg-indigo-100 transition-colors">
+                Tümü →
+              </Link>
+            </div>
+            <div className="flex overflow-x-auto gap-3 pb-3 snap-x snap-mandatory scrollbar-hide -mx-5 px-5">
+              {latestBooks.map(book => (
+                <div key={book.id} onClick={() => setViewingBook(book)} className="snap-start shrink-0 w-[88px] cursor-pointer active:scale-95 transition-transform group/book">
+                  <div className="relative aspect-[2/3] rounded-2xl overflow-hidden shadow-md ring-1 ring-slate-200 dark:ring-slate-700 group-hover/book:-translate-y-1 transition-transform duration-300">
+                    <Image src={book.image || `https://placehold.co/300x450.png`} alt={book.title} width={300} height={450} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2">
+                      <p className="text-white text-[9px] font-bold line-clamp-2 leading-tight">{book.title}</p>
+                    </div>
                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
-                  {/* Takvim */}
-                  <Link href="/calendar" className="group block h-full">
-                      <div className={cn("h-full rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 relative overflow-hidden flex flex-col", themeClasses.CARD_BG, themeClasses.CARD_HOVER)}>
-                          <div className="absolute -top-2 -right-2 md:top-0 md:right-0 p-4 opacity-10 transition-transform group-hover:scale-110">
-                              <Calendar className="w-16 h-16 md:w-24 md:h-24 text-pink-500" />
-                          </div>
-                          <div className="relative z-10 flex-grow flex flex-col">
-                              <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
-                                  <div className={cn(themeClasses.ICON_BOX, "from-pink-500 to-rose-500")}>
-                                      <Calendar className="w-4 h-4 md:w-5 md:h-5" />
-                                  </div>
-                                  <h3 className={cn("font-bold text-sm md:text-lg", themeClasses.TEXT_MAIN)}>Etkinlik</h3>
-                              </div>
-                              <div className="mt-auto">
-                                  {calendarSummary.upcomingEvents.length > 0 ? (
-                                      <div className="space-y-1.5 md:space-y-3">
-                                          {calendarSummary.upcomingEvents.slice(0, 1).map(event => (
-                                              <div key={event.id} className="bg-slate-50 dark:bg-slate-800/50 p-2 md:p-2.5 rounded-lg md:rounded-xl border border-slate-200/50 dark:border-slate-800/50 flex flex-col">
-                                                  <span className={cn("truncate font-semibold text-xs md:text-sm mb-1", themeClasses.TEXT_MAIN)}>{event.title}</span>
-                                                  <Badge variant="secondary" className={cn("w-fit px-1.5 py-0 md:px-2 md:py-0.5 text-[9px] md:text-xs font-bold border border-slate-200 dark:border-slate-700", event.daysLeft <= 1 ? "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30" : "text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/30")}>
-                                                      {event.daysLeft === 0 ? "Bugün" : `${event.daysLeft} gün`}
-                                                  </Badge>
-                                              </div>
-                                          ))}
-                                          {calendarSummary.upcomingEvents.length > 1 && (
-                                              <p className="text-[10px] md:text-xs text-pink-600 dark:text-pink-400 font-bold hidden md:block">+ {calendarSummary.upcomingEvents.length - 1} etkinlik</p>
-                                          )}
-                                      </div>
-                                  ) : <p className={cn("text-xs md:text-sm font-medium", themeClasses.TEXT_MUTED)}>Etkinlik yok.</p>}
-                              </div>
-                          </div>
-                      </div>
-                  </Link>
+        {/* ──────────────────────────────
+            HEDEFLER + LİDERLİK
+        ────────────────────────────── */}
+        <div className="px-4 md:px-6 grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
 
-                  {/* Görevler */}
-                  <Link href="/tasks" className="group block h-full">
-                      <div className={cn("h-full rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 relative overflow-hidden flex flex-col", themeClasses.CARD_BG, themeClasses.CARD_HOVER)}>
-                          <div className="absolute -top-2 -right-2 md:top-0 md:right-0 p-4 opacity-10 transition-transform group-hover:scale-110">
-                              <ListChecks className="w-16 h-16 md:w-24 md:h-24 text-violet-500" />
-                          </div>
-                          <div className="relative z-10 flex-grow flex flex-col">
-                              <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-                                  <div className={cn(themeClasses.ICON_BOX, "from-violet-500 to-purple-500")}>
-                                      <ListChecks className="w-4 h-4 md:w-5 md:h-5" />
-                                  </div>
-                                  <h3 className={cn("font-bold text-sm md:text-lg", themeClasses.TEXT_MAIN)}>Görevler</h3>
-                              </div>
-                              <div className="flex flex-col items-center justify-center flex-grow">
-                                  <div className="text-3xl md:text-5xl font-black text-violet-600 dark:text-violet-400 leading-none">{tasks.filter(t => !t.completed).length}</div>
-                                  <p className={cn("text-[9px] md:text-xs font-bold uppercase tracking-widest mt-1 md:mt-2", themeClasses.TEXT_MUTED)}>Bekleyen</p>
-                              </div>
-                          </div>
-                      </div>
-                  </Link>
+          {/* Aktif Hedefler */}
+          <div className="lg:col-span-2">
+            <div className={cn("rounded-[2rem] p-5 md:p-6", themeClasses.CARD_BG)}>
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm bg-gradient-to-br from-rose-500 to-pink-500">
+                  <Target className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className={cn("font-black text-base", themeClasses.TEXT_MAIN)}>Aktif Hedefler</h2>
+                  <p className={cn("text-[10px] font-bold uppercase tracking-wider", themeClasses.TEXT_MUTED)}>{activeGoals.length} devam ediyor</p>
+                </div>
               </div>
-
-              {/* --- ORTA BÖLÜM: Hedefler ve Kitaplar --- */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-3 md:px-6">
-                    <div className="lg:col-span-2 space-y-6">
-                      
-                      {/* Kitaplar (Kütüphane) */}
-                      <section className={cn("rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6", themeClasses.CARD_BG)}>
-                          <div className="flex items-center justify-between mb-4 md:mb-6">
-                              <h2 className={themeClasses.SECTION_TITLE}>
-                                  <div className={cn(themeClasses.ICON_BOX, "from-amber-500 to-orange-500")}><BookOpen className="w-4 h-4 md:w-5 md:h-5" /></div>
-                                  Kütüphane
-                              </h2>
-                              <Link href="/library/archive" className="text-xs md:text-sm font-bold text-indigo-600 dark:text-indigo-400 active:scale-95 hover:bg-indigo-100 bg-indigo-50 dark:bg-indigo-950/50 px-3 py-1.5 rounded-full transition-all border border-indigo-100 dark:border-indigo-900">Tümü</Link>
+              <div className="space-y-3">
+                {activeGoals.length > 0 ? activeGoals.map(goal => (
+                  <div key={goal.id} className="relative overflow-hidden rounded-[1.5rem] bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 p-4 md:p-5">
+                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-rose-500 to-purple-500 rounded-l-[1.5rem]" />
+                    <div className="pl-3">
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="min-w-0">
+                          <Link href={`/goals/${goal.id}`} className={cn("font-black text-sm md:text-base hover:text-rose-600 transition-colors truncate block", themeClasses.TEXT_MAIN)}>{goal.title}</Link>
+                          <div className={cn("flex items-center gap-1.5 text-xs font-medium mt-0.5", themeClasses.TEXT_MUTED)}>
+                            <User className="w-3.5 h-3.5" /> {goal.assignee?.name}
                           </div>
-                          
-                          {/* Yatay Kaydırma (Scrollbar Gizli) */}
-                          <div className="relative group -mx-4 md:mx-0 px-4 md:px-0">
-                              <div className="flex overflow-x-auto gap-3 md:gap-5 pb-4 snap-x snap-mandatory scrollbar-hide [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                                  {latestBooks.map(book => (
-                                      <div key={book.id} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setViewingBook(book); }} className="snap-start shrink-0 w-28 md:w-36 group/book cursor-pointer active:scale-95 transition-transform">
-                                          <div className="relative aspect-[2/3] rounded-xl overflow-hidden shadow-sm transition-all duration-300 group-hover/book:shadow-xl group-hover/book:-translate-y-1 ring-1 ring-slate-200 dark:ring-slate-700">
-                                              <Image src={book.image || `https://placehold.co/300x450.png`} alt={book.title} width={300} height={450} className="w-full h-full object-cover" />
-                                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-100 md:opacity-0 md:group-hover/book:opacity-100 transition-opacity duration-300 flex items-end p-2 md:p-3">
-                                                  <p className="text-white text-[10px] md:text-xs font-bold line-clamp-2 leading-tight">{book.title}</p>
-                                              </div>
-                                          </div>
-                                      </div>
-                                  ))}
-                              </div>
-                          </div>
-                      </section>
-
-                      {/* Eğitim Materyalleri (Notlar ve Videolar) */}
-                      <div className="grid grid-cols-2 gap-3 md:gap-4">
-                          <Link href="/notes" className={cn("group block rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 overflow-hidden relative border border-slate-100 dark:border-slate-800", themeClasses.CARD_BG, themeClasses.CARD_HOVER)}>
-                              <div className="absolute -top-2 -right-2 md:top-0 md:right-0 p-4 opacity-10 transition-transform group-hover:scale-110">
-                                  <BookCheck className="w-16 h-16 md:w-24 md:h-24 text-amber-500" />
-                              </div>
-                              <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-3">
-                                  <div className={cn(themeClasses.ICON_BOX, "from-amber-400 to-amber-600 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center")}>
-                                      <BookCheck className="w-5 h-5 md:w-6 md:h-6" />
-                                  </div>
-                                  <div>
-                                      <h3 className={cn("font-bold text-sm md:text-lg", themeClasses.TEXT_MAIN)}>Notlar</h3>
-                                      <p className={cn("text-[10px] md:text-xs", themeClasses.TEXT_MUTED)}>Çalışma notları</p>
-                                  </div>
-                              </div>
-                          </Link>
-
-                          <Link href="/videos" className={cn("group block rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 overflow-hidden relative border border-slate-100 dark:border-slate-800", themeClasses.CARD_BG, themeClasses.CARD_HOVER)}>
-                              <div className="absolute -top-2 -right-2 md:top-0 md:right-0 p-4 opacity-10 transition-transform group-hover:scale-110">
-                                  <PlaySquare className="w-16 h-16 md:w-24 md:h-24 text-rose-500" />
-                              </div>
-                              <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-3">
-                                  <div className={cn(themeClasses.ICON_BOX, "from-rose-400 to-rose-600 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center")}>
-                                      <PlaySquare className="w-5 h-5 md:w-6 md:h-6" />
-                                  </div>
-                                  <div>
-                                      <h3 className={cn("font-bold text-sm md:text-lg", themeClasses.TEXT_MAIN)}>Videolar</h3>
-                                      <p className={cn("text-[10px] md:text-xs", themeClasses.TEXT_MUTED)}>Eğitim videoları</p>
-                                  </div>
-                              </div>
-                          </Link>
-                      </div>
-
-                      {/* Hedefler */}
-                      <section className={cn("rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6", themeClasses.CARD_BG)}>
-                          <div className="flex items-center justify-between mb-4 md:mb-6">
-                              <h2 className={themeClasses.SECTION_TITLE}>
-                                  <div className={cn(themeClasses.ICON_BOX, "from-rose-500 to-pink-500")}><Target className="w-4 h-4 md:w-5 md:h-5" /></div>
-                                  Aktif Hedefler
-                              </h2>
-                          </div>
-                          <div className="grid gap-4 md:gap-5">
-                              {activeGoals.length > 0 ? activeGoals.map(goal => (
-                                  <div key={goal.id} className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm p-4 md:p-6 group active:scale-[0.99] md:active:scale-100 transition-transform">
-                                              <div className="absolute top-0 left-0 w-1 md:w-1.5 h-full bg-gradient-to-b from-rose-500 to-purple-500"></div>
-                                              <div className="pl-3 md:pl-4">
-                                                  <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-between sm:items-center mb-4">
-                                                      <div className="space-y-1">
-                                                          <div className="flex items-center gap-2 flex-wrap">
-                                                              <Link href={`/goals/${goal.id}`} className={cn("font-bold text-base md:text-lg hover:text-rose-600 transition-colors leading-tight", themeClasses.TEXT_MAIN)}>{goal.title}</Link>
-                                                              {goal.isVideoGoal && <span className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded text-[9px] font-extrabold tracking-wider border border-red-200 dark:border-red-800">VIDEO</span>}
-                                                          </div>
-                                                          <div className={cn("flex items-center gap-1.5 text-xs md:text-sm font-medium", themeClasses.TEXT_MUTED)}>
-                                                              <User className="w-3.5 h-3.5" /> {goal.assignee?.name}
-                                                          </div>
-                                                      </div>
-                                                      {goal.currentSection && goal.currentSection.status !== 'completed' && (
-                                                          <Button size="sm" className="bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-full px-4 md:px-5 shadow-sm h-8 md:h-9 w-full sm:w-auto" onClick={() => setEditingGoal({ goal, section: goal.currentSection! })}>
-                                                              <Flame className="w-3.5 h-3.5 mr-1.5" /> İlerleme
-                                                          </Button>
-                                                      )}
-                                                  </div>
-                                                  <div className="space-y-3 md:space-y-4">
-                                                      {goal.currentSection && (
-                                                          <div className="bg-slate-50 dark:bg-slate-800/50 p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-100 dark:border-slate-800">
-                                                              <div className="flex justify-between text-[10px] md:text-xs font-bold mb-2">
-                                                                  <span className={cn("truncate pr-2", themeClasses.TEXT_MAIN)}>{goal.currentSection.title}</span>
-                                                                  <span className="text-rose-500 flex-shrink-0">{goal.currentSection.completedUnits || 0} / {goal.currentSection.sectionTotalUnits} {goal.unitName}</span>
-                                                              </div>
-                                                              <Progress value={goal.sectionProgress || 0} className={cn("h-2 md:h-3 rounded-full", themeClasses.PROGRESS_BG)} indicatorClassName="bg-gradient-to-r from-rose-500 to-orange-500" />
-                                                          </div>
-                                                      )}
-                                                      <div>
-                                                          <div className="flex justify-between text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                                                              <span>Genel İlerleme</span>
-                                                              <span>%{Math.round(goal.overallProgress)}</span>
-                                                          </div>
-                                                          <Progress value={goal.overallProgress} className={cn("h-1 md:h-1.5 rounded-full", themeClasses.PROGRESS_BG)} indicatorClassName="bg-emerald-500" />
-                                                      </div>
-                                                  </div>
-                                              </div>
-                                  </div>
-                              )) : (
-                                  <div className="text-center py-10 md:py-16 bg-slate-50 dark:bg-slate-800/50 rounded-2xl md:rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
-                                      <Target className="w-10 h-10 md:w-12 md:h-12 text-slate-300 dark:text-slate-600 mx-auto mb-2 md:mb-3" />
-                                      <p className={cn("text-xs md:text-sm font-medium", themeClasses.TEXT_MUTED)}>Henüz aktif bir yol haritası yok.</p>
-                                  </div>
-                              )}
-                          </div>
-                      </section>
-                    </div>
-
-                    {/* Sağ Kolon: Liderlik Tablosu */}
-                    <div className="space-y-6">
-                      <div className={cn("rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 overflow-hidden relative", themeClasses.CARD_BG)}>
-                          {/* Dekoratif daireler */}
-                          <div className="absolute -top-10 -right-10 w-24 h-24 md:w-32 md:h-32 bg-indigo-100 dark:bg-indigo-900/30 rounded-full blur-2xl opacity-50"></div>
-                          <div className="absolute bottom-10 -left-10 w-20 h-20 md:w-24 md:h-24 bg-fuchsia-100 dark:bg-fuchsia-900/30 rounded-full blur-xl opacity-50"></div>
-                          
-                          <div className="relative z-10">
-                              <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
-                                  <div className={cn(themeClasses.ICON_BOX, "from-yellow-500 to-amber-500")}>
-                                      <Trophy className="w-4 h-4 md:w-6 md:h-6" />
-                                  </div>
-                                  <h2 className={cn("text-base md:text-lg font-bold", themeClasses.TEXT_MAIN)}>Okuma Liderleri</h2>
-                              </div>
-                              <div className="space-y-3 md:space-y-4">
-                                  {readingStats.map((stat, index) => (
-                                      <Link key={stat.memberId} href="/library" className="group block active:scale-[0.98] transition-transform">
-                                          <div className="flex items-center gap-3 md:gap-4 p-2.5 md:p-3 rounded-xl md:rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-slate-100 dark:border-slate-700">
-                                              <div className="relative">
-                                                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-xs md:text-sm font-black text-white shadow-sm ring-2 ring-white dark:ring-slate-700" style={{ backgroundColor: stat.color }}>
-                                                      {stat.name.charAt(0)}
-                                                  </div>
-                                                  {index === 0 && <div className="absolute -top-1 -right-1 bg-yellow-400 text-white rounded-full p-0.5 shadow-sm"><Star className="w-2.5 h-2.5 md:w-3 md:h-3 fill-current" /></div>}
-                                              </div>
-                                              <div className="flex-grow">
-                                                  <p className={cn("font-bold text-xs md:text-sm", themeClasses.TEXT_MAIN)}>{stat.name}</p>
-                                                  <div className="flex items-center gap-1 md:gap-3 text-[10px] md:text-xs text-blue-600 dark:text-blue-400 font-medium mt-0.5 md:mt-1">
-                                                      <span className="flex items-center gap-1"><BookCheck className="w-3 h-3 md:w-3.5 md:h-3.5 opacity-70" /> {stat.finishedBooks} Kitap</span>
-                                                  </div>
-                                              </div>
-                                              <div className="text-right">
-                                                  <span className={cn("block text-base md:text-lg font-black leading-none", themeClasses.TEXT_MAIN)}>{stat.pagesRead}</span>
-                                                  <span className={cn("text-[9px] md:text-[10px] uppercase font-bold", themeClasses.TEXT_MUTED)}>Sayfa</span>
-                                              </div>
-                                          </div>
-                                      </Link>
-                                  ))}
-                              </div>
-                          </div>
-                      </div>
-                    </div>
-              </div>
-
-              {/* --- KİŞİSEL PANOLAR --- */}
-              <section className="pt-6 md:pt-10 px-3 md:px-6">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-6 md:mb-8 gap-4">
-                      <div>
-                          <h2 className={cn("text-2xl md:text-3xl font-black flex items-center gap-2 md:gap-3", themeClasses.TEXT_MAIN)}>
-                              <LayoutDashboard className="w-6 h-6 md:w-8 md:h-8 text-indigo-600 dark:text-indigo-400" />
-                              Kişisel Panolar
-                          </h2>
-                          <p className={cn("text-xs md:text-sm font-medium mt-1 ml-8 md:ml-11", themeClasses.TEXT_MUTED)}>Bireysel gelişim raporları ve görevler.</p>
-                      </div>
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                          <Button variant="outline" size="sm" onClick={() => setIsMemberFormOpen(true)} className="w-full sm:w-auto rounded-full border-dashed border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 active:scale-95 hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-300 bg-white dark:bg-slate-900 h-10">
-                              <PlusCircle className="w-4 h-4 mr-1.5" /> Üye Ekle
+                        </div>
+                        {goal.currentSection && goal.currentSection.status !== 'completed' && (
+                          <Button size="sm" className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl px-4 shadow-sm h-9 shrink-0" onClick={() => setEditingGoal({ goal, section: goal.currentSection! })}>
+                            <Flame className="w-3.5 h-3.5 mr-1.5" /> İlerleme
                           </Button>
+                        )}
                       </div>
-                  </div>
-
-                  {/* Member Tabs (Mobil Uyumlu Yatay Kaydırma Çipler) */}
-                  <div className="mb-6 md:mb-8 -mx-3 md:mx-0 px-3 md:px-0">
-                      <div className="flex overflow-x-auto gap-2 md:gap-3 pb-2 scrollbar-hide [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden snap-x px-1">
-                          {familyMembers.map((member) => (
-                              <button
-                                  key={member.id}
-                                  onClick={() => setActiveMemberId(member.id)}
-                                  className={cn(
-                                      "snap-start shrink-0 flex items-center gap-2 pl-1.5 pr-4 py-1.5 md:pl-2 md:pr-5 md:py-2 rounded-full transition-all duration-300 border font-bold whitespace-nowrap active:scale-95",
-                                      activeMemberId === member.id
-                                          ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-md"
-                                          : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700"
-                                  )}
-                              >
-                                  <div
-                                      className="w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-[10px] md:text-xs font-bold text-white shadow-sm"
-                                      style={{ backgroundColor: member.color }}
-                                  >
-                                      {member.name.charAt(0)}
-                                  </div>
-                                  <span className="text-xs md:text-sm">{member.name}</span>
-                              </button>
-                          ))}
+                      <div className="space-y-2">
+                        {goal.currentSection && (
+                          <div>
+                            <div className="flex justify-between text-[10px] font-bold mb-1.5">
+                              <span className={cn("truncate pr-2", themeClasses.TEXT_MAIN)}>{goal.currentSection.title}</span>
+                              <span className="text-rose-500 shrink-0">{goal.currentSection.completedUnits || 0}/{goal.currentSection.sectionTotalUnits} {goal.unitName}</span>
+                            </div>
+                            <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                              <div className="h-full rounded-full bg-gradient-to-r from-rose-500 to-orange-400 transition-all duration-700" style={{ width: `${goal.sectionProgress || 0}%` }} />
+                            </div>
+                          </div>
+                        )}
+                        <div>
+                          <div className="flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                            <span>Genel İlerleme</span><span>%{Math.round(goal.overallProgress)}</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                            <div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{ width: `${goal.overallProgress}%` }} />
+                          </div>
+                        </div>
                       </div>
+                    </div>
                   </div>
-
-                  {/* Active Member Content */}
-                  <div className="relative min-h-[400px] md:min-h-[500px]">
-                      {activeMember ? (
-                          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                              <div className={cn("relative rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden shadow-sm md:shadow-xl", themeClasses.CARD_BG)}>
-                                  {/* Dashboard Üst Renk Bandı */}
-                                  <div className="absolute top-0 left-0 w-full h-24 md:h-40 bg-gradient-to-b from-indigo-50/80 to-transparent dark:from-indigo-900/20 -z-10 pointer-events-none"></div>
-                                  
-                                  <div className="p-0 sm:p-8">
-                                      <div className="flex justify-end mb-2 md:mb-6 px-3 pt-3 sm:px-0 sm:pt-0">
-                                          <Button variant="ghost" size="sm" className="text-[10px] md:text-xs font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 bg-slate-100 dark:bg-slate-800 rounded-full h-8 active:scale-95" onClick={() => setEditingMember(activeMember)}>
-                                              <Settings2 className="w-3.5 h-3.5 mr-1.5" /> Düzenle
-                                          </Button>
-                                      </div>
-
-                                      {/* İç Component'in padding'lerini mobil için kendisi ayarlayacaktır, biz dışarıdan sıkı tutuyoruz */}
-                                      <div className="px-3 pb-4 sm:px-0 sm:pb-0">
-                                          <MemberDashboardCard
-                                              member={activeMember}
-                                              tasks={tasks}
-                                              tests={tests}
-                                              studyAssignments={studyAssignments}
-                                              studyPlans={studyPlans}
-                                              userLibraries={userLibraries}
-                                              books={books}
-                                              videos={videos}
-                                              memorizationItems={memorizationItems}
-                                              memorizationProgress={memorizationProgress}
-                                              prayerProgress={prayerProgress}
-                                              trackedBooks={trackedBooks}
-                                          />
-                                      </div>
-                                  </div>
-                              </div>
-                          </div>
-                      ) : (
-                          <div className="text-center py-16 md:py-20 bg-slate-50 dark:bg-slate-800/50 rounded-[1.5rem] md:rounded-[2.5rem] border border-dashed border-slate-200 dark:border-slate-800">
-                              <Users className="w-10 h-10 md:w-12 md:h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3 md:mb-4" />
-                              <h3 className={cn("text-base md:text-lg font-bold", themeClasses.TEXT_MAIN)}>Üye Bulunamadı</h3>
-                              <p className={cn("text-xs md:text-sm", themeClasses.TEXT_MUTED)}>Lütfen yeni bir aile üyesi ekleyin.</p>
-                          </div>
-                      )}
+                )) : (
+                  <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/30 rounded-[1.5rem] border-2 border-dashed border-slate-200 dark:border-slate-700">
+                    <Target className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+                    <p className={cn("text-sm font-medium", themeClasses.TEXT_MUTED)}>Henüz aktif hedef yok.</p>
                   </div>
-              </section>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* DÜZENLEME MODALI */}
-          <Dialog open={isAddBookDialogOpen} onOpenChange={setIsAddBookDialogOpen}>
-            <DialogContent className="w-[95vw] md:max-w-2xl lg:max-w-3xl flex flex-col max-h-[90dvh] bg-white dark:bg-slate-900 rounded-[2rem] border-slate-200 dark:border-slate-800 overflow-hidden p-0">
-                <FormProvider {...bookFormMethods}>
-                  <form onSubmit={bookFormMethods.handleSubmit(handleUpdateBook)} className="flex flex-col min-h-0 flex-1">
-                    <DialogHeader className="p-6 pb-4 shrink-0 border-b border-slate-100 dark:border-slate-800">
-                        <DialogTitle className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                            {editingBook ? 'Kitabı Düzenle' : 'Yeni Kitap Ekle'}
-                        </DialogTitle>
-                    </DialogHeader>
-                    <div className="overflow-y-auto p-6 flex-1 min-h-0">
-                        <BookForm existingTags={allTags} />
+          {/* Okuma Liderleri */}
+          <div>
+            <div className={cn("rounded-[2rem] p-5 md:p-6 overflow-hidden relative", themeClasses.CARD_BG)}>
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-100 dark:bg-indigo-900/30 rounded-full blur-2xl opacity-50" />
+              <div className="absolute bottom-10 -left-10 w-24 h-24 bg-fuchsia-100 dark:bg-fuchsia-900/30 rounded-full blur-xl opacity-50" />
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm bg-gradient-to-br from-yellow-500 to-amber-500">
+                    <Trophy className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className={cn("font-black text-base", themeClasses.TEXT_MAIN)}>Okuma Liderleri</h2>
+                    <p className={cn("text-[10px] font-bold uppercase tracking-wider", themeClasses.TEXT_MUTED)}>Kitap sıralaması</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {readingStats.map((stat, index) => (
+                    <Link key={stat.memberId} href="/library" className="group block">
+                      <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-700 transition-colors">
+                        <div className="relative shrink-0">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white shadow-sm ring-2 ring-white dark:ring-slate-700" style={{ backgroundColor: stat.color }}>
+                            {stat.name.charAt(0)}
+                          </div>
+                          {index === 0 && (
+                            <div className="absolute -top-1 -right-1 bg-yellow-400 text-white rounded-full p-0.5 shadow-sm">
+                              <Star className="w-2.5 h-2.5 fill-current" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={cn("font-bold text-sm truncate", themeClasses.TEXT_MAIN)}>{stat.name}</p>
+                          <p className="text-blue-600 dark:text-blue-400 text-[10px] font-bold">{stat.finishedBooks} kitap</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className={cn("block text-lg font-black leading-none", themeClasses.TEXT_MAIN)}>{stat.pagesRead}</span>
+                          <span className={cn("text-[9px] font-bold uppercase", themeClasses.TEXT_MUTED)}>Sayfa</span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ──────────────────────────────
+            KİŞİSEL PANOLAR
+        ────────────────────────────── */}
+        <section className="pb-4">
+          {/* Başlık */}
+          <div className="flex items-center justify-between mb-4 px-4 md:px-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm bg-gradient-to-br from-indigo-500 to-purple-600">
+                <LayoutDashboard className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className={cn("font-black text-base", themeClasses.TEXT_MAIN)}>Kişisel Panolar</h2>
+                <p className={cn("text-[10px] font-bold uppercase tracking-wider", themeClasses.TEXT_MUTED)}>Bireysel gelişim</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setIsMemberFormOpen(true)}
+              className="rounded-xl border-dashed border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 h-9 px-3 text-xs font-bold">
+              <PlusCircle className="w-3.5 h-3.5 mr-1.5" /> Üye Ekle
+            </Button>
+          </div>
+
+          {/* Üye Kartları — Yatay Kaydırmalı Carousel */}
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide snap-x pb-2 px-4 md:px-6">
+            {familyMembers.map((member) => {
+              const isActive = activeMemberId === member.id;
+              const memberTasks = tasks.filter(t => t.assigneeId === member.id && !t.completed);
+              return (
+                <button
+                  key={member.id}
+                  onClick={() => setActiveMemberId(member.id)}
+                  className={cn(
+                    "snap-start shrink-0 flex flex-col items-center gap-2 p-4 rounded-[1.75rem] border transition-all duration-300 active:scale-95 w-28",
+                    isActive
+                      ? "bg-slate-900 dark:bg-white border-slate-900 dark:border-white shadow-xl scale-105"
+                      : cn("bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm", themeClasses.CARD_HOVER)
+                  )}
+                >
+                  {/* Avatar */}
+                  <div
+                    className={cn(
+                      "w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-md transition-all",
+                      isActive ? "ring-4 ring-white/30 dark:ring-slate-900/30" : ""
+                    )}
+                    style={{ backgroundColor: member.color }}
+                  >
+                    {member.name.charAt(0).toUpperCase()}
+                  </div>
+                  {/* Ad */}
+                  <div className="text-center">
+                    <p className={cn(
+                      "font-black text-xs leading-tight",
+                      isActive ? "text-white dark:text-slate-900" : themeClasses.TEXT_MAIN
+                    )}>
+                      {member.name.split(' ')[0]}
+                    </p>
+                    <p className={cn(
+                      "text-[9px] font-bold uppercase tracking-wider mt-0.5",
+                      isActive ? "text-white/70 dark:text-slate-600" : themeClasses.TEXT_MUTED
+                    )}>
+                      {member.role.replace(' Çocuk','').replace('Kız ','').replace('Erkek ','')}
+                    </p>
+                  </div>
+                  {/* Bekleyen görev sayısı */}
+                  {memberTasks.length > 0 && (
+                    <div className={cn(
+                      "px-2.5 py-1 rounded-xl text-[10px] font-black",
+                      isActive
+                        ? "bg-white/20 dark:bg-slate-900/20 text-white dark:text-slate-900"
+                        : "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400"
+                    )}>
+                      {memberTasks.length} görev
                     </div>
-                    <DialogFooter className="p-4 shrink-0 border-t border-slate-100 dark:border-slate-800 flex flex-row justify-end gap-2 sm:gap-3">
-                        <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} disabled={isSubmittingBook} className="rounded-full font-medium px-5">İptal</Button>
-                        <Button type="submit" disabled={isSubmittingBook} className="rounded-full font-medium px-6 bg-indigo-600 text-white hover:bg-indigo-700 shadow-md">
-                            {isSubmittingBook && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Kaydet
-                        </Button>
-                    </DialogFooter>
-                  </form>
-                </FormProvider>
-            </DialogContent>
-          </Dialog>
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-          {/* --- Dialoglar (Mobilde Alt Taraftan Çıkan Sheet Gibi Kullanılabilir ama Dialog Olarak Tutuldu) --- */}
-          <Dialog open={isMemberFormOpen} onOpenChange={setIsMemberFormOpen}>
-              <DialogContent className="w-[95%] max-w-md rounded-[1.5rem] md:rounded-3xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 p-4 md:p-6">
-                  <DialogHeader>
-                      <DialogTitle className="text-lg md:text-xl font-bold">Yeni Aile Üyesi Ekle</DialogTitle>
-                      <DialogDescription className="text-xs md:text-sm text-slate-500 dark:text-slate-400">Ailenize yeni bir üye ekleyin.</DialogDescription>
-                  </DialogHeader>
-                  <div className="mt-2 text-slate-900 dark:text-slate-100 [&_label]:text-slate-700 dark:[&_label]:text-slate-300 [&_input]:bg-slate-50 dark:[&_input]:bg-slate-800 [&_input]:border-slate-200 dark:[&_input]:border-slate-700">
-                      <NewFamilyMemberForm onMemberAdded={() => setIsMemberFormOpen(false)} />
+          {/* Aktif Üye Pano İçeriği */}
+          <div className="mt-4 px-4 md:px-6">
+            {activeMember ? (
+              <div className="animate-in fade-in slide-in-from-bottom-3 duration-400">
+                {/* Üye Başlık Kartı */}
+                <div
+                  className="relative overflow-hidden rounded-[2rem] p-5 mb-4 text-white shadow-xl"
+                  style={{ background: `linear-gradient(135deg, ${activeMember.color}dd, ${activeMember.color}88)` }}
+                >
+                  <div className="absolute -top-6 -right-6 w-28 h-28 bg-white/10 rounded-full blur-2xl" />
+                  <div className="absolute -bottom-6 -left-4 w-20 h-20 bg-white/10 rounded-full blur-xl" />
+                  <div className="relative z-10 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center text-2xl font-black backdrop-blur-sm">
+                        {activeMember.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-black leading-tight">{activeMember.name}</h3>
+                        <p className="text-white/75 text-xs font-bold mt-0.5">{activeMember.role}</p>
+                        {activeMember.xp ? (
+                          <p className="text-white/90 text-xs font-black mt-1 flex items-center gap-1">
+                            ✨ {activeMember.xp.toLocaleString()} XP
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setEditingMember(activeMember)}
+                      className="w-9 h-9 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center hover:bg-white/30 transition-colors"
+                    >
+                      <Settings2 className="w-4 h-4 text-white" />
+                    </button>
                   </div>
-              </DialogContent>
-          </Dialog>
+                </div>
 
-          <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
-              <DialogContent className="w-[95%] max-w-md rounded-[1.5rem] md:rounded-3xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 p-4 md:p-6">
-                  <DialogHeader>
-                      <DialogTitle className="text-lg md:text-xl font-bold">Profili Düzenle</DialogTitle>
-                  </DialogHeader>
-                  <div className="mt-2 text-slate-900 dark:text-slate-100 [&_label]:text-slate-700 dark:[&_label]:text-slate-300 [&_input]:bg-slate-50 dark:[&_input]:bg-slate-800 [&_input]:border-slate-200 dark:[&_input]:border-slate-700">
-                      {editingMember && <EditFamilyMemberForm member={editingMember} onMemberUpdated={() => setEditingMember(null)} />}
+                {/* Dashboard Kartı */}
+                <div className={cn("rounded-[2rem] overflow-hidden shadow-sm", themeClasses.CARD_BG)}>
+                  <div className="p-4 md:p-6">
+                    <MemberDashboardCard
+                      member={activeMember} tasks={tasks} tests={tests}
+                      studyAssignments={studyAssignments} studyPlans={studyPlans}
+                      userLibraries={userLibraries} books={books} videos={videos}
+                      memorizationItems={memorizationItems} memorizationProgress={memorizationProgress}
+                      prayerProgress={prayerProgress} trackedBooks={trackedBooks}
+                    />
                   </div>
-              </DialogContent>
-          </Dialog>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-16 bg-slate-50 dark:bg-slate-800/30 rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
+                <Users className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                <h3 className={cn("text-base font-black", themeClasses.TEXT_MAIN)}>Üye Bulunamadı</h3>
+                <p className={cn("text-sm font-medium mt-1", themeClasses.TEXT_MUTED)}>Lütfen yeni bir aile üyesi ekleyin.</p>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
 
-          <BookDetailDialog book={viewingBook} isOpen={!!viewingBook} onOpenChange={(open) => { if(!open) setViewingBook(null) }} onEdit={handleOpenEditDialog} onAddToLibrary={handleAddToLibrary} familyMembers={familyMembers} />
+      {/* MODALLER */}
+      <Dialog open={isAddBookDialogOpen} onOpenChange={setIsAddBookDialogOpen}>
+        <DialogContent className="w-[95vw] md:max-w-2xl lg:max-w-3xl flex flex-col max-h-[90dvh] bg-white dark:bg-slate-900 rounded-[2rem] border-slate-200 dark:border-slate-800 overflow-hidden p-0">
+          <FormProvider {...bookFormMethods}>
+            <form onSubmit={bookFormMethods.handleSubmit(handleUpdateBook)} className="flex flex-col min-h-0 flex-1">
+              <DialogHeader className="p-6 pb-4 shrink-0 border-b border-slate-100 dark:border-slate-800">
+                <DialogTitle className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                  {editingBook ? 'Kitabı Düzenle' : 'Yeni Kitap Ekle'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="overflow-y-auto p-6 flex-1 min-h-0"><BookForm existingTags={allTags} /></div>
+              <DialogFooter className="p-4 shrink-0 border-t border-slate-100 dark:border-slate-800 flex flex-row justify-end gap-2">
+                <Button variant="ghost" type="button" onClick={() => setIsAddBookDialogOpen(false)} disabled={isSubmittingBook} className="rounded-xl font-medium px-5">İptal</Button>
+                <Button type="submit" disabled={isSubmittingBook} className="rounded-xl font-bold px-6 bg-indigo-600 text-white hover:bg-indigo-700 shadow-md h-11">Kaydet</Button>
+              </DialogFooter>
+            </form>
+          </FormProvider>
+        </DialogContent>
+      </Dialog>
 
-          <Dialog open={!!editingGoal} onOpenChange={(open) => { if (!open) { setEditingGoal(null); progressForm.reset({ progress: '' as any }); } }}>
-              <DialogContent className="w-[95%] max-w-md rounded-[1.5rem] md:rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-4 md:p-6">
-                  <DialogHeader>
-                      <DialogTitle className="flex items-center gap-2 text-rose-600 text-lg md:text-xl"><Flame className="w-4 h-4 md:w-5 md:h-5 fill-rose-600" /> İlerleme Ekle</DialogTitle>
-                      <DialogDescription className="font-medium text-xs md:text-sm text-slate-500 dark:text-slate-400">{editingGoal?.section.title}</DialogDescription>
-                  </DialogHeader>
-                  <Form {...progressForm}>
-                      <form onSubmit={progressForm.handleSubmit(handleProgressSubmit)} className="space-y-4 mt-2">
-                          <FormField control={progressForm.control} name="progress" render={({ field }) => (
-                              <FormItem>
-                                  <FormLabel className="font-bold text-sm text-slate-700 dark:text-slate-300">Miktar ({editingGoal?.goal.unitName})</FormLabel>
-                                  <FormControl><Input type="number" className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-rose-500 text-lg" autoFocus {...field} /></FormControl>
-                                  <FormMessage />
-                              </FormItem>
-                          )} />
-                          <DialogFooter><Button type="submit" className="w-full h-12 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-xl text-base md:text-lg font-bold shadow-md active:scale-[0.98] transition-transform">Kaydet</Button></DialogFooter>
-                      </form>
-                  </Form>
-              </DialogContent>
-          </Dialog>
+      <Dialog open={isMemberFormOpen} onOpenChange={setIsMemberFormOpen}>
+        <DialogContent className="w-[95%] max-w-md rounded-[2rem] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 p-6">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black">Yeni Aile Üyesi Ekle</DialogTitle>
+            <DialogDescription className="text-sm text-slate-500 dark:text-slate-400">Ailenize yeni bir üye ekleyin.</DialogDescription>
+          </DialogHeader>
+          <div className="mt-2"><NewFamilyMemberForm onMemberAdded={() => setIsMemberFormOpen(false)} /></div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
+        <DialogContent className="w-[95%] max-w-md rounded-[2rem] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 p-6">
+          <DialogHeader><DialogTitle className="text-xl font-black">Profili Düzenle</DialogTitle></DialogHeader>
+          <div className="mt-2">{editingMember && <EditFamilyMemberForm member={editingMember} onMemberUpdated={() => setEditingMember(null)} />}</div>
+        </DialogContent>
+      </Dialog>
+
+      <BookDetailDialog book={viewingBook} isOpen={!!viewingBook} onOpenChange={(open) => { if (!open) setViewingBook(null) }} onEdit={handleOpenEditDialog} onAddToLibrary={handleAddToLibrary} familyMembers={familyMembers} />
+
+      <Dialog open={!!editingGoal} onOpenChange={(open) => { if (!open) { setEditingGoal(null); progressForm.reset({ progress: '' as any }); } }}>
+        <DialogContent className="w-[95%] max-w-md rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-rose-600 text-xl font-black">
+              <Flame className="w-5 h-5 fill-rose-600" /> İlerleme Ekle
+            </DialogTitle>
+            <DialogDescription className="font-medium text-sm text-slate-500 dark:text-slate-400">{editingGoal?.section.title}</DialogDescription>
+          </DialogHeader>
+          <Form {...progressForm}>
+            <form onSubmit={progressForm.handleSubmit(handleProgressSubmit)} className="space-y-4 mt-2">
+              <FormField control={progressForm.control} name="progress" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-bold text-sm text-slate-700 dark:text-slate-300">Miktar ({editingGoal?.goal.unitName})</FormLabel>
+                  <FormControl><Input type="number" className="h-14 rounded-2xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xl font-bold" autoFocus {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <Button type="submit" className="w-full h-14 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl text-base font-black shadow-md active:scale-[0.98] transition-transform">Kaydet</Button>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

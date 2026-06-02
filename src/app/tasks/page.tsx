@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { 
-  Plus, Search, Star, 
+  Plus, Search, Star, X,
   Trophy, Target, CheckCircle2, 
   ListTodo, Flame, LayoutGrid, Zap, Check, Edit, Trash2, MoreHorizontal, ArrowLeft
 } from "lucide-react"; 
@@ -17,8 +17,8 @@ import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NewTaskForm } from "@/components/new-task-form"; 
+
 import { TaskItem } from "@/components/task-item"; 
 import { Task } from "@/lib/data";
 import { onTasksUpdate, updateHabitCompletion, deleteTask } from "@/lib/dataService";
@@ -31,21 +31,21 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 // --- TASARIM: Glassmorphism Renk Paleti ---
 const glassColors = {
-    CARD_BG: "bg-white/5 backdrop-blur-md border border-white/10 shadow-lg",
-    CARD_HOVER: "hover:bg-white/10",
-    TEXT_MAIN: "text-slate-100",
-    TEXT_MUTED: "text-slate-400",
-    BUTTON_GLASS: "bg-white/10 hover:bg-white/20 text-white border border-white/20",
-    ICON_GRADIENT: "bg-gradient-to-tr from-indigo-400 to-fuchsia-400 p-2 rounded-xl shadow-md",
-    HEADER_BG: "bg-slate-950/70 backdrop-blur-lg border-b border-white/5"
+    CARD_BG: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm",
+    CARD_HOVER: "hover:bg-slate-50 dark:hover:bg-white/5",
+    TEXT_MAIN: "text-slate-900 dark:text-slate-100",
+    TEXT_MUTED: "text-slate-500 dark:text-slate-400",
+    BUTTON_GLASS: "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white dark:border-white/20",
+    ICON_GRADIENT: "bg-gradient-to-tr from-indigo-500 to-fuchsia-500 p-2 rounded-xl shadow-md",
+    HEADER_BG: "bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-white/5"
 };
 
 const taskColors = [
-    'bg-blue-600/30 border-blue-400/50 text-blue-200',
-    'bg-emerald-600/30 border-emerald-400/50 text-emerald-200',
-    'bg-amber-600/30 border-amber-400/50 text-amber-200',
-    'bg-rose-600/30 border-rose-400/50 text-rose-200',
-    'bg-violet-600/30 border-violet-400/50 text-violet-200',
+    'bg-blue-50 border-blue-200 text-blue-900 dark:bg-blue-600/20 dark:border-blue-400/30 dark:text-blue-200',
+    'bg-emerald-50 border-emerald-200 text-emerald-900 dark:bg-emerald-600/20 dark:border-emerald-400/30 dark:text-emerald-200',
+    'bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-600/20 dark:border-amber-400/30 dark:text-amber-200',
+    'bg-rose-50 border-rose-200 text-rose-900 dark:bg-rose-600/20 dark:border-rose-400/30 dark:text-rose-200',
+    'bg-violet-50 border-violet-200 text-violet-900 dark:bg-violet-600/20 dark:border-violet-400/30 dark:text-violet-200',
 ];
 
 // --- HABIT TRACKER CARD (Lokal Tanım) ---
@@ -91,19 +91,20 @@ const HabitTrackerCard = React.forwardRef<HTMLDivElement, HabitTrackerCardProps>
   }, [task.completedDates]);
 
   return (
-    <div ref={ref} className={cn("rounded-2xl p-4 border shadow-md", glassColors.CARD_BG, glassColors.CARD_HOVER, "border-white/10")}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        
+    <div ref={ref} className={cn("rounded-2xl p-4 transition-all duration-300 relative overflow-hidden", glassColors.CARD_BG, glassColors.CARD_HOVER)}>
+      <div className={cn("absolute left-0 top-0 bottom-0 w-1.5 opacity-60", colorClass?.split(' ')[0] || "bg-indigo-500")} />
+      
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pl-2">
         <div className="flex items-start gap-3 flex-1">
-            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-1", "bg-fuchsia-600/40 text-fuchsia-200 border border-fuchsia-500/50")}>
-                <Flame className={cn("w-5 h-5", currentStreak > 2 ? "fill-current animate-pulse" : "")} />
+            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 shadow-sm", "bg-fuchsia-100 text-fuchsia-600 border border-fuchsia-200 dark:bg-fuchsia-600/30 dark:text-fuchsia-300 dark:border-fuchsia-500/30")}>
+                <Flame className={cn("w-5 h-5", currentStreak > 2 ? "fill-current animate-pulse text-fuchsia-500 dark:text-fuchsia-400" : "")} />
             </div>
             
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                    <h4 className={cn("font-bold truncate", glassColors.TEXT_MAIN)}>{task.title}</h4>
+                    <h4 className={cn("font-bold truncate text-base", glassColors.TEXT_MAIN)}>{task.title}</h4>
                     {currentStreak > 0 && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-600/50 text-orange-200 flex items-center gap-1 border border-orange-400/50">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-600/30 dark:text-orange-300 dark:border-orange-500/30 flex items-center gap-1 shadow-sm">
                              🔥 {currentStreak} Gün
                         </span>
                     )}
@@ -111,9 +112,9 @@ const HabitTrackerCard = React.forwardRef<HTMLDivElement, HabitTrackerCardProps>
                 
                 <div className="flex items-center gap-2 mt-1">
                     {assignee && (
-                        <div className={cn("flex items-center gap-1 text-xs px-2 py-0.5 rounded-full", glassColors.TEXT_MUTED, "bg-white/5 border border-white/10")}>
+                        <div className={cn("flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium shadow-sm", "bg-slate-100 border-slate-200 text-slate-700 dark:bg-white/5 dark:border-white/10 dark:text-slate-300")}>
                             <span 
-                                className="w-1.5 h-1.5 rounded-full" 
+                                className="w-2 h-2 rounded-full" 
                                 style={{backgroundColor: assignee.color || '#ccc'}} 
                             />
                             {assignee.name}
@@ -129,18 +130,18 @@ const HabitTrackerCard = React.forwardRef<HTMLDivElement, HabitTrackerCardProps>
                  const isTodayDate = isSameDay(day, new Date());
                  
                  return (
-                     <div key={day.toISOString()} className="flex flex-col items-center gap-1">
-                         <span className={cn("text-[10px] font-medium uppercase", glassColors.TEXT_MUTED)}>
+                     <div key={day.toISOString()} className="flex flex-col items-center gap-1.5">
+                         <span className={cn("text-[10px] font-bold uppercase", glassColors.TEXT_MUTED)}>
                              {format(day, 'EEE', { locale: tr }).slice(0, 1)}
                          </span>
                          <button
                             onClick={() => onToggleDay(day, !completed)}
                             className={cn(
-                                "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 border",
+                                "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 border-2",
                                 completed 
-                                    ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-105" 
-                                    : "bg-white/5 border-white/10 text-transparent hover:border-emerald-300/50 hover:bg-white/10",
-                                isTodayDate && !completed && "ring-2 ring-emerald-400/50 border-emerald-300/50"
+                                    ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20 scale-110" 
+                                    : "bg-slate-100 border-slate-200 text-transparent hover:border-emerald-300 hover:bg-slate-50 dark:bg-white/5 dark:border-white/10 dark:hover:border-emerald-500/50 dark:hover:bg-white/10",
+                                isTodayDate && !completed && "ring-2 ring-offset-2 ring-emerald-500/50 border-emerald-400 dark:ring-offset-slate-900"
                             )}
                          >
                              <Check className={cn("w-4 h-4 stroke-[3]", completed ? "opacity-100" : "opacity-0")} /> 
@@ -152,28 +153,28 @@ const HabitTrackerCard = React.forwardRef<HTMLDivElement, HabitTrackerCardProps>
              <div className="ml-2">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className={cn("h-8 w-8 p-0 rounded-full", glassColors.TEXT_MUTED, "hover:bg-white/10 hover:text-white")}>
+                        <Button variant="ghost" className={cn("h-8 w-8 p-0 rounded-full", glassColors.TEXT_MUTED, "hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/10 dark:hover:text-white")}>
                             <MoreHorizontal className="h-5 w-5" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-slate-900 border-white/10 text-slate-100" align="end">
-                        <DropdownMenuItem onClick={onEdit} className="hover:bg-white/10">
-                            <Edit className="mr-2 h-4 w-4 text-blue-400" /> Düzenle
+                    <DropdownMenuContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-100 rounded-xl shadow-xl" align="end">
+                        <DropdownMenuItem onClick={onEdit} className="hover:bg-slate-100 dark:hover:bg-white/10 cursor-pointer font-medium m-1 rounded-lg">
+                            <Edit className="mr-2 h-4 w-4 text-blue-500 dark:text-blue-400" /> Düzenle
                         </DropdownMenuItem>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-500 focus:text-rose-400 focus:bg-rose-500/10 cursor-pointer">
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-600 dark:text-rose-400 focus:text-rose-700 dark:focus:text-rose-300 focus:bg-rose-50 dark:focus:bg-rose-500/10 cursor-pointer font-medium m-1 rounded-lg">
                                     <Trash2 className="mr-2 h-4 w-4" /> Sil
                                 </DropdownMenuItem>
                             </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-100">
+                            <AlertDialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-100 rounded-[2rem] p-6 shadow-2xl">
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>Emin misin?</AlertDialogTitle>
+                                    <AlertDialogTitle className="text-xl font-black">Emin misin?</AlertDialogTitle>
                                     <AlertDialogDescription className={glassColors.TEXT_MUTED}>Bu alışkanlığı ve tüm geçmişini silmek üzeresin.</AlertDialogDescription>
                                 </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel className="bg-white/10 text-slate-100 border-white/10 hover:bg-white/20">Vazgeç</AlertDialogCancel>
-                                    <AlertDialogAction onClick={onDelete} className="bg-rose-600 hover:bg-rose-700 text-white">Sil</AlertDialogAction>
+                                <AlertDialogFooter className="mt-6 gap-3">
+                                    <AlertDialogCancel className="h-12 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/5 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10 border-none flex-1 sm:flex-none">Vazgeç</AlertDialogCancel>
+                                    <AlertDialogAction onClick={onDelete} className="h-12 rounded-xl font-bold bg-rose-600 hover:bg-rose-700 text-white flex-1 sm:flex-none">Sil</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
@@ -189,24 +190,24 @@ HabitTrackerCard.displayName = 'HabitTrackerCard';
 
 // --- YARDIMCI BİLEŞENLER ---
 const GlassStatCard = ({ icon: Icon, label, value, color }: any) => (
-    <div className={cn("p-3 rounded-2xl flex items-center gap-3 flex-1", glassColors.CARD_BG)}>
-        <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", color)}>
-            <Icon className="w-5 h-5 text-white" />
+    <div className={cn("p-3 rounded-2xl flex flex-col items-center justify-center gap-2 text-center", glassColors.CARD_BG)}>
+        <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shadow-sm", color)}>
+            <Icon className="w-4 h-4 text-white" />
         </div>
         <div>
-            <p className={cn("text-xs font-medium uppercase tracking-wider", glassColors.TEXT_MUTED)}>{label}</p>
-            <p className={cn("text-lg font-bold leading-none", glassColors.TEXT_MAIN)}>{value}</p>
+            <p className={cn("text-[10px] font-bold uppercase tracking-wider leading-none", glassColors.TEXT_MUTED)}>{label}</p>
+            <p className={cn("text-xl font-black leading-none mt-1", glassColors.TEXT_MAIN)}>{value}</p>
         </div>
     </div>
 );
 
 const GlassEmptyState = ({ title, desc, icon: Icon }: { title: string, desc: string, icon: any }) => (
-    <div className={cn("flex flex-col items-center justify-center py-12 px-4 text-center rounded-2xl border border-dashed", glassColors.CARD_BG, "border-white/20")}>
-        <div className="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center mb-3">
-            <Icon className="w-7 h-7 text-slate-400" />
+    <div className={cn("flex flex-col items-center justify-center py-16 px-6 text-center rounded-3xl border-2 border-dashed", glassColors.CARD_BG, "border-slate-200 dark:border-white/10")}>
+        <div className="w-20 h-20 bg-slate-100 dark:bg-white/5 rounded-full flex items-center justify-center mb-4 shadow-inner">
+            <Icon className="w-10 h-10 text-slate-400 dark:text-slate-500" />
         </div>
-        <h3 className={cn("font-semibold", glassColors.TEXT_MAIN)}>{title}</h3>
-        <p className={cn("text-sm mt-1 max-w-[200px]", glassColors.TEXT_MUTED)}>{desc}</p>
+        <h3 className={cn("text-xl font-black", glassColors.TEXT_MAIN)}>{title}</h3>
+        <p className={cn("text-sm mt-2 max-w-[250px] font-medium", glassColors.TEXT_MUTED)}>{desc}</p>
     </div>
 );
 
@@ -285,12 +286,12 @@ export default function TasksPage() {
   }, [tasks, searchTerm, familyMembers, user]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-32 md:pb-10 selection:bg-indigo-500/30 relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans pb-32 md:pb-10 selection:bg-indigo-500/30 relative overflow-hidden transition-colors duration-300">
       
       {/* AMBIENT BACKGROUND BLOBS */}
-      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-          <div className="absolute top-[-5%] left-[60%] w-[500px] h-[500px] bg-indigo-600/30 rounded-full blur-[120px]" />
-          <div className="absolute bottom-[10%] left-[-10%] w-[400px] h-[400px] bg-fuchsia-600/20 rounded-full blur-[100px]" />
+      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-100 transition-opacity duration-700">
+          <div className="absolute top-[-5%] left-[60%] w-[600px] h-[600px] bg-indigo-500/20 dark:bg-indigo-600/20 rounded-full blur-[120px]" />
+          <div className="absolute bottom-[10%] left-[-10%] w-[500px] h-[500px] bg-fuchsia-500/10 dark:bg-fuchsia-600/10 rounded-full blur-[100px]" />
       </div>
 
       {/* 1. HEADER & SEARCH (DİNAMİK GLASS HEADER) */}
@@ -302,7 +303,7 @@ export default function TasksPage() {
                         variant="ghost" 
                         size="icon" 
                         onClick={() => router.back()} 
-                        className={cn("rounded-full mr-1", glassColors.TEXT_MUTED, "hover:bg-white/10 hover:text-white")}
+                        className={cn("rounded-full mr-1", glassColors.TEXT_MUTED, "hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/10 dark:hover:text-white")}
                       >
                           <ArrowLeft className="w-5 h-5" />
                       </Button>
@@ -310,58 +311,58 @@ export default function TasksPage() {
                           <CheckCircle2 className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                          <p className={cn("text-xs font-semibold uppercase tracking-wider", glassColors.TEXT_MUTED)}>Planlayıcı</p>
-                          <h1 className={cn("text-lg font-bold leading-none", glassColors.TEXT_MAIN)}>Görevler</h1>
+                          <p className={cn("text-xs font-bold uppercase tracking-wider", glassColors.TEXT_MUTED)}>Planlayıcı</p>
+                          <h1 className={cn("text-xl font-black tracking-tight", glassColors.TEXT_MAIN)}>Görevler</h1>
                       </div>
                   </div>
 
                   <div className="flex items-center gap-3 w-full md:w-auto">
-                      <div className="relative flex-1 md:w-64">
+                      <div className="relative flex-1 md:w-72">
                           <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4", glassColors.TEXT_MUTED)} />
                           <Input 
-                            placeholder="Görev ara..." 
+                            placeholder="Görev veya kişi ara..." 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className={cn("pl-9 rounded-xl border-white/10", glassColors.CARD_BG, glassColors.TEXT_MAIN, "placeholder:text-slate-500")} 
+                            className={cn("pl-9 rounded-2xl h-12 font-medium focus-visible:ring-indigo-500/50", glassColors.CARD_BG, glassColors.TEXT_MAIN, "placeholder:text-slate-400 dark:placeholder:text-slate-500")} 
                           />
                       </div>
-                      <Button onClick={handleOpenNewTask} className={cn("hidden md:flex rounded-full px-6", glassColors.BUTTON_GLASS)}>
-                           <Plus className="w-4 h-4 mr-2" /> Yeni Ekle
+                      <Button onClick={handleOpenNewTask} className={cn("hidden md:flex rounded-2xl h-12 px-6 font-bold", glassColors.BUTTON_GLASS)}>
+                           <Plus className="w-5 h-5 mr-2" /> Yeni Ekle
                        </Button>
                   </div>
               </div>
 
-              {/* MOBİL İSTATİSTİKLER (Horizontal Scroll) */}
-              <div className="flex gap-3 mt-4 overflow-x-auto pb-2 scrollbar-hide md:hidden">
-                  <GlassStatCard icon={ListTodo} label="Bekleyen" value={stats.totalPending} color="bg-blue-600/50" />
-                  <GlassStatCard icon={Target} label="Alışkanlık" value={stats.totalHabits} color="bg-emerald-600/50" />
-                  <GlassStatCard icon={Star} label="XP Puanın" value={stats.userXP} color="bg-amber-600/50" />
+              {/* MOBİL İSTATİSTİKLER (3 Kolon Grid) */}
+              <div className="grid grid-cols-3 gap-2 mt-4 md:hidden">
+                  <GlassStatCard icon={ListTodo} label="Bekleyen" value={stats.totalPending} color="bg-blue-500 shadow-blue-500/20 text-white" />
+                  <GlassStatCard icon={Target} label="Alışkanlık" value={stats.totalHabits} color="bg-emerald-500 shadow-emerald-500/20 text-white" />
+                  <GlassStatCard icon={Star} label="XP Puanın" value={stats.userXP} color="bg-amber-500 shadow-amber-500/20 text-white" />
               </div>
           </div>
       </div>
 
-      <div className="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
+      <div className="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 relative z-10">
         
         {/* SOL KOLON: ANA İÇERİK */}
-        <div className="lg:col-span-8 space-y-6">
+        <div className="lg:col-span-8 space-y-8">
             
             {/* TAB SELECTOR (GLASS STYLE) */}
-            <div className={cn("p-1 rounded-2xl flex relative", glassColors.CARD_BG)}>
+            <div className={cn("p-1.5 rounded-[1.5rem] flex relative shadow-sm", glassColors.CARD_BG)}>
                 <button 
                     onClick={() => setActiveTab('tasks')}
                     className={cn(
-                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200",
-                        activeTab === 'tasks' ? "bg-white/10 text-white shadow-lg shadow-black/30" : glassColors.TEXT_MUTED + " hover:text-slate-300"
+                        "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold transition-all duration-300",
+                        activeTab === 'tasks' ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white" : glassColors.TEXT_MUTED + " hover:text-slate-900 dark:hover:text-slate-200"
                     )}
                 >
                     <ListTodo className="w-4 h-4" /> Görevler
-                    {pendingTasks.length > 0 && <span className="bg-blue-600/50 text-blue-100 px-1.5 py-0.5 rounded-md text-[10px] border border-blue-400/50">{pendingTasks.length}</span>}
+                    {pendingTasks.length > 0 && <span className={cn("px-2 py-0.5 rounded-lg text-[10px] font-black", activeTab === 'tasks' ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300" : "bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400")}>{pendingTasks.length}</span>}
                 </button>
                 <button 
                     onClick={() => setActiveTab('habits')}
                     className={cn(
-                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200",
-                        activeTab === 'habits' ? "bg-white/10 text-white shadow-lg shadow-black/30" : glassColors.TEXT_MUTED + " hover:text-slate-300"
+                        "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold transition-all duration-300",
+                        activeTab === 'habits' ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white" : glassColors.TEXT_MUTED + " hover:text-slate-900 dark:hover:text-slate-200"
                     )}
                 >
                     <Target className="w-4 h-4" /> Alışkanlıklar
@@ -370,22 +371,22 @@ export default function TasksPage() {
 
             {/* --- GÖREVLER GÖRÜNÜMÜ --- */}
             {activeTab === 'tasks' && (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     {/* Alt Filtreler */}
                     <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                        <button onClick={() => setTaskFilter('pending')} className={cn("px-4 py-1.5 rounded-full text-xs font-medium border transition-colors", taskFilter === 'pending' ? "bg-white text-gray-900 border-white/20" : glassColors.BUTTON_GLASS)}>
+                        <button onClick={() => setTaskFilter('pending')} className={cn("px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm", taskFilter === 'pending' ? "bg-indigo-600 text-white shadow-indigo-500/20" : glassColors.BUTTON_GLASS)}>
                             Yapılacaklar ({pendingTasks.length})
                         </button>
-                        <button onClick={() => setTaskFilter('completed')} className={cn("px-4 py-1.5 rounded-full text-xs font-medium border transition-colors", taskFilter === 'completed' ? "bg-white text-gray-900 border-white/20" : glassColors.BUTTON_GLASS)}>
+                        <button onClick={() => setTaskFilter('completed')} className={cn("px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm", taskFilter === 'completed' ? "bg-indigo-600 text-white shadow-indigo-500/20" : glassColors.BUTTON_GLASS)}>
                             Tamamlananlar ({completedTasks.length})
                         </button>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                         {taskFilter === 'pending' ? (
                             pendingTasks.length > 0 ? (
                                 pendingTasks.map((task, index) => (
-                                    <div key={task.id} className="transform transition-all hover:scale-[1.01]">
+                                    <div key={task.id} className="transform transition-all hover:-translate-y-1">
                                         <TaskItem 
                                             task={task} 
                                             assignee={getAssignee(task.assigneeId)} 
@@ -420,7 +421,7 @@ export default function TasksPage() {
 
             {/* --- ALIŞKANLIKLAR GÖRÜNÜMÜ --- */}
             {activeTab === 'habits' && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                      {habits.length > 0 ? (
                         habits.map((habit, index) => (
                             <HabitTrackerCard
@@ -441,52 +442,53 @@ export default function TasksPage() {
         </div>
 
         {/* SAĞ KOLON: LİDERLİK & İSTATİSTİK */}
-        <aside className="lg:col-span-4 space-y-6">
+        <aside className="lg:col-span-4 space-y-8">
             
             {/* Desktop Stats */}
-            <div className="hidden md:grid grid-cols-2 gap-3">
-                 <GlassStatCard icon={ListTodo} label="Bekleyen" value={stats.totalPending} color="bg-blue-600/50" />
-                 <GlassStatCard icon={Star} label="XP Puanın" value={stats.userXP} color="bg-amber-600/50" />
+            <div className="hidden md:flex flex-col gap-4">
+                 <GlassStatCard icon={ListTodo} label="Bekleyen" value={stats.totalPending} color="bg-blue-500 text-white shadow-lg shadow-blue-500/20" />
+                 <GlassStatCard icon={Star} label="XP Puanın" value={stats.userXP} color="bg-amber-500 text-white shadow-lg shadow-amber-500/20" />
             </div>
 
             {/* LEADERBOARD CARD */}
-            <div className={cn("rounded-3xl shadow-sm overflow-hidden sticky top-24", glassColors.CARD_BG)}>
-                <div className="p-5 border-b border-white/10 bg-white/10">
-                    <div className="flex items-center gap-2 mb-1">
-                        <Trophy className="w-5 h-5 text-amber-300" />
-                        <h3 className={cn("font-bold text-amber-200", glassColors.TEXT_MAIN)}>Liderlik Tablosu</h3>
+            <div className={cn("rounded-[2rem] shadow-sm overflow-hidden sticky top-32", glassColors.CARD_BG)}>
+                <div className="p-6 border-b border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900/50">
+                    <div className="flex items-center gap-2 mb-1.5">
+                        <Trophy className="w-6 h-6 text-amber-500" />
+                        <h3 className={cn("text-lg font-black text-slate-900 dark:text-white")}>Liderlik Tablosu</h3>
                     </div>
-                    <p className={cn("text-xs", glassColors.TEXT_MUTED)}>En çok XP kazanan üyeler.</p>
+                    <p className={cn("text-sm font-medium", glassColors.TEXT_MUTED)}>En çok XP kazanan üyeler.</p>
                 </div>
                 
-                <ScrollArea className="max-h-[400px]">
-                    <div className="p-2 space-y-1">
+                <ScrollArea className="max-h-[450px]">
+                    <div className="p-3 space-y-2">
                         {leaderboard.map((member, index) => (
-                            <div key={member.id} className={cn("flex items-center gap-3 p-3 rounded-2xl transition-colors", glassColors.CARD_HOVER)}>
+                            <div key={member.id} className={cn("flex items-center gap-4 p-4 rounded-[1.5rem] transition-colors border border-transparent", glassColors.CARD_HOVER)}>
                                 <div className={cn(
-                                    "w-8 h-8 flex items-center justify-center font-bold rounded-full text-sm shadow-md",
-                                    index === 0 ? "bg-yellow-500 text-slate-900 shadow-yellow-500/30" :
-                                    index === 1 ? "bg-slate-400 text-slate-900" :
-                                    index === 2 ? "bg-orange-500 text-slate-900" : "bg-white/10 text-slate-400"
+                                    "w-10 h-10 flex items-center justify-center font-black rounded-full text-base shadow-sm border",
+                                    index === 0 ? "bg-amber-100 text-amber-600 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30" :
+                                    index === 1 ? "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-500/20 dark:text-slate-300 dark:border-slate-500/30" :
+                                    index === 2 ? "bg-orange-100 text-orange-600 border-orange-200 dark:bg-orange-500/20 dark:text-orange-300 dark:border-orange-500/30" : 
+                                    "bg-slate-50 text-slate-400 border-slate-100 dark:bg-white/5 dark:text-slate-500 dark:border-white/5"
                                 )}>
                                     {index + 1}
                                 </div>
                                 
-                                <Avatar className="w-10 h-10 border-2 border-white/20 shadow-sm">
+                                <Avatar className="w-12 h-12 border-2 border-white dark:border-slate-800 shadow-sm">
                                     <AvatarImage src={member.avatar} />
-                                    <AvatarFallback style={{backgroundColor: member.color}} className="text-white font-bold">
+                                    <AvatarFallback style={{backgroundColor: member.color}} className="text-white font-bold text-lg">
                                         {member.name[0].toUpperCase()}
                                     </AvatarFallback>
                                 </Avatar>
 
                                 <div className="flex-1 min-w-0">
-                                    <p className={cn("font-semibold text-sm truncate", glassColors.TEXT_MAIN)}>{member.name}</p>
-                                    <p className={cn("text-xs", glassColors.TEXT_MUTED)}>Seviye {member.level}</p>
+                                    <p className={cn("font-bold text-base truncate", glassColors.TEXT_MAIN)}>{member.name}</p>
+                                    <p className={cn("text-xs font-medium", glassColors.TEXT_MUTED)}>Seviye {member.level}</p>
                                 </div>
                                 
                                 <div className="text-right">
-                                    <span className={cn("block font-bold text-sm text-amber-400")}>{member.xp.toLocaleString()}</span>
-                                    <span className={cn("text-[10px]", glassColors.TEXT_MUTED)}>XP</span>
+                                    <span className={cn("block font-black text-lg text-amber-500")}>{member.xp.toLocaleString()}</span>
+                                    <span className={cn("text-[10px] font-bold uppercase", glassColors.TEXT_MUTED)}>XP</span>
                                 </div>
                             </div>
                         ))}
@@ -494,12 +496,12 @@ export default function TasksPage() {
                 </ScrollArea>
             </div>
 
-            <div className="bg-indigo-600 rounded-3xl p-6 text-white shadow-lg shadow-indigo-500/30 relative overflow-hidden hidden md:block border border-indigo-400/50">
+            <div className="bg-indigo-600 rounded-[2rem] p-8 text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden hidden md:block">
                  <div className="relative z-10">
-                     <p className="font-medium text-lg mb-1">"Zinciri Kırma!"</p>
-                     <p className="text-indigo-100 text-sm opacity-90">Her gün yapılan küçük bir adım, yarın büyük bir başarıya dönüşür.</p>
+                     <p className="font-black text-2xl mb-2">"Zinciri Kırma!"</p>
+                     <p className="text-indigo-100 font-medium opacity-90 leading-relaxed">Her gün yapılan küçük bir adım, yarın büyük bir başarıya dönüşür.</p>
                  </div>
-                 <Flame className="absolute -bottom-4 -right-4 w-24 h-24 text-indigo-500 opacity-50 rotate-12" />
+                 <Flame className="absolute -bottom-8 -right-8 w-32 h-32 text-indigo-400 opacity-30 rotate-12" />
             </div>
         </aside>
       </div>
@@ -507,40 +509,69 @@ export default function TasksPage() {
       {/* FAB: MOBİL BUTON */}
       <button 
         onClick={handleOpenNewTask}
-        className="fixed bottom-24 right-6 md:hidden z-50 w-14 h-14 bg-white text-slate-900 rounded-full shadow-xl shadow-white/30 flex items-center justify-center active:scale-95 transition-transform"
+        className="fixed bottom-24 right-6 md:hidden z-50 w-16 h-16 bg-indigo-600 text-white rounded-[2rem] shadow-xl shadow-indigo-500/30 flex items-center justify-center active:scale-95 transition-transform"
       >
-        <Plus className="w-7 h-7" />
+        <Plus className="w-8 h-8" />
       </button>
 
-      {/* FORM DIALOG */}
-      <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
-          <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 shadow-2xl rounded-3xl text-slate-100">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                 {editingTask ? <LayoutGrid className="w-5 h-5 text-blue-400" /> : <Target className="w-5 h-5 text-indigo-400" />}
-                 {editingTask ? 'Görevi Düzenle' : 'Yeni Görev Ekle'}
-              </DialogTitle>
-              <DialogDescription className={glassColors.TEXT_MUTED}>
-                 Aileniz veya kendiniz için yeni bir hedef belirleyin.
-              </DialogDescription>
-            </DialogHeader>
-            
-            {/* CSS Wrapper for styling form internals */}
-            <div className="
-                text-slate-100
-                [&_label]:text-slate-300 [&_label]:font-medium
-                [&_input]:bg-white/5 [&_input]:border-white/10 [&_input]:text-slate-100 [&_input]:placeholder:text-slate-500
-                [&_select]:bg-white/5 [&_select]:border-white/10 [&_select]:text-slate-100
-                [&_button]:shadow-sm
-            ">
-                <NewTaskForm 
-                    familyMembers={familyMembers}
-                    onTaskProcessed={() => setIsFormDialogOpen(false)}
-                    taskToEdit={editingTask}
-                />
+      {/* FORM SHEET — Mobilde alttan açılan native sheet, masaüstünde ortalı modal */}
+      {isFormDialogOpen && (
+        <div className="fixed inset-x-0 top-0 bottom-16 sm:inset-0 z-[60] flex items-end sm:items-center justify-center">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
+            onClick={() => setIsFormDialogOpen(false)}
+          />
+
+          {/* Sheet / Modal */}
+          <div className={cn(
+            "relative w-full sm:max-w-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100",
+            "flex flex-col overflow-hidden",
+            "animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-400 ease-out",
+            // Mobile: full-width bottom sheet with top-rounded corners
+            "rounded-t-[2.5rem] sm:rounded-[2rem]",
+            // Mobile: sheet height adapts to available space above nav, desktop: auto
+            "max-h-full sm:max-h-[90vh] sm:shadow-2xl",
+          )}>
+            {/* Sürükleme çubuğu – sadece mobilde görünür */}
+            <div className="flex justify-center pt-4 pb-1 sm:hidden">
+              <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
             </div>
-          </DialogContent>
-      </Dialog>
+
+            {/* Başlık */}
+            <div className="flex items-center justify-between px-6 pt-4 pb-4 sm:pt-6 border-b border-slate-100 dark:border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                  {editingTask ? <LayoutGrid className="w-5 h-5 text-white" /> : <Target className="w-5 h-5 text-white" />}
+                </div>
+                <div>
+                  <h2 className="text-xl font-black tracking-tight">
+                    {editingTask ? 'Görevi Düzenle' : 'Yeni Görev'}
+                  </h2>
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                    {editingTask ? 'Mevcut görevi güncelle' : 'Aile için yeni bir hedef ekle'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsFormDialogOpen(false)}
+                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-colors text-slate-500 dark:text-slate-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Form içeriği */}
+            <div className="overflow-y-auto flex-1 px-6 py-4 overscroll-contain">
+              <NewTaskForm 
+                familyMembers={familyMembers}
+                onTaskProcessed={() => setIsFormDialogOpen(false)}
+                taskToEdit={editingTask}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

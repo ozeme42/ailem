@@ -24,7 +24,6 @@ import { Switch } from "./ui/switch";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Checkbox } from "./ui/checkbox";
 import { usePathname } from "next/navigation";
-import { DialogFooter } from "./ui/dialog";
 
 const subtaskSchema = z.object({
   title: z.string().min(3, "Alt görev başlığı en az 3 karakter olmalıdır."),
@@ -415,11 +414,14 @@ export function NewTaskForm({ familyMembers, onTaskProcessed, taskToEdit }: NewT
             </div>
             </div>
         </ScrollArea>
-        <DialogFooter className="pt-4 border-t">
-          <Button type="submit" className="w-full">
-            {taskToEdit ? 'Görevi Güncelle' : 'Görevi Ekle'}
+        <div className="pt-4 mt-2 border-t border-slate-100 dark:border-white/5">
+          <Button 
+            type="submit" 
+            className="w-full h-14 rounded-2xl text-base font-black bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white shadow-lg shadow-indigo-500/25 transition-all active:scale-[0.98]"
+          >
+            {taskToEdit ? '✅ Değişiklikleri Kaydet' : '✨ Görevi Ekle'}
           </Button>
-        </DialogFooter>
+        </div>
       </form>
     </Form>
   );
