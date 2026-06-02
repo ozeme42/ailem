@@ -27,6 +27,9 @@ const formSchema = z.object({
       from: z.date({ required_error: "Bir başlangıç tarihi seçmelisiniz." }),
       to: z.date().optional(),
   }),
+  category: z.string().optional(),
+  color: z.string().optional(),
+  reminderMinutes: z.coerce.number().optional(),
 });
 
 type NewEventFormProps = {
@@ -43,7 +46,10 @@ export function NewEventForm({ onSave, initialData }: NewEventFormProps) {
       dateRange: {
         from: new Date(),
         to: undefined,
-      }
+      },
+      category: "Genel",
+      color: "bg-slate-500",
+      reminderMinutes: 0,
     },
   });
 
@@ -55,13 +61,19 @@ export function NewEventForm({ onSave, initialData }: NewEventFormProps) {
         dateRange: {
           from: parseISO(initialData.startDate),
           to: initialData.endDate ? parseISO(initialData.endDate) : undefined
-        }
+        },
+        category: initialData.category || "Genel",
+        color: initialData.color || "bg-slate-500",
+        reminderMinutes: initialData.reminderMinutes || 0,
       });
     } else {
       form.reset({
         title: "",
         recurrence: "one-time",
-        dateRange: { from: new Date(), to: undefined }
+        dateRange: { from: new Date(), to: undefined },
+        category: "Genel",
+        color: "bg-slate-500",
+        reminderMinutes: 0,
       });
     }
   }, [initialData, form]);
@@ -72,6 +84,9 @@ export function NewEventForm({ onSave, initialData }: NewEventFormProps) {
         recurrence: values.recurrence,
         startDate: format(values.dateRange.from, "yyyy-MM-dd"),
         endDate: values.dateRange.to ? format(values.dateRange.to, "yyyy-MM-dd") : undefined,
+        category: values.category,
+        color: values.color,
+        reminderMinutes: values.reminderMinutes,
     };
     
     if (!eventData.endDate) {
@@ -165,6 +180,50 @@ export function NewEventForm({ onSave, initialData }: NewEventFormProps) {
             </FormItem>
           )}
         />
+        
+        <div className="grid grid-cols-2 gap-4">
+            <FormField control={form.control} name="category" render={({ field }) => (
+                <FormItem>
+                <FormLabel>Kategori</FormLabel>
+                <Select onValueChange={(val) => {
+                    field.onChange(val);
+                    // auto color select based on category
+                    const colorMap: any = { 
+                        'İş/Okul': 'bg-blue-500 text-white', 
+                        'Doğum Günü': 'bg-rose-500 text-white', 
+                        'Tatil': 'bg-emerald-500 text-white', 
+                        'Sağlık': 'bg-amber-500 text-white', 
+                        'Genel': 'bg-slate-500 text-white' 
+                    };
+                    if (colorMap[val]) form.setValue('color', colorMap[val]);
+                }} defaultValue={field.value}>
+                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                    <SelectContent>
+                    <SelectItem value="Genel">Genel</SelectItem>
+                    <SelectItem value="İş/Okul">İş / Okul</SelectItem>
+                    <SelectItem value="Doğum Günü">Doğum Günü</SelectItem>
+                    <SelectItem value="Tatil">Tatil</SelectItem>
+                    <SelectItem value="Sağlık">Sağlık</SelectItem>
+                    </SelectContent>
+                </Select>
+                </FormItem>
+            )} />
+
+            <FormField control={form.control} name="reminderMinutes" render={({ field }) => (
+                <FormItem>
+                <FormLabel>Hatırlatıcı</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={String(field.value)}>
+                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                    <SelectContent>
+                    <SelectItem value="0">Yok</SelectItem>
+                    <SelectItem value="15">15 Dk Önce</SelectItem>
+                    <SelectItem value="60">1 Saat Önce</SelectItem>
+                    <SelectItem value="1440">1 Gün Önce</SelectItem>
+                    </SelectContent>
+                </Select>
+                </FormItem>
+            )} />
+        </div>
         
         <Button type="submit" className="w-full">{initialData ? 'Değişiklikleri Kaydet' : 'Hatırlatıcıyı Oluştur'}</Button>
       </form>

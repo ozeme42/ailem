@@ -18,6 +18,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useRouter } from 'next/navigation';
 
 import {
   DndContext,
@@ -72,6 +73,7 @@ type NoteFormData = z.infer<typeof noteFormSchema>;
 export function NotesClient() {
     const { user, familyId } = useAuth();
     const { toast } = useToast();
+    const router = useRouter();
 
     // Data State
     const [notebooks, setNotebooks] = useState<NotebookType[]>([]);
@@ -189,8 +191,10 @@ export function NotesClient() {
     const goBack = () => {
         if (currentFolder && currentFolder.parentId) {
             setCurrentFolderId(currentFolder.parentId);
-        } else {
+        } else if (currentFolderId) {
             setCurrentFolderId(null);
+        } else {
+            router.push('/');
         }
     };
 
@@ -272,11 +276,10 @@ export function NotesClient() {
             <div className="px-4 py-4 border-b border-slate-200/50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl sticky top-0 z-20 shadow-sm flex-shrink-0">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        {currentFolderId ? (
-                            <Button variant="ghost" size="icon" onClick={goBack} className="mr-1 text-indigo-600 hover:bg-indigo-50 rounded-full active:scale-90">
-                                <ChevronLeft className="w-7 h-7" />
-                            </Button>
-                        ) : (
+                        <Button variant="ghost" size="icon" onClick={goBack} className="mr-1 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full active:scale-90">
+                            <ChevronLeft className="w-7 h-7" />
+                        </Button>
+                        {!currentFolderId && (
                             <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-xl text-white mr-2">
                                 <Folder className="w-5 h-5" />
                             </div>

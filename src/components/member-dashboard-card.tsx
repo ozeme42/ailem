@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { updateTask, checkAndAwardBadges, updateFamilyMemberInFamily, updateHabitCompletion } from '@/lib/dataService';
 import { FamilyMember, Task, Test, StudyAssignment, UserLibrary, MemorizationProgress, MemorizationItem, Book as BookType, StudyPlan, PrayerProgress, Video, TrackedBook } from '@/lib/data';
 import { Progress } from './ui/progress';
-import { format, isToday, parseISO, subDays } from 'date-fns';
+import { format, isToday, parseISO, subDays, isValid } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
@@ -487,55 +487,114 @@ export function MemberDashboardCard({
                              <h4 className={cn("font-extrabold text-[10px] md:text-xs uppercase tracking-widest mb-3 md:mb-4 flex items-center gap-1.5 md:gap-2", sectionThemes.todo.title)}>
                                 <ListChecks className={cn("h-3.5 w-3.5 md:h-4 md:w-4", sectionThemes.todo.icon)}/> Yapılacaklar
                             </h4>
-                            <div className="space-y-2">
-                                {/* Testler */}
-                                {pendingTests.map(test => (
-                                    <Link href={`/education/${test.id}`} key={test.id} className="block group">
-                                              <div className={cn("flex items-center gap-2.5 p-2 md:p-2.5 rounded-[1rem] relative overflow-hidden pl-3 shadow-sm", sectionThemes.todo.itemHover)}>
-                                                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500"></div>
-                                                  <div className="bg-indigo-100 dark:bg-indigo-900/40 p-1.5 rounded-[8px] text-indigo-500 dark:text-indigo-400 shrink-0">
-                                                      <GraduationCap className="w-4 h-4" />
-                                                  </div>
-                                                  <div className="truncate flex-grow">
-                                                       <p className="font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 truncate">{test.displayName}</p>
-                                                       <p className="text-[9px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider mt-0.5">Sınav • {test.subject}</p>
-                                                  </div>
-                                                  <ChevronRight className="w-4 h-4 text-indigo-300 dark:text-indigo-700"/>
-                                              </div>
-                                      </Link>
-                                ))}
+                            <div className="space-y-4">
+                                {(() => {
+                                    const todoItems: { id: string; type: 'test' | 'study' | 'task'; item: any; dueDate: Date | null; categoryGroup: string; }[] = [];
+                                    
+                                    const safeParseDate = (dateStr: string | undefined | null) => {
+                                        if (!dateStr) return null;
+                                        const parsed = parseISO(dateStr);
+                                        return isValid(parsed) ? parsed : null;
+                                    };
+                                    
+                                    pendingTests.forEach(t => todoItems.push({ id: `test-${t.id}`, type: 'test', item: t, dueDate: safeParseDate(t.dueDate), categoryGroup: 'Eğitim & Sınavlar' }));
+                                    pendingStudies.forEach(s => todoItems.push({ id: `study-${s.id}`, type: 'study', item: s, dueDate: safeParseDate(s.dueDate), categoryGroup: 'Eğitim & Sınavlar' }));
+                                    pendingTasks.forEach(t => {
+                                        let group = 'Diğer Görevler';
+                                        if (t.category === 'Okul') group = 'Eğitim & Sınavlar';
+                                        else if (t.category === 'Ev İşleri' || t.category === 'Aile') group = 'Ev İşleri';
+                                        todoItems.push({ id: `task-${t.id}`, type: 'task', item: t, dueDate: safeParseDate(t.dueDate), categoryGroup: group });
+                                    });
 
-                                {/* Çalışmalar/Ödevler */}
-                                {pendingStudies.map(study => (
-                                    <Link href="/education/study" key={study.id} className="block group">
-                                              <div className={cn("flex items-center gap-2.5 p-2 md:p-2.5 rounded-[1rem] relative overflow-hidden pl-3 shadow-sm", sectionThemes.todo.itemHover)}>
-                                                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
-                                                   <div className="bg-blue-100 dark:bg-blue-900/40 p-1.5 rounded-[8px] text-blue-500 dark:text-blue-400 shrink-0">
-                                                      <BookOpen className="w-4 h-4" />
-                                                  </div>
-                                                  <div className="truncate flex-grow">
-                                                       <p className="font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 truncate">{study.topic}</p>
-                                                       <p className="text-[9px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider mt-0.5">Çalışma • {study.subject}</p>
-                                                  </div>
-                                                  <ChevronRight className="w-4 h-4 text-blue-300 dark:text-blue-700"/>
-                                              </div>
-                                      </Link>
-                                ))}
+                                    todoItems.sort((a, b) => {
+                                        if (!a.dueDate && !b.dueDate) return 0;
+                                        if (!a.dueDate) return 1;
+                                        if (!b.dueDate) return -1;
+                                        return a.dueDate.getTime() - b.dueDate.getTime();
+                                    });
 
-                                {/* Normal Görevler */}
-                                {pendingTasks.slice(0, 4).map(task => (
-                                    <div key={task.id} className={cn("flex items-start gap-2.5 p-2.5 md:p-3 rounded-[1rem] shadow-sm", sectionThemes.todo.itemHover)}>
-                                              <Checkbox
-                                                  id={`personal-task-${task.id}-${member.id}`}
-                                                  onCheckedChange={() => handleTaskCompletion(task)}
-                                                  className={cn("mt-0.5 rounded-full size-4", sectionThemes.todo.checkbox)}
-                                              />
-                                              <div className="flex-grow pt-0.5">
-                                                  <label htmlFor={`personal-task-${task.id}-${member.id}`} className="text-xs md:text-sm font-bold text-slate-700 dark:text-slate-300 leading-tight cursor-pointer block">{task.title}</label>
-                                                  {task.points > 0 && <span className="text-[8px] md:text-[9px] text-indigo-600 dark:text-indigo-400 font-bold mt-1 inline-block bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded-sm">+{task.points} XP</span>}
-                                              </div>
-                                      </div>
-                                ))}
+                                    const groups = [
+                                        { name: 'Eğitim & Sınavlar', items: todoItems.filter(t => t.categoryGroup === 'Eğitim & Sınavlar') },
+                                        { name: 'Ev İşleri', items: todoItems.filter(t => t.categoryGroup === 'Ev İşleri') },
+                                        { name: 'Diğer Görevler', items: todoItems.filter(t => t.categoryGroup === 'Diğer Görevler') }
+                                    ];
+
+                                    return groups.map(group => {
+                                        if (group.items.length === 0) return null;
+                                        return (
+                                            <div key={group.name} className="space-y-2">
+                                                <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">{group.name}</h5>
+                                                {group.items.map(todo => {
+                                                    if (todo.type === 'test') {
+                                                        const test = todo.item as Test & { displayName: string };
+                                                        return (
+                                                            <Link href={`/education/${test.id}`} key={todo.id} className="block group">
+                                                                <div className={cn("flex items-center gap-2.5 p-2 md:p-2.5 rounded-[1rem] relative overflow-hidden pl-3 shadow-sm", sectionThemes.todo.itemHover)}>
+                                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500"></div>
+                                                                    <div className="bg-indigo-100 dark:bg-indigo-900/40 p-1.5 rounded-[8px] text-indigo-500 dark:text-indigo-400 shrink-0">
+                                                                        <GraduationCap className="w-4 h-4" />
+                                                                    </div>
+                                                                    <div className="truncate flex-grow">
+                                                                        <p className="font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 truncate">{test.displayName}</p>
+                                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                                            <p className="text-[9px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider">Sınav • {test.subject}</p>
+                                                                            {todo.dueDate && <span className="text-[9px] text-rose-500 font-bold">{format(todo.dueDate, 'dd MMM', { locale: tr })}</span>}
+                                                                        </div>
+                                                                    </div>
+                                                                    <ChevronRight className="w-4 h-4 text-indigo-300 dark:text-indigo-700"/>
+                                                                </div>
+                                                            </Link>
+                                                        );
+                                                    }
+                                                    
+                                                    if (todo.type === 'study') {
+                                                        const study = todo.item as StudyAssignment;
+                                                        return (
+                                                            <Link href="/education/study" key={todo.id} className="block group">
+                                                                <div className={cn("flex items-center gap-2.5 p-2 md:p-2.5 rounded-[1rem] relative overflow-hidden pl-3 shadow-sm", sectionThemes.todo.itemHover)}>
+                                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
+                                                                    <div className="bg-blue-100 dark:bg-blue-900/40 p-1.5 rounded-[8px] text-blue-500 dark:text-blue-400 shrink-0">
+                                                                        <BookOpen className="w-4 h-4" />
+                                                                    </div>
+                                                                    <div className="truncate flex-grow">
+                                                                        <p className="font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 truncate">{study.topic}</p>
+                                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                                            <p className="text-[9px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider">Çalışma • {study.subject}</p>
+                                                                            {todo.dueDate && <span className="text-[9px] text-rose-500 font-bold">{format(todo.dueDate, 'dd MMM', { locale: tr })}</span>}
+                                                                        </div>
+                                                                    </div>
+                                                                    <ChevronRight className="w-4 h-4 text-blue-300 dark:text-blue-700"/>
+                                                                </div>
+                                                            </Link>
+                                                        );
+                                                    }
+
+                                                    if (todo.type === 'task') {
+                                                        const task = todo.item as Task;
+                                                        return (
+                                                            <div key={todo.id} className={cn("flex items-start gap-2.5 p-2.5 md:p-3 rounded-[1rem] shadow-sm", sectionThemes.todo.itemHover)}>
+                                                                <Checkbox
+                                                                    id={`personal-task-${task.id}-${member.id}`}
+                                                                    onCheckedChange={() => handleTaskCompletion(task)}
+                                                                    className={cn("mt-0.5 rounded-full size-4", sectionThemes.todo.checkbox)}
+                                                                />
+                                                                <div className="flex-grow pt-0.5">
+                                                                    <label htmlFor={`personal-task-${task.id}-${member.id}`} className="text-xs md:text-sm font-bold text-slate-700 dark:text-slate-300 leading-tight cursor-pointer block">{task.title}</label>
+                                                                    <div className="flex items-center gap-2 mt-1">
+                                                                        {task.points > 0 && <span className="text-[8px] md:text-[9px] text-indigo-600 dark:text-indigo-400 font-bold inline-block bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded-sm">+{task.points} XP</span>}
+                                                                        {todo.dueDate && <span className="text-[9px] text-rose-500 font-bold">{format(todo.dueDate, 'dd MMM', { locale: tr })}</span>}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    return null;
+                                                })}
+                                            </div>
+                                        );
+                                    });
+                                })()}
                             </div>
                         </div>
                     )}

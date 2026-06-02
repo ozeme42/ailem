@@ -15,9 +15,10 @@ import { Textarea } from "./ui/textarea";
 
 const formSchema = z.object({
   title: z.string().min(3, "Başlık en az 3 karakter olmalıdır."),
-  category: z.enum(['Kahvaltı', 'Akşam Yemeği'], { required_error: "Kategori seçmelisiniz." }),
+  category: z.string().default('Genel'),
   rating: z.coerce.number().min(1).max(5).default(4),
   instructions: z.string().optional(),
+  sourceUrl: z.string().url("Geçerli bir URL giriniz.").optional().or(z.literal('')),
 });
 
 type NewRecipeFormProps = {
@@ -29,12 +30,13 @@ export function NewRecipeForm({ onSubmit, initialData }: NewRecipeFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData 
-        ? initialData
+        ? { ...initialData, sourceUrl: initialData.sourceUrl || '' }
         : {
             title: "",
-            category: "Akşam Yemeği",
+            category: "Genel",
             rating: 4,
             instructions: "",
+            sourceUrl: "",
           },
   });
 
@@ -58,20 +60,22 @@ export function NewRecipeForm({ onSubmit, initialData }: NewRecipeFormProps) {
             </FormItem>
           )}
         />
-        <FormField control={form.control} name="category" render={({ field }) => (
-            <FormItem>
-                <FormLabel>Kategori</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl><SelectTrigger><SelectValue placeholder="Kategori seçin" /></SelectTrigger></FormControl>
-                <SelectContent>
-                    <SelectItem value="Kahvaltı">Kahvaltı</SelectItem>
-                    <SelectItem value="Akşam Yemeği">Akşam Yemeği</SelectItem>
-                </SelectContent>
-                </Select>
-                <FormMessage />
-            </FormItem>
-        )} />
+
         
+        <FormField
+          control={form.control}
+          name="sourceUrl"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tarif Linki (Opsiyonel)</FormLabel>
+              <FormControl>
+                <Input placeholder="https://..." type="url" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="instructions"

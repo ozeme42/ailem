@@ -159,25 +159,50 @@ export default function EducationPage() {
       .sort((a, b) => (b.total - b.completed) - (a.total - a.completed));
   }, [assignments, studyPlans]);
 
-  const pendingTests = React.useMemo(() => {
-    return tests
+  const pendingTasks = React.useMemo(() => {
+    const tTasks = tests
       .filter(t => t.status === 'Atandı')
-      .sort((a, b) => {
-        const dateA = new Date(parse(a.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr })).getTime();
-        const dateB = new Date(parse(b.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr })).getTime();
-        return dateA - dateB;
+      .map(t => {
+        const dateObj = parse(t.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+        return {
+          id: t.id,
+          type: 'test',
+          title: t.title,
+          subject: getCategoryName(t),
+          dueDateStr: t.dueDate,
+          dueDateObj: dateObj,
+          questionCount: t.questionCount,
+          durationMinutes: (t.questionCount || 0) * 2 || 30,
+        };
       });
-  }, [tests]);
+
+    const aTasks = assignments
+      .filter(a => a.status === 'assigned')
+      .map(a => {
+        const dateObj = new Date(a.dueDate);
+        const plan = studyPlans.find(p => p.id === a.studyPlanId);
+        return {
+          id: a.id,
+          type: 'study',
+          title: a.topic,
+          subject: a.subject,
+          dueDateStr: format(dateObj, 'dd MMMM yyyy', { locale: tr }),
+          dueDateObj: dateObj,
+          questionCount: null,
+          planName: plan?.title || 'Bireysel Çalışma',
+          planLink: plan?.link,
+          durationMinutes: a.durationMinutes || 30,
+        };
+      });
+
+    return [...tTasks, ...aTasks].sort((a, b) => a.dueDateObj.getTime() - b.dueDateObj.getTime());
+  }, [tests, assignments, studyPlans]);
 
   const focusTask = React.useMemo(() => {
-    const pending = tests.filter(t => t.status === 'Atandı');
-    if (pending.length === 0) return null;
-    return pending.sort((a, b) => {
-      const dateA = new Date(parse(a.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr })).getTime();
-      const dateB = new Date(parse(b.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr })).getTime();
-      return dateA - dateB;
-    })[0];
-  }, [tests]);
+    const testsOnly = pendingTasks.filter(t => t.type === 'test');
+    if (testsOnly.length === 0) return null;
+    return testsOnly[0];
+  }, [pendingTasks]);
 
   const stats = React.useMemo(() => {
     const completedTests = tests.filter(t => t.status === 'Sonuçlandı');
@@ -228,10 +253,10 @@ export default function EducationPage() {
       <div className="h-[env(safe-area-inset-top,0px)]" />
 
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-[#0F172A]/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800">
-        <div className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-blue-500/20">
-              < GraduationCap className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-blue-500/20">
+              < GraduationCap className="w-3.5 h-3.5 text-white" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white leading-none">Eğitim Paneli</h1>
@@ -251,8 +276,8 @@ export default function EducationPage() {
                         ? "bg-white dark:bg-[#1E293B] border-blue-500 dark:border-blue-500 shadow-md ring-1 ring-blue-500" 
                         : "bg-transparent border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
                     )}>
-                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden border border-slate-300 dark:border-slate-600">
-                      <User className="w-4 h-4 text-slate-500" />
+                    <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden border border-slate-300 dark:border-slate-600">
+                      <User className="w-3.5 h-3.5 text-slate-500" />
                     </div>
                     <div>
                       <p className={cn("text-sm font-bold leading-tight", active ? "text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-400")}>{s.name}</p>
@@ -263,22 +288,22 @@ export default function EducationPage() {
               })}
             </div>
             <div className="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden md:block shrink-0 mx-1" />
-            <Link href="/education/management" title="Yönetim Paneli" className="shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-500/10 dark:hover:text-blue-400 border border-transparent dark:border-slate-700 transition-colors">
-              <Settings className="w-5 h-5" />
+            <Link href="/education/management" title="Yönetim Paneli" className="shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-500/10 dark:hover:text-blue-400 border border-transparent dark:border-slate-700 transition-colors">
+              <Settings className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
       </header>
 
-      <main className="px-6 pt-8 space-y-8 max-w-7xl mx-auto">
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <main className="px-6 pt-8 space-y-8 max-w-6xl mx-auto">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {selectedStudent && (
             <Link href={`/education/stats?studentId=${selectedStudent.id}`} className="group block col-span-1 active:scale-[0.98] transition-transform">
               <div className="rounded-2xl p-6 relative overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20 flex flex-col justify-between min-h-[160px] h-full">
                 <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/20 rounded-full blur-3xl pointer-events-none" />
                 <div className="relative z-10 flex items-start justify-between mb-2">
-                  <p className="text-white/90 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-                    <Target className="w-4 h-4" /> Başarı Oranı
+                  <p className="text-white/90 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <Target className="w-3.5 h-3.5" /> Başarı Oranı
                   </p>
                   <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold uppercase tracking-wider">
                     <TrendingUp className="w-3 h-3" /> %3 Artış
@@ -293,7 +318,7 @@ export default function EducationPage() {
                     </div>
                     <p className="text-white/80 text-xs font-medium mt-1">Geçen haftaya göre</p>
                   </div>
-                  <div className="relative w-16 h-16 shrink-0 drop-shadow-lg mb-1">
+                  <div className="relative w-12 h-12 shrink-0 drop-shadow-lg mb-1">
                     <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                       <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="12" />
                       <circle cx="50" cy="50" r="40" fill="none" stroke="white" strokeWidth="12"
@@ -301,7 +326,7 @@ export default function EducationPage() {
                         className="transition-all duration-1000 ease-out" />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Sparkles className="w-5 h-5 text-white" />
+                      <Sparkles className="w-3.5 h-3.5 text-white" />
                     </div>
                   </div>
                 </div>
@@ -309,25 +334,25 @@ export default function EducationPage() {
             </Link>
           )}
 
-          <div className="grid grid-cols-2 gap-4 col-span-1 lg:col-span-2">
-            <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
-              <p className="text-xs font-bold text-slate-500 uppercase">Ödev Tamamlama</p>
+          <div className="grid grid-cols-2 gap-3 col-span-1 lg:col-span-2">
+            <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-3 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+              <p className="text-[11px] font-bold text-slate-500 uppercase">Ödev Tamamlama</p>
               <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">%{stats.completedAssignmentsRate.toFixed(0)}</p>
               <MiniBarChart color={C.BLUE} />
             </div>
-            <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
-              <p className="text-xs font-bold text-slate-500 uppercase">Ortalama Puan</p>
+            <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-3 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+              <p className="text-[11px] font-bold text-slate-500 uppercase">Ortalama Puan</p>
               <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{stats.averageScore.toFixed(2)}<span className="text-sm font-medium text-slate-400">/5</span></p>
               <MiniBarChart color={C.TEAL} />
             </div>
-            <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
-              <p className="text-xs font-bold text-slate-500 uppercase">Toplam Görev</p>
+            <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-3 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+              <p className="text-[11px] font-bold text-slate-500 uppercase">Toplam Görev</p>
               <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{stats.testCount}</p>
               <MiniBarChart color={C.PURPLE} />
             </div>
-            <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-3 opacity-10"><AlertCircle className="w-12 h-12 text-red-500" /></div>
-              <p className="text-xs font-bold text-slate-500 uppercase relative z-10">Geciken Görev</p>
+            <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-3 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-3 opacity-10"><AlertCircle className="w-10 h-10 text-red-500" /></div>
+              <p className="text-[11px] font-bold text-slate-500 uppercase relative z-10">Geciken Görev</p>
               <p className="text-2xl font-black text-red-500 dark:text-red-400 mt-1 relative z-10">{stats.overdueCount}</p>
               <div className="w-full h-8 mt-2 opacity-50 relative z-10">
                  <svg viewBox="0 0 100 30" className="w-full h-full fill-none stroke-red-500 stroke-2" preserveAspectRatio="none">
@@ -337,21 +362,21 @@ export default function EducationPage() {
             </div>
           </div>
 
-          <div className="bg-slate-900 dark:bg-slate-800 rounded-2xl p-5 border border-slate-800 dark:border-slate-700 shadow-xl flex flex-col relative overflow-hidden">
-            <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl" />
-            <div className="flex items-center gap-2 mb-4 relative z-10">
-              <Target className="w-5 h-5 text-blue-400" />
+          <div className="bg-slate-900 dark:bg-slate-800 rounded-2xl p-3 border border-slate-800 dark:border-slate-700 shadow-xl flex flex-col relative overflow-hidden">
+            <div className="absolute -right-4 -top-3 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl" />
+            <div className="flex items-center gap-2 mb-3 relative z-10">
+              <Target className="w-3.5 h-3.5 text-blue-400" />
               <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Günün Odağı</h3>
             </div>
             {focusTask ? (
               <div className="flex-1 flex flex-col justify-between relative z-10">
                 <div>
-                  <p className="text-white font-black text-lg leading-tight mb-2">{focusTask.title}</p>
-                  <p className="text-slate-400 text-sm flex items-center gap-1.5"><CalendarIcon className="w-4 h-4"/> {focusTask.dueDate}</p>
+                  <p className="text-white font-black text-base leading-tight mb-2">{focusTask.title}</p>
+                  <p className="text-slate-400 text-sm flex items-center gap-1.5"><CalendarIcon className="w-3.5 h-3.5"/> {focusTask.dueDateStr}</p>
                 </div>
-                <Link href={`/education/${focusTask.id}`}>
-                  <button className="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
-                    <PlayCircle className="w-5 h-5" /> Başla
+                <Link href={focusTask.type === 'test' ? `/education/${focusTask.id}` : (focusTask.planLink || `/education/study`)} target={focusTask.type === 'study' && focusTask.planLink ? "_blank" : undefined}>
+                  <button className="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <PlayCircle className="w-3.5 h-3.5" /> Başla
                   </button>
                 </Link>
               </div>
@@ -365,12 +390,12 @@ export default function EducationPage() {
           </div>
         </section>
 
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Link href="/education/summaries" className="group">
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-4 md:p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
-                    <div className="flex items-center gap-4">
+                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-3 md:p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
+                    <div className="flex items-center gap-3">
                         <div className="p-2 md:p-3 bg-white/20 rounded-2xl backdrop-blur-md">
-                            <ScrollText className="w-6 h-6 md:w-8 md:h-8" />
+                            <ScrollText className="w-3.5 h-3.5 md:w-8 md:h-8" />
                         </div>
                         <div className="hidden sm:block">
                             <h3 className="text-lg font-black leading-none">Ders Özetleri</h3>
@@ -380,15 +405,15 @@ export default function EducationPage() {
                              <h3 className="text-sm font-black leading-tight">Özetler</h3>
                         </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="w-3.5 h-3.5 opacity-50 group-hover:translate-x-1 transition-transform" />
                 </div>
             </Link>
             
             <Link href="/education/results" className="group">
-                <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-4 md:p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
-                    <div className="flex items-center gap-4">
+                <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-3 md:p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
+                    <div className="flex items-center gap-3">
                         <div className="p-2 md:p-3 bg-white/20 rounded-2xl backdrop-blur-md">
-                            <ListTree className="w-6 h-6 md:w-8 md:h-8" />
+                            <ListTree className="w-3.5 h-3.5 md:w-8 md:h-8" />
                         </div>
                         <div className="hidden sm:block">
                             <h3 className="text-lg font-black leading-none">Sonuçlarım</h3>
@@ -398,15 +423,15 @@ export default function EducationPage() {
                              <h3 className="text-sm font-black leading-tight">Sonuçlar</h3>
                         </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="w-3.5 h-3.5 opacity-50 group-hover:translate-x-1 transition-transform" />
                 </div>
             </Link>
 
             <Link href="/education/study" className="group">
-                <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-4 md:p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
-                    <div className="flex items-center gap-4">
+                <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-3 md:p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
+                    <div className="flex items-center gap-3">
                         <div className="p-2 md:p-3 bg-white/20 rounded-2xl backdrop-blur-md">
-                            <BookOpen className="w-6 h-6 md:w-8 md:h-8" />
+                            <BookOpen className="w-3.5 h-3.5 md:w-8 md:h-8" />
                         </div>
                         <div className="hidden sm:block">
                             <h3 className="text-lg font-black leading-none">Konu Çalışma</h3>
@@ -416,15 +441,15 @@ export default function EducationPage() {
                              <h3 className="text-sm font-black leading-tight">Çalışma</h3>
                         </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="w-3.5 h-3.5 opacity-50 group-hover:translate-x-1 transition-transform" />
                 </div>
             </Link>
 
             <Link href="/education/mistakes" className="group">
-                <div className="bg-gradient-to-br from-rose-500 to-pink-600 p-4 md:p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
-                    <div className="flex items-center gap-4">
+                <div className="bg-gradient-to-br from-rose-500 to-pink-600 p-3 md:p-6 rounded-3xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between h-full">
+                    <div className="flex items-center gap-3">
                         <div className="p-2 md:p-3 bg-white/20 rounded-2xl backdrop-blur-md">
-                            <AlertCircle className="w-6 h-6 md:w-8 md:h-8" />
+                            <AlertCircle className="w-3.5 h-3.5 md:w-8 md:h-8" />
                         </div>
                         <div className="hidden sm:block">
                             <h3 className="text-lg font-black leading-none">Yanlışlarım</h3>
@@ -434,34 +459,34 @@ export default function EducationPage() {
                              <h3 className="text-sm font-black leading-tight">Hatalar</h3>
                         </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="w-3.5 h-3.5 opacity-50 group-hover:translate-x-1 transition-transform" />
                 </div>
             </Link>
         </section>
 
-        {pendingTests.length > 0 && (
+        {pendingTasks.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-5 px-1">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                    <Layers className="w-4 h-4" />
+                <div className="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                    <Layers className="w-3.5 h-3.5" />
                 </div>
                 <h2 className="text-xl font-black text-slate-900 dark:text-white">Yapılacaklar</h2>
                 <span className="hidden sm:inline-flex text-[10px] font-black px-3 py-1 ml-2 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800 uppercase tracking-widest">
-                  {pendingTests.length} Görev
+                  {pendingTasks.length} Görev
                 </span>
               </div>
               
               <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex items-center shadow-inner">
                 <button 
                   onClick={() => setTodoViewMode('list')}
-                  className={cn("px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5", todoViewMode === 'list' ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}
+                  className={cn("px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5", todoViewMode === 'list' ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}
                 >
                   <LayoutGrid className="w-3.5 h-3.5" /> Liste
                 </button>
                 <button 
                   onClick={() => setTodoViewMode('week')}
-                  className={cn("px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5", todoViewMode === 'week' ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}
+                  className={cn("px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5", todoViewMode === 'week' ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}
                 >
                   <CalendarDays className="w-3.5 h-3.5" /> Hafta
                 </button>
@@ -471,25 +496,21 @@ export default function EducationPage() {
             
             {todoViewMode === 'week' ? (
               <div className="overflow-x-auto pb-4 hide-scrollbar snap-x snap-mandatory">
-                <div className="flex gap-4 min-w-max">
+                <div className="flex gap-3 min-w-max">
                   {Array.from({length: 7}).map((_, i) => {
                     const currentDay = addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), i);
                     const isDayToday = isToday(currentDay);
                     
-                    const dayTasks = pendingTests.filter(t => {
-                      const tDate = parse(t.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-                      
-                      // For Today, include tasks strictly due today OR tasks that are overdue
+                    const dayTasks = pendingTasks.filter(t => {
                       if (isDayToday) {
-                        return isSameDay(tDate, currentDay) || (isPast(tDate) && !isToday(tDate));
+                        return isSameDay(t.dueDateObj, currentDay) || (isPast(t.dueDateObj) && !isToday(t.dueDateObj));
                       }
-                      
-                      return isSameDay(tDate, currentDay);
+                      return isSameDay(t.dueDateObj, currentDay);
                     });
 
                     return (
-                      <div key={i} className={cn("w-72 flex-shrink-0 snap-center rounded-3xl p-4 border bg-slate-50/50 dark:bg-slate-900/50", isDayToday ? "border-indigo-300 dark:border-indigo-700 bg-indigo-50/30 dark:bg-indigo-900/10 shadow-sm" : "border-slate-200 dark:border-slate-800")}>
-                        <div className="flex items-center justify-between mb-4 px-1">
+                      <div key={i} className={cn("w-64 flex-shrink-0 snap-center rounded-3xl p-3 border bg-slate-50/50 dark:bg-slate-900/50", isDayToday ? "border-indigo-300 dark:border-indigo-700 bg-indigo-50/30 dark:bg-indigo-900/10 shadow-sm" : "border-slate-200 dark:border-slate-800")}>
+                        <div className="flex items-center justify-between mb-3 px-1">
                           <div>
                             <p className={cn("text-sm font-black", isDayToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-slate-200")}>
                               {format(currentDay, 'EEEE', { locale: tr })}
@@ -502,33 +523,33 @@ export default function EducationPage() {
                         </div>
                         
                         <div className="space-y-3">
-                          {dayTasks.length > 0 ? dayTasks.map(test => {
-                            const category = getCategoryName(test);
+                          {dayTasks.length > 0 ? dayTasks.map(task => {
+                            const category = task.subject;
                             const theme = categoryThemes[category] || categoryThemes['Diğer'];
                             const Icon = theme.icon;
-                            const tDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                            const tDate = task.dueDateObj;
                             const overdue = isPast(tDate) && !isToday(tDate);
-                            const duration = test.durationMinutes || Math.ceil(test.questionCount * 1.5);
-                            
+                            const duration = task.durationMinutes;
                             return (
-                              <Link href={`/education/${test.id}`} key={test.id} className="block group">
-                                <div className={cn("bg-white dark:bg-slate-950 rounded-2xl p-3.5 border transition-all shadow-sm hover:shadow-md", theme.border, isDayToday && overdue ? "border-rose-300 dark:border-rose-800 bg-rose-50/30 dark:bg-rose-950/20" : "")}>
+                              <Link href={task.type === 'test' ? `/education/${task.id}` : (task.planLink || `/education/study`)} target={task.type === 'study' && task.planLink ? "_blank" : undefined} key={task.id} className="block group">
+                                <div className={cn("bg-white dark:bg-slate-950 rounded-2xl p-3 border transition-all shadow-sm hover:shadow-md", theme.border, isDayToday && overdue ? "border-rose-300 dark:border-rose-800 bg-rose-50/30 dark:bg-rose-950/20" : "")}>
                                   <div className="flex items-start justify-between mb-2 gap-2">
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-1.5 mb-1">
                                         <div className={cn("w-1.5 h-1.5 rounded-full", theme.accent)} />
                                         <span className={cn("text-[9px] font-black uppercase tracking-widest truncate", theme.text)}>{category}</span>
                                       </div>
-                                      <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight">{test.title}</h4>
+                                      <h4 className="text-[11px] font-bold text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight">{task.title}</h4>
                                     </div>
-                                    <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border bg-white dark:bg-slate-900", theme.border)}>
-                                      <Icon className={cn("w-4 h-4", theme.text)} />
+                                    <div className={cn("w-6 h-6 rounded-xl flex items-center justify-center shrink-0 border bg-white dark:bg-slate-900", theme.border)}>
+                                      <Icon className={cn("w-3.5 h-3.5", theme.text)} />
                                     </div>
                                   </div>
                                   
                                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                                     <div className="flex gap-2">
-                                      <span className="text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{test.questionCount} Soru</span>
+                                      {task.questionCount !== null && <span className="text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{task.questionCount} Soru</span>}
+                                      {task.type === 'study' && <span className="text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded truncate max-w-[120px]" title={task.planName}>{task.planName}</span>}
                                       <span className="text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{duration} dk</span>
                                     </div>
                                     {isDayToday && overdue && <span className="text-[9px] font-black text-rose-500 uppercase animate-pulse">Gecikti</span>}
@@ -538,7 +559,7 @@ export default function EducationPage() {
                             )
                           }) : (
                             <div className="h-24 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-slate-400 gap-1 opacity-50">
-                              <CheckCircle2 className="w-5 h-5" />
+                              <CheckCircle2 className="w-3.5 h-3.5" />
                               <span className="text-[10px] font-bold uppercase tracking-widest">Görev Yok</span>
                             </div>
                           )}
@@ -549,37 +570,44 @@ export default function EducationPage() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-              {pendingTests.map(test => {
-                const category = getCategoryName(test);
+              
+              <div className="space-y-8">
+                {pendingTasks.filter(t => t.type === 'test').length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
+                        <Layers className="w-3.5 h-3.5 text-indigo-500" /> Sınavlar ve Testler
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                      {pendingTasks.filter(t => t.type === 'test').map(task => {
+
+                const category = task.subject;
                 const theme = categoryThemes[category] || categoryThemes['Diğer'];
                 const Icon = theme.icon;
-                const dueDate = parse(test.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                const dueDate = task.dueDateObj;
                   const overdue = isPast(dueDate) && !isToday(dueDate);
                   const dueToday = isToday(dueDate);
                   const daysDiff = differenceInDays(dueDate, new Date());
-                  const duration = test.durationMinutes || Math.ceil(test.questionCount * 1.5);
-
+                  const duration = task.durationMinutes;
                   return (
-                    <div key={test.id} className={cn("relative overflow-hidden rounded-[2rem] p-5 border-2 transition-all duration-300 group flex flex-col justify-between shadow-sm hover:shadow-xl hover:-translate-y-1", theme.border, theme.bg)}>
+                    <div key={task.id} className={cn("relative overflow-hidden rounded-[2rem] p-3 border-2 transition-all duration-300 group flex flex-col justify-between shadow-sm hover:shadow-xl hover:-translate-y-1", theme.border, theme.bg)}>
                       <div className={cn("absolute top-0 left-0 w-full h-1.5", theme.accent)} />
                       <div className="relative z-10">
-                        <div className="flex justify-between items-start mb-4">
+                        <div className="flex justify-between items-start mb-3">
                            <div className="flex flex-col gap-1.5">
                                 <div className="flex items-center gap-2">
                                     <div className={cn("w-2.5 h-2.5 rounded-full", theme.accent)} />
                                     <span className={cn("text-[10px] font-black uppercase tracking-widest", theme.text)}>{category}</span>
                                 </div>
-                                <h3 className={cn("text-lg font-bold leading-tight line-clamp-2 pr-4 text-slate-800 dark:text-slate-100")}>{test.title}</h3>
+                                <h3 className={cn("text-base font-bold leading-tight line-clamp-2 pr-4 text-slate-800 dark:text-slate-100")}>{task.title}</h3>
                            </div>
-                           <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border-2 bg-white dark:bg-slate-900", theme.border)}>
-                               <Icon className={cn("w-6 h-6", theme.text)} />
+                           <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border-2 bg-white dark:bg-slate-900", theme.border)}>
+                               <Icon className={cn("w-3.5 h-3.5", theme.text)} />
                            </div>
                         </div>
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-800/50 text-slate-600 dark:text-slate-300">
-                                <CalendarIcon className="w-4 h-4" />
-                                <span className="text-xs font-bold">{test.dueDate}</span>
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/60 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-800/50 text-slate-600 dark:text-slate-300">
+                                <CalendarIcon className="w-3.5 h-3.5" />
+                                <span className="text-[11px] font-bold">{task.dueDateStr}</span>
                             </div>
                             {overdue ? (
                                 <Badge className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-black px-3 py-1.5 shadow-md shadow-rose-500/20 border-none animate-pulse">Gecikti!</Badge>
@@ -593,10 +621,10 @@ export default function EducationPage() {
                         </div>
                       </div>
                       <div className="space-y-4 relative z-10">
-                        <div className="flex items-center gap-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
                           <div className="flex-1 text-center">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Soru</p>
-                            <p className="text-sm font-black text-slate-700 dark:text-slate-200">{test.questionCount || '-'}</p>
+                            <p className="text-sm font-black text-slate-700 dark:text-slate-200">{task.questionCount || '-'}</p>
                           </div>
                           <div className="w-px h-6 bg-slate-200 dark:bg-slate-700" />
                           <div className="flex-1 text-center">
@@ -604,16 +632,95 @@ export default function EducationPage() {
                             <p className="text-sm font-black text-slate-700 dark:text-slate-200">{duration} dk</p>
                           </div>
                         </div>
-                        <Link href={`/education/${test.id}`} className="block w-full">
-                          <button className={cn("w-full py-3 rounded-2xl font-black text-xs uppercase tracking-widest text-center transition-all shadow-md active:scale-95", "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20")}>
-                            Ödevi Çöz
+                        <Link href={task.type === 'test' ? `/education/${task.id}` : (task.planLink || `/education/study`)} target={task.type === 'study' && task.planLink ? "_blank" : undefined} className="block w-full">
+                          <button className={cn("w-full py-2.5 rounded-xl font-black text-xs uppercase tracking-widest text-center transition-all shadow-md active:scale-95", task.type === 'test' ? "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20" : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20")}>
+                            {task.type === 'test' ? 'Ödevi Çöz' : 'Konuya Çalış'}
                           </button>
                         </Link>
                       </div>
                     </div>
                   );
-              })}
-            </div>
+              
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {pendingTasks.filter(t => t.type === 'study').length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
+                        <BookOpen className="w-3.5 h-3.5 text-emerald-500" /> Konu Çalışmaları
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                      {pendingTasks.filter(t => t.type === 'study').map(task => {
+
+                const category = task.subject;
+                const theme = categoryThemes[category] || categoryThemes['Diğer'];
+                const Icon = theme.icon;
+                const dueDate = task.dueDateObj;
+                  const overdue = isPast(dueDate) && !isToday(dueDate);
+                  const dueToday = isToday(dueDate);
+                  const daysDiff = differenceInDays(dueDate, new Date());
+                  const duration = task.durationMinutes;
+                  return (
+                    <div key={task.id} className={cn("relative overflow-hidden rounded-[2rem] p-3 border-2 transition-all duration-300 group flex flex-col justify-between shadow-sm hover:shadow-xl hover:-translate-y-1", theme.border, theme.bg)}>
+                      <div className={cn("absolute top-0 left-0 w-full h-1.5", theme.accent)} />
+                      <div className="relative z-10">
+                        <div className="flex justify-between items-start mb-3">
+                           <div className="flex flex-col gap-1.5">
+                                <div className="flex items-center gap-2">
+                                    <div className={cn("w-2.5 h-2.5 rounded-full", theme.accent)} />
+                                    <span className={cn("text-[10px] font-black uppercase tracking-widest", theme.text)}>{category}</span>
+                                </div>
+                                <h3 className={cn("text-base font-bold leading-tight line-clamp-2 pr-4 text-slate-800 dark:text-slate-100")}>{task.title}</h3>
+                           </div>
+                           <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border-2 bg-white dark:bg-slate-900", theme.border)}>
+                               <Icon className={cn("w-3.5 h-3.5", theme.text)} />
+                           </div>
+                        </div>
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/60 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-800/50 text-slate-600 dark:text-slate-300">
+                                <CalendarIcon className="w-3.5 h-3.5" />
+                                <span className="text-[11px] font-bold">{task.dueDateStr}</span>
+                            </div>
+                            {overdue ? (
+                                <Badge className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-black px-3 py-1.5 shadow-md shadow-rose-500/20 border-none animate-pulse">Gecikti!</Badge>
+                            ) : dueToday ? (
+                                <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-black px-3 py-1.5 shadow-md shadow-amber-500/20 border-none animate-pulse">Bugün Son</Badge>
+                            ) : daysDiff <= 2 ? (
+                                <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-black px-3 py-1.5 shadow-md shadow-orange-500/20 border-none">{daysDiff + 1} Gün Kaldı</Badge>
+                            ) : (
+                                <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black px-3 py-1.5 shadow-sm border-none">{daysDiff + 1} Gün Kaldı</Badge>
+                            )}
+                        </div>
+                      </div>
+                      <div className="space-y-4 relative z-10">
+                        <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+                          <div className="flex-1 text-center">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Plan Adı</p>
+                            <p className="text-sm font-black text-slate-700 dark:text-slate-200 truncate pr-2" title={task.planName}>{task.planName}</p>
+                          </div>
+                          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700" />
+                          <div className="flex-1 text-center">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Süre</p>
+                            <p className="text-sm font-black text-slate-700 dark:text-slate-200">{duration} dk</p>
+                          </div>
+                        </div>
+                        <Link href={task.type === 'test' ? `/education/${task.id}` : (task.planLink || `/education/study`)} target={task.type === 'study' && task.planLink ? "_blank" : undefined} className="block w-full">
+                          <button className={cn("w-full py-2.5 rounded-xl font-black text-xs uppercase tracking-widest text-center transition-all shadow-md active:scale-95", task.type === 'test' ? "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20" : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20")}>
+                            {task.type === 'test' ? 'Ödevi Çöz' : 'Konuya Çalış'}
+                          </button>
+                        </Link>
+                      </div>
+                    </div>
+                  );
+              
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            
             )}
           </section>
         )}
@@ -621,10 +728,10 @@ export default function EducationPage() {
         {assignmentsByBook.length > 0 && (
           <section>
             <div className="flex items-center gap-2 mb-5">
-              <BookOpen className="w-5 h-5 text-slate-800 dark:text-slate-200" />
+              <BookOpen className="w-3.5 h-3.5 text-slate-800 dark:text-slate-200" />
               <h2 className="text-xl font-black text-slate-900 dark:text-white">Konu Çalışma Planı</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {assignmentsByBook.map((group, index) => {
                 const pct = (group.completed / group.total) * 100;
                 const done = group.completed === group.total;
@@ -635,9 +742,9 @@ export default function EducationPage() {
                 const coverBg = coverColors[index % coverColors.length];
                 return (
                   <div key={group.id} className="bg-white dark:bg-[#1E293B] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
-                    <button onClick={() => toggleBook(group.id)} className="p-5 flex items-start gap-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors relative">
+                    <button onClick={() => toggleBook(group.id)} className="p-3 flex items-start gap-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors relative">
                       {!done && (
-                        <div className="absolute top-4 left-4 z-20">
+                        <div className="absolute top-3 left-4 z-20">
                             <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)] animate-pulse border-2 border-white dark:border-[#1E293B]" />
                         </div>
                       )}
@@ -648,10 +755,10 @@ export default function EducationPage() {
                       <div className="flex-1 min-w-0 py-1">
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-2">{group.title}</h3>
-                          <ChevronDown className={cn("w-5 h-5 text-slate-400 transition-transform shrink-0", open && "rotate-180")} />
+                          <ChevronDown className={cn("w-3.5 h-3.5 text-slate-400 transition-transform shrink-0", open && "rotate-180")} />
                         </div>
                         <div className="mt-4">
-                          <div className="flex justify-between text-xs font-bold mb-1">
+                          <div className="flex justify-between text-[11px] font-bold mb-1">
                             <span className={done ? "text-emerald-500" : "text-blue-500"}>%{pct.toFixed(0)}</span>
                             <span className="text-slate-400">{group.completed}/{group.total}</span>
                           </div>
@@ -669,7 +776,7 @@ export default function EducationPage() {
                              {pending.map((a) => (
                                 <div key={a.id} onClick={() => handleCompleteStudy(a.id, a.status)}
                                     className="flex items-start gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-[#1E293B] cursor-pointer transition-colors group border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
-                                    <div className={cn("w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 mt-0.5 transition-colors border-slate-300 dark:border-slate-600 group-hover:border-blue-400")}>
+                                    <div className={cn("w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 border-2 mt-0.5 transition-colors border-slate-300 dark:border-slate-600 group-hover:border-blue-400")}>
                                       {a.status === 'completed' && <Check className="w-3.5 h-3.5 text-white" />}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -696,7 +803,7 @@ export default function EducationPage() {
                                   {completed.map((a) => (
                                     <div key={a.id} onClick={() => handleCompleteStudy(a.id, a.status)}
                                         className="flex items-start gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-[#1E293B] cursor-pointer transition-colors group opacity-60 hover:opacity-100">
-                                        <div className="w-5 h-5 rounded flex items-center justify-center shrink-0 border-2 mt-0.5 transition-colors bg-emerald-500 border-emerald-500">
+                                        <div className="w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 border-2 mt-0.5 transition-colors bg-emerald-500 border-emerald-500">
                                           <Check className="w-3.5 h-3.5 text-white" />
                                         </div>
                                         <div className="flex-1 min-w-0">
@@ -721,10 +828,10 @@ export default function EducationPage() {
           </section>
         )}
 
-        {pendingTests.length === 0 && assignmentsByBook.length === 0 && (
+        {pendingTasks.length === 0 && assignmentsByBook.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 text-center bg-white dark:bg-[#1E293B] rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed">
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
-              <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
+              <CheckCircle2 className="w-6 h-6 text-emerald-500" />
             </div>
             <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">Her şey yolunda!</h3>
             <p className="text-slate-500 max-w-sm">Tüm testler ve konu anlatımları tamamlandı. Öğrenci şu anda rotasında ilerliyor.</p>

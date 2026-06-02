@@ -76,6 +76,9 @@ export interface CalendarEvent {
     endDate?: string;
     recurrence: 'one-time' | 'monthly' | 'yearly';
     location?: string;
+    category?: string;
+    color?: string;
+    reminderMinutes?: number;
 }
 
 export interface Book {
@@ -132,6 +135,7 @@ export interface Recipe {
     category: string;
     rating: number;
     instructions?: string;
+    sourceUrl?: string;
 }
 
 export type MealPlan = {
@@ -318,6 +322,7 @@ export interface StudyPlan {
     familyId: string;
     title: string;
     description?: string;
+    link?: string;
     subjects: StudyPlanSubject[];
 }
 

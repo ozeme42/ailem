@@ -6,7 +6,8 @@ import {
   addDays, format, startOfWeek, isSameMonth, isToday, isWithinInterval, 
   isAfter, isPast, parseISO, compareAsc, isFuture, 
   startOfMonth, addMonths, differenceInDays, isSameDay, 
-  getDate, getMonth, startOfDay, isBefore, addYears, setDate 
+  getDate, getMonth, startOfDay, isBefore, addYears, setDate,
+  addWeeks, setHours, setMinutes
 } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { 
@@ -20,7 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { CalendarEvent } from "@/lib/data";
-import { onCalendarEventsUpdate, deleteCalendarEvent } from "@/lib/dataService";
+import { onCalendarEventsUpdate, deleteCalendarEvent, updateCalendarEvent } from "@/lib/dataService";
 import { NewEventForm } from "@/components/new-event-form";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -28,7 +29,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
-// --- DESIGN SYSTEM: Modern Light Theme ---
 const appTheme = {
     CARD_BG: "bg-white border border-slate-200/60 shadow-sm rounded-[1.5rem]",
     CARD_HOVER: "hover:border-indigo-200 hover:shadow-md transition-all duration-200 active:scale-[0.98]",
@@ -38,15 +38,6 @@ const appTheme = {
     ICON_BOX: "bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5 rounded-xl shadow-sm",
 };
 
-const eventStyles = [
-    { indicator: "bg-blue-500", bg: "bg-blue-50", text: "text-blue-700", textMuted: "text-blue-600", border: "border-blue-200" },
-    { indicator: "bg-emerald-500", bg: "bg-emerald-50", text: "text-emerald-700", textMuted: "text-emerald-600", border: "border-emerald-200" },
-    { indicator: "bg-violet-500", bg: "bg-violet-50", text: "text-violet-700", textMuted: "text-violet-600", border: "border-violet-200" },
-    { indicator: "bg-amber-500", bg: "bg-amber-50", text: "text-amber-700", textMuted: "text-amber-600", border: "border-amber-200" },
-    { indicator: "bg-rose-500", bg: "bg-rose-50", text: "text-rose-700", textMuted: "text-rose-600", border: "border-rose-200" },
-];
-
-// --- HELPER COMPONENTS ---
 const StatCard = ({ icon: Icon, label, value, colorClass }: any) => (
     <div className={cn("p-4 rounded-[1.25rem] flex items-center gap-3 flex-1 bg-white border border-slate-200/60 shadow-sm shrink-0 min-w-[140px]")}>
         <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", colorClass)}>
@@ -77,6 +68,7 @@ export default function CalendarPage() {
   
   const [searchQuery, setSearchQuery] = React.useState("");
   const [filterType, setFilterType] = React.useState<'all' | 'recurring' | 'one-time'>('all');
+  const [viewMode, setViewMode] = React.useState<'month'|'week'|'day'>('month');
 
   const { toast } = useToast();
 
@@ -131,12 +123,23 @@ export default function CalendarPage() {
     return { upcomingEvents: filtered, monthlyStats: stats };
   }, [calendarEvents, searchQuery, filterType]);
 
-  const displayedDays = React.useMemo(() => {
+  const displayedDaysMonth = React.useMemo(() => {
       const monthStart = startOfMonth(currentDate);
       const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
       const days = [];
       let day = startDate;
       while (days.length < 42) {
+          days.push(day);
+          day = addDays(day, 1);
+      }
+      return days;
+  }, [currentDate]);
+
+  const displayedDaysWeek = React.useMemo(() => {
+      const startDate = startOfWeek(currentDate, { weekStartsOn: 1 });
+      const days = [];
+      let day = startDate;
+      for (let i = 0; i < 7; i++) {
           days.push(day);
           day = addDays(day, 1);
       }
@@ -161,10 +164,16 @@ export default function CalendarPage() {
     });
   };
 
-  const eventsToDisplay = upcomingEvents;
-
-  const handlePrevMonth = () => setCurrentDate(d => addMonths(d, -1));
-  const handleNextMonth = () => setCurrentDate(d => addMonths(d, 1));
+  const handlePrev = () => {
+    if (viewMode === 'month') setCurrentDate(d => addMonths(d, -1));
+    else if (viewMode === 'week') setCurrentDate(d => addWeeks(d, -1));
+    else setCurrentDate(d => addDays(d, -1));
+  };
+  const handleNext = () => {
+    if (viewMode === 'month') setCurrentDate(d => addMonths(d, 1));
+    else if (viewMode === 'week') setCurrentDate(d => addWeeks(d, 1));
+    else setCurrentDate(d => addDays(d, 1));
+  };
   const handleToday = () => { const t = new Date(); setCurrentDate(t); setSelectedDate(t); };
   
   const handleDeleteEvent = async (eventId: string) => {
@@ -177,6 +186,177 @@ export default function CalendarPage() {
   const handleOpenNewTask = () => {
     setEditingEvent(null);
     setIsFormDialogOpen(true);
+  };
+
+  // Drag Drop Handlers
+  const handleDragStart = (e: React.DragEvent, eventId: string) => {
+      e.dataTransfer.setData('eventId', eventId);
+      e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetDate: Date) => {
+      e.preventDefault();
+      const eventId = e.dataTransfer.getData('eventId');
+      if (!eventId) return;
+
+      const event = calendarEvents.find(ev => ev.id === eventId);
+      if (event && event.recurrence === 'one-time') {
+          // Update event start date
+          const newDateStr = format(targetDate, 'yyyy-MM-dd');
+          if (event.startDate !== newDateStr) {
+              try {
+                  await updateCalendarEvent(eventId, { startDate: newDateStr });
+                  toast({ title: "Tarih güncellendi" });
+              } catch {
+                  toast({ title: "Hata", variant: "destructive" });
+              }
+          }
+      }
+  };
+
+  const renderMonthView = () => (
+      <div className="px-1 md:px-2">
+        <div className="grid grid-cols-7 mb-2">
+            {weekHeaderDays.map(day => (
+                <div key={day.toISOString()} className="text-center text-[10px] md:text-xs font-bold uppercase tracking-widest py-2 text-slate-400">
+                    {format(day, 'EEE', { locale: tr })}
+                </div>
+            ))}
+        </div>
+        
+        <div className="grid grid-cols-7 gap-1 sm:gap-2">
+            {displayedDaysMonth.map((day) => {
+                const dayEvents = getEventsForDay(day);
+                const isSelected = isSameDay(day, selectedDate);
+                const isCurrentMonth = isSameMonth(day, currentDate);
+                const isDayToday = isToday(day);
+                const hasEvents = dayEvents.length > 0;
+
+                return (
+                    <div 
+                        key={day.toString()} 
+                        onClick={() => setSelectedDate(day)}
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleDrop(e, day)}
+                        className={cn(
+                            "aspect-[1/1.2] sm:aspect-square rounded-[14px] md:rounded-2xl flex flex-col p-1 cursor-pointer transition-all duration-200 relative border active:scale-95",
+                            !isCurrentMonth ? "opacity-30 border-transparent" : "border-transparent",
+                            hasEvents && !isSelected && "bg-slate-50 border-slate-200 hover:bg-slate-100",
+                            isDayToday && !isSelected && "ring-2 ring-indigo-500 bg-indigo-50",
+                            isSelected 
+                                ? "bg-indigo-50 border-indigo-200 shadow-md scale-[1.02] z-10" 
+                                : "hover:bg-slate-100"
+                        )}
+                    >
+                        <span className={cn("text-xs md:text-sm font-bold text-center mt-1", isSelected ? "text-indigo-700" : (isDayToday ? "text-indigo-600" : "text-slate-600"))}>
+                            {format(day, 'd')}
+                        </span>
+                        
+                        <div className="flex-1 flex flex-col gap-1 overflow-hidden mt-1 px-0.5">
+                            {dayEvents.slice(0, 3).map((ev, i) => (
+                                <div 
+                                    key={i} 
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, ev.id)}
+                                    className={cn("w-full text-[9px] md:text-[10px] font-bold px-1 py-0.5 rounded-md truncate border border-black/5 opacity-90 cursor-grab active:cursor-grabbing", ev.recurrence === 'one-time' ? (ev.color || "bg-blue-500 text-white") : "bg-fuchsia-600 text-white")}
+                                >
+                                    {ev.title}
+                                </div>
+                            ))}
+                            {dayEvents.length > 3 && (
+                                <div className="text-[8px] text-slate-400 font-bold text-center mt-auto">+{dayEvents.length - 3}</div>
+                            )}
+                        </div>
+                    </div>
+                )
+            })}
+        </div>
+      </div>
+  );
+
+  const renderWeekView = () => (
+      <div className="flex flex-col h-[600px] overflow-y-auto">
+          <div className="grid grid-cols-8 sticky top-0 bg-white z-20 border-b border-slate-200">
+              <div className="w-12 md:w-16"></div> {/* Time column header */}
+              {displayedDaysWeek.map(day => (
+                  <div key={day.toISOString()} className={cn("text-center py-3 border-l border-slate-100", isToday(day) && "bg-indigo-50")}>
+                      <p className="text-[10px] font-bold uppercase text-slate-400">{format(day, 'EEE', {locale: tr})}</p>
+                      <p className={cn("text-lg font-black", isToday(day) ? "text-indigo-600" : "text-slate-700")}>{format(day, 'd')}</p>
+                  </div>
+              ))}
+          </div>
+          <div className="flex-1 relative">
+              {Array.from({length: 13}).map((_, i) => (
+                  <div key={i} className="grid grid-cols-8 border-b border-slate-100 h-16">
+                      <div className="w-12 md:w-16 flex items-start justify-center pt-2">
+                          <span className="text-[10px] font-bold text-slate-400">{i + 8}:00</span>
+                      </div>
+                      {displayedDaysWeek.map((day, dIdx) => (
+                          <div 
+                              key={`${day.toISOString()}-${i}`} 
+                              className="border-l border-slate-100 relative"
+                              onDragOver={handleDragOver}
+                              onDrop={(e) => handleDrop(e, day)}
+                          >
+                          </div>
+                      ))}
+                  </div>
+              ))}
+              {/* Event Overlays for Week View (Simplified: just stacking them per day, not true time-based yet for one-time events without times, but we fake it) */}
+              <div className="absolute inset-0 grid grid-cols-8 pointer-events-none">
+                   <div className="w-12 md:w-16"></div>
+                   {displayedDaysWeek.map((day, dIdx) => {
+                       const dayEvents = getEventsForDay(day);
+                       return (
+                           <div key={dIdx} className="relative pt-2 px-1 pointer-events-auto">
+                               {dayEvents.map((ev, i) => (
+                                   <div 
+                                      key={ev.id} 
+                                      draggable
+                                      onDragStart={(e) => handleDragStart(e, ev.id)}
+                                      className={cn("mb-1 p-1 rounded-md text-[10px] font-bold border border-black/5 cursor-grab leading-tight", ev.recurrence === 'one-time' ? (ev.color || "bg-blue-500 text-white") : "bg-fuchsia-600 text-white")}
+                                   >
+                                       {ev.title}
+                                   </div>
+                               ))}
+                           </div>
+                       );
+                   })}
+              </div>
+          </div>
+      </div>
+  );
+
+  const renderDayView = () => {
+      const dayEvents = getEventsForDay(currentDate);
+      return (
+          <div className="flex flex-col h-[600px] overflow-y-auto">
+              {Array.from({length: 13}).map((_, i) => (
+                  <div key={i} className="flex border-b border-slate-100 min-h-[4rem]">
+                      <div className="w-16 flex justify-center pt-2 border-r border-slate-100">
+                          <span className="text-[10px] font-bold text-slate-400">{i + 8}:00</span>
+                      </div>
+                      <div 
+                          className="flex-1 p-2 flex flex-col gap-1 relative"
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, currentDate)}
+                      >
+                          {/* Very naive approach: just throw all all-day/no-time events at 8:00 */}
+                          {i === 0 && dayEvents.map((ev) => (
+                              <div key={ev.id} className={cn("p-2 rounded-xl text-xs font-bold border border-black/5", ev.recurrence === 'one-time' ? (ev.color || "bg-blue-500 text-white") : "bg-fuchsia-600 text-white")}>
+                                  {ev.title}
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+              ))}
+          </div>
+      );
   };
 
   return (
@@ -220,14 +400,10 @@ export default function CalendarPage() {
                   </div>
 
                   <div className="flex items-center gap-3 w-full md:w-auto">
-                      <div className="relative flex-1 md:w-72 group">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                          <Input 
-                            placeholder="Etkinlik ara..." 
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 h-11 md:h-12 rounded-xl bg-slate-100/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-indigo-500 shadow-inner transition-all" 
-                          />
+                      <div className="flex bg-slate-100 p-1 rounded-xl">
+                          <button onClick={() => setViewMode('month')} className={cn("px-4 py-1.5 text-xs font-bold rounded-lg", viewMode === 'month' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700")}>Ay</button>
+                          <button onClick={() => setViewMode('week')} className={cn("px-4 py-1.5 text-xs font-bold rounded-lg", viewMode === 'week' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700")}>Hafta</button>
+                          <button onClick={() => setViewMode('day')} className={cn("px-4 py-1.5 text-xs font-bold rounded-lg", viewMode === 'day' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700")}>Gün</button>
                       </div>
                   </div>
               </div>
@@ -243,72 +419,32 @@ export default function CalendarPage() {
       <div className="max-w-7xl mx-auto p-3 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 md:gap-6 relative z-10">
         
         {/* SOL KOLON: TAKVİM */}
-        <div className="lg:col-span-7 space-y-4">
+        <div className="lg:col-span-8 space-y-4">
             <div className={cn("p-2 md:p-4", appTheme.CARD_BG)}>
                 {/* Calendar Navigation */}
                 <div className="flex items-center justify-between px-2 md:px-4 py-3 md:py-4 border-b border-slate-100 mb-2">
                     <h2 className="text-lg md:text-xl font-black capitalize text-slate-900">
-                        {format(currentDate, 'MMMM yyyy', { locale: tr })}
+                        {viewMode === 'month' && format(currentDate, 'MMMM yyyy', { locale: tr })}
+                        {viewMode === 'week' && `Hafta: ${format(startOfWeek(currentDate, {weekStartsOn: 1}), 'd MMM', {locale: tr})} - ${format(addDays(startOfWeek(currentDate, {weekStartsOn: 1}), 6), 'd MMM', {locale: tr})}`}
+                        {viewMode === 'day' && format(currentDate, 'd MMMM yyyy, EEEE', { locale: tr })}
                     </h2>
                     <div className="flex gap-1 bg-slate-100 rounded-full p-1 border border-slate-200 shadow-sm">
-                        <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="rounded-full w-8 h-8 text-slate-600 hover:text-slate-900 hover:bg-white active:scale-95 transition-all"><ChevronLeft className="w-5 h-5" /></Button>
+                        <Button variant="ghost" size="icon" onClick={handlePrev} className="rounded-full w-8 h-8 text-slate-600 hover:text-slate-900 hover:bg-white active:scale-95 transition-all"><ChevronLeft className="w-5 h-5" /></Button>
                         <Button variant="ghost" size="sm" onClick={handleToday} className="rounded-full px-3 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-white active:scale-95 transition-all">Bugün</Button>
-                        <Button variant="ghost" size="icon" onClick={handleNextMonth} className="rounded-full w-8 h-8 text-slate-600 hover:text-slate-900 hover:bg-white active:scale-95 transition-all"><ChevronRight className="w-5 h-5" /></Button>
+                        <Button variant="ghost" size="icon" onClick={handleNext} className="rounded-full w-8 h-8 text-slate-600 hover:text-slate-900 hover:bg-white active:scale-95 transition-all"><ChevronRight className="w-5 h-5" /></Button>
                     </div>
                 </div>
 
-                {/* Calendar Grid */}
-                <div className="px-1 md:px-2">
-                    <div className="grid grid-cols-7 mb-2">
-                         {weekHeaderDays.map(day => (
-                            <div key={day.toISOString()} className="text-center text-[10px] md:text-xs font-bold uppercase tracking-widest py-2 text-slate-400">
-                                {format(day, 'EEE', { locale: tr })}
-                            </div>
-                        ))}
-                    </div>
-                    
-                    <div className="grid grid-cols-7 gap-1 sm:gap-2">
-                        {displayedDays.map((day) => {
-                            const dayEvents = getEventsForDay(day);
-                            const isSelected = isSameDay(day, selectedDate);
-                            const isCurrentMonth = isSameMonth(day, currentDate);
-                            const isDayToday = isToday(day);
-                            const hasEvents = dayEvents.length > 0;
+                {/* Grid Views */}
+                {viewMode === 'month' && renderMonthView()}
+                {viewMode === 'week' && renderWeekView()}
+                {viewMode === 'day' && renderDayView()}
 
-                            return (
-                                <div 
-                                    key={day.toString()} 
-                                    onClick={() => setSelectedDate(day)}
-                                    className={cn(
-                                        "aspect-[1/1.1] sm:aspect-square rounded-[14px] md:rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200 relative border active:scale-95",
-                                        !isCurrentMonth ? "opacity-30 border-transparent" : "border-transparent",
-                                        hasEvents && !isSelected && "bg-slate-50 border-slate-200 hover:bg-slate-100",
-                                        isDayToday && !isSelected && "ring-2 ring-indigo-500 bg-indigo-50 text-indigo-700",
-                                        isSelected 
-                                            ? "bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-md shadow-indigo-500/30 scale-[1.05] z-10 border-transparent" 
-                                            : "hover:bg-slate-100 text-slate-600"
-                                    )}
-                                >
-                                    <span className={cn("text-sm md:text-base font-bold", isSelected && "text-white", isDayToday && !isSelected && "font-black")}>
-                                        {format(day, 'd')}
-                                    </span>
-                                    
-                                    {/* Event Dots */}
-                                    <div className="flex gap-0.5 md:gap-1 mt-1.5 h-1.5 justify-center">
-                                        {dayEvents.slice(0, 3).map((_, i) => (
-                                            <div key={i} className={cn("w-1.5 h-1.5 rounded-full", isSelected ? "bg-white" : eventStyles[i % eventStyles.length].indicator)} />
-                                        ))}
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
-                </div>
             </div>
         </div>
 
         {/* SAĞ KOLON: LİSTE VE DETAYLAR */}
-        <div className="lg:col-span-5 flex flex-col h-full space-y-4">
+        <div className="lg:col-span-4 flex flex-col h-full space-y-4">
             
             {/* Filter Tabs (Segmented Control Style) */}
             <div className="flex p-1 rounded-xl bg-slate-100 border border-slate-200">
@@ -322,101 +458,89 @@ export default function CalendarPage() {
                 <div className="p-4 md:p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                       <div>
                         <h3 className="font-black text-slate-900 text-lg">
-                             {searchQuery ? "Arama Sonuçları" : "Yaklaşan Etkinlikler"}
+                             Yaklaşan Etkinlikler
                         </h3>
-                        <p className="text-xs font-medium text-slate-500 mt-0.5">
-                             {searchQuery ? "Bulunan kayıtlar listeleniyor." : "Tüm aktif planlarınız ve önemli günler."}
-                        </p>
                       </div>
-                      {!searchQuery && (
-                          <Badge className="bg-slate-200 text-slate-700 hover:bg-slate-300 shadow-none border-none">
-                              {eventsToDisplay.length} Plan
-                          </Badge>
-                      )}
+                      <Badge className="bg-slate-200 text-slate-700 hover:bg-slate-300 shadow-none border-none">
+                          {upcomingEvents.length} Plan
+                      </Badge>
                 </div>
 
                 <ScrollArea className="flex-1 bg-slate-50/30">
                     <div className="p-3 md:p-4 space-y-3">
-                        {eventsToDisplay.length > 0 ? (
-                            eventsToDisplay.map((event, index) => {
-                                const style = eventStyles[index % eventStyles.length];
+                        {upcomingEvents.length > 0 ? (
+                            upcomingEvents.map((event, index) => {
                                 return (
                                     <div 
                                         key={event.id} 
-                                        className="group relative rounded-2xl p-3 border border-slate-200 bg-white transition-all duration-200 hover:border-slate-300 hover:shadow-md active:scale-[0.98] cursor-pointer"
+                                        onClick={() => setSelectedDate(event.displayDate)}
+                                        className="group relative rounded-2xl p-3 border border-slate-200 bg-white transition-all duration-200 hover:border-slate-300 hover:shadow-md active:scale-[0.98] cursor-pointer flex gap-3 md:gap-4"
                                     >
-                                        <div className="flex gap-3 md:gap-4">
-                                            {/* Date Box */}
-                                            <div className={cn(
-                                                "flex flex-col items-center justify-center w-12 h-14 md:w-14 md:h-16 rounded-[14px] flex-shrink-0 border",
-                                                style.bg, style.border
-                                            )}>
-                                                <span className={cn("text-lg md:text-xl font-black leading-none", style.text)}>{format(event.displayDate, 'd')}</span>
-                                                <span className={cn("text-[9px] md:text-[10px] uppercase font-bold mt-0.5", style.textMuted)}>{format(event.displayDate, 'MMM', {locale: tr})}</span>
-                                            </div>
+                                        <div className={cn(
+                                            "flex flex-col items-center justify-center w-12 h-14 md:w-14 md:h-16 rounded-[14px] flex-shrink-0 border",
+                                            event.recurrence === 'one-time' ? (event.color || "bg-blue-50 border-blue-200 text-blue-700") : "bg-fuchsia-600 text-white border-fuchsia-700"
+                                        )}>
+                                            <span className="text-lg md:text-xl font-black leading-none">{format(event.displayDate, 'd')}</span>
+                                            <span className="text-[9px] md:text-[10px] uppercase font-bold mt-0.5">{format(event.displayDate, 'MMM', {locale: tr})}</span>
+                                        </div>
 
-                                            <div className="flex-1 min-w-0 py-0.5 flex flex-col justify-center">
-                                                <div className="flex justify-between items-start gap-2">
-                                                    <h4 className="font-bold truncate text-sm md:text-base text-slate-900 pr-6">{event.title}</h4>
-                                                    <div className="shrink-0 hidden xs:block">
-                                                        {event.recurrence === 'one-time' && (
-                                                            <DaysLeftBadge days={event.daysLeft} />
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                
-                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5">
-                                                    <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500">
-                                                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                                                        <span>
-                                                            {event.recurrence === 'one-time' ? 'Tek Sefer' : 
-                                                             event.recurrence === 'monthly' ? 'Her Ay' : 'Her Yıl'}
-                                                        </span>
-                                                    </div>
-                                                    {event.location && (
-                                                        <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500">
-                                                            <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                                                            <span className="truncate max-w-[100px]">{event.location}</span>
-                                                        </div>
+                                        <div className="flex-1 min-w-0 py-0.5 flex flex-col justify-center">
+                                            <div className="flex justify-between items-start gap-2">
+                                                <h4 className="font-bold truncate text-sm md:text-base text-slate-900 pr-6">{event.title}</h4>
+                                                <div className="shrink-0 hidden xs:block">
+                                                    {event.recurrence === 'one-time' && (
+                                                        <DaysLeftBadge days={event.daysLeft} />
                                                     )}
                                                 </div>
-                                                {/* Mobile specific badge placement */}
-                                                <div className="mt-2 xs:hidden">
-                                                    {event.recurrence === 'one-time' && <DaysLeftBadge days={event.daysLeft} />}
-                                                </div>
                                             </div>
-
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0 rounded-full absolute top-2 right-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 active:scale-90 transition-all md:opacity-0 md:group-hover:opacity-100">
-                                                        <MoreHorizontal className="h-5 w-5" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-40 bg-white border-slate-200 rounded-2xl shadow-xl p-1.5">
-                                                    <DropdownMenuItem onClick={() => { setEditingEvent(event); setIsFormDialogOpen(true); }} className="hover:bg-slate-50 cursor-pointer font-bold text-slate-700 py-2.5 rounded-xl">
-                                                        <Edit className="mr-2 h-4 w-4" /> Düzenle
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator className="bg-slate-100 my-1" />
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-600 focus:text-rose-700 focus:bg-rose-50 cursor-pointer font-bold py-2.5 rounded-xl">
-                                                                <Trash2 className="mr-2 h-4 w-4" /> Sil
-                                                            </DropdownMenuItem>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent className="w-[90%] max-w-sm bg-white border-slate-200 rounded-[2rem] p-6 shadow-2xl">
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle className="text-xl font-black text-slate-900">Emin misin?</AlertDialogTitle>
-                                                                <AlertDialogDescription className="text-slate-500 font-medium">Bu işlem geri alınamaz ve etkinlik takvimden kalıcı olarak silinir.</AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter className="mt-4 gap-2 flex-row">
-                                                                <AlertDialogCancel className="flex-1 border-none bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold h-12 rounded-xl m-0">İptal</AlertDialogCancel>
-                                                                <AlertDialogAction className="flex-1 bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white font-bold h-12 rounded-xl m-0" onClick={() => handleDeleteEvent(event.id)}>Sil</AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                            
+                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5">
+                                                <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500">
+                                                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                                    <span>
+                                                        {event.recurrence === 'one-time' ? 'Tek Sefer' : 
+                                                         event.recurrence === 'monthly' ? 'Her Ay' : 'Her Yıl'}
+                                                    </span>
+                                                </div>
+                                                {event.category && (
+                                                    <Badge variant="outline" className="text-[9px] px-1 py-0 shadow-none bg-slate-50">{event.category}</Badge>
+                                                )}
+                                                {event.reminderMinutes && event.reminderMinutes > 0 && (
+                                                    <Badge variant="outline" className="text-[9px] px-1 py-0 shadow-none bg-amber-50 text-amber-700 border-amber-200">🔔 Hatırlatıcı</Badge>
+                                                )}
+                                            </div>
                                         </div>
+
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-full absolute top-2 right-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 active:scale-90 transition-all md:opacity-0 md:group-hover:opacity-100">
+                                                    <MoreHorizontal className="h-5 w-5" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-40 bg-white border-slate-200 rounded-2xl shadow-xl p-1.5">
+                                                <DropdownMenuItem onClick={() => { setEditingEvent(event); setIsFormDialogOpen(true); }} className="hover:bg-slate-50 cursor-pointer font-bold text-slate-700 py-2.5 rounded-xl">
+                                                    <Edit className="mr-2 h-4 w-4" /> Düzenle
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator className="bg-slate-100 my-1" />
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-600 focus:text-rose-700 focus:bg-rose-50 cursor-pointer font-bold py-2.5 rounded-xl">
+                                                            <Trash2 className="mr-2 h-4 w-4" /> Sil
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent className="w-[90%] max-w-sm bg-white border-slate-200 rounded-[2rem] p-6 shadow-2xl">
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle className="text-xl font-black text-slate-900">Emin misin?</AlertDialogTitle>
+                                                            <AlertDialogDescription className="text-slate-500 font-medium">Bu işlem geri alınamaz ve etkinlik takvimden kalıcı olarak silinir.</AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter className="mt-4 gap-2 flex-row">
+                                                            <AlertDialogCancel className="flex-1 border-none bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold h-12 rounded-xl m-0">İptal</AlertDialogCancel>
+                                                            <AlertDialogAction className="flex-1 bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white font-bold h-12 rounded-xl m-0" onClick={() => handleDeleteEvent(event.id)}>Sil</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </div>
                                 )
                             })
@@ -440,7 +564,7 @@ export default function CalendarPage() {
       {/* FAB: MOBİL BUTON */}
       <button 
         onClick={handleOpenNewTask}
-        className="fixed bottom-6 right-5 md:hidden z-50 w-16 h-16 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-[1.5rem] shadow-xl shadow-indigo-500/30 flex items-center justify-center active:scale-90 transition-transform border border-white/20"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 md:bottom-8 md:right-8 z-50 w-16 h-16 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-[1.5rem] shadow-xl shadow-indigo-500/30 flex items-center justify-center active:scale-90 transition-transform border border-white/20 md:hidden"
       >
         <Plus className="w-8 h-8" strokeWidth={2.5} />
       </button>

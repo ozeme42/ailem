@@ -251,7 +251,7 @@ export default function UnifiedTestPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
-                    {test.status === 'Atandı' && test.durationMinutes && <TestTimer durationMinutes={test.durationMinutes} onTimeUp={handleFinishTest} />}
+                    {test.status === 'Atandı' && <TestTimer durationMinutes={test.questionCount * 2} />}
                     {test.status === 'Değerlendirme Bekliyor' && <Badge className="bg-amber-600 px-4 py-1 rounded-full font-black text-white">DEĞERLENDİRİLİYOR</Badge>}
                 </div>
             </header>

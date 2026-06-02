@@ -56,27 +56,26 @@ export const QuestionPalette = ({
 
 // --- SAYAÇ (TIMER) ---
 function formatTime(seconds: number) {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  const isNegative = seconds < 0;
+  const absSeconds = Math.abs(seconds);
+  const minutes = Math.floor(absSeconds / 60);
+  const remainingSeconds = absSeconds % 60;
+  return `${isNegative ? '-' : ''}${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 }
 
-export function TestTimer({ durationMinutes, onTimeUp }: { durationMinutes: number; onTimeUp: () => void }) {
+export function TestTimer({ durationMinutes }: { durationMinutes: number }) {
   const [timeLeft, setTimeLeft] = React.useState(durationMinutes * 60);
   const [isRunning, setIsRunning] = React.useState(true);
 
   React.useEffect(() => {
-    if (!isRunning || timeLeft <= 0) {
-      if (timeLeft <= 0) onTimeUp();
-      return;
-    }
+    if (!isRunning) return;
     const timerId = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     return () => clearInterval(timerId);
-  }, [timeLeft, onTimeUp, isRunning]);
+  }, [isRunning]);
 
   return (
     <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className={cn("flex items-center gap-2 font-mono text-xl font-black", timeLeft < 300 ? "text-rose-500 animate-pulse" : "text-indigo-600")}>
+        <div className={cn("flex items-center gap-2 font-mono text-xl font-black", timeLeft < 0 ? "text-rose-500 animate-pulse" : timeLeft < 300 ? "text-orange-500 animate-pulse" : "text-indigo-600")}>
             <Clock className="h-5 w-5" />
             <span>{formatTime(timeLeft)}</span>
         </div>

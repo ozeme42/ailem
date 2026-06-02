@@ -36,6 +36,7 @@ const subjectSchema = z.object({
 
 const planInfoSchema = z.object({
   title: z.string().min(3, "Plan adı en az 3 karakter olmalıdır."),
+  link: z.string().optional(),
 });
 
 // TYPES
@@ -59,6 +60,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
     resolver: zodResolver(planInfoSchema),
     defaultValues: {
       title: initialData?.title || "",
+      link: initialData?.link || "",
     },
     shouldUnregister: false,
   });
@@ -68,6 +70,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
     if (initialData) {
       form.reset({
         title: initialData.title,
+        link: initialData.link || "",
       });
       setSubjects((initialData.subjects || []) as SubjectType[]);
     }
@@ -89,6 +92,7 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
     // Process data for submission
     const finalData = {
         title: values.title,
+        link: values.link || undefined,
         subjects: subjects.map(s => ({
             ...s,
             id: s.id || generateSafeId(),
@@ -173,6 +177,20 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
                                         <FormLabel className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Plan Başlığı</FormLabel>
                                         <FormControl>
                                             <Input placeholder="Örn: LGS 2025 Hazırlık" {...field} className="h-12 rounded-xl text-base font-bold bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 focus:ring-2 ring-indigo-500/20" />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            
+                            <FormField
+                                control={form.control}
+                                name="link"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Genel Link (İsteğe Bağlı)</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Örn: https://youtube.com/playlist..." {...field} className="h-12 rounded-xl text-base font-medium bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 focus:ring-2 ring-indigo-500/20" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

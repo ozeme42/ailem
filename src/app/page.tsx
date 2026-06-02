@@ -5,7 +5,7 @@ import {
   CheckSquare, Calendar, BookOpen, ShoppingCart, UtensilsCrossed, 
   PlusCircle, ListChecks, Check, Users, Target, User, Flame, 
   BarChart2, BookCheck, ChevronRight, LayoutDashboard, 
-  Settings2, Pencil, Sparkles, Trophy, Star, Bell, Menu, ArrowLeft, GraduationCap, Sun, Moon 
+  Settings2, Pencil, Sparkles, Trophy, Star, Bell, Menu, ArrowLeft, GraduationCap, Sun, Moon, PlaySquare 
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/components/auth-provider";
@@ -350,6 +350,8 @@ export default function Home() {
 
           <div className="w-full space-y-6 md:space-y-8 relative z-10 pt-4 md:pt-8">
               
+
+
               {/* --- GRID DASHBOARD (Mobilde 2 Sütun, Kompakt) --- */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 px-3 md:px-6">
                     
@@ -526,6 +528,39 @@ export default function Home() {
                               </div>
                           </div>
                       </section>
+
+                      {/* Eğitim Materyalleri (Notlar ve Videolar) */}
+                      <div className="grid grid-cols-2 gap-3 md:gap-4">
+                          <Link href="/notes" className={cn("group block rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 overflow-hidden relative border border-slate-100 dark:border-slate-800", themeClasses.CARD_BG, themeClasses.CARD_HOVER)}>
+                              <div className="absolute -top-2 -right-2 md:top-0 md:right-0 p-4 opacity-10 transition-transform group-hover:scale-110">
+                                  <BookCheck className="w-16 h-16 md:w-24 md:h-24 text-amber-500" />
+                              </div>
+                              <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-3">
+                                  <div className={cn(themeClasses.ICON_BOX, "from-amber-400 to-amber-600 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center")}>
+                                      <BookCheck className="w-5 h-5 md:w-6 md:h-6" />
+                                  </div>
+                                  <div>
+                                      <h3 className={cn("font-bold text-sm md:text-lg", themeClasses.TEXT_MAIN)}>Notlar</h3>
+                                      <p className={cn("text-[10px] md:text-xs", themeClasses.TEXT_MUTED)}>Çalışma notları</p>
+                                  </div>
+                              </div>
+                          </Link>
+
+                          <Link href="/videos" className={cn("group block rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 overflow-hidden relative border border-slate-100 dark:border-slate-800", themeClasses.CARD_BG, themeClasses.CARD_HOVER)}>
+                              <div className="absolute -top-2 -right-2 md:top-0 md:right-0 p-4 opacity-10 transition-transform group-hover:scale-110">
+                                  <PlaySquare className="w-16 h-16 md:w-24 md:h-24 text-rose-500" />
+                              </div>
+                              <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-3">
+                                  <div className={cn(themeClasses.ICON_BOX, "from-rose-400 to-rose-600 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center")}>
+                                      <PlaySquare className="w-5 h-5 md:w-6 md:h-6" />
+                                  </div>
+                                  <div>
+                                      <h3 className={cn("font-bold text-sm md:text-lg", themeClasses.TEXT_MAIN)}>Videolar</h3>
+                                      <p className={cn("text-[10px] md:text-xs", themeClasses.TEXT_MUTED)}>Eğitim videoları</p>
+                                  </div>
+                              </div>
+                          </Link>
+                      </div>
 
                       {/* Hedefler */}
                       <section className={cn("rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6", themeClasses.CARD_BG)}>
