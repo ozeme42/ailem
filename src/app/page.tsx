@@ -270,12 +270,13 @@ export default function Home() {
       } catch (e) { toast({ title: "Hata", variant: "destructive" }); }
   };
   
-  const { pendingTests } = React.useMemo(() => {
-      if (!activeMember) return { pendingTests: [] };
+  const { pendingTests, pendingStudyAssignments } = React.useMemo(() => {
+      if (!activeMember) return { pendingTests: [], pendingStudyAssignments: [] };
       const memberId = activeMember.id;
       const memberTests = tests.filter(t => t.studentId === memberId && t.status === 'Atandı');
-      return { pendingTests: memberTests };
-  }, [activeMember, tests]);
+      const memberStudyAssignments = studyAssignments.filter(a => a.studentId === memberId && a.status === 'assigned');
+      return { pendingTests: memberTests, pendingStudyAssignments: memberStudyAssignments };
+  }, [activeMember, tests, studyAssignments]);
 
 
   if (loading) return <div className="p-8 flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div></div>;
@@ -326,7 +327,7 @@ return (
               <Link href="/education">
                 <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 relative">
                   <GraduationCap className="h-5 w-5" />
-                  {pendingTests.length > 0 && <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />}
+                  {(pendingTests.length + pendingStudyAssignments.length) > 0 && <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />}
                 </Button>
               </Link>
 
@@ -376,7 +377,7 @@ return (
             <div className="relative z-10 grid grid-cols-2 gap-2 mt-4">
               {[
                 { label: "Bekleyen Görev", value: tasks.filter(t => !t.completed).length, emoji: "📋" },
-                { label: "Eğitim Ödevleri",value: pendingTests.length,                    emoji: "🎯" },
+                { label: "Eğitim Ödevleri",value: pendingTests.length + pendingStudyAssignments.length, emoji: "🎯" },
                 { label: "Alışveriş",      value: shoppingSummary.totalPending,            emoji: "🛒" },
                 { label: "Kütüphane",      value: books.length,                            emoji: "📚" },
               ].map((item) => (
