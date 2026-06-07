@@ -54,7 +54,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
         `;
     };
 
-    const OpticalForm = () => (
+    const renderOpticalForm = () => (
         <div className="flex flex-col h-full bg-white dark:bg-slate-900">
              <div className={cn("p-4 border-b flex justify-between items-center", isReviewMode ? "bg-indigo-600 text-white" : "bg-slate-50 dark:bg-slate-950")}>
                 <h3 className="font-black text-sm uppercase">OPTİK {isReviewMode ? "SONUÇ" : "FORM"}</h3>
@@ -186,7 +186,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
 
                 {/* Optical Form Area - Desktop */}
                 <div className="hidden lg:block w-80 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-full">
-                    <OpticalForm />
+                    {renderOpticalForm()}
                 </div>
             </div>
 
@@ -196,7 +196,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     <div className="bg-white dark:bg-slate-900 w-full h-[85vh] rounded-t-[3rem] overflow-hidden flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-500">
                         <div className="h-1.5 w-12 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mt-4 mb-2" onClick={() => setIsOpticalOpenMobile(false)} />
                         <div className="flex-1 overflow-hidden">
-                            <OpticalForm />
+                            {renderOpticalForm()}
                         </div>
                     </div>
                 </div>
