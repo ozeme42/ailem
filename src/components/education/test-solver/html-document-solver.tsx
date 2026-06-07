@@ -27,15 +27,15 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
     // Yüksekliği yüzde olarak tutacağız (Varsayılan %50)
     const [splitHeightPercent, setSplitHeightPercent] = React.useState(50);
     const containerRef = React.useRef<HTMLDivElement>(null);
-    const isDragging = React.useRef(false);
+    const [isDragging, setIsDragging] = React.useState(false);
 
     const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
-        isDragging.current = true;
+        setIsDragging(true);
         document.body.style.userSelect = 'none'; // Sürüklerken metin seçimini engelle
     };
 
     const handleDragMove = React.useCallback((clientY: number) => {
-        if (!isDragging.current || !containerRef.current) return;
+        if (!containerRef.current) return;
         const containerRect = containerRef.current.getBoundingClientRect();
         const offsetY = clientY - containerRect.top;
         let newPercent = (offsetY / containerRect.height) * 100;
@@ -52,18 +52,18 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
     }, [handleDragMove]);
 
     const handleTouchMove = React.useCallback((e: TouchEvent) => {
-        if (isDragging.current) {
-            if (e.cancelable) e.preventDefault();
-            handleDragMove(e.touches[0].clientY);
-        }
+        if (e.cancelable) e.preventDefault();
+        handleDragMove(e.touches[0].clientY);
     }, [handleDragMove]);
 
     const handleDragEnd = React.useCallback(() => {
-        isDragging.current = false;
+        setIsDragging(false);
         document.body.style.userSelect = '';
     }, []);
 
     React.useEffect(() => {
+        if (!isDragging) return;
+        
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleDragEnd);
         document.addEventListener('touchmove', handleTouchMove, { passive: false });
@@ -75,7 +75,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
             document.removeEventListener('touchmove', handleTouchMove);
             document.removeEventListener('touchend', handleDragEnd);
         };
-    }, [handleMouseMove, handleTouchMove, handleDragEnd]);
+    }, [isDragging, handleMouseMove, handleTouchMove, handleDragEnd]);
 
     // Ekranı kapladığında (full screen) sayfanın altının kaymasını engelle
     React.useEffect(() => {
@@ -236,7 +236,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                 >
                     <div className="flex-1 relative min-h-0">
                         {/* We add a transparent overlay during drag to prevent iframe from eating mouse events */}
-                        {isDragging.current && <div className="absolute inset-0 z-50 bg-transparent" />}
+                        {isDragging && <div className="absolute inset-0 z-50 bg-transparent" />}
                         
                         <iframe 
                             srcDoc={getIframeDocument(test.htmlContent || "")}
