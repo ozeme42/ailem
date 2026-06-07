@@ -52,7 +52,10 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
     }, [handleDragMove]);
 
     const handleTouchMove = React.useCallback((e: TouchEvent) => {
-        handleDragMove(e.touches[0].clientY);
+        if (isDragging.current) {
+            if (e.cancelable) e.preventDefault();
+            handleDragMove(e.touches[0].clientY);
+        }
     }, [handleDragMove]);
 
     const handleDragEnd = React.useCallback(() => {
@@ -73,6 +76,18 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
             document.removeEventListener('touchend', handleDragEnd);
         };
     }, [handleMouseMove, handleTouchMove, handleDragEnd]);
+
+    // Ekranı kapladığında (full screen) sayfanın altının kaymasını engelle
+    React.useEffect(() => {
+        if (isFullScreen || isOpticalOpenMobile) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isFullScreen, isOpticalOpenMobile]);
 
 
     const getIframeDocument = (htmlContent: string) => {
