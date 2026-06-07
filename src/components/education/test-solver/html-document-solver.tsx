@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Maximize2, Minimize2, CheckCircle2, LayoutGrid, X, ChevronRight, Check, AlertCircle, SplitSquareVertical } from "lucide-react";
+import { Maximize2, Minimize2, CheckCircle2, LayoutGrid, X, ChevronRight, Check, AlertCircle, SplitSquareVertical, GripHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -23,6 +23,57 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
     const [isFullScreen, setIsFullScreen] = React.useState(false);
     const [isOpticalOpenMobile, setIsOpticalOpenMobile] = React.useState(false);
     const [isSplitScreenMobile, setIsSplitScreenMobile] = React.useState(false);
+    
+    // Yüksekliği yüzde olarak tutacağız (Varsayılan %50)
+    const [splitHeightPercent, setSplitHeightPercent] = React.useState(50);
+    const containerRef = React.useRef<HTMLDivElement>(null);
+    const isDragging = React.useRef(false);
+
+    const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+        isDragging.current = true;
+        document.body.style.userSelect = 'none'; // Sürüklerken metin seçimini engelle
+    };
+
+    const handleDragMove = React.useCallback((clientY: number) => {
+        if (!isDragging.current || !containerRef.current) return;
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const offsetY = clientY - containerRect.top;
+        let newPercent = (offsetY / containerRect.height) * 100;
+        
+        // Sınırlandırma (%20 ile %80 arası)
+        if (newPercent < 20) newPercent = 20;
+        if (newPercent > 80) newPercent = 80;
+        
+        setSplitHeightPercent(newPercent);
+    }, []);
+
+    const handleMouseMove = React.useCallback((e: MouseEvent) => {
+        handleDragMove(e.clientY);
+    }, [handleDragMove]);
+
+    const handleTouchMove = React.useCallback((e: TouchEvent) => {
+        handleDragMove(e.touches[0].clientY);
+    }, [handleDragMove]);
+
+    const handleDragEnd = React.useCallback(() => {
+        isDragging.current = false;
+        document.body.style.userSelect = '';
+    }, []);
+
+    React.useEffect(() => {
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleDragEnd);
+        document.addEventListener('touchmove', handleTouchMove, { passive: false });
+        document.addEventListener('touchend', handleDragEnd);
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleDragEnd);
+            document.removeEventListener('touchmove', handleTouchMove);
+            document.removeEventListener('touchend', handleDragEnd);
+        };
+    }, [handleMouseMove, handleTouchMove, handleDragEnd]);
+
 
     const getIframeDocument = (htmlContent: string) => {
         const isOnlyIframe = htmlContent.trim().toLowerCase().startsWith('<iframe') && htmlContent.trim().toLowerCase().endsWith('</iframe>');
@@ -57,7 +108,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
     };
 
     const renderOpticalForm = () => (
-        <div className="flex flex-col h-full bg-white dark:bg-slate-900 w-full">
+        <div className="flex flex-col h-full bg-white dark:bg-slate-900 w-full overflow-hidden">
              <div className={cn("p-4 border-b flex justify-between items-center shrink-0", isReviewMode ? "bg-indigo-600 text-white" : "bg-slate-50 dark:bg-slate-950")}>
                 <h3 className="font-black text-sm uppercase">OPTİK {isReviewMode ? "SONUÇ" : "FORM"}</h3>
                 <Badge className={isReviewMode ? "bg-white/20" : "bg-indigo-600"}>
@@ -128,7 +179,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
             </ScrollArea>
             {!isReviewMode && (
                 <div className="p-4 border-t bg-slate-50 dark:bg-slate-950 shrink-0">
-                    <Button type="button" className="w-full bg-emerald-600 hover:bg-emerald-500 font-black h-12 rounded-xl text-white" onClick={onFinish}>Sınavı Bitir</Button>
+                    <Button type="button" className="w-full bg-emerald-600 hover:bg-emerald-500 font-black h-12 rounded-xl text-white shadow-lg shadow-emerald-600/20" onClick={onFinish}>Sınavı Bitir</Button>
                 </div>
             )}
         </div>
@@ -161,10 +212,17 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                 </div>
             </div>
 
-            <div className={cn("flex-1 flex overflow-hidden", isSplitScreenMobile ? "flex-col lg:flex-row" : "")}>
+            <div ref={containerRef} className={cn("flex-1 flex overflow-hidden relative", isSplitScreenMobile ? "flex-col lg:flex-row" : "flex-row")}>
+                
                 {/* Document Area */}
-                <div className={cn("relative bg-slate-50 dark:bg-black/20 flex flex-col", isSplitScreenMobile ? "h-1/2 lg:h-auto lg:flex-1 border-b lg:border-b-0" : "flex-1")}>
-                    <div className="flex-1 relative">
+                <div 
+                    className="relative bg-slate-50 dark:bg-black/20 flex flex-col min-h-0" 
+                    style={isSplitScreenMobile ? { height: `${splitHeightPercent}%` } : { flex: 1 }}
+                >
+                    <div className="flex-1 relative min-h-0">
+                        {/* We add a transparent overlay during drag to prevent iframe from eating mouse events */}
+                        {isDragging.current && <div className="absolute inset-0 z-50 bg-transparent" />}
+                        
                         <iframe 
                             srcDoc={getIframeDocument(test.htmlContent || "")}
                             className="w-full h-full border-none"
@@ -202,8 +260,22 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     )}
                 </div>
 
+                {/* Resizer Handle for Split Screen */}
+                {isSplitScreenMobile && (
+                    <div 
+                        className="lg:hidden flex items-center justify-center h-4 bg-slate-200 dark:bg-slate-800 shrink-0 cursor-row-resize active:bg-indigo-200 dark:active:bg-indigo-900/50 touch-none z-50"
+                        onMouseDown={handleDragStart}
+                        onTouchStart={handleDragStart}
+                    >
+                        <GripHorizontal className="w-5 h-5 text-slate-500" />
+                    </div>
+                )}
+
                 {/* Optical Form Area - Desktop or Split Screen */}
-                <div className={cn("border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900", isSplitScreenMobile ? "h-1/2 lg:h-auto lg:w-80 flex" : "hidden lg:block w-80 h-full")}>
+                <div 
+                    className={cn("bg-white dark:bg-slate-900 flex flex-col min-h-0", isSplitScreenMobile ? "lg:border-l lg:border-slate-200 lg:w-80" : "hidden lg:flex lg:border-l lg:border-slate-200 lg:w-80")}
+                    style={isSplitScreenMobile ? { height: `calc(${100 - splitHeightPercent}% - 16px)` } : {}}
+                >
                     {renderOpticalForm()}
                 </div>
             </div>
