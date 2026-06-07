@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -6,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Maximize2, Minimize2, CheckCircle2, LayoutGrid, X, ChevronRight, Check, AlertCircle } from "lucide-react";
+import { Maximize2, Minimize2, CheckCircle2, LayoutGrid, X, ChevronRight, Check, AlertCircle, SplitSquareVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -21,6 +22,7 @@ interface HTMLDocumentSolverProps {
 export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, isReviewMode = false }: HTMLDocumentSolverProps) {
     const [isFullScreen, setIsFullScreen] = React.useState(false);
     const [isOpticalOpenMobile, setIsOpticalOpenMobile] = React.useState(false);
+    const [isSplitScreenMobile, setIsSplitScreenMobile] = React.useState(false);
 
     const getIframeDocument = (htmlContent: string) => {
         const isOnlyIframe = htmlContent.trim().toLowerCase().startsWith('<iframe') && htmlContent.trim().toLowerCase().endsWith('</iframe>');
@@ -55,8 +57,8 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
     };
 
     const renderOpticalForm = () => (
-        <div className="flex flex-col h-full bg-white dark:bg-slate-900">
-             <div className={cn("p-4 border-b flex justify-between items-center", isReviewMode ? "bg-indigo-600 text-white" : "bg-slate-50 dark:bg-slate-950")}>
+        <div className="flex flex-col h-full bg-white dark:bg-slate-900 w-full">
+             <div className={cn("p-4 border-b flex justify-between items-center shrink-0", isReviewMode ? "bg-indigo-600 text-white" : "bg-slate-50 dark:bg-slate-950")}>
                 <h3 className="font-black text-sm uppercase">OPTİK {isReviewMode ? "SONUÇ" : "FORM"}</h3>
                 <Badge className={isReviewMode ? "bg-white/20" : "bg-indigo-600"}>
                     {isReviewMode ? `%${test.score?.toFixed(0)}` : `${Object.keys(studentAnswers).length} / ${test.questionCount}`}
@@ -97,7 +99,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                                                 <button
                                                     type="button"
                                                     disabled={isReviewMode}
-                                                    onClick={() => onAnswer(qNum, opt)}
+                                                    onClick={() => onAnswer(qNum, isSelected ? "" : opt)}
                                                     className={cn(
                                                         "flex items-center justify-center h-8 w-full rounded-lg border text-[10px] font-black transition-all",
                                                         !isReviewMode ? (
@@ -125,7 +127,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                 </div>
             </ScrollArea>
             {!isReviewMode && (
-                <div className="p-4 border-t bg-slate-50 dark:bg-slate-950">
+                <div className="p-4 border-t bg-slate-50 dark:bg-slate-950 shrink-0">
                     <Button type="button" className="w-full bg-emerald-600 hover:bg-emerald-500 font-black h-12 rounded-xl text-white" onClick={onFinish}>Sınavı Bitir</Button>
                 </div>
             )}
@@ -137,6 +139,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
             "fixed inset-0 z-50 bg-background flex flex-col transition-all",
             isFullScreen ? "z-[60]" : "relative h-[calc(100vh-180px)] rounded-[2.5rem] overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl"
         )}>
+            {/* Header */}
             <div className="flex items-center justify-between px-6 h-16 bg-white dark:bg-slate-900 border-b shrink-0">
                 <div className="flex items-center gap-3">
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white", isReviewMode ? "bg-indigo-600" : "bg-emerald-500")}>
@@ -148,6 +151,9 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <Button type="button" variant={isSplitScreenMobile ? "default" : "ghost"} size="icon" onClick={() => setIsSplitScreenMobile(!isSplitScreenMobile)} className={cn("lg:hidden rounded-full", isSplitScreenMobile ? "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-400" : "hover:bg-slate-100")}>
+                        <SplitSquareVertical className="h-5 w-5" />
+                    </Button>
                     <Button type="button" variant="ghost" size="icon" onClick={() => setIsFullScreen(!isFullScreen)} className="rounded-full hover:bg-slate-100">
                         {isFullScreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
                     </Button>
@@ -155,9 +161,9 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                 </div>
             </div>
 
-            <div className="flex-1 flex overflow-hidden">
+            <div className={cn("flex-1 flex overflow-hidden", isSplitScreenMobile ? "flex-col lg:flex-row" : "")}>
                 {/* Document Area */}
-                <div className="flex-1 relative bg-slate-50 dark:bg-black/20 h-full flex flex-col">
+                <div className={cn("relative bg-slate-50 dark:bg-black/20 flex flex-col", isSplitScreenMobile ? "h-1/2 lg:h-auto lg:flex-1 border-b lg:border-b-0" : "flex-1")}>
                     <div className="flex-1 relative">
                         <iframe 
                             srcDoc={getIframeDocument(test.htmlContent || "")}
@@ -165,17 +171,29 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                             title="Test Content"
                         />
                          {/* Mobile Optic FAB */}
-                        <Button 
-                            type="button"
-                            onClick={() => setIsOpticalOpenMobile(true)}
-                            className="lg:hidden absolute bottom-6 right-6 h-14 w-14 rounded-full bg-indigo-600 text-white shadow-2xl z-40 border-4 border-white dark:border-slate-800"
-                        >
-                            <LayoutGrid className="w-6 h-6" />
-                        </Button>
+                        {(!isSplitScreenMobile && !isReviewMode) && (
+                            <Button 
+                                type="button"
+                                onClick={() => setIsOpticalOpenMobile(true)}
+                                className="lg:hidden absolute bottom-6 right-6 h-14 w-14 rounded-full bg-indigo-600 text-white shadow-2xl z-40 border-4 border-white dark:border-slate-800"
+                            >
+                                <LayoutGrid className="w-6 h-6" />
+                            </Button>
+                        )}
+                        {/* Mobile Optic FAB for Review Mode */}
+                        {(!isSplitScreenMobile && isReviewMode) && (
+                            <Button 
+                                type="button"
+                                onClick={() => setIsOpticalOpenMobile(true)}
+                                className="lg:hidden absolute bottom-6 right-6 h-14 w-14 rounded-full bg-slate-800 text-white shadow-2xl z-40 border-4 border-white dark:border-slate-800"
+                            >
+                                <AlertCircle className="w-6 h-6" />
+                            </Button>
+                        )}
                     </div>
 
-                    {/* Mobile Sınavı Bitir Bar */}
-                    {!isReviewMode && (
+                    {/* Mobile Sınavı Bitir Bar - Only show if not split screen */}
+                    {(!isReviewMode && !isSplitScreenMobile) && (
                         <div className="lg:hidden p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] pb-6 sm:pb-4">
                             <Button type="button" className="w-full bg-emerald-600 hover:bg-emerald-500 font-black h-12 rounded-xl text-white shadow-lg shadow-emerald-600/20" onClick={onFinish}>
                                 Sınavı Bitir
@@ -184,14 +202,14 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     )}
                 </div>
 
-                {/* Optical Form Area - Desktop */}
-                <div className="hidden lg:block w-80 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-full">
+                {/* Optical Form Area - Desktop or Split Screen */}
+                <div className={cn("border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900", isSplitScreenMobile ? "h-1/2 lg:h-auto lg:w-80 flex" : "hidden lg:block w-80 h-full")}>
                     {renderOpticalForm()}
                 </div>
             </div>
 
             {/* Mobile Optical Sheet Overlay */}
-            {isOpticalOpenMobile && (
+            {(isOpticalOpenMobile && !isSplitScreenMobile) && (
                 <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm lg:hidden flex items-end">
                     <div className="bg-white dark:bg-slate-900 w-full h-[85vh] rounded-t-[3rem] overflow-hidden flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-500">
                         <div className="h-1.5 w-12 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mt-4 mb-2" onClick={() => setIsOpticalOpenMobile(false)} />
