@@ -84,7 +84,7 @@ export function MistakesClient() {
     
     const [searchTerm, setSearchTerm] = React.useState("");
     const [selectedStudent, setSelectedStudent] = React.useState<FamilyMember | null>(null);
-    const [groupingMode, setGroupingMode] = React.useState<'subject' | 'type'>('subject');
+    const [groupingMode, setGroupingMode] = React.useState<'subject' | 'type' | 'timeline'>('subject');
     const [selectedGroup, setSelectedGroup] = React.useState<string | null>(null);
     const [selectedSubGroup, setSelectedSubGroup] = React.useState<string | null>(null);
     
@@ -173,6 +173,19 @@ export function MistakesClient() {
         });
         return list;
     }, [tests, trackedBooks]);
+
+    const recentTestsMistakes = React.useMemo(() => {
+        const testMap: Record<string, { title: string, date: Date, dateStr: string, wrongQuestions: string[] }> = {};
+        allMistakesFlat.forEach(m => {
+            if (!testMap[m.testId]) {
+                 testMap[m.testId] = { title: m.testTitle, date: m.dateRaw, dateStr: m.date, wrongQuestions: [] };
+            }
+            testMap[m.testId].wrongQuestions.push(m.questionNumber);
+        });
+        
+        return Object.values(testMap).sort((a,b) => b.date.getTime() - a.date.getTime());
+    }, [allMistakesFlat]);
+    
 
     const groups = React.useMemo(() => {
         const map: Record<string, MistakeDetail[]> = {};
@@ -292,6 +305,7 @@ export function MistakesClient() {
                                     <TabsList className={themeColors.TAB_LIST}>
                                         <TabsTrigger value="subject" className="rounded-lg text-xs font-bold px-5 h-9">Ders Kartları</TabsTrigger>
                                         <TabsTrigger value="type" className="rounded-lg text-xs font-bold px-5 h-9">Sınav Türleri</TabsTrigger>
+                                        <TabsTrigger value="timeline" className="rounded-lg text-xs font-bold px-5 h-9">Tarih Çizelgesi</TabsTrigger>
                                     </TabsList>
                                 </Tabs>
                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 dark:bg-slate-800 px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-inner">
@@ -300,7 +314,41 @@ export function MistakesClient() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in zoom-in-95 duration-500">
+                        {groupingMode === 'timeline' ? (
+                             <div className={cn("rounded-[2rem] overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900 animate-in fade-in zoom-in-95 duration-500")}>
+                                 <Table>
+                                     <TableHeader>
+                                         <TableRow className="h-14">
+                                             <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Tarih</div></TableHead>
+                                             <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Sınav / Test Adı</div></TableHead>
+                                             <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Yanlış Sorular</div></TableHead>
+                                         </TableRow>
+                                     </TableHeader>
+                                     <TableBody>
+                                         {recentTestsMistakes.map((t, idx) => (
+                                             <TableRow key={idx} className={themeColors.TABLE_ROW}>
+                                                 <TableCell className="px-4 py-4 text-[10px] text-slate-500 font-mono whitespace-nowrap">{t.dateStr}</TableCell>
+                                                 <TableCell className="px-4 py-4 text-xs font-bold text-slate-800 dark:text-slate-200">{t.title}</TableCell>
+                                                 <TableCell className="px-4 py-4">
+                                                      <div className="flex flex-wrap gap-1">
+                                                          {t.wrongQuestions.map(q => (
+                                                               <span key={q} className="inline-flex items-center justify-center w-7 h-7 rounded bg-rose-50 text-rose-600 font-black text-[10px] border border-rose-100">{q}</span>
+                                                          ))}
+                                                      </div>
+                                                 </TableCell>
+                                             </TableRow>
+                                         ))}
+                                     </TableBody>
+                                 </Table>
+                                 {recentTestsMistakes.length === 0 && (
+                                     <div className="py-20 flex flex-col items-center justify-center text-center">
+                                         <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-4" />
+                                         <h3 className="font-bold text-slate-400">Henüz hiç yanlışınız yok! Harika!</h3>
+                                     </div>
+                                 )}
+                             </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in zoom-in-95 duration-500">
                             {Object.entries(groups).map(([name, items]) => {
                                 const Icon = groupingMode === 'type' ? (typeIcons[items[0].sourceType] || Library) : BookCopy;
                                 return (
@@ -334,6 +382,7 @@ export function MistakesClient() {
                                 </div>
                             )}
                         </div>
+                        )}
                     </div>
                 ) : (
                     <div className="space-y-8 animate-in slide-in-from-right-10 duration-500">
