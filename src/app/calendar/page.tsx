@@ -487,10 +487,8 @@ export default function CalendarPage() {
                                         <div className="flex-1 min-w-0 py-0.5 flex flex-col justify-center">
                                             <div className="flex justify-between items-start gap-2">
                                                 <h4 className="font-bold truncate text-sm md:text-base text-slate-900 pr-6">{event.title}</h4>
-                                                <div className="shrink-0 hidden xs:block">
-                                                    {event.recurrence === 'one-time' && (
-                                                        <DaysLeftBadge days={event.daysLeft} />
-                                                    )}
+                                                <div className="shrink-0">
+                                                    <DaysLeftBadge days={event.daysLeft} />
                                                 </div>
                                             </div>
                                             
