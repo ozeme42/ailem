@@ -112,9 +112,9 @@ export function ResultsClient() {
             }
 
             let subTypeName = "Genel";
-            if (test.sourceType === 'trackedBook' && test.sourceId) {
-                const book = trackedBooks.find(b => b.id === test.sourceId);
-                if (book) subTypeName = book.title;
+            if (test.sourceType === 'trackedBook' || test.sourceType === 'bank') {
+                // Sınav adı "Kitap Adı - Test Adı" şeklinde kaydedildiği için kitap adını buradan çekebiliriz.
+                subTypeName = test.title.split(' - ')[0] || "Genel";
             } else if (test.sourceType === 'exam' && test.sourceId) {
                 const exam = practiceExams.find(e => e.id === test.sourceId);
                 if (exam) subTypeName = exam.name;
