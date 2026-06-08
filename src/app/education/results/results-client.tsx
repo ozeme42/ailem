@@ -11,8 +11,8 @@ import {
     BarChart3
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
-import { onTestsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
-import { Test, TrackedBook, FamilyMember } from "@/lib/data";
+import { onTestsUpdate, onTrackedBooksUpdate, onPracticeExamsUpdate, updateTest } from "@/lib/dataService";
+import { Test, TrackedBook, FamilyMember, PracticeExam } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +62,7 @@ export function ResultsClient() {
     const { familyId, familyMembers } = useAuth();
     
     const [tests, setTests] = React.useState<Test[]>([]);
+    const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
     const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [selectedStudent, setSelectedStudent] = React.useState<FamilyMember | null>(null);
@@ -70,6 +71,8 @@ export function ResultsClient() {
     const [filterSubject, setFilterSubject] = React.useState("all");
     const [filterTopic, setFilterTopic] = React.useState("all");
     const [filterType, setFilterType] = React.useState("all");
+    const [filterSubType, setFilterSubType] = React.useState("all");
+    const [filterReviewStatus, setFilterReviewStatus] = React.useState("all");
     
     const [currentPage, setCurrentPage] = React.useState(1);
     const [sortConfig, setSortConfig] = React.useState<{ key: keyof Test | '_date' | '_net' | '_successRate' | '_subjectName' | '_topicName' | 'title', direction: 'asc' | 'desc' }>({ key: '_date', direction: 'desc' });
@@ -91,7 +94,8 @@ export function ResultsClient() {
             setLoading(false);
         });
         const unsubBooks = onTrackedBooksUpdate(setTrackedBooks);
-        return () => { unsubTests(); unsubBooks(); };
+        const unsubExams = onPracticeExamsUpdate(setPracticeExams);
+        return () => { unsubTests(); unsubBooks(); unsubExams(); };
     }, [familyId, selectedStudent]);
 
     // Data Processing
@@ -105,6 +109,15 @@ export function ResultsClient() {
                 topicName = allTopics.find(t => t.id === test.topicId)?.name || "Genel";
             } else if ((test as any).topic) {
                 topicName = (test as any).topic;
+            }
+
+            let subTypeName = "Genel";
+            if (test.sourceType === 'trackedBook' && test.sourceId) {
+                const book = trackedBooks.find(b => b.id === test.sourceId);
+                if (book) subTypeName = book.title;
+            } else if (test.sourceType === 'exam' && test.sourceId) {
+                const exam = practiceExams.find(e => e.id === test.sourceId);
+                if (exam) subTypeName = exam.name;
             }
 
             const isCompleted = test.status === 'Sonuçlandı';
@@ -140,6 +153,7 @@ export function ResultsClient() {
                 ...test,
                 _subjectName: subjectName,
                 _topicName: topicName,
+                _subTypeName: subTypeName,
                 _net: net,
                 _successRate: successRate,
                 _date: sortableDate,
@@ -150,7 +164,7 @@ export function ResultsClient() {
     }, [tests, trackedBooks]);
 
     // Filter Options
-    const { subjectOptions, topicOptions, typeOptions } = React.useMemo(() => {
+    const { subjectOptions, topicOptions, typeOptions, subTypeOptions } = React.useMemo(() => {
         const subjects = Array.from(new Set(enrichedData.map(d => d._subjectName))).sort();
         
         const filteredForTopics = filterSubject === 'all' 
@@ -161,16 +175,26 @@ export function ResultsClient() {
         
         const types = Array.from(new Set(enrichedData.map(d => d.sourceType))).sort();
         
+        const filteredForSubTypes = filterType === 'all'
+            ? enrichedData
+            : enrichedData.filter(d => d.sourceType === filterType);
+        const subTypes = Array.from(new Set(filteredForSubTypes.map(d => d._subTypeName))).filter(s => s !== 'Genel').sort();
+        
         return {
             subjectOptions: subjects,
             topicOptions: topics,
-            typeOptions: types.map(t => ({ value: t, label: translateType(t) }))
+            typeOptions: types.map(t => ({ value: t, label: translateType(t) })),
+            subTypeOptions: subTypes
         };
     }, [enrichedData, filterSubject]);
 
     React.useEffect(() => {
         setFilterTopic("all");
     }, [filterSubject]);
+
+    React.useEffect(() => {
+        setFilterSubType("all");
+    }, [filterType]);
 
     const filteredAndSortedData = React.useMemo(() => {
         let data = enrichedData.filter(item => {
@@ -181,8 +205,14 @@ export function ResultsClient() {
             const matchesSubject = filterSubject === 'all' || item._subjectName === filterSubject;
             const matchesTopic = filterTopic === 'all' || item._topicName === filterTopic;
             const matchesType = filterType === 'all' || item.sourceType === filterType;
+            const matchesSubType = filterSubType === 'all' || item._subTypeName === filterSubType;
+            const matchesReview = filterReviewStatus === 'all' 
+                ? true 
+                : filterReviewStatus === 'reviewed' 
+                    ? item.mistakesReviewed 
+                    : !item.mistakesReviewed;
 
-            return matchesSearch && matchesSubject && matchesTopic && matchesType;
+            return matchesSearch && matchesSubject && matchesTopic && matchesType && matchesSubType && matchesReview;
         });
 
         data.sort((a: any, b: any) => {
@@ -201,7 +231,7 @@ export function ResultsClient() {
         });
 
         return data;
-    }, [enrichedData, searchTerm, sortConfig, filterSubject, filterTopic, filterType]);
+    }, [enrichedData, searchTerm, sortConfig, filterSubject, filterTopic, filterType, filterSubType, filterReviewStatus]);
 
     const paginatedData = React.useMemo(() => {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -209,6 +239,14 @@ export function ResultsClient() {
     }, [filteredAndSortedData, currentPage]);
 
     const totalPages = Math.ceil(filteredAndSortedData.length / ITEMS_PER_PAGE);
+
+    const handleToggleReview = async (id: string, currentStatus?: boolean) => {
+        try {
+            await updateTest(id, { mistakesReviewed: !currentStatus });
+        } catch (error) {
+            console.error("Error updating review status:", error);
+        }
+    };
 
     const handleSort = (key: any) => {
         setSortConfig(prev => ({
@@ -245,6 +283,8 @@ export function ResultsClient() {
         setFilterSubject("all");
         setFilterTopic("all");
         setFilterType("all");
+        setFilterSubType("all");
+        setFilterReviewStatus("all");
         setSortConfig({ key: '_date', direction: 'desc' });
     };
 
@@ -345,7 +385,30 @@ export function ResultsClient() {
                             </SelectContent>
                         </Select>
 
-                        {(filterSubject !== 'all' || filterTopic !== 'all' || filterType !== 'all' || searchTerm) && (
+                        {subTypeOptions.length > 0 && (
+                            <Select value={filterSubType} onValueChange={setFilterSubType}>
+                                <SelectTrigger className={cn(themeColors.FILTER_SELECT, "h-12 rounded-xl")}>
+                                    <SelectValue placeholder="Alt Kategori" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white dark:bg-slate-900 rounded-xl">
+                                    <SelectItem value="all" className="font-bold">Tüm Alt Kategoriler</SelectItem>
+                                    {subTypeOptions.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        )}
+
+                        <Select value={filterReviewStatus} onValueChange={setFilterReviewStatus}>
+                            <SelectTrigger className={cn(themeColors.FILTER_SELECT, "h-12 rounded-xl")}>
+                                <SelectValue placeholder="İnceleme Durumu" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white dark:bg-slate-900 rounded-xl">
+                                <SelectItem value="all" className="font-bold">Tümü</SelectItem>
+                                <SelectItem value="reviewed" className="font-bold">İncelendi</SelectItem>
+                                <SelectItem value="unreviewed" className="font-bold">İncelenmedi</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        {(filterSubject !== 'all' || filterTopic !== 'all' || filterType !== 'all' || filterSubType !== 'all' || filterReviewStatus !== 'all' || searchTerm) && (
                             <Button variant="ghost" onClick={clearFilters} className="h-12 px-5 ml-auto text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl font-bold transition-colors">
                                 <RotateCcw className="mr-2 w-4 h-4" /> Temizle
                             </Button>
@@ -362,6 +425,7 @@ export function ResultsClient() {
                                     <TableHead onClick={() => handleSort('_subjectName')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-6">Ders {sortConfig.key === '_subjectName' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
                                     <TableHead onClick={() => handleSort('_topicName')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-6">Konu {sortConfig.key === '_topicName' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
                                     <TableHead className={themeColors.TABLE_HEADER}><div className="px-6">Tür</div></TableHead>
+                                    <TableHead className={themeColors.TABLE_HEADER}><div className="px-6">Alt Kategori</div></TableHead>
                                     <TableHead onClick={() => handleSort('title')} className={cn(themeColors.TABLE_HEADER, "min-w-[200px]")}><div className="flex items-center px-6">Sınav Adı {sortConfig.key === 'title' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
                                     <TableHead onClick={() => handleSort('_date')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-6">Tarih {sortConfig.key === '_date' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
                                     <TableHead className={cn(themeColors.TABLE_HEADER, "text-center")}>D</TableHead>
@@ -369,6 +433,7 @@ export function ResultsClient() {
                                     <TableHead className={cn(themeColors.TABLE_HEADER, "text-center")}>B</TableHead>
                                     <TableHead onClick={() => handleSort('_net')} className={cn(themeColors.TABLE_HEADER, "text-center text-indigo-600 dark:text-indigo-400")}><div className="flex items-center justify-center">Net {sortConfig.key === '_net' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
                                     <TableHead onClick={() => handleSort('_successRate')} className={cn(themeColors.TABLE_HEADER, "text-center text-emerald-600 dark:text-emerald-500")}><div className="flex items-center justify-center">Başarı {sortConfig.key === '_successRate' && <ArrowUpDown className="ml-1 w-3 h-3 text-emerald-500"/>}</div></TableHead>
+                                    <TableHead className={cn(themeColors.TABLE_HEADER, "text-center")}><div className="px-6">İnceleme</div></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -380,6 +445,9 @@ export function ResultsClient() {
                                             <Badge variant="outline" className="text-[10px] uppercase font-black px-2 py-1 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
                                                 {test._translatedType}
                                             </Badge>
+                                        </TableCell>
+                                        <TableCell className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[150px]">
+                                            {test._subTypeName !== 'Genel' ? test._subTypeName : '-'}
                                         </TableCell>
                                         <TableCell className="px-6 py-4 font-black text-sm text-indigo-700 dark:text-indigo-400 truncate max-w-[250px] group-hover:text-indigo-600 transition-colors">{test.title}</TableCell>
                                         <TableCell className="px-6 py-4 text-xs text-slate-500 dark:text-slate-400 font-mono whitespace-nowrap font-medium">{test._dateStr}</TableCell>
@@ -410,6 +478,18 @@ export function ResultsClient() {
                                                 </div>
                                             ) : (
                                                 <span className="text-slate-400 font-bold">-</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="px-6 py-4 text-center">
+                                            {test.status === 'Sonuçlandı' && (
+                                                <Button 
+                                                    variant={test.mistakesReviewed ? "outline" : "default"} 
+                                                    size="sm" 
+                                                    onClick={(e) => { e.stopPropagation(); handleToggleReview(test.id, test.mistakesReviewed); }}
+                                                    className={cn("h-8 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all", test.mistakesReviewed ? "border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700" : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-500/20")}
+                                                >
+                                                    {test.mistakesReviewed ? "İncelendi ✓" : "Kontrol Et"}
+                                                </Button>
                                             )}
                                         </TableCell>
                                     </TableRow>
