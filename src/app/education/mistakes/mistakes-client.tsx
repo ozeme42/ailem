@@ -83,6 +83,8 @@ export function MistakesClient() {
     const [loading, setLoading] = React.useState(true);
     
     
+    const [timelineSubjectFilter, setTimelineSubjectFilter] = React.useState<string>("all");
+    const [timelineBookFilter, setTimelineBookFilter] = React.useState<string>("all");
     const [timelineSearch, setTimelineSearch] = React.useState("");
     const [timelineSort, setTimelineSort] = React.useState<{ key: 'date' | 'title' | 'isReviewed', direction: 'asc' | 'desc' }>({ key: 'date', direction: 'desc' });
     
@@ -188,11 +190,26 @@ const [searchTerm, setSearchTerm] = React.useState("");
     }, [tests, trackedBooks]);
 
     const recentTestsMistakes = React.useMemo(() => {
-        const testMap: Record<string, { id: string, title: string, date: Date, dateStr: string, wrongQuestions: string[], emptyQuestions: string[], isReviewed: boolean }> = {};
+        const testMap: Record<string, { id: string, title: string, date: Date, dateStr: string, wrongQuestions: string[], emptyQuestions: string[], isReviewed: boolean, subject: string, bookName: string }> = {};
         allMistakesFlat.forEach(m => {
             if (!testMap[m.testId]) {
                  const originalTest = tests.find(t => t.id === m.testId);
-                 testMap[m.testId] = { id: m.testId, title: m.testTitle, date: m.dateRaw, dateStr: m.date, wrongQuestions: [], emptyQuestions: [], isReviewed: originalTest?.mistakesReviewed || false };
+                 let bookName = "";
+                 if (originalTest?.sourceType === 'trackedBook' && originalTest.sourceId) {
+                     const book = trackedBooks.find(b => b.id === originalTest.sourceId);
+                     if (book) bookName = book.title;
+                 }
+                 testMap[m.testId] = { 
+                     id: m.testId, 
+                     title: m.testTitle, 
+                     date: m.dateRaw, 
+                     dateStr: m.date, 
+                     wrongQuestions: [], 
+                     emptyQuestions: [], 
+                     isReviewed: originalTest?.mistakesReviewed || false,
+                     subject: originalTest?.subject || m.subject,
+                     bookName: bookName
+                 };
             }
             if (m.isEmpty) {
                 testMap[m.testId].emptyQuestions.push(m.questionNumber);
@@ -202,14 +219,25 @@ const [searchTerm, setSearchTerm] = React.useState("");
         });
         
         return Object.values(testMap).sort((a,b) => b.date.getTime() - a.date.getTime());
-    }, [allMistakesFlat, tests]);
+    }, [allMistakesFlat, tests, trackedBooks]);
+
+    const uniqueTimelineSubjects = React.useMemo(() => Array.from(new Set(recentTestsMistakes.map(t => t.subject).filter(Boolean))), [recentTestsMistakes]);
+    const uniqueTimelineBooks = React.useMemo(() => Array.from(new Set(recentTestsMistakes.map(t => t.bookName).filter(Boolean))), [recentTestsMistakes]);
 
     const filteredAndSortedTimeline = React.useMemo(() => {
         let result = [...recentTestsMistakes];
         
+        if (timelineSubjectFilter !== 'all') {
+             result = result.filter(t => t.subject === timelineSubjectFilter);
+        }
+        
+        if (timelineBookFilter !== 'all') {
+             result = result.filter(t => t.bookName === timelineBookFilter);
+        }
+        
         if (timelineSearch) {
              const q = timelineSearch.toLowerCase();
-             result = result.filter(t => t.title.toLowerCase().includes(q));
+             result = result.filter(t => t.title.toLowerCase().includes(q) || t.subject.toLowerCase().includes(q) || (t.bookName && t.bookName.toLowerCase().includes(q)));
         }
         
         result.sort((a, b) => {
@@ -224,7 +252,7 @@ const [searchTerm, setSearchTerm] = React.useState("");
         });
         
         return result;
-    }, [recentTestsMistakes, timelineSearch, timelineSort]);
+    }, [recentTestsMistakes, timelineSearch, timelineSort, timelineSubjectFilter, timelineBookFilter]);
 
     const handleTimelineSort = (key: 'date' | 'title' | 'isReviewed') => {
         setTimelineSort(prev => ({
@@ -369,6 +397,31 @@ const [searchTerm, setSearchTerm] = React.useState("");
                                          <Filter className="w-4 h-4 text-slate-400" />
                                          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Sırala & Filtrele</span>
                                      </div>
+                                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                                         {uniqueTimelineSubjects.length > 0 && (
+                                             <Select value={timelineSubjectFilter} onValueChange={setTimelineSubjectFilter}>
+                                                 <SelectTrigger className="w-full sm:w-[140px] h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs font-bold"><SelectValue placeholder="Ders Seç" /></SelectTrigger>
+                                                 <SelectContent>
+                                                     <SelectItem value="all">Tüm Dersler</SelectItem>
+                                                     {uniqueTimelineSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                                 </SelectContent>
+                                             </Select>
+                                         )}
+                                         {uniqueTimelineBooks.length > 0 && (
+                                             <Select value={timelineBookFilter} onValueChange={setTimelineBookFilter}>
+                                                 <SelectTrigger className="w-full sm:w-[140px] h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs font-bold"><SelectValue placeholder="Kitap Seç" /></SelectTrigger>
+                                                 <SelectContent>
+                                                     <SelectItem value="all">Tüm Kitaplar</SelectItem>
+                                                     {uniqueTimelineBooks.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                                                 </SelectContent>
+                                             </Select>
+                                         )}
+                                         <div className="relative w-full sm:w-64">
+                                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                             <Input placeholder="Sınav veya kitap ara..." value={timelineSearch} onChange={e => setTimelineSearch(e.target.value)} className="pl-10 rounded-xl h-10 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-inner text-sm" />
+                                         </div>
+                                     </div>
+                                 </div>
                                      <div className="relative w-full sm:w-64">
                                          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                          <Input placeholder="Sınav adı ara..." value={timelineSearch} onChange={e => setTimelineSearch(e.target.value)} className="pl-10 rounded-xl h-10 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-inner text-sm" />
@@ -381,6 +434,7 @@ const [searchTerm, setSearchTerm] = React.useState("");
                                      <TableHeader>
                                          <TableRow className="h-14">
                                              <TableHead onClick={() => handleTimelineSort('date')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-4">Tarih {timelineSort.key === 'date' && <ArrowUpDown className="ml-1 w-3 h-3 text-rose-500"/>}</div></TableHead>
+                                             <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Ders</div></TableHead>
                                              <TableHead onClick={() => handleTimelineSort('title')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-4">Sınav / Test Adı {timelineSort.key === 'title' && <ArrowUpDown className="ml-1 w-3 h-3 text-rose-500"/>}</div></TableHead>
                                              <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Yanlış Sorular</div></TableHead>
                                              <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Boş Sorular</div></TableHead>
@@ -392,6 +446,7 @@ const [searchTerm, setSearchTerm] = React.useState("");
                                          {filteredAndSortedTimeline.map((t, idx) => (
                                              <TableRow key={idx} className={cn(themeColors.TABLE_ROW, t.isReviewed && "opacity-60 bg-slate-50 dark:bg-slate-900/40")}>
                                                  <TableCell className="px-4 py-4 text-[10px] text-slate-500 font-mono whitespace-nowrap">{t.dateStr}</TableCell>
+                                                 <TableCell className="px-4 py-4 text-[11px] font-black uppercase text-slate-800 dark:text-slate-200">{t.subject}</TableCell>
                                                  <TableCell className={cn("px-4 py-4 text-xs font-bold transition-colors", t.isReviewed ? "text-slate-500" : "text-slate-800 dark:text-slate-200 hover:text-indigo-600")}>
                                                       <Link href={`/education/${t.id}`} className="flex items-center gap-1.5">
                                                           {t.title} {t.isReviewed && <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />}
