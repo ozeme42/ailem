@@ -422,11 +422,6 @@ const [searchTerm, setSearchTerm] = React.useState("");
                                          </div>
                                      </div>
                                  </div>
-                                     <div className="relative w-full sm:w-64">
-                                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                         <Input placeholder="Sınav adı ara..." value={timelineSearch} onChange={e => setTimelineSearch(e.target.value)} className="pl-10 rounded-xl h-10 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-inner text-sm" />
-                                     </div>
-                                 </div>
                                  <div className={cn("rounded-[2rem] overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900")}>
                                      <Table>
 
