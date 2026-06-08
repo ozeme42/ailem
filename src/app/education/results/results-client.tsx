@@ -164,7 +164,7 @@ export function ResultsClient() {
     }, [tests, trackedBooks]);
 
     // Filter Options
-    const { subjectOptions, topicOptions, typeOptions, subTypeOptions } = React.useMemo(() => {
+    const { subjectOptions, topicOptions, typeOptions, subTypeOptions, stats } = React.useMemo(() => {
         const subjects = Array.from(new Set(enrichedData.map(d => d._subjectName))).sort();
         
         const filteredForTopics = filterSubject === 'all' 
@@ -180,13 +180,26 @@ export function ResultsClient() {
             : enrichedData.filter(d => d.sourceType === filterType);
         const subTypes = Array.from(new Set(filteredForSubTypes.map(d => d._subTypeName))).filter(s => s !== 'Genel').sort();
         
+        const getCount = (key: string, val: any) => enrichedData.filter(d => (d as any)[key] === val).length;
+        
+        const stats = {
+            total: enrichedData.length,
+            reviewed: enrichedData.filter(d => d.mistakesReviewed).length,
+            unreviewed: enrichedData.filter(d => !d.mistakesReviewed).length,
+            subjects: Object.fromEntries(subjects.map(s => [s, getCount('_subjectName', s)])),
+            topics: Object.fromEntries(topics.map(t => [t, filteredForTopics.filter(d => d._topicName === t).length])),
+            types: Object.fromEntries(types.map(t => [t, getCount('sourceType', t)])),
+            subTypes: Object.fromEntries(subTypes.map(s => [s, filteredForSubTypes.filter(d => d._subTypeName === s).length]))
+        };
+
         return {
             subjectOptions: subjects,
             topicOptions: topics,
             typeOptions: types.map(t => ({ value: t, label: translateType(t) })),
-            subTypeOptions: subTypes
+            subTypeOptions: subTypes,
+            stats
         };
-    }, [enrichedData, filterSubject]);
+    }, [enrichedData, filterSubject, filterType]);
 
     React.useEffect(() => {
         setFilterTopic("all");
@@ -360,8 +373,8 @@ export function ResultsClient() {
                                 <SelectValue placeholder="Ders Seçin" />
                             </SelectTrigger>
                             <SelectContent className="bg-white dark:bg-slate-900 rounded-xl">
-                                <SelectItem value="all" className="font-bold">Tüm Dersler</SelectItem>
-                                {subjectOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                <SelectItem value="all" className="font-bold">Tüm Dersler ({stats.total})</SelectItem>
+                                {subjectOptions.map(s => <SelectItem key={s} value={s}>{s} ({stats.subjects[s]})</SelectItem>)}
                             </SelectContent>
                         </Select>
 
@@ -370,8 +383,8 @@ export function ResultsClient() {
                                 <SelectValue placeholder="Konu Seçin" />
                             </SelectTrigger>
                             <SelectContent className="bg-white dark:bg-slate-900 rounded-xl">
-                                <SelectItem value="all" className="font-bold">Tüm Konular</SelectItem>
-                                {topicOptions.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                <SelectItem value="all" className="font-bold">Tüm Konular ({filterSubject === 'all' ? stats.total : stats.subjects[filterSubject]})</SelectItem>
+                                {topicOptions.map(t => <SelectItem key={t} value={t}>{t} ({stats.topics[t]})</SelectItem>)}
                             </SelectContent>
                         </Select>
 
@@ -380,8 +393,8 @@ export function ResultsClient() {
                                 <SelectValue placeholder="Sınav Türü" />
                             </SelectTrigger>
                             <SelectContent className="bg-white dark:bg-slate-900 rounded-xl">
-                                <SelectItem value="all" className="font-bold">Tüm Türler</SelectItem>
-                                {typeOptions.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                                <SelectItem value="all" className="font-bold">Tüm Türler ({stats.total})</SelectItem>
+                                {typeOptions.map(t => <SelectItem key={t.value} value={t.value}>{t.label} ({stats.types[t.value]})</SelectItem>)}
                             </SelectContent>
                         </Select>
 
@@ -391,8 +404,8 @@ export function ResultsClient() {
                                     <SelectValue placeholder="Alt Kategori" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white dark:bg-slate-900 rounded-xl">
-                                    <SelectItem value="all" className="font-bold">Tüm Alt Kategoriler</SelectItem>
-                                    {subTypeOptions.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                    <SelectItem value="all" className="font-bold">Tüm Alt Kategoriler ({filterType === 'all' ? stats.total : stats.types[filterType]})</SelectItem>
+                                    {subTypeOptions.map(t => <SelectItem key={t} value={t}>{t} ({stats.subTypes[t]})</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         )}
@@ -402,9 +415,9 @@ export function ResultsClient() {
                                 <SelectValue placeholder="İnceleme Durumu" />
                             </SelectTrigger>
                             <SelectContent className="bg-white dark:bg-slate-900 rounded-xl">
-                                <SelectItem value="all" className="font-bold">Tümü</SelectItem>
-                                <SelectItem value="reviewed" className="font-bold">İncelendi</SelectItem>
-                                <SelectItem value="unreviewed" className="font-bold">İncelenmedi</SelectItem>
+                                <SelectItem value="all" className="font-bold">Tümü ({stats.total})</SelectItem>
+                                <SelectItem value="reviewed" className="font-bold">İncelendi ({stats.reviewed})</SelectItem>
+                                <SelectItem value="unreviewed" className="font-bold">İncelenmedi ({stats.unreviewed})</SelectItem>
                             </SelectContent>
                         </Select>
 
