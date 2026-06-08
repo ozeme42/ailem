@@ -454,6 +454,7 @@ export interface Test {
   jsonQuestions?: JsonTestQuestion[];
   htmlContent?: string;
   revealedSubjectIds?: string[];
+  mistakesReviewed?: boolean;
 }
 
 export interface ShoppingItem {

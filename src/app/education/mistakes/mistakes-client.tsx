@@ -13,7 +13,7 @@ import {
     ChevronUp, Check, Calculator
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
-import { onTestsUpdate, onTrackedBooksUpdate } from "@/lib/dataService";
+import { onTestsUpdate, onTrackedBooksUpdate, updateTest } from "@/lib/dataService";
 import { Test, TrackedBook, FamilyMember, EvaluationStatus } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,6 +89,15 @@ export function MistakesClient() {
     const [selectedSubGroup, setSelectedSubGroup] = React.useState<string | null>(null);
     
     const [sortConfig, setSortConfig] = React.useState<{ key: keyof MistakeDetail | 'dateRaw', direction: 'asc' | 'desc' }>({ key: 'dateRaw', direction: 'desc' });
+
+    const handleToggleReview = async (testId: string, currentStatus: boolean) => {
+        try {
+            await updateTest(testId, { mistakesReviewed: !currentStatus });
+        } catch (error) {
+            console.error("Failed to update test review status", error);
+        }
+    };
+    
 
     React.useEffect(() => {
         if (familyMembers.length > 0 && !selectedStudent) {
@@ -175,10 +184,11 @@ export function MistakesClient() {
     }, [tests, trackedBooks]);
 
     const recentTestsMistakes = React.useMemo(() => {
-        const testMap: Record<string, { id: string, title: string, date: Date, dateStr: string, wrongQuestions: string[], emptyQuestions: string[] }> = {};
+        const testMap: Record<string, { id: string, title: string, date: Date, dateStr: string, wrongQuestions: string[], emptyQuestions: string[], isReviewed: boolean }> = {};
         allMistakesFlat.forEach(m => {
             if (!testMap[m.testId]) {
-                 testMap[m.testId] = { id: m.testId, title: m.testTitle, date: m.dateRaw, dateStr: m.date, wrongQuestions: [], emptyQuestions: [] };
+                 const originalTest = tests.find(t => t.id === m.testId);
+                 testMap[m.testId] = { id: m.testId, title: m.testTitle, date: m.dateRaw, dateStr: m.date, wrongQuestions: [], emptyQuestions: [], isReviewed: originalTest?.mistakesReviewed || false };
             }
             if (m.isEmpty) {
                 testMap[m.testId].emptyQuestions.push(m.questionNumber);
@@ -188,7 +198,7 @@ export function MistakesClient() {
         });
         
         return Object.values(testMap).sort((a,b) => b.date.getTime() - a.date.getTime());
-    }, [allMistakesFlat]);
+    }, [allMistakesFlat, tests]);
     
 
     const groups = React.useMemo(() => {
@@ -327,14 +337,17 @@ export function MistakesClient() {
                                              <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Sınav / Test Adı</div></TableHead>
                                              <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Yanlış Sorular</div></TableHead>
                                              <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Boş Sorular</div></TableHead>
+                                             <TableHead className={themeColors.TABLE_HEADER}><div className="px-4 text-center">Durum</div></TableHead>
                                          </TableRow>
                                      </TableHeader>
                                      <TableBody>
                                          {recentTestsMistakes.map((t, idx) => (
-                                             <TableRow key={idx} className={themeColors.TABLE_ROW}>
+                                             <TableRow key={idx} className={cn(themeColors.TABLE_ROW, t.isReviewed && "opacity-60 bg-slate-50 dark:bg-slate-900/40")}>
                                                  <TableCell className="px-4 py-4 text-[10px] text-slate-500 font-mono whitespace-nowrap">{t.dateStr}</TableCell>
-                                                 <TableCell className="px-4 py-4 text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-indigo-600 transition-colors">
-                                                      <Link href={`/education/${t.id}`}>{t.title}</Link>
+                                                 <TableCell className={cn("px-4 py-4 text-xs font-bold transition-colors", t.isReviewed ? "text-slate-500" : "text-slate-800 dark:text-slate-200 hover:text-indigo-600")}>
+                                                      <Link href={`/education/${t.id}`} className="flex items-center gap-1.5">
+                                                          {t.title} {t.isReviewed && <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />}
+                                                      </Link>
                                                  </TableCell>
                                                  <TableCell className="px-4 py-4">
                                                       <div className="flex flex-wrap gap-1">
@@ -350,7 +363,17 @@ export function MistakesClient() {
                                                           )) : <span className="text-slate-400 text-[10px] font-bold">-</span>}
                                                       </div>
                                                  </TableCell>
-                                             </TableRow>
+                                             
+                                                 <TableCell className="px-4 py-4 text-center">
+                                                     <Button 
+                                                         variant={t.isReviewed ? "outline" : "default"} 
+                                                         size="sm" 
+                                                         onClick={() => handleToggleReview(t.id, t.isReviewed)}
+                                                         className={cn("h-8 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all", t.isReviewed ? "border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700" : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-500/20")}
+                                                     >
+                                                         {t.isReviewed ? "İncelendi ✓" : "Kontrol Et"}
+                                                     </Button>
+                                                 </TableCell></TableRow>
                                          ))}
                                      </TableBody>
                                  </Table>
