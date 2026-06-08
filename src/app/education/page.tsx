@@ -395,8 +395,12 @@ export default function EducationPage() {
                <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 border-none">{pendingTasks.length}</Badge>
             </div>
             
-            <div className="space-y-3">
-              {pendingTasks.map(task => {
+            
+            <div className="space-y-6">
+              {pendingTasks.filter(t => t.type === 'test').length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-xs font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2"><Layers className="w-3.5 h-3.5"/> Testler</h3>
+                  {pendingTasks.filter(t => t.type === 'test').map(task => {
                 const category = task.subject;
                 const theme = categoryThemes[category] || categoryThemes['Diğer'];
                 const Icon = theme.icon;
@@ -416,7 +420,7 @@ export default function EducationPage() {
                        <div className="flex-1 min-w-0 flex flex-col justify-center">
                           <div className="flex items-center gap-1.5 mb-1">
                              <span className={cn("text-[9px] font-black uppercase tracking-widest", theme.text)}>{category}</span>
-                             {overdue && <span className="text-[9px] font-black text-rose-500 uppercase">Gecikti</span>}
+                             {overdue && <span className="text-[9px] font-black text-rose-500 uppercase">{differenceInDays(new Date(), dueDate)} GÜN GECİKTİ</span>}
                              {!overdue && dueToday && <span className="text-[9px] font-black text-amber-500 uppercase">Bugün</span>}
                           </div>
                           <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{task.title}</h4>
@@ -430,8 +434,50 @@ export default function EducationPage() {
                   </Link>
                 )
               })}
+                </div>
+              )}
+              {pendingTasks.filter(t => t.type === 'study').length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-xs font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2"><BookOpen className="w-3.5 h-3.5"/> Konu Anlatımı</h3>
+                  {pendingTasks.filter(t => t.type === 'study').map(task => {
+                const category = task.subject;
+                const theme = categoryThemes[category] || categoryThemes['Diğer'];
+                const Icon = theme.icon;
+                const dueDate = task.dueDateObj;
+                const overdue = isPast(dueDate) && !isToday(dueDate);
+                const dueToday = isToday(dueDate);
+                
+                return (
+                  <Link href={task.type === 'test' ? `/education/${task.id}` : (task.planLink || `/education/study`)} key={task.id} className="block active:scale-[0.98] transition-transform">
+                    <div className={cn("bg-white dark:bg-slate-900 rounded-2xl p-3 flex gap-3 border shadow-sm relative overflow-hidden", theme.border, overdue ? "border-rose-300 dark:border-rose-800" : "")}>
+                       {overdue && <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500" />}
+                       
+                       <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border-2 bg-slate-50 dark:bg-slate-950", theme.border)}>
+                          <Icon className={cn("w-5 h-5", theme.text)} />
+                       </div>
+                       
+                       <div className="flex-1 min-w-0 flex flex-col justify-center">
+                          <div className="flex items-center gap-1.5 mb-1">
+                             <span className={cn("text-[9px] font-black uppercase tracking-widest", theme.text)}>{category}</span>
+                             {overdue && <span className="text-[9px] font-black text-rose-500 uppercase">{differenceInDays(new Date(), dueDate)} GÜN GECİKTİ</span>}
+                             {!overdue && dueToday && <span className="text-[9px] font-black text-amber-500 uppercase">Bugün</span>}
+                          </div>
+                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{task.title}</h4>
+                          <div className="flex items-center gap-3 mt-1.5 text-[10px] font-bold text-slate-500">
+                             <span className="flex items-center gap-1"><CalendarIcon className="w-3 h-3" /> {task.dueDateStr}</span>
+                             <span className="flex items-center gap-1"><Timer className="w-3 h-3" /> {task.durationMinutes} dk</span>
+                             {task.questionCount && <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {task.questionCount} Soru</span>}
+                          </div>
+                       </div>
+                    </div>
+                  </Link>
+                )
+              })}
+                </div>
+              )}
             </div>
           </section>
+    
         )}
 
         {/* 6. Study Plans (Horizontal Scroll) */}
@@ -714,7 +760,7 @@ export default function EducationPage() {
               <div className="overflow-x-auto pb-4 hide-scrollbar snap-x snap-mandatory">
                 <div className="flex gap-3 min-w-max">
                   {Array.from({length: 7}).map((_, i) => {
-                    const currentDay = addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), i);
+                    const currentDay = addDays(new Date(), i);
                     const isDayToday = isToday(currentDay);
                     
                     const dayTasks = pendingTasks.filter(t => {
@@ -739,7 +785,13 @@ export default function EducationPage() {
                         </div>
                         
                         <div className="space-y-3">
-                          {dayTasks.length > 0 ? dayTasks.map(task => {
+                          
+                          {dayTasks.length > 0 ? (
+                            <div className="space-y-4">
+                              {dayTasks.filter(t => t.type === 'test').length > 0 && (
+                                <div className="space-y-2">
+                                  <h4 className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Testler</h4>
+                                  {dayTasks.filter(t => t.type === 'test').map(task => {
                             const category = task.subject;
                             const theme = categoryThemes[category] || categoryThemes['Diğer'];
                             const Icon = theme.icon;
@@ -768,12 +820,57 @@ export default function EducationPage() {
                                       {task.type === 'study' && <span className="text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded truncate max-w-[120px]" title={task.planName}>{task.planName}</span>}
                                       <span className="text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{duration} dk</span>
                                     </div>
-                                    {isDayToday && overdue && <span className="text-[9px] font-black text-rose-500 uppercase animate-pulse">Gecikti</span>}
+                                    {isDayToday && overdue && <span className="text-[9px] font-black text-rose-500 uppercase animate-pulse">{differenceInDays(new Date(), tDate)} GÜN GECİKTİ</span>}
                                   </div>
                                 </div>
                               </Link>
                             )
-                          }) : (
+                          })}
+                                </div>
+                              )}
+                              {dayTasks.filter(t => t.type === 'study').length > 0 && (
+                                <div className="space-y-2">
+                                  <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Konu Anlatımı</h4>
+                                  {dayTasks.filter(t => t.type === 'study').map(task => {
+                            const category = task.subject;
+                            const theme = categoryThemes[category] || categoryThemes['Diğer'];
+                            const Icon = theme.icon;
+                            const tDate = task.dueDateObj;
+                            const overdue = isPast(tDate) && !isToday(tDate);
+                            const duration = task.durationMinutes;
+                            return (
+                              <Link href={task.type === 'test' ? `/education/${task.id}` : (task.planLink || `/education/study`)} target={task.type === 'study' ? "_blank" : undefined} key={task.id} className="block group">
+                                <div className={cn("bg-white dark:bg-slate-950 rounded-2xl p-3 border transition-all shadow-sm hover:shadow-md", theme.border, isDayToday && overdue ? "border-rose-300 dark:border-rose-800 bg-rose-50/30 dark:bg-rose-950/20" : "")}>
+                                  <div className="flex items-start justify-between mb-2 gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-1.5 mb-1">
+                                        <div className={cn("w-1.5 h-1.5 rounded-full", theme.accent)} />
+                                        <span className={cn("text-[9px] font-black uppercase tracking-widest truncate", theme.text)}>{category}</span>
+                                      </div>
+                                      <h4 className="text-[11px] font-bold text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight">{task.title}</h4>
+                                    </div>
+                                    <div className={cn("w-6 h-6 rounded-xl flex items-center justify-center shrink-0 border bg-white dark:bg-slate-900", theme.border)}>
+                                      <Icon className={cn("w-3.5 h-3.5", theme.text)} />
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                    <div className="flex gap-2">
+                                      {task.questionCount !== null && <span className="text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{task.questionCount} Soru</span>}
+                                      {task.type === 'study' && <span className="text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded truncate max-w-[120px]" title={task.planName}>{task.planName}</span>}
+                                      <span className="text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{duration} dk</span>
+                                    </div>
+                                    {isDayToday && overdue && <span className="text-[9px] font-black text-rose-500 uppercase animate-pulse">{differenceInDays(new Date(), tDate)} GÜN GECİKTİ</span>}
+                                  </div>
+                                </div>
+                              </Link>
+                            )
+                          })}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+    
                             <div className="h-24 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-slate-400 gap-1 opacity-50">
                               <CheckCircle2 className="w-3.5 h-3.5" />
                               <span className="text-[10px] font-bold uppercase tracking-widest">Görev Yok</span>
@@ -826,7 +923,7 @@ export default function EducationPage() {
                                 <span className="text-[11px] font-bold">{task.dueDateStr}</span>
                             </div>
                             {overdue ? (
-                                <Badge className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-black px-3 py-1.5 shadow-md shadow-rose-500/20 border-none animate-pulse">Gecikti!</Badge>
+                                <Badge className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-black px-3 py-1.5 shadow-md shadow-rose-500/20 border-none animate-pulse">{differenceInDays(new Date(), dueDate)} Gün Gecikti!</Badge>
                             ) : dueToday ? (
                                 <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-black px-3 py-1.5 shadow-md shadow-amber-500/20 border-none animate-pulse">Bugün Son</Badge>
                             ) : daysDiff <= 2 ? (
@@ -900,7 +997,7 @@ export default function EducationPage() {
                                 <span className="text-[11px] font-bold">{task.dueDateStr}</span>
                             </div>
                             {overdue ? (
-                                <Badge className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-black px-3 py-1.5 shadow-md shadow-rose-500/20 border-none animate-pulse">Gecikti!</Badge>
+                                <Badge className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-black px-3 py-1.5 shadow-md shadow-rose-500/20 border-none animate-pulse">{differenceInDays(new Date(), dueDate)} Gün Gecikti!</Badge>
                             ) : dueToday ? (
                                 <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-black px-3 py-1.5 shadow-md shadow-amber-500/20 border-none animate-pulse">Bugün Son</Badge>
                             ) : daysDiff <= 2 ? (
