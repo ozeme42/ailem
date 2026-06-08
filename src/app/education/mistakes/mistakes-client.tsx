@@ -175,12 +175,16 @@ export function MistakesClient() {
     }, [tests, trackedBooks]);
 
     const recentTestsMistakes = React.useMemo(() => {
-        const testMap: Record<string, { title: string, date: Date, dateStr: string, wrongQuestions: string[] }> = {};
+        const testMap: Record<string, { id: string, title: string, date: Date, dateStr: string, wrongQuestions: string[], emptyQuestions: string[] }> = {};
         allMistakesFlat.forEach(m => {
             if (!testMap[m.testId]) {
-                 testMap[m.testId] = { title: m.testTitle, date: m.dateRaw, dateStr: m.date, wrongQuestions: [] };
+                 testMap[m.testId] = { id: m.testId, title: m.testTitle, date: m.dateRaw, dateStr: m.date, wrongQuestions: [], emptyQuestions: [] };
             }
-            testMap[m.testId].wrongQuestions.push(m.questionNumber);
+            if (m.isEmpty) {
+                testMap[m.testId].emptyQuestions.push(m.questionNumber);
+            } else {
+                testMap[m.testId].wrongQuestions.push(m.questionNumber);
+            }
         });
         
         return Object.values(testMap).sort((a,b) => b.date.getTime() - a.date.getTime());
@@ -322,18 +326,28 @@ export function MistakesClient() {
                                              <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Tarih</div></TableHead>
                                              <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Sınav / Test Adı</div></TableHead>
                                              <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Yanlış Sorular</div></TableHead>
+                                             <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Boş Sorular</div></TableHead>
                                          </TableRow>
                                      </TableHeader>
                                      <TableBody>
                                          {recentTestsMistakes.map((t, idx) => (
                                              <TableRow key={idx} className={themeColors.TABLE_ROW}>
                                                  <TableCell className="px-4 py-4 text-[10px] text-slate-500 font-mono whitespace-nowrap">{t.dateStr}</TableCell>
-                                                 <TableCell className="px-4 py-4 text-xs font-bold text-slate-800 dark:text-slate-200">{t.title}</TableCell>
+                                                 <TableCell className="px-4 py-4 text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-indigo-600 transition-colors">
+                                                      <Link href={`/education/${t.id}`}>{t.title}</Link>
+                                                 </TableCell>
                                                  <TableCell className="px-4 py-4">
                                                       <div className="flex flex-wrap gap-1">
-                                                          {t.wrongQuestions.map(q => (
+                                                          {t.wrongQuestions.length > 0 ? t.wrongQuestions.map(q => (
                                                                <span key={q} className="inline-flex items-center justify-center w-7 h-7 rounded bg-rose-50 text-rose-600 font-black text-[10px] border border-rose-100">{q}</span>
-                                                          ))}
+                                                          )) : <span className="text-slate-400 text-[10px] font-bold">-</span>}
+                                                      </div>
+                                                 </TableCell>
+                                                 <TableCell className="px-4 py-4">
+                                                      <div className="flex flex-wrap gap-1">
+                                                          {t.emptyQuestions.length > 0 ? t.emptyQuestions.map(q => (
+                                                               <span key={q} className="inline-flex items-center justify-center w-7 h-7 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black text-[10px] border border-slate-200 dark:border-slate-700">{q}</span>
+                                                          )) : <span className="text-slate-400 text-[10px] font-bold">-</span>}
                                                       </div>
                                                  </TableCell>
                                              </TableRow>
