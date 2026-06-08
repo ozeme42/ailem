@@ -82,7 +82,11 @@ export function MistakesClient() {
     const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
     const [loading, setLoading] = React.useState(true);
     
-    const [searchTerm, setSearchTerm] = React.useState("");
+    
+    const [timelineSearch, setTimelineSearch] = React.useState("");
+    const [timelineSort, setTimelineSort] = React.useState<{ key: 'date' | 'title' | 'isReviewed', direction: 'asc' | 'desc' }>({ key: 'date', direction: 'desc' });
+    
+const [searchTerm, setSearchTerm] = React.useState("");
     const [selectedStudent, setSelectedStudent] = React.useState<FamilyMember | null>(null);
     const [groupingMode, setGroupingMode] = React.useState<'subject' | 'type' | 'timeline'>('subject');
     const [selectedGroup, setSelectedGroup] = React.useState<string | null>(null);
@@ -199,6 +203,36 @@ export function MistakesClient() {
         
         return Object.values(testMap).sort((a,b) => b.date.getTime() - a.date.getTime());
     }, [allMistakesFlat, tests]);
+
+    const filteredAndSortedTimeline = React.useMemo(() => {
+        let result = [...recentTestsMistakes];
+        
+        if (timelineSearch) {
+             const q = timelineSearch.toLowerCase();
+             result = result.filter(t => t.title.toLowerCase().includes(q));
+        }
+        
+        result.sort((a, b) => {
+             let valA, valB;
+             if (timelineSort.key === 'date') { valA = a.date.getTime(); valB = b.date.getTime(); }
+             else if (timelineSort.key === 'title') { valA = a.title; valB = b.title; }
+             else { valA = a.isReviewed ? 1 : 0; valB = b.isReviewed ? 1 : 0; }
+             
+             if (valA === valB) return 0;
+             if (timelineSort.direction === 'asc') return valA > valB ? 1 : -1;
+             return valA < valB ? 1 : -1;
+        });
+        
+        return result;
+    }, [recentTestsMistakes, timelineSearch, timelineSort]);
+
+    const handleTimelineSort = (key: 'date' | 'title' | 'isReviewed') => {
+        setTimelineSort(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
+        }));
+    };
+    
     
 
     const groups = React.useMemo(() => {
@@ -329,19 +363,33 @@ export function MistakesClient() {
                         </div>
 
                         {groupingMode === 'timeline' ? (
-                             <div className={cn("rounded-[2rem] overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900 animate-in fade-in zoom-in-95 duration-500")}>
-                                 <Table>
+                             <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
+                                 <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white dark:bg-slate-900 p-3 px-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                                     <div className="flex items-center gap-2">
+                                         <Filter className="w-4 h-4 text-slate-400" />
+                                         <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Sırala & Filtrele</span>
+                                     </div>
+                                     <div className="relative w-full sm:w-64">
+                                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                         <Input placeholder="Sınav adı ara..." value={timelineSearch} onChange={e => setTimelineSearch(e.target.value)} className="pl-10 rounded-xl h-10 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-inner text-sm" />
+                                     </div>
+                                 </div>
+                                 <div className={cn("rounded-[2rem] overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900")}>
+                                     <Table>
+
+                                     
                                      <TableHeader>
                                          <TableRow className="h-14">
-                                             <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Tarih</div></TableHead>
-                                             <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Sınav / Test Adı</div></TableHead>
+                                             <TableHead onClick={() => handleTimelineSort('date')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-4">Tarih {timelineSort.key === 'date' && <ArrowUpDown className="ml-1 w-3 h-3 text-rose-500"/>}</div></TableHead>
+                                             <TableHead onClick={() => handleTimelineSort('title')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-4">Sınav / Test Adı {timelineSort.key === 'title' && <ArrowUpDown className="ml-1 w-3 h-3 text-rose-500"/>}</div></TableHead>
                                              <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Yanlış Sorular</div></TableHead>
                                              <TableHead className={themeColors.TABLE_HEADER}><div className="px-4">Boş Sorular</div></TableHead>
-                                             <TableHead className={themeColors.TABLE_HEADER}><div className="px-4 text-center">Durum</div></TableHead>
+                                             <TableHead onClick={() => handleTimelineSort('isReviewed')} className={themeColors.TABLE_HEADER}><div className="flex items-center justify-center px-4">Durum {timelineSort.key === 'isReviewed' && <ArrowUpDown className="ml-1 w-3 h-3 text-rose-500"/>}</div></TableHead>
                                          </TableRow>
                                      </TableHeader>
+    
                                      <TableBody>
-                                         {recentTestsMistakes.map((t, idx) => (
+                                         {filteredAndSortedTimeline.map((t, idx) => (
                                              <TableRow key={idx} className={cn(themeColors.TABLE_ROW, t.isReviewed && "opacity-60 bg-slate-50 dark:bg-slate-900/40")}>
                                                  <TableCell className="px-4 py-4 text-[10px] text-slate-500 font-mono whitespace-nowrap">{t.dateStr}</TableCell>
                                                  <TableCell className={cn("px-4 py-4 text-xs font-bold transition-colors", t.isReviewed ? "text-slate-500" : "text-slate-800 dark:text-slate-200 hover:text-indigo-600")}>
@@ -376,13 +424,17 @@ export function MistakesClient() {
                                                  </TableCell></TableRow>
                                          ))}
                                      </TableBody>
-                                 </Table>
-                                 {recentTestsMistakes.length === 0 && (
+                                 
+                                     </Table>
+
+                                 {filteredAndSortedTimeline.length === 0 && (
                                      <div className="py-20 flex flex-col items-center justify-center text-center">
                                          <CheckCircle2 className="h-12 w-12 text-emerald-500 mb-4" />
                                          <h3 className="font-bold text-slate-400">Henüz hiç yanlışınız yok! Harika!</h3>
                                      </div>
                                  )}
+                             </div>
+                        
                              </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in zoom-in-95 duration-500">
