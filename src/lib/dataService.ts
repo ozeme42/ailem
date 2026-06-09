@@ -2,7 +2,7 @@
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit, Unsubscribe, serverTimestamp } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, PrayerProgress, Video, CalorieLog, DailyTracking, BankQuestion, TrackedBook, TrackedBookTest, BudgetCategory, PomodoroProject, PomodoroSession, Summary, PerformanceGoal } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, PrayerProgress, Video, CalorieLog, DailyTracking, BankQuestion, TrackedBook, TrackedBookTest, BudgetCategory, PomodoroProject, PomodoroSession, Summary, PerformanceGoal, Bill } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth, isFuture, subMonths, addMonths } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
@@ -96,6 +96,16 @@ export const addPerformanceGoal = async (data: Omit<PerformanceGoal, 'id' | 'fam
 };
 export const updatePerformanceGoal = (id: string, data: Partial<PerformanceGoal>) => updateDoc(doc(db, 'performanceGoals', id), removeUndefined(data));
 export const deletePerformanceGoal = (id: string) => deleteDoc(doc(db, "performanceGoals", id));
+
+// --- BILLS ---
+export const onBillsUpdate = (callback: (bills: Bill[]) => void, runOnce = false) => onFamilyDataUpdate<Bill>('bills', callback, runOnce);
+export const addBill = async (data: Omit<Bill, 'id' | 'familyId'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    return addDoc(collection(db, 'bills'), { ...removeUndefined(data), familyId });
+};
+export const updateBill = (id: string, data: Partial<Bill>) => updateDoc(doc(db, 'bills', id), removeUndefined(data));
+export const deleteBill = (id: string) => deleteDoc(doc(db, "bills", id));
 
 // --- BOOKS & LIBRARY ---
 export const onBooksUpdate = (callback: (books: Book[]) => void, runOnce = false) => onFamilyDataUpdate<Book>('mediaItems', callback, runOnce);

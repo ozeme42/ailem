@@ -18,6 +18,8 @@ import { Account, FamilyMember, Transaction, BudgetCategory } from "@/lib/data";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { onBudgetCategoriesUpdate } from "@/lib/dataService";
 import { BudgetCategoryForm } from "@/components/budget-category-form";
 import { Switch } from "@/components/ui/switch";
@@ -93,6 +95,7 @@ type NewTransactionFormProps = {
   familyMembers: FamilyMember[];
   onSubmit: (data: any) => void; 
   initialData?: Transaction | null;
+  onAddNewAccount?: () => void;
 };
 
 const accountIcons: { [key: string]: React.ElementType } = { 'cash': Banknote, 'bank': Landmark, 'credit-card': CreditCard, 'other': Wallet, 'debt': Wallet };
@@ -100,6 +103,7 @@ const accountIcons: { [key: string]: React.ElementType } = { 'cash': Banknote, '
 export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialData }: NewTransactionFormProps) {
   const [categories, setCategories] = React.useState<BudgetCategory[]>([]);
   const [showCategorySelector, setShowCategorySelector] = React.useState(false);
+  const [showAccountSelector, setShowAccountSelector] = React.useState(false);
   const [showCategoryManager, setShowCategoryManager] = React.useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
 
@@ -142,6 +146,11 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   const handleCategorySelect = (categoryName: string) => {
       form.setValue('category', categoryName, { shouldValidate: true });
       setShowCategorySelector(false);
+  }
+
+  const handleAccountSelect = (accountId: string) => {
+      form.setValue('accountId', accountId, { shouldValidate: true });
+      setShowAccountSelector(false);
   }
 
   function handleFormSubmit(values: z.infer<typeof formSchema>) {
@@ -208,29 +217,6 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                     )}/>
                 </div>
 
-                {/* Tarih */}
-                <div className="space-y-1.5">
-                    <FormLabel className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Tarih</FormLabel>
-                    <FormField control={form.control} name="date" render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                                <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button variant={"outline"} className={cn("h-12 w-full pl-3 text-left font-medium rounded-xl border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 transition-all", !field.value && "text-muted-foreground")}>
-                                            <CalendarIcon className="mr-3 h-5 w-5 text-indigo-500" />
-                                            <span className="text-base">{field.value ? format(field.value, "d MMMM yyyy, EEEE", { locale: tr }) : <span>Tarih seçin</span>}</span>
-                                        </Button>
-                                    </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[300px] p-0 rounded-2xl overflow-hidden border-none shadow-2xl z-50" align="center" sideOffset={10}>
-                                    <CustomEmbeddedCalendar selected={field.value} onSelect={(date) => { field.onChange(date); setIsCalendarOpen(false); }} />
-                                </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                        </FormItem>
-                    )}/>
-                </div>
-
                 {/* Kategori */}
                 <div className="space-y-1.5">
                     <FormLabel className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Kategori</FormLabel>
@@ -250,57 +236,92 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                 {/* Hesap */}
                 <div className="space-y-1.5">
                     <FormLabel className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Hesap</FormLabel>
-                    <div className="grid grid-cols-2 gap-3">
-                        {filteredAccounts.map(acc => {
-                            const Icon = accountIcons[acc.type] || Banknote;
-                            const isSelected = selectedAccountId === acc.id;
-                            return (
-                            <div key={acc.id} onClick={() => form.setValue('accountId', acc.id)} className={cn("relative cursor-pointer flex items-center gap-3 p-3 rounded-xl border transition-all h-12", isSelected ? "bg-indigo-50 border-indigo-500 dark:bg-indigo-900/20" : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-indigo-400")}>
-                                <div className={cn("p-1.5 rounded-full", isSelected ? "bg-indigo-600 text-white" : "bg-slate-200 dark:bg-slate-800 text-slate-500")}>
-                                    <Icon className="h-4 w-4"/>
-                                </div>
-                                <span className={cn("text-sm font-semibold truncate", isSelected ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-slate-300")}>{acc.name}</span>
+                    <Button type="button" variant="outline" className="w-full h-12 justify-between px-4 rounded-xl border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 transition-all" onClick={() => setShowAccountSelector(true)}>
+                        {selectedAccountId ? (
+                            <div className="flex items-center gap-3">
+                                <span className="text-xl">{(() => {
+                                    const acc = accounts.find(a => a.id === selectedAccountId);
+                                    if (!acc) return null;
+                                    const Icon = accountIcons[acc.type] || Banknote;
+                                    return <Icon className="h-5 w-5 text-indigo-500" />;
+                                })()}</span>
+                                <span className="text-base font-medium">{accounts.find(a => a.id === selectedAccountId)?.name}</span>
                             </div>
-                            )
-                        })}
-                    </div>
+                        ) : (
+                            <span className="text-slate-400 text-base">Hesap seçin</span>
+                        )}
+                        <ChevronRight className="h-5 w-5 text-slate-400" />
+                    </Button>
                     {errors.accountId && <p className="text-xs font-medium text-rose-500 ml-1">{errors.accountId.message}</p>}
                 </div>
 
-                {/* Taksit ve Abonelik (Sadece Gider) */}
-                {transactionType === 'expense' && (
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-3">
-                        <FormField control={form.control} name="isRecurring" render={({ field }) => (
-                            <FormItem className="flex items-center justify-between space-y-0">
-                                <FormLabel className="text-sm font-medium">Sabit Gider (Abonelik vb.)</FormLabel>
-                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                            </FormItem>
-                        )}/>
-                        
-                        {!form.watch('isRecurring') && (
-                            <FormField control={form.control} name="isInstallment" render={({ field }) => (
-                                <FormItem className="flex items-center justify-between space-y-0 pt-2 border-t border-dashed border-slate-200 dark:border-white/10">
-                                    <FormLabel className="text-sm font-medium">Taksitli İşlem</FormLabel>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
-                            )}/>
-                        )}
-                        
-                        {isInstallment && !form.watch('isRecurring') && (
-                            <FormField control={form.control} name="installmentCount" render={({ field }) => (
-                                <FormItem className="flex items-center gap-3 space-y-0 pt-2 border-t border-dashed border-slate-200 dark:border-white/10">
-                                    <FormLabel className="text-sm text-slate-500">Taksit Sayısı:</FormLabel>
-                                    <FormControl>
-                                        <div className="flex items-center gap-2">
-                                            <Input type="number" {...field} value={field.value ?? ''} className="w-16 h-8 text-center bg-white dark:bg-black/20 rounded-lg" />
-                                            <span className="text-sm font-medium">Ay</span>
-                                        </div>
-                                    </FormControl>
-                                </FormItem>
-                            )}/>
-                        )}
-                    </div>
-                )}
+                {/* Gelişmiş Seçenekler (Accordion) */}
+                <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="advanced" className="border-none bg-slate-50/50 dark:bg-white/[0.02] rounded-2xl px-3 mt-2">
+                        <AccordionTrigger className="text-xs font-bold text-slate-500 uppercase tracking-wider py-3 hover:no-underline">
+                            Gelişmiş Seçenekler (Tarih, Taksit vb.)
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-5 pt-2 pb-4">
+                            {/* Tarih */}
+                            <div className="space-y-1.5">
+                                <FormLabel className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Tarih</FormLabel>
+                                <FormField control={form.control} name="date" render={({ field }) => (
+                                    <FormItem className="flex flex-col">
+                                        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                                            <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button variant={"outline"} className={cn("h-12 w-full pl-3 text-left font-medium rounded-xl border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm", !field.value && "text-muted-foreground")}>
+                                                        <CalendarIcon className="mr-3 h-5 w-5 text-indigo-500" />
+                                                        <span className="text-base">{field.value ? format(field.value, "d MMMM yyyy, EEEE", { locale: tr }) : <span>Tarih seçin</span>}</span>
+                                                    </Button>
+                                                </FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[300px] p-0 rounded-2xl overflow-hidden border-none shadow-2xl z-50" align="center" sideOffset={10}>
+                                                <CustomEmbeddedCalendar selected={field.value} onSelect={(date) => { field.onChange(date); setIsCalendarOpen(false); }} />
+                                            </PopoverContent>
+                                        </Popover>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                            </div>
+
+                            {/* Taksit ve Abonelik (Sadece Gider) */}
+                            {transactionType === 'expense' && (
+                                <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm space-y-3">
+                                    <FormField control={form.control} name="isRecurring" render={({ field }) => (
+                                        <FormItem className="flex items-center justify-between space-y-0">
+                                            <FormLabel className="text-sm font-medium">Sabit Gider (Abonelik vb.)</FormLabel>
+                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                        </FormItem>
+                                    )}/>
+                                    
+                                    {!form.watch('isRecurring') && (
+                                        <FormField control={form.control} name="isInstallment" render={({ field }) => (
+                                            <FormItem className="flex items-center justify-between space-y-0 pt-2 border-t border-dashed border-slate-200 dark:border-white/10">
+                                                <FormLabel className="text-sm font-medium">Taksitli İşlem</FormLabel>
+                                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                            </FormItem>
+                                        )}/>
+                                    )}
+                                    
+                                    {isInstallment && !form.watch('isRecurring') && (
+                                        <FormField control={form.control} name="installmentCount" render={({ field }) => (
+                                            <FormItem className="flex items-center gap-3 space-y-0 pt-2 border-t border-dashed border-slate-200 dark:border-white/10">
+                                                <FormLabel className="text-sm text-slate-500">Taksit Sayısı:</FormLabel>
+                                                <FormControl>
+                                                    <div className="flex items-center gap-2">
+                                                        <Input type="number" {...field} value={field.value ?? ''} className="w-16 h-8 text-center bg-slate-50 dark:bg-black/20 rounded-lg" />
+                                                        <span className="text-sm font-medium">Ay</span>
+                                                    </div>
+                                                </FormControl>
+                                            </FormItem>
+                                        )}/>
+                                    )}
+                                </div>
+                            )}
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
             </div>
             
             {/* Footer: Sabit */}
@@ -314,13 +335,13 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
         
       {/* Category Dialog */}
       <Dialog open={showCategorySelector} onOpenChange={setShowCategorySelector}>
-          <DialogContent className="sm:max-w-md w-full h-[70vh] sm:h-[600px] p-0 flex flex-col bg-white dark:bg-slate-900 border-none rounded-t-[2rem] sm:rounded-[2rem] fixed bottom-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2">
+          <DialogContent className="sm:max-w-md w-full h-auto max-h-[80vh] p-0 flex flex-col bg-white dark:bg-slate-900 border-none rounded-t-[2rem] sm:rounded-[2rem] fixed bottom-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2">
               <div className="p-4 flex-shrink-0 border-b border-slate-100 dark:border-white/5 flex justify-between items-center bg-white dark:bg-slate-900 rounded-t-[2rem]">
                   <DialogTitle>Kategori Seç</DialogTitle>
                   <Button variant="ghost" size="sm" onClick={() => {setShowCategorySelector(false); setShowCategoryManager(true);}} className="text-indigo-500"><Edit className="h-4 w-4 mr-2" /> Düzenle</Button>
               </div>
-              <ScrollArea className="flex-grow p-4 bg-slate-50 dark:bg-black/20">
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+              <ScrollArea className="flex-grow p-4 bg-slate-50 dark:bg-black/20 max-h-[60vh]">
+                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
                     {categories.filter(c => c.type === form.watch('type')).map(cat => (
                         <div key={cat.id} className="flex flex-col items-center gap-1">
                             <Button variant="outline" className="w-full aspect-square rounded-2xl flex flex-col items-center justify-center h-auto hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 shadow-sm" onClick={() => handleCategorySelect(cat.name)}>
@@ -329,6 +350,42 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                             <span className="text-[10px] font-medium text-center truncate w-full">{cat.name}</span>
                         </div>
                     ))}
+                    <div className="flex flex-col items-center gap-1">
+                        <Button type="button" variant="outline" className="w-full aspect-square rounded-2xl flex flex-col items-center justify-center h-auto hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 border-dashed border-2 border-slate-300 dark:border-white/20 bg-transparent shadow-sm" onClick={() => {setShowCategorySelector(false); setShowCategoryManager(true);}}>
+                            <span className="text-3xl text-slate-400 font-light">+</span>
+                        </Button>
+                        <span className="text-[10px] font-medium text-center truncate w-full text-slate-500">Yeni Ekle</span>
+                    </div>
+                  </div>
+              </ScrollArea>
+          </DialogContent>
+      </Dialog>
+
+      {/* Account Dialog */}
+      <Dialog open={showAccountSelector} onOpenChange={setShowAccountSelector}>
+          <DialogContent className="sm:max-w-md w-full h-auto max-h-[80vh] p-0 flex flex-col bg-white dark:bg-slate-900 border-none rounded-t-[2rem] sm:rounded-[2rem] fixed bottom-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2">
+              <div className="p-4 flex-shrink-0 border-b border-slate-100 dark:border-white/5 flex justify-between items-center bg-white dark:bg-slate-900 rounded-t-[2rem]">
+                  <DialogTitle>Hesap Seç</DialogTitle>
+              </div>
+              <ScrollArea className="flex-grow p-4 bg-slate-50 dark:bg-black/20 max-h-[60vh]">
+                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                    {filteredAccounts.map(acc => {
+                        const Icon = accountIcons[acc.type] || Banknote;
+                        return (
+                            <div key={acc.id} className="flex flex-col items-center gap-1">
+                                <Button type="button" variant="outline" className="w-full aspect-square rounded-2xl flex flex-col items-center justify-center h-auto hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 shadow-sm" onClick={() => handleAccountSelect(acc.id)}>
+                                    <Icon className="h-6 w-6 text-slate-600 dark:text-slate-400 mb-1" />
+                                    <span className="text-[10px] font-medium text-center truncate w-full px-1">{acc.name}</span>
+                                </Button>
+                            </div>
+                        )
+                    })}
+                    <div className="flex flex-col items-center gap-1">
+                        <Button type="button" variant="outline" className="w-full aspect-square rounded-2xl flex flex-col items-center justify-center h-auto hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 border-dashed border-2 border-slate-300 dark:border-white/20 bg-transparent shadow-sm" onClick={() => {setShowAccountSelector(false); if(onAddNewAccount) onAddNewAccount();}}>
+                            <span className="text-3xl text-slate-400 font-light">+</span>
+                        </Button>
+                        <span className="text-[10px] font-medium text-center truncate w-full text-slate-500">Yeni Ekle</span>
+                    </div>
                   </div>
               </ScrollArea>
           </DialogContent>

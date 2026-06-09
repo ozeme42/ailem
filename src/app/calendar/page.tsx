@@ -20,8 +20,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { CalendarEvent } from "@/lib/data";
-import { onCalendarEventsUpdate, deleteCalendarEvent, updateCalendarEvent } from "@/lib/dataService";
+import { CalendarEvent, Bill } from "@/lib/data";
+import { onCalendarEventsUpdate, deleteCalendarEvent, updateCalendarEvent, onBillsUpdate } from "@/lib/dataService";
 import { NewEventForm } from "@/components/new-event-form";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -63,6 +63,7 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = React.useState(new Date());
   const [selectedDate, setSelectedDate] = React.useState(new Date());
   const [calendarEvents, setCalendarEvents] = React.useState<CalendarEvent[]>([]);
+  const [bills, setBills] = React.useState<Bill[]>([]);
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingEvent, setEditingEvent] = React.useState<CalendarEvent | null>(null);
   
@@ -74,7 +75,8 @@ export default function CalendarPage() {
 
   React.useEffect(() => {
     const unsubscribeEvents = onCalendarEventsUpdate(setCalendarEvents);
-    return () => unsubscribeEvents();
+    const unsubscribeBills = onBillsUpdate(setBills);
+    return () => { unsubscribeEvents(); unsubscribeBills(); };
   }, []);
   
   const { upcomingEvents, monthlyStats } = React.useMemo(() => {
@@ -100,8 +102,26 @@ export default function CalendarPage() {
         daysLeft: differenceInDays(nextOccurrence, today),
       };
     });
+    
+    const virtualBillEvents = bills.filter(b => !b.isPaid).map(b => {
+      const originalDate = parseISO(b.dueDate);
+      return {
+        id: `bill-${b.id}`,
+        title: `${b.title} (Fatura)`,
+        startDate: b.dueDate,
+        category: 'Fatura',
+        recurrence: 'one-time',
+        color: 'bg-rose-50 text-rose-600 border-rose-200',
+        displayDate: originalDate,
+        daysLeft: differenceInDays(originalDate, today),
+        isVirtual: true,
+        originalBill: b
+      };
+    });
 
-    const filtered = processedEvents
+    const allEvents = [...processedEvents, ...virtualBillEvents];
+
+    const filtered = allEvents
       .filter(e => {
           const matchesSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase());
           const matchesType = filterType === 'all' 
@@ -121,7 +141,7 @@ export default function CalendarPage() {
     };
       
     return { upcomingEvents: filtered, monthlyStats: stats };
-  }, [calendarEvents, searchQuery, filterType]);
+  }, [calendarEvents, bills, searchQuery, filterType]);
 
   const displayedDaysMonth = React.useMemo(() => {
       const monthStart = startOfMonth(currentDate);
@@ -147,7 +167,7 @@ export default function CalendarPage() {
   }, [currentDate]);
 
   const getEventsForDay = (day: Date) => {
-    return calendarEvents.filter(event => {
+    const normalEvents = calendarEvents.filter(event => {
       const eventStartDate = parseISO(event.startDate);
       if (isBefore(day, startOfDay(eventStartDate))) return false;
       switch (event.recurrence) {
@@ -162,6 +182,23 @@ export default function CalendarPage() {
         default: return false;
       }
     });
+    
+    const virtualBillEvents = bills.filter(b => !b.isPaid).map(b => ({
+        id: `bill-${b.id}`,
+        title: `${b.title} (Fatura)`,
+        startDate: b.dueDate,
+        category: 'Fatura',
+        recurrence: 'one-time',
+        color: 'bg-rose-50 text-rose-600 border-rose-200',
+        isVirtual: true,
+        originalBill: b
+    })).filter(event => {
+        const eventStartDate = parseISO(event.startDate);
+        if (isBefore(day, startOfDay(eventStartDate))) return false;
+        return isSameDay(eventStartDate, day);
+    });
+
+    return [...normalEvents, ...virtualBillEvents];
   };
 
   const handlePrev = () => {
@@ -509,36 +546,38 @@ export default function CalendarPage() {
                                             </div>
                                         </div>
 
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-full absolute top-2 right-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 active:scale-90 transition-all md:opacity-0 md:group-hover:opacity-100">
-                                                    <MoreHorizontal className="h-5 w-5" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-40 bg-white border-slate-200 rounded-2xl shadow-xl p-1.5">
-                                                <DropdownMenuItem onClick={() => { setEditingEvent(event); setIsFormDialogOpen(true); }} className="hover:bg-slate-50 cursor-pointer font-bold text-slate-700 py-2.5 rounded-xl">
-                                                    <Edit className="mr-2 h-4 w-4" /> Düzenle
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator className="bg-slate-100 my-1" />
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-600 focus:text-rose-700 focus:bg-rose-50 cursor-pointer font-bold py-2.5 rounded-xl">
-                                                            <Trash2 className="mr-2 h-4 w-4" /> Sil
-                                                        </DropdownMenuItem>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent className="w-[90%] max-w-sm bg-white border-slate-200 rounded-[2rem] p-6 shadow-2xl">
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle className="text-xl font-black text-slate-900">Emin misin?</AlertDialogTitle>
-                                                            <AlertDialogDescription className="text-slate-500 font-medium">Bu işlem geri alınamaz ve etkinlik takvimden kalıcı olarak silinir.</AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter className="mt-4 gap-2 flex-row">
-                                                            <AlertDialogCancel className="flex-1 border-none bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold h-12 rounded-xl m-0">İptal</AlertDialogCancel>
-                                                            <AlertDialogAction className="flex-1 bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white font-bold h-12 rounded-xl m-0" onClick={() => handleDeleteEvent(event.id)}>Sil</AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        {!(event as any).isVirtual && (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0 rounded-full absolute top-2 right-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 active:scale-90 transition-all md:opacity-0 md:group-hover:opacity-100">
+                                                        <MoreHorizontal className="h-5 w-5" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-40 bg-white border-slate-200 rounded-2xl shadow-xl p-1.5">
+                                                    <DropdownMenuItem onClick={() => { setEditingEvent(event); setIsFormDialogOpen(true); }} className="hover:bg-slate-50 cursor-pointer font-bold text-slate-700 py-2.5 rounded-xl">
+                                                        <Edit className="mr-2 h-4 w-4" /> Düzenle
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator className="bg-slate-100 my-1" />
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-600 focus:text-rose-700 focus:bg-rose-50 cursor-pointer font-bold py-2.5 rounded-xl">
+                                                                <Trash2 className="mr-2 h-4 w-4" /> Sil
+                                                            </DropdownMenuItem>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent className="w-[90%] max-w-sm bg-white border-slate-200 rounded-[2rem] p-6 shadow-2xl">
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle className="text-xl font-black text-slate-900">Emin misin?</AlertDialogTitle>
+                                                                <AlertDialogDescription className="text-slate-500 font-medium">Bu işlem geri alınamaz ve etkinlik takvimden kalıcı olarak silinir.</AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter className="mt-4 gap-2 flex-row">
+                                                                <AlertDialogCancel className="flex-1 border-none bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold h-12 rounded-xl m-0">İptal</AlertDialogCancel>
+                                                                <AlertDialogAction className="flex-1 bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white font-bold h-12 rounded-xl m-0" onClick={() => handleDeleteEvent(event.id)}>Sil</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
                                     </div>
                                 )
                             })

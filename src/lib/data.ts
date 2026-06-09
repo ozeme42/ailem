@@ -563,6 +563,7 @@ export interface Transaction {
     date: string;
     isInstallment: boolean;
     isRecurring?: boolean;
+    isApplied?: boolean;
     installmentDetails?: {
         current: number;
         total: number;
@@ -577,6 +578,20 @@ export interface BudgetCategory {
     icon: string;
     type: 'income' | 'expense';
     limit?: number;
+}
+
+export interface Bill {
+    id: string;
+    familyId: string;
+    title: string;
+    amount: number;
+    dueDate: string;
+    isPaid: boolean;
+    paidDate?: string;
+    paidAccountId?: string;
+    paidTransactionId?: string;
+    category?: string;
+    isRecurring?: boolean;
 }
 
 export interface Budget {
