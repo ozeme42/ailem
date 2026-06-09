@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Maximize2, Minimize2, CheckCircle2, LayoutGrid, X, ChevronRight, Check, AlertCircle, SplitSquareVertical, GripHorizontal } from "lucide-react";
+import { Maximize2, Minimize2, CheckCircle2, LayoutGrid, X, ChevronRight, Check, AlertCircle, SplitSquareVertical, GripHorizontal, Pen, Eraser, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Slider } from "@/components/ui/slider";
 
 interface HTMLDocumentSolverProps {
     test: Test;
@@ -27,7 +28,39 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
     // Yüksekliği yüzde olarak tutacağız (Varsayılan %50)
     const [splitHeightPercent, setSplitHeightPercent] = React.useState(50);
     const containerRef = React.useRef<HTMLDivElement>(null);
+    const iframeRef = React.useRef<HTMLIFrameElement>(null);
     const [isDragging, setIsDragging] = React.useState(false);
+    
+    // Scratchpad States
+    const [isDrawingMode, setIsDrawingMode] = React.useState(false);
+    const [drawingTool, setDrawingTool] = React.useState<'pen' | 'eraser'>('pen');
+    const [strokeWidth, setStrokeWidth] = React.useState(3);
+
+    const toggleDrawingMode = (forceEnabled?: boolean) => {
+        const newMode = forceEnabled !== undefined ? forceEnabled : !isDrawingMode;
+        setIsDrawingMode(newMode);
+        iframeRef.current?.contentWindow?.postMessage({ type: 'TOGGLE_DRAWING', enabled: newMode }, '*');
+        iframeRef.current?.contentWindow?.postMessage({ type: 'SET_TOOL', tool: drawingTool }, '*');
+        
+        // Kullanıcı kapatınca çizimlerin silinmesini istedi
+        if (!newMode) {
+            iframeRef.current?.contentWindow?.postMessage({ type: 'CLEAR' }, '*');
+        }
+    };
+
+    const setTool = (t: 'pen' | 'eraser') => {
+        setDrawingTool(t);
+        iframeRef.current?.contentWindow?.postMessage({ type: 'SET_TOOL', tool: t }, '*');
+    };
+
+    const setCanvasWidth = (w: number) => {
+        setStrokeWidth(w);
+        iframeRef.current?.contentWindow?.postMessage({ type: 'SET_WIDTH', width: w }, '*');
+    };
+
+    const clearCanvas = () => {
+        iframeRef.current?.contentWindow?.postMessage({ type: 'CLEAR' }, '*');
+    };
 
     const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
         setIsDragging(true);
@@ -116,6 +149,136 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     display: block;
                 }
             </style>
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.id = 'drawing-canvas';
+                    canvas.style.position = 'absolute';
+                    canvas.style.top = '0';
+                    canvas.style.left = '0';
+                    canvas.style.zIndex = '9999';
+                    canvas.style.pointerEvents = 'none';
+                    canvas.style.touchAction = 'none';
+                    document.body.appendChild(canvas);
+
+                    const ctx = canvas.getContext('2d');
+                    let isDrawing = false;
+                    let tool = 'pen';
+                    let currentWidth = 3;
+                    
+                    const resize = () => {
+                        // Ölçüm yaparken canvas'ı gizle ki sonsuz büyüme döngüsüne girmesin
+                        canvas.style.display = 'none';
+                        const w = Math.max(document.body.scrollWidth, document.documentElement.scrollWidth);
+                        const h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+                        canvas.style.display = 'block';
+
+                        const expectedWidth = Math.floor(w * window.devicePixelRatio);
+                        const expectedHeight = Math.floor(h * window.devicePixelRatio);
+                        
+                        if (canvas.width !== expectedWidth || canvas.height !== expectedHeight) {
+                            // Hızlı kopyalama için offscreen canvas kullan (toDataURL çok yavaştır ve dondurur)
+                            let offCanvas = null;
+                            if (canvas.width > 0 && canvas.height > 0) {
+                                offCanvas = document.createElement('canvas');
+                                offCanvas.width = canvas.width;
+                                offCanvas.height = canvas.height;
+                                offCanvas.getContext('2d').drawImage(canvas, 0, 0);
+                            }
+
+                            canvas.width = expectedWidth;
+                            canvas.height = expectedHeight;
+                            canvas.style.width = w + 'px';
+                            canvas.style.height = h + 'px';
+                            
+                            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+                            ctx.lineCap = 'round';
+                            ctx.lineJoin = 'round';
+                            
+                            if (tool === 'eraser') {
+                                ctx.globalCompositeOperation = 'destination-out';
+                                ctx.lineWidth = currentWidth * 5;
+                            } else {
+                                ctx.globalCompositeOperation = 'source-over';
+                                ctx.strokeStyle = '#ef4444';
+                                ctx.lineWidth = currentWidth;
+                            }
+                            
+                            if (offCanvas) {
+                                ctx.drawImage(offCanvas, 0, 0, offCanvas.width / window.devicePixelRatio, offCanvas.height / window.devicePixelRatio);
+                            }
+                        }
+                    };
+                    
+                    let resizeTimeout;
+                    const debouncedResize = () => {
+                        clearTimeout(resizeTimeout);
+                        resizeTimeout = setTimeout(resize, 150);
+                    };
+
+                    window.addEventListener('resize', debouncedResize);
+                    
+                    const observer = new MutationObserver((mutations) => {
+                        // Sadece canvas harici değişikliklerde resize tetikle
+                        const hasRealMutation = mutations.some(m => m.target !== canvas);
+                        if (hasRealMutation) {
+                            debouncedResize();
+                        }
+                    });
+                    observer.observe(document.body, { childList: true, subtree: true });
+                    setTimeout(resize, 100);
+
+                    const start = (e) => {
+                        if(canvas.style.pointerEvents === 'none') return;
+                        isDrawing = true;
+                        ctx.beginPath();
+                        ctx.moveTo(e.pageX, e.pageY);
+                        canvas.setPointerCapture(e.pointerId);
+                        e.preventDefault();
+                    };
+                    const draw = (e) => {
+                        if (!isDrawing) return;
+                        ctx.lineTo(e.pageX, e.pageY);
+                        ctx.stroke();
+                        e.preventDefault();
+                    };
+                    const stop = (e) => {
+                        if (!isDrawing) return;
+                        isDrawing = false;
+                        ctx.closePath();
+                        canvas.releasePointerCapture(e.pointerId);
+                        e.preventDefault();
+                    };
+                    
+                    canvas.addEventListener('pointerdown', start);
+                    canvas.addEventListener('pointermove', draw);
+                    canvas.addEventListener('pointerup', stop);
+                    canvas.addEventListener('pointercancel', stop);
+
+                    window.addEventListener('message', (e) => {
+                        const msg = e.data;
+                        if (msg.type === 'TOGGLE_DRAWING') {
+                            canvas.style.pointerEvents = msg.enabled ? 'auto' : 'none';
+                            canvas.style.cursor = msg.enabled ? 'crosshair' : 'default';
+                        } else if (msg.type === 'SET_TOOL') {
+                            tool = msg.tool;
+                            if (tool === 'eraser') {
+                                ctx.globalCompositeOperation = 'destination-out';
+                                ctx.lineWidth = currentWidth * 5;
+                            } else {
+                                ctx.globalCompositeOperation = 'source-over';
+                                ctx.strokeStyle = '#ef4444';
+                                ctx.lineWidth = currentWidth;
+                            }
+                        } else if (msg.type === 'SET_WIDTH') {
+                            currentWidth = msg.width;
+                            ctx.lineWidth = tool === 'eraser' ? currentWidth * 5 : currentWidth;
+                        } else if (msg.type === 'CLEAR') {
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        }
+                    });
+                });
+            </script>
         </head>
         <body>${htmlContent}</body>
         </html>
@@ -216,8 +379,65 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                         <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{isReviewMode ? "SINAV ANALİZİ" : "SINAV MODU"}</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button type="button" variant={isSplitScreenMobile ? "default" : "ghost"} size="icon" onClick={() => setIsSplitScreenMobile(!isSplitScreenMobile)} className={cn("lg:hidden rounded-full", isSplitScreenMobile ? "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-400" : "hover:bg-slate-100")}>
+                <div className="flex items-center gap-1 sm:gap-2">
+                    {/* Çizim Araçları */}
+                    <div className="flex items-center gap-1 mr-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-full">
+                        <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="icon" 
+                            className={cn("rounded-full h-8 w-8 transition-all", isDrawingMode && drawingTool === 'pen' ? "bg-indigo-600 text-white hover:bg-indigo-700" : "hover:bg-slate-200 dark:hover:bg-slate-700")}
+                            onClick={() => { if(!isDrawingMode) toggleDrawingMode(true); setTool('pen'); }}
+                            title="Kalem"
+                        >
+                            <Pen className="h-4 w-4" />
+                        </Button>
+                        {isDrawingMode && (
+                            <>
+                                <div className="hidden sm:flex items-center px-2 w-24">
+                                    <Slider 
+                                        defaultValue={[3]} 
+                                        max={10} 
+                                        min={1} 
+                                        step={1} 
+                                        onValueChange={(v) => setCanvasWidth(v[0])} 
+                                    />
+                                </div>
+                                <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className={cn("rounded-full h-8 w-8 transition-all", drawingTool === 'eraser' ? "bg-rose-500 text-white hover:bg-rose-600" : "hover:bg-slate-200 dark:hover:bg-slate-700")}
+                                    onClick={() => setTool('eraser')}
+                                    title="Silgi"
+                                >
+                                    <Eraser className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="rounded-full h-8 w-8 hover:bg-rose-100 hover:text-rose-600 dark:hover:bg-rose-900/30"
+                                    onClick={clearCanvas}
+                                    title="Tümünü Temizle"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </>
+                        )}
+                        <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="icon" 
+                            className={cn("rounded-full h-8 w-8", isDrawingMode ? "bg-indigo-100 text-indigo-600" : "")}
+                            onClick={() => toggleDrawingMode()}
+                            title={isDrawingMode ? "Çizim Modunu Kapat" : "Çizim Modunu Aç"}
+                        >
+                            <X className={cn("h-4 w-4 transition-transform", !isDrawingMode && "rotate-45")} />
+                        </Button>
+                    </div>
+
+                    <Button type="button" variant={isSplitScreenMobile ? "default" : "ghost"} size="icon" onClick={() => setIsSplitScreenMobile(!isSplitScreenMobile)} className={cn("lg:hidden rounded-full h-8 w-8 sm:h-10 sm:w-10", isSplitScreenMobile ? "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-400" : "hover:bg-slate-100")}>
                         <SplitSquareVertical className="h-5 w-5" />
                     </Button>
                     <Button type="button" variant="ghost" size="icon" onClick={() => setIsFullScreen(!isFullScreen)} className="rounded-full hover:bg-slate-100">
@@ -239,6 +459,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                         {isDragging && <div className="absolute inset-0 z-50 bg-transparent" />}
                         
                         <iframe 
+                            ref={iframeRef}
                             srcDoc={getIframeDocument(test.htmlContent || "")}
                             className="w-full h-full border-none"
                             title="Test Content"

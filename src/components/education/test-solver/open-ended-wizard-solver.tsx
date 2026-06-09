@@ -6,11 +6,13 @@ import { Test, QuickTestQuestion } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft, ChevronRight, CheckCircle2, ImageIcon, LayoutGrid } from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckCircle2, ImageIcon, LayoutGrid, Pen, Eraser, Trash2 } from "lucide-react";
 import { QuestionPalette } from "./shared-components";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { DrawingOverlay, DrawingOverlayRef } from "./drawing-overlay";
 
 interface OpenEndedWizardSolverProps {
     test: Test;
@@ -23,6 +25,27 @@ interface OpenEndedWizardSolverProps {
 export function OpenEndedWizardSolver({ test, questions, studentTextAnswers, onAnswer, onFinish }: OpenEndedWizardSolverProps) {
     const [currentIndex, setCurrentIndex] = React.useState(0);
     const [isPaletteOpen, setIsPaletteOpen] = React.useState(false);
+    
+    // Scratchpad states
+    const [isDrawingMode, setIsDrawingMode] = React.useState(false);
+    const [drawingTool, setDrawingTool] = React.useState<'pen' | 'eraser'>('pen');
+    const [strokeWidth, setStrokeWidth] = React.useState(3);
+    const [drawings, setDrawings] = React.useState<{ [key: number]: string }>({});
+    const drawingRef = React.useRef<DrawingOverlayRef>(null);
+
+    // Save drawing when navigating away or drawing changes
+    const saveDrawing = () => {
+        if (drawingRef.current) {
+            setDrawings(prev => ({ ...prev, [currentIndex]: drawingRef.current!.getDataURL() }));
+        }
+    };
+
+    // Load drawing when entering a question
+    React.useEffect(() => {
+        if (drawingRef.current) {
+            drawingRef.current.loadDataURL(drawings[currentIndex] || "");
+        }
+    }, [currentIndex]);
 
     const currentQuestion = questions[currentIndex];
     const qNumStr = (currentIndex + 1).toString();
@@ -37,10 +60,92 @@ export function OpenEndedWizardSolver({ test, questions, studentTextAnswers, onA
                         {currentAnswer.length > 0 && <Badge className="bg-emerald-500 text-white border-none">CEVAPLANDI</Badge>}
                     </div>
                     <div className="p-6 md:p-8 space-y-8">
-                        <div className="relative aspect-video w-full rounded-3xl overflow-hidden bg-slate-50 border border-slate-100 flex items-center justify-center group">
+                        <div className="relative aspect-video w-full rounded-3xl overflow-hidden bg-slate-50 border border-slate-100 flex flex-col items-center justify-center group">
                             {currentQuestion?.imageUrl ? (
                                 <Image src={currentQuestion.imageUrl} alt="Soru" fill className="object-contain p-4 transition-transform duration-500 group-hover:scale-105" />
                             ) : <ImageIcon className="w-16 h-16 text-slate-200" />}
+                            
+                            {/* Çizim Katmanı */}
+                            <DrawingOverlay 
+                                ref={drawingRef} 
+                                disabled={!isDrawingMode} 
+                                tool={drawingTool} 
+                                strokeWidth={strokeWidth}
+                                onChange={saveDrawing} 
+                            />
+                            
+                            {/* Çizim Kontrolleri */}
+                            <div className="absolute top-4 right-4 z-50 flex gap-2">
+                                {!isDrawingMode ? (
+                                    <Button 
+                                        type="button" 
+                                        variant="secondary" 
+                                        size="icon" 
+                                        className="rounded-full shadow-md bg-white text-slate-600 transition-all hover:bg-slate-100"
+                                        onClick={() => { setIsDrawingMode(true); setDrawingTool('pen'); }}
+                                        title="Çizim Modunu Aç"
+                                    >
+                                        <Pen className="w-4 h-4" />
+                                    </Button>
+                                ) : (
+                                    <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-full shadow-lg">
+                                        <Button 
+                                            type="button" 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className={cn("rounded-full h-8 w-8 transition-all", drawingTool === 'pen' ? "bg-indigo-600 text-white" : "hover:bg-slate-200 text-slate-600")}
+                                            onClick={() => setDrawingTool('pen')}
+                                            title="Kalem"
+                                        >
+                                            <Pen className="w-4 h-4" />
+                                        </Button>
+                                        <div className="hidden sm:flex items-center px-2 w-24">
+                                            <Slider 
+                                                defaultValue={[3]} 
+                                                max={10} 
+                                                min={1} 
+                                                step={1} 
+                                                onValueChange={(v) => setStrokeWidth(v[0])} 
+                                            />
+                                        </div>
+                                        <Button 
+                                            type="button" 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className={cn("rounded-full h-8 w-8 transition-all", drawingTool === 'eraser' ? "bg-rose-500 text-white" : "hover:bg-slate-200 text-slate-600")}
+                                            onClick={() => setDrawingTool('eraser')}
+                                            title="Silgi"
+                                        >
+                                            <Eraser className="w-4 h-4" />
+                                        </Button>
+                                        <Button 
+                                            type="button" 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="rounded-full h-8 w-8 hover:bg-rose-100 text-slate-600 hover:text-rose-600"
+                                            onClick={() => { drawingRef.current?.clear(); saveDrawing(); }}
+                                            title="Tümünü Temizle"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                        <Button 
+                                            type="button" 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="rounded-full h-8 w-8 bg-indigo-100 text-indigo-600"
+                                            onClick={() => {
+                                                setIsDrawingMode(false);
+                                                // Kullanıcı kapatınca çizimlerin silinmesini istedi
+                                                drawingRef.current?.clear();
+                                                saveDrawing();
+                                            }}
+                                            title="Çizim Modunu Kapat"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="space-y-4">

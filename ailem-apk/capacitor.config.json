@@ -1,0 +1,10 @@
+{
+  "appId": "com.ailem.app",
+  "appName": "Ailem",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://ailem.vercel.app/",
+    "cleartext": true
+  }
+}
