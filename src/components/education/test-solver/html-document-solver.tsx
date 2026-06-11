@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -24,6 +23,9 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
     const [isFullScreen, setIsFullScreen] = React.useState(false);
     const [isOpticalOpenMobile, setIsOpticalOpenMobile] = React.useState(false);
     const [isSplitScreenMobile, setIsSplitScreenMobile] = React.useState(false);
+    
+    // Onay penceresi için state
+    const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
     
     // Yüksekliği yüzde olarak tutacağız (Varsayılan %50)
     const [splitHeightPercent, setSplitHeightPercent] = React.useState(50);
@@ -110,9 +112,9 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
         };
     }, [isDragging, handleMouseMove, handleTouchMove, handleDragEnd]);
 
-    // Ekranı kapladığında (full screen) sayfanın altının kaymasını engelle
+    // Ekranı kapladığında (full screen) veya onay/optik açıkken sayfanın altının kaymasını engelle
     React.useEffect(() => {
-        if (isFullScreen || isOpticalOpenMobile) {
+        if (isFullScreen || isOpticalOpenMobile || showConfirmDialog) {
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = '';
@@ -120,7 +122,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
         return () => {
             document.body.style.overflow = '';
         };
-    }, [isFullScreen, isOpticalOpenMobile]);
+    }, [isFullScreen, isOpticalOpenMobile, showConfirmDialog]);
 
 
     const getIframeDocument = (htmlContent: string) => {
@@ -357,176 +359,220 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
             </ScrollArea>
             {!isReviewMode && (
                 <div className="p-4 border-t bg-slate-50 dark:bg-slate-950 shrink-0">
-                    <Button type="button" className="w-full bg-emerald-600 hover:bg-emerald-500 font-black h-12 rounded-xl text-white shadow-lg shadow-emerald-600/20" onClick={onFinish}>Sınavı Bitir</Button>
+                    <Button 
+                        type="button" 
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 font-black h-12 rounded-xl text-white shadow-lg shadow-emerald-600/20" 
+                        onClick={() => setShowConfirmDialog(true)}
+                    >
+                        Sınavı Bitir
+                    </Button>
                 </div>
             )}
         </div>
     );
 
     return (
-        <div className={cn(
-            "fixed inset-0 z-50 bg-background flex flex-col transition-all",
-            isFullScreen ? "z-[60]" : "relative h-[calc(100vh-180px)] rounded-[2.5rem] overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl"
-        )}>
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 h-16 bg-white dark:bg-slate-900 border-b shrink-0">
-                <div className="flex items-center gap-3">
-                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white", isReviewMode ? "bg-indigo-600" : "bg-emerald-500")}>
-                        {isReviewMode ? <AlertCircle className="w-6 h-6" /> : <CheckCircle2 className="w-6 h-6" />}
+        <>
+            <div className={cn(
+                "fixed inset-0 z-50 bg-background flex flex-col transition-all",
+                isFullScreen ? "z-[60]" : "relative h-[calc(100vh-180px)] rounded-[2.5rem] overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl"
+            )}>
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 h-16 bg-white dark:bg-slate-900 border-b shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white", isReviewMode ? "bg-indigo-600" : "bg-emerald-500")}>
+                            {isReviewMode ? <AlertCircle className="w-6 h-6" /> : <CheckCircle2 className="w-6 h-6" />}
+                        </div>
+                        <div>
+                            <p className="font-black text-sm leading-none text-slate-800 dark:text-slate-100">{test.title}</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{isReviewMode ? "SINAV ANALİZİ" : "SINAV MODU"}</p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="font-black text-sm leading-none text-slate-800 dark:text-slate-100">{test.title}</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{isReviewMode ? "SINAV ANALİZİ" : "SINAV MODU"}</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-1 sm:gap-2">
-                    {/* Çizim Araçları */}
-                    <div className="flex items-center gap-1 mr-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-full">
-                        <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="icon" 
-                            className={cn("rounded-full h-8 w-8 transition-all", isDrawingMode && drawingTool === 'pen' ? "bg-indigo-600 text-white hover:bg-indigo-700" : "hover:bg-slate-200 dark:hover:bg-slate-700")}
-                            onClick={() => { if(!isDrawingMode) toggleDrawingMode(true); setTool('pen'); }}
-                            title="Kalem"
-                        >
-                            <Pen className="h-4 w-4" />
-                        </Button>
-                        {isDrawingMode && (
-                            <>
-                                <div className="hidden sm:flex items-center px-2 w-24">
-                                    <Slider 
-                                        defaultValue={[3]} 
-                                        max={10} 
-                                        min={1} 
-                                        step={1} 
-                                        onValueChange={(v) => setCanvasWidth(v[0])} 
-                                    />
-                                </div>
-                                <Button 
-                                    type="button" 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className={cn("rounded-full h-8 w-8 transition-all", drawingTool === 'eraser' ? "bg-rose-500 text-white hover:bg-rose-600" : "hover:bg-slate-200 dark:hover:bg-slate-700")}
-                                    onClick={() => setTool('eraser')}
-                                    title="Silgi"
-                                >
-                                    <Eraser className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                    type="button" 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="rounded-full h-8 w-8 hover:bg-rose-100 hover:text-rose-600 dark:hover:bg-rose-900/30"
-                                    onClick={clearCanvas}
-                                    title="Tümünü Temizle"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </>
-                        )}
-                        <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="icon" 
-                            className={cn("rounded-full h-8 w-8", isDrawingMode ? "bg-indigo-100 text-indigo-600" : "")}
-                            onClick={() => toggleDrawingMode()}
-                            title={isDrawingMode ? "Çizim Modunu Kapat" : "Çizim Modunu Aç"}
-                        >
-                            <X className={cn("h-4 w-4 transition-transform", !isDrawingMode && "rotate-45")} />
-                        </Button>
-                    </div>
-
-                    <Button type="button" variant={isSplitScreenMobile ? "default" : "ghost"} size="icon" onClick={() => setIsSplitScreenMobile(!isSplitScreenMobile)} className={cn("lg:hidden rounded-full h-8 w-8 sm:h-10 sm:w-10", isSplitScreenMobile ? "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-400" : "hover:bg-slate-100")}>
-                        <SplitSquareVertical className="h-5 w-5" />
-                    </Button>
-                    <Button type="button" variant="ghost" size="icon" onClick={() => setIsFullScreen(!isFullScreen)} className="rounded-full hover:bg-slate-100">
-                        {isFullScreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
-                    </Button>
-                    {isFullScreen && <Button type="button" variant="ghost" size="icon" onClick={() => setIsFullScreen(false)} className="rounded-full hover:bg-rose-50 text-rose-500"><X className="h-5 w-5"/></Button>}
-                </div>
-            </div>
-
-            <div ref={containerRef} className={cn("flex-1 flex overflow-hidden relative", isSplitScreenMobile ? "flex-col lg:flex-row" : "flex-row")}>
-                
-                {/* Document Area */}
-                <div 
-                    className="relative bg-slate-50 dark:bg-black/20 flex flex-col min-h-0" 
-                    style={isSplitScreenMobile ? { height: `${splitHeightPercent}%` } : { flex: 1 }}
-                >
-                    <div className="flex-1 relative min-h-0">
-                        {/* We add a transparent overlay during drag to prevent iframe from eating mouse events */}
-                        {isDragging && <div className="absolute inset-0 z-50 bg-transparent" />}
-                        
-                        <iframe 
-                            ref={iframeRef}
-                            srcDoc={getIframeDocument(test.htmlContent || "")}
-                            className="w-full h-full border-none"
-                            title="Test Content"
-                        />
-                         {/* Mobile Optic FAB */}
-                        {(!isSplitScreenMobile && !isReviewMode) && (
+                    <div className="flex items-center gap-1 sm:gap-2">
+                        {/* Çizim Araçları */}
+                        <div className="flex items-center gap-1 mr-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-full">
                             <Button 
-                                type="button"
-                                onClick={() => setIsOpticalOpenMobile(true)}
-                                className="lg:hidden absolute bottom-6 right-6 h-14 w-14 rounded-full bg-indigo-600 text-white shadow-2xl z-40 border-4 border-white dark:border-slate-800"
+                                type="button" 
+                                variant="ghost" 
+                                size="icon" 
+                                className={cn("rounded-full h-8 w-8 transition-all", isDrawingMode && drawingTool === 'pen' ? "bg-indigo-600 text-white hover:bg-indigo-700" : "hover:bg-slate-200 dark:hover:bg-slate-700")}
+                                onClick={() => { if(!isDrawingMode) toggleDrawingMode(true); setTool('pen'); }}
+                                title="Kalem"
                             >
-                                <LayoutGrid className="w-6 h-6" />
+                                <Pen className="h-4 w-4" />
                             </Button>
-                        )}
-                        {/* Mobile Optic FAB for Review Mode */}
-                        {(!isSplitScreenMobile && isReviewMode) && (
+                            {isDrawingMode && (
+                                <>
+                                    <div className="hidden sm:flex items-center px-2 w-24">
+                                        <Slider 
+                                            defaultValue={[3]} 
+                                            max={10} 
+                                            min={1} 
+                                            step={1} 
+                                            onValueChange={(v) => setCanvasWidth(v[0])} 
+                                        />
+                                    </div>
+                                    <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className={cn("rounded-full h-8 w-8 transition-all", drawingTool === 'eraser' ? "bg-rose-500 text-white hover:bg-rose-600" : "hover:bg-slate-200 dark:hover:bg-slate-700")}
+                                        onClick={() => setTool('eraser')}
+                                        title="Silgi"
+                                    >
+                                        <Eraser className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="rounded-full h-8 w-8 hover:bg-rose-100 hover:text-rose-600 dark:hover:bg-rose-900/30"
+                                        onClick={clearCanvas}
+                                        title="Tümünü Temizle"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </>
+                            )}
                             <Button 
-                                type="button"
-                                onClick={() => setIsOpticalOpenMobile(true)}
-                                className="lg:hidden absolute bottom-6 right-6 h-14 w-14 rounded-full bg-slate-800 text-white shadow-2xl z-40 border-4 border-white dark:border-slate-800"
+                                type="button" 
+                                variant="ghost" 
+                                size="icon" 
+                                className={cn("rounded-full h-8 w-8", isDrawingMode ? "bg-indigo-100 text-indigo-600" : "")}
+                                onClick={() => toggleDrawingMode()}
+                                title={isDrawingMode ? "Çizim Modunu Kapat" : "Çizim Modunu Aç"}
                             >
-                                <AlertCircle className="w-6 h-6" />
-                            </Button>
-                        )}
-                    </div>
-
-                    {/* Mobile Sınavı Bitir Bar - Only show if not split screen */}
-                    {(!isReviewMode && !isSplitScreenMobile) && (
-                        <div className="lg:hidden p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] pb-6 sm:pb-4">
-                            <Button type="button" className="w-full bg-emerald-600 hover:bg-emerald-500 font-black h-12 rounded-xl text-white shadow-lg shadow-emerald-600/20" onClick={onFinish}>
-                                Sınavı Bitir
+                                <X className={cn("h-4 w-4 transition-transform", !isDrawingMode && "rotate-45")} />
                             </Button>
                         </div>
-                    )}
+
+                        <Button type="button" variant={isSplitScreenMobile ? "default" : "ghost"} size="icon" onClick={() => setIsSplitScreenMobile(!isSplitScreenMobile)} className={cn("lg:hidden rounded-full h-8 w-8 sm:h-10 sm:w-10", isSplitScreenMobile ? "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-400" : "hover:bg-slate-100")}>
+                            <SplitSquareVertical className="h-5 w-5" />
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => setIsFullScreen(!isFullScreen)} className="rounded-full hover:bg-slate-100">
+                            {isFullScreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+                        </Button>
+                        {isFullScreen && <Button type="button" variant="ghost" size="icon" onClick={() => setIsFullScreen(false)} className="rounded-full hover:bg-rose-50 text-rose-500"><X className="h-5 w-5"/></Button>}
+                    </div>
                 </div>
 
-                {/* Resizer Handle for Split Screen */}
-                {isSplitScreenMobile && (
+                <div ref={containerRef} className={cn("flex-1 flex overflow-hidden relative", isSplitScreenMobile ? "flex-col lg:flex-row" : "flex-row")}>
+                    
+                    {/* Document Area */}
                     <div 
-                        className="lg:hidden flex items-center justify-center h-4 bg-slate-200 dark:bg-slate-800 shrink-0 cursor-row-resize active:bg-indigo-200 dark:active:bg-indigo-900/50 touch-none z-50"
-                        onMouseDown={handleDragStart}
-                        onTouchStart={handleDragStart}
+                        className="relative bg-slate-50 dark:bg-black/20 flex flex-col min-h-0" 
+                        style={isSplitScreenMobile ? { height: `${splitHeightPercent}%` } : { flex: 1 }}
                     >
-                        <GripHorizontal className="w-5 h-5 text-slate-500" />
+                        <div className="flex-1 relative min-h-0">
+                            {/* We add a transparent overlay during drag to prevent iframe from eating mouse events */}
+                            {isDragging && <div className="absolute inset-0 z-50 bg-transparent" />}
+                            
+                            <iframe 
+                                ref={iframeRef}
+                                srcDoc={getIframeDocument(test.htmlContent || "")}
+                                className="w-full h-full border-none"
+                                title="Test Content"
+                            />
+                             {/* Mobile Optic FAB */}
+                            {(!isSplitScreenMobile && !isReviewMode) && (
+                                <Button 
+                                    type="button"
+                                    onClick={() => setIsOpticalOpenMobile(true)}
+                                    className="lg:hidden absolute bottom-6 right-6 h-14 w-14 rounded-full bg-indigo-600 text-white shadow-2xl z-40 border-4 border-white dark:border-slate-800"
+                                >
+                                    <LayoutGrid className="w-6 h-6" />
+                                </Button>
+                            )}
+                            {/* Mobile Optic FAB for Review Mode */}
+                            {(!isSplitScreenMobile && isReviewMode) && (
+                                <Button 
+                                    type="button"
+                                    onClick={() => setIsOpticalOpenMobile(true)}
+                                    className="lg:hidden absolute bottom-6 right-6 h-14 w-14 rounded-full bg-slate-800 text-white shadow-2xl z-40 border-4 border-white dark:border-slate-800"
+                                >
+                                    <AlertCircle className="w-6 h-6" />
+                                </Button>
+                            )}
+                        </div>
+
+                        {/* Mobile Sınavı Bitir Bar - Only show if not split screen */}
+                        {(!isReviewMode && !isSplitScreenMobile) && (
+                            <div className="lg:hidden p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] pb-6 sm:pb-4">
+                                <Button 
+                                    type="button" 
+                                    className="w-full bg-emerald-600 hover:bg-emerald-500 font-black h-12 rounded-xl text-white shadow-lg shadow-emerald-600/20" 
+                                    onClick={() => setShowConfirmDialog(true)}
+                                >
+                                    Sınavı Bitir
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Resizer Handle for Split Screen */}
+                    {isSplitScreenMobile && (
+                        <div 
+                            className="lg:hidden flex items-center justify-center h-4 bg-slate-200 dark:bg-slate-800 shrink-0 cursor-row-resize active:bg-indigo-200 dark:active:bg-indigo-900/50 touch-none z-50"
+                            onMouseDown={handleDragStart}
+                            onTouchStart={handleDragStart}
+                        >
+                            <GripHorizontal className="w-5 h-5 text-slate-500" />
+                        </div>
+                    )}
+
+                    {/* Optical Form Area - Desktop or Split Screen */}
+                    <div 
+                        className={cn("bg-white dark:bg-slate-900 flex flex-col min-h-0", isSplitScreenMobile ? "lg:border-l lg:border-slate-200 lg:w-80" : "hidden lg:flex lg:border-l lg:border-slate-200 lg:w-80")}
+                        style={isSplitScreenMobile ? { height: `calc(${100 - splitHeightPercent}% - 16px)` } : {}}
+                    >
+                        {renderOpticalForm()}
+                    </div>
+                </div>
+
+                {/* Mobile Optical Sheet Overlay */}
+                {(isOpticalOpenMobile && !isSplitScreenMobile) && (
+                    <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm lg:hidden flex items-end">
+                        <div className="bg-white dark:bg-slate-900 w-full h-[85vh] rounded-t-[3rem] overflow-hidden flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-500">
+                            <div className="h-1.5 w-12 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mt-4 mb-2" onClick={() => setIsOpticalOpenMobile(false)} />
+                            <div className="flex-1 overflow-hidden">
+                                {renderOpticalForm()}
+                            </div>
+                        </div>
                     </div>
                 )}
-
-                {/* Optical Form Area - Desktop or Split Screen */}
-                <div 
-                    className={cn("bg-white dark:bg-slate-900 flex flex-col min-h-0", isSplitScreenMobile ? "lg:border-l lg:border-slate-200 lg:w-80" : "hidden lg:flex lg:border-l lg:border-slate-200 lg:w-80")}
-                    style={isSplitScreenMobile ? { height: `calc(${100 - splitHeightPercent}% - 16px)` } : {}}
-                >
-                    {renderOpticalForm()}
-                </div>
             </div>
 
-            {/* Mobile Optical Sheet Overlay */}
-            {(isOpticalOpenMobile && !isSplitScreenMobile) && (
-                <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm lg:hidden flex items-end">
-                    <div className="bg-white dark:bg-slate-900 w-full h-[85vh] rounded-t-[3rem] overflow-hidden flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-500">
-                        <div className="h-1.5 w-12 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mt-4 mb-2" onClick={() => setIsOpticalOpenMobile(false)} />
-                        <div className="flex-1 overflow-hidden">
-                            {renderOpticalForm()}
+            {/* Sınavı Bitir Onay Penceresi (Confirmation Modal) */}
+            {showConfirmDialog && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2">Sınavı Bitir</h3>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
+                            Testi bitirmek istediğinize emin misiniz? Sonuçlarınız kaydedilecek ve sınav analiz ekranına geçilecektir.
+                        </p>
+                        <div className="flex gap-3">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="flex-1 font-bold rounded-xl"
+                                onClick={() => setShowConfirmDialog(false)}
+                            >
+                                İptal
+                            </Button>
+                            <Button
+                                type="button"
+                                className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl shadow-lg shadow-emerald-600/20"
+                                onClick={() => {
+                                    setShowConfirmDialog(false);
+                                    onFinish();
+                                }}
+                            >
+                                Evet, Bitir
+                            </Button>
                         </div>
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }
