@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Maximize2, Minimize2, CheckCircle2, LayoutGrid, X, ChevronRight, Check, AlertCircle, SplitSquareVertical, GripHorizontal, Pen, Eraser, Trash2 } from "lucide-react";
+import { Maximize2, Minimize2, CheckCircle2, LayoutGrid, X, ChevronRight, Check, AlertCircle, SplitSquareVertical, GripHorizontal, Pen, Eraser, Trash2, Hand } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
@@ -37,6 +37,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
     const [isDrawingMode, setIsDrawingMode] = React.useState(false);
     const [drawingTool, setDrawingTool] = React.useState<'pen' | 'eraser'>('pen');
     const [strokeWidth, setStrokeWidth] = React.useState(3);
+    const [isPenOnlyMode, setIsPenOnlyMode] = React.useState(false); // Avuç İçi Reddi State'i
 
     const toggleDrawingMode = (forceEnabled?: boolean) => {
         const newMode = forceEnabled !== undefined ? forceEnabled : !isDrawingMode;
@@ -44,7 +45,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
         iframeRef.current?.contentWindow?.postMessage({ type: 'TOGGLE_DRAWING', enabled: newMode }, '*');
         iframeRef.current?.contentWindow?.postMessage({ type: 'SET_TOOL', tool: drawingTool }, '*');
         
-        // Kullanıcı kapatınca çizimlerin silinmesini istedi
         if (!newMode) {
             iframeRef.current?.contentWindow?.postMessage({ type: 'CLEAR' }, '*');
         }
@@ -64,9 +64,15 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
         iframeRef.current?.contentWindow?.postMessage({ type: 'CLEAR' }, '*');
     };
 
+    const togglePenOnlyMode = () => {
+        const newMode = !isPenOnlyMode;
+        setIsPenOnlyMode(newMode);
+        iframeRef.current?.contentWindow?.postMessage({ type: 'SET_PEN_ONLY', enabled: newMode }, '*');
+    };
+
     const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
         setIsDragging(true);
-        document.body.style.userSelect = 'none'; // Sürüklerken metin seçimini engelle
+        document.body.style.userSelect = 'none'; 
     };
 
     const handleDragMove = React.useCallback((clientY: number) => {
@@ -75,7 +81,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
         const offsetY = clientY - containerRect.top;
         let newPercent = (offsetY / containerRect.height) * 100;
         
-        // Sınırlandırma (%20 ile %80 arası)
         if (newPercent < 20) newPercent = 20;
         if (newPercent > 80) newPercent = 80;
         
@@ -112,7 +117,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
         };
     }, [isDragging, handleMouseMove, handleTouchMove, handleDragEnd]);
 
-    // Ekranı kapladığında (full screen) veya onay/optik açıkken sayfanın altının kaymasını engelle
     React.useEffect(() => {
         if (isFullScreen || isOpticalOpenMobile || showConfirmDialog) {
             document.body.style.overflow = 'hidden';
@@ -142,7 +146,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                 img { border-radius: 1rem; max-width: 100%; height: auto; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); margin: 1.5rem 0; }
                 .question-box { background: #f8fafc; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; margin-bottom: 2rem; }
                 
-                /* Responsive iframes (Google Drive vb.) */
                 iframe { 
                     max-width: 100% !important; 
                     width: 100% !important; 
@@ -167,9 +170,9 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     let isDrawing = false;
                     let tool = 'pen';
                     let currentWidth = 3;
+                    let penOnly = false; // Sadece kalem modu kontrol değişkeni
                     
                     const resize = () => {
-                        // Ölçüm yaparken canvas'ı gizle ki sonsuz büyüme döngüsüne girmesin
                         canvas.style.display = 'none';
                         const w = Math.max(document.body.scrollWidth, document.documentElement.scrollWidth);
                         const h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
@@ -179,7 +182,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                         const expectedHeight = Math.floor(h * window.devicePixelRatio);
                         
                         if (canvas.width !== expectedWidth || canvas.height !== expectedHeight) {
-                            // Hızlı kopyalama için offscreen canvas kullan (toDataURL çok yavaştır ve dondurur)
                             let offCanvas = null;
                             if (canvas.width > 0 && canvas.height > 0) {
                                 offCanvas = document.createElement('canvas');
@@ -221,7 +223,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     window.addEventListener('resize', debouncedResize);
                     
                     const observer = new MutationObserver((mutations) => {
-                        // Sadece canvas harici değişikliklerde resize tetikle
                         const hasRealMutation = mutations.some(m => m.target !== canvas);
                         if (hasRealMutation) {
                             debouncedResize();
@@ -232,18 +233,26 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
 
                     const start = (e) => {
                         if(canvas.style.pointerEvents === 'none') return;
+                        
+                        // Avuç içi reddi aktifse ve cihaz dokunmatikse (parmak) çizimi engelle. Fare ve Kaleme izin ver.
+                        if(penOnly && e.pointerType === 'touch') return; 
+
                         isDrawing = true;
                         ctx.beginPath();
                         ctx.moveTo(e.pageX, e.pageY);
                         canvas.setPointerCapture(e.pointerId);
                         e.preventDefault();
                     };
+                    
                     const draw = (e) => {
                         if (!isDrawing) return;
+                        if(penOnly && e.pointerType === 'touch') return;
+                        
                         ctx.lineTo(e.pageX, e.pageY);
                         ctx.stroke();
                         e.preventDefault();
                     };
+                    
                     const stop = (e) => {
                         if (!isDrawing) return;
                         isDrawing = false;
@@ -277,6 +286,8 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                             ctx.lineWidth = tool === 'eraser' ? currentWidth * 5 : currentWidth;
                         } else if (msg.type === 'CLEAR') {
                             ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        } else if (msg.type === 'SET_PEN_ONLY') {
+                            penOnly = msg.enabled;
                         }
                     });
                 });
@@ -401,8 +412,22 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                             >
                                 <Pen className="h-4 w-4" />
                             </Button>
+                            
                             {isDrawingMode && (
                                 <>
+                                    {/* Yalnızca Kalem Modu (Palm Rejection) Butonu */}
+                                    <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className={cn("rounded-full h-8 w-8 transition-all relative", isPenOnlyMode ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40" : "hover:bg-slate-200 dark:hover:bg-slate-700")}
+                                        onClick={togglePenOnlyMode}
+                                        title={isPenOnlyMode ? "Avuç İçi Reddi Açık (Sadece Kalem)" : "Avuç İçi Reddini Aç (Parmakla Çizimi Kapat)"}
+                                    >
+                                        <Hand className={cn("h-4 w-4", isPenOnlyMode ? "opacity-40" : "")} />
+                                        {isPenOnlyMode && <X className="h-3 w-3 absolute bottom-1.5 right-1.5 text-indigo-600 dark:text-indigo-400" strokeWidth={3} />}
+                                    </Button>
+
                                     <div className="hidden sm:flex items-center px-2 w-24">
                                         <Slider 
                                             defaultValue={[3]} 
@@ -464,7 +489,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                         style={isSplitScreenMobile ? { height: `${splitHeightPercent}%` } : { flex: 1 }}
                     >
                         <div className="flex-1 relative min-h-0">
-                            {/* We add a transparent overlay during drag to prevent iframe from eating mouse events */}
                             {isDragging && <div className="absolute inset-0 z-50 bg-transparent" />}
                             
                             <iframe 
@@ -473,7 +497,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                                 className="w-full h-full border-none"
                                 title="Test Content"
                             />
-                             {/* Mobile Optic FAB */}
                             {(!isSplitScreenMobile && !isReviewMode) && (
                                 <Button 
                                     type="button"
@@ -483,7 +506,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                                     <LayoutGrid className="w-6 h-6" />
                                 </Button>
                             )}
-                            {/* Mobile Optic FAB for Review Mode */}
                             {(!isSplitScreenMobile && isReviewMode) && (
                                 <Button 
                                     type="button"
@@ -495,7 +517,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                             )}
                         </div>
 
-                        {/* Mobile Sınavı Bitir Bar - Only show if not split screen */}
                         {(!isReviewMode && !isSplitScreenMobile) && (
                             <div className="lg:hidden p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] pb-6 sm:pb-4">
                                 <Button 
@@ -509,7 +530,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                         )}
                     </div>
 
-                    {/* Resizer Handle for Split Screen */}
                     {isSplitScreenMobile && (
                         <div 
                             className="lg:hidden flex items-center justify-center h-4 bg-slate-200 dark:bg-slate-800 shrink-0 cursor-row-resize active:bg-indigo-200 dark:active:bg-indigo-900/50 touch-none z-50"
@@ -520,7 +540,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                         </div>
                     )}
 
-                    {/* Optical Form Area - Desktop or Split Screen */}
                     <div 
                         className={cn("bg-white dark:bg-slate-900 flex flex-col min-h-0", isSplitScreenMobile ? "lg:border-l lg:border-slate-200 lg:w-80" : "hidden lg:flex lg:border-l lg:border-slate-200 lg:w-80")}
                         style={isSplitScreenMobile ? { height: `calc(${100 - splitHeightPercent}% - 16px)` } : {}}
@@ -529,7 +548,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     </div>
                 </div>
 
-                {/* Mobile Optical Sheet Overlay */}
                 {(isOpticalOpenMobile && !isSplitScreenMobile) && (
                     <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm lg:hidden flex items-end">
                         <div className="bg-white dark:bg-slate-900 w-full h-[85vh] rounded-t-[3rem] overflow-hidden flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-500">
@@ -542,7 +560,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                 )}
             </div>
 
-            {/* Sınavı Bitir Onay Penceresi (Confirmation Modal) */}
+            {/* Sınavı Bitir Onay Penceresi */}
             {showConfirmDialog && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
                     <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
