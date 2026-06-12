@@ -70,7 +70,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
         iframeRef.current?.contentWindow?.postMessage({ type: 'SET_PEN_ONLY', enabled: newMode }, '*');
     };
 
-    // İframe içi kaydırma fonksiyonu
     const scrollIframe = (direction: 'up' | 'down') => {
         iframeRef.current?.contentWindow?.postMessage({ type: 'SCROLL', direction }, '*');
     };
@@ -160,7 +159,10 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                 }
             </style>
             <script>
-                document.addEventListener('DOMContentLoaded', () => {
+                const initApp = () => {
+                    if (window.__appInit) return;
+                    window.__appInit = true;
+
                     const canvas = document.createElement('canvas');
                     canvas.id = 'drawing-canvas';
                     canvas.style.position = 'absolute';
@@ -168,14 +170,18 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     canvas.style.left = '0';
                     canvas.style.zIndex = '9999';
                     canvas.style.pointerEvents = 'none';
-                    canvas.style.touchAction = 'none'; // Kalemin kusursuz çalışması için hep kapalı
+                    canvas.style.touchAction = 'none'; 
                     document.body.appendChild(canvas);
 
-                    const ctx = canvas.getContext('2d');
+                    const ctx = canvas.getContext('2d', { desynchronized: true }); // Düşük gecikme için özel izin
                     let isDrawing = false;
                     let tool = 'pen';
                     let currentWidth = 3;
                     let penOnly = false; 
+                    
+                    // YÜKSEK PERFORMANS İÇİN EKLENEN DEĞİŞKENLER
+                    let points = []; // Koordinatları hafızada tutacağımız dizi
+                    let raf = null;  // requestAnimationFrame kimliği
                     
                     const resize = () => {
                         canvas.style.display = 'none';
@@ -229,20 +235,41 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     
                     const observer = new MutationObserver((mutations) => {
                         const hasRealMutation = mutations.some(m => m.target !== canvas);
-                        if (hasRealMutation) {
-                            debouncedResize();
-                        }
+                        if (hasRealMutation) debouncedResize();
                     });
                     observer.observe(document.body, { childList: true, subtree: true });
                     setTimeout(resize, 100);
+
+                    // EĞRİ YUMUŞATMA VE ÇİZİM MOTORU (OPTIMIZED RENDER LOOP)
+                    const renderPath = () => {
+                        if (points.length < 2) return;
+
+                        ctx.beginPath();
+                        ctx.moveTo(points[0].x, points[0].y);
+
+                        // Noktaları dümdüz değil, matematiksel esnek eğrilerle birleştir
+                        for (let i = 1; i < points.length - 1; i++) {
+                            const xc = (points[i].x + points[i + 1].x) / 2;
+                            const yc = (points[i].y + points[i + 1].y) / 2;
+                            ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+                        }
+
+                        // Eğriyi son noktaya bağla ve ekrana dök
+                        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+                        ctx.stroke();
+
+                        // Sadece en son kalınan noktayı hafızada tut (Bir sonraki çizim buradan devam etsin diye)
+                        points = [points[points.length - 1]];
+                        raf = null;
+                    };
 
                     const start = (e) => {
                         if(canvas.style.pointerEvents === 'none') return;
                         if (penOnly && e.pointerType === 'touch') return; 
 
                         isDrawing = true;
-                        ctx.beginPath();
-                        ctx.moveTo(e.pageX, e.pageY);
+                        // Çizime başlandığında ilk noktayı diziye ekle
+                        points = [{ x: e.pageX, y: e.pageY }];
                         canvas.setPointerCapture(e.pointerId);
                         e.preventDefault();
                     };
@@ -251,15 +278,31 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                         if (!isDrawing) return;
                         if (penOnly && e.pointerType === 'touch') return;
                         
-                        ctx.lineTo(e.pageX, e.pageY);
-                        ctx.stroke();
+                        // Her harekette noktayı diziye kaydet
+                        points.push({ x: e.pageX, y: e.pageY });
+                        
+                        // Eğer donanım müsaitse (bekleyen bir işlem yoksa) çizim karesini tetikle
+                        if (!raf) {
+                            raf = requestAnimationFrame(renderPath);
+                        }
+                        
                         e.preventDefault();
                     };
                     
                     const stop = (e) => {
                         if (!isDrawing) return;
                         isDrawing = false;
-                        ctx.closePath();
+                        
+                        // Bekleyen kare varsa iptal et
+                        if (raf) {
+                            cancelAnimationFrame(raf);
+                            raf = null;
+                        }
+                        
+                        // Kalan son parçaları çiz ve hafızayı temizle
+                        renderPath();
+                        points = [];
+                        
                         canvas.releasePointerCapture(e.pointerId);
                         e.preventDefault();
                     };
@@ -292,15 +335,25 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                         } else if (msg.type === 'SET_PEN_ONLY') {
                             penOnly = msg.enabled;
                         } else if (msg.type === 'SCROLL') {
-                            // Ekranın %60'ı kadar aşağı veya yukarı kaydır
-                            const scrollAmount = window.innerHeight * 0.6;
-                            window.scrollBy({
-                                top: msg.direction === 'up' ? -scrollAmount : scrollAmount,
-                                behavior: 'smooth'
-                            });
+                            const offset = (msg.direction === 'up' ? -1 : 1) * (window.innerHeight * 0.5);
+                            window.scrollBy({ top: offset, behavior: 'smooth' });
+                            if (document.documentElement) document.documentElement.scrollTop += offset;
+                            if (document.body) document.body.scrollTop += offset;
+                            const innerIframe = document.querySelector('iframe');
+                            if (innerIframe) {
+                                try {
+                                    innerIframe.contentWindow.scrollBy({ top: offset, behavior: 'smooth' });
+                                } catch (err) { }
+                            }
                         }
                     });
-                });
+                };
+
+                if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                    initApp();
+                } else {
+                    document.addEventListener('DOMContentLoaded', initApp);
+                }
             </script>
         </head>
         <body>${htmlContent}</body>
@@ -507,7 +560,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                                 title="Test Content"
                             />
 
-                            {/* Ekranda Yüzen (FAB) Kaydırma Butonları - Çizim Modunda Görünür */}
                             {isDrawingMode && (
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-40">
                                     <Button 
