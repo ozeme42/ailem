@@ -24,10 +24,10 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
     const [isOpticalOpenMobile, setIsOpticalOpenMobile] = React.useState(false);
     const [isSplitScreenMobile, setIsSplitScreenMobile] = React.useState(false);
     
-    // Onay penceresi
+    // Onay penceresi için state
     const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
     
-    // Yükseklik durumu
+    // Yüksekliği yüzde olarak tutacağız (Varsayılan %50)
     const [splitHeightPercent, setSplitHeightPercent] = React.useState(50);
     const containerRef = React.useRef<HTMLDivElement>(null);
     const iframeRef = React.useRef<HTMLIFrameElement>(null);
@@ -37,7 +37,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
     const [isDrawingMode, setIsDrawingMode] = React.useState(false);
     const [drawingTool, setDrawingTool] = React.useState<'pen' | 'eraser'>('pen');
     const [strokeWidth, setStrokeWidth] = React.useState(3);
-    const [isPenOnlyMode, setIsPenOnlyMode] = React.useState(false);
+    const [isPenOnlyMode, setIsPenOnlyMode] = React.useState(false); // Avuç İçi Reddi State'i
 
     const toggleDrawingMode = (forceEnabled?: boolean) => {
         const newMode = forceEnabled !== undefined ? forceEnabled : !isDrawingMode;
@@ -163,7 +163,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     canvas.style.left = '0';
                     canvas.style.zIndex = '9999';
                     canvas.style.pointerEvents = 'none';
-                    // Varsayılan olarak çizim modunda kaymayı engellemek için none.
+                    // Kalemin bozulmaması için BURASI HER ZAMAN NONE KALMALI
                     canvas.style.touchAction = 'none';
                     document.body.appendChild(canvas);
 
@@ -172,6 +172,11 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     let tool = 'pen';
                     let currentWidth = 3;
                     let penOnly = false; 
+                    
+                    // Parmakla kaydırma için state değişkenleri
+                    let isTouchScrolling = false;
+                    let lastTouchX = 0;
+                    let lastTouchY = 0;
                     
                     const resize = () => {
                         canvas.style.display = 'none';
@@ -235,34 +240,50 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     const start = (e) => {
                         if(canvas.style.pointerEvents === 'none') return;
                         
-                        // EĞER SADECE KALEM MODU AKTİFSE VE PARMAKLA DOKUNULDUYSA
-                        // Fonksiyondan çıkıyoruz ki tarayıcı doğal "kaydırma" işlemini yapsın.
-                        if(penOnly && e.pointerType === 'touch') return; 
+                        // EĞER SADECE KALEM MODU AÇIKSA VE DOKUNAN ŞEY PARMAK İSE: ÇİZİM YAPMA, KAYDIR!
+                        if (penOnly && e.pointerType === 'touch') {
+                            isTouchScrolling = true;
+                            lastTouchX = e.clientX;
+                            lastTouchY = e.clientY;
+                            return; 
+                        }
 
                         isDrawing = true;
                         ctx.beginPath();
                         ctx.moveTo(e.pageX, e.pageY);
                         canvas.setPointerCapture(e.pointerId);
-                        
-                        // Sadece çizim yapılıyorsa sayfanın kaymasını engelle
-                        if (e.cancelable) e.preventDefault();
+                        e.preventDefault();
                     };
                     
                     const draw = (e) => {
+                        // Parmakla dokunuyorsak sayfayı manuel kaydırıyoruz (Simüle ediyoruz)
+                        if (penOnly && e.pointerType === 'touch' && isTouchScrolling) {
+                            const deltaX = lastTouchX - e.clientX;
+                            const deltaY = lastTouchY - e.clientY;
+                            window.scrollBy(deltaX, deltaY); // Sayfayı kaydır
+                            lastTouchX = e.clientX;
+                            lastTouchY = e.clientY;
+                            return;
+                        }
+
                         if (!isDrawing) return;
-                        if(penOnly && e.pointerType === 'touch') return;
                         
                         ctx.lineTo(e.pageX, e.pageY);
                         ctx.stroke();
-                        
-                        if (e.cancelable) e.preventDefault();
+                        e.preventDefault();
                     };
                     
                     const stop = (e) => {
+                        if (penOnly && e.pointerType === 'touch') {
+                            isTouchScrolling = false;
+                            return;
+                        }
+
                         if (!isDrawing) return;
                         isDrawing = false;
                         ctx.closePath();
                         canvas.releasePointerCapture(e.pointerId);
+                        e.preventDefault();
                     };
                     
                     canvas.addEventListener('pointerdown', start);
@@ -292,8 +313,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                             ctx.clearRect(0, 0, canvas.width, canvas.height);
                         } else if (msg.type === 'SET_PEN_ONLY') {
                             penOnly = msg.enabled;
-                            // BU KISIM ÖNEMLİ: Parmakla kaydırmaya izin vermek için touch-action değiştirilir.
-                            canvas.style.touchAction = penOnly ? 'auto' : 'none';
+                            // Touch Action ile oynamıyoruz, kalemin hassasiyeti bozulmasın diye.
                         }
                     });
                 });
@@ -421,13 +441,14 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                             
                             {isDrawingMode && (
                                 <>
+                                    {/* Yalnızca Kalem Modu Butonu */}
                                     <Button 
                                         type="button" 
                                         variant="ghost" 
                                         size="icon" 
                                         className={cn("rounded-full h-8 w-8 transition-all relative", isPenOnlyMode ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40" : "hover:bg-slate-200 dark:hover:bg-slate-700")}
                                         onClick={togglePenOnlyMode}
-                                        title={isPenOnlyMode ? "Avuç İçi Reddi Açık (Sadece Kalem)" : "Avuç İçi Reddini Aç (Parmakla Çizimi Kapat)"}
+                                        title={isPenOnlyMode ? "Avuç İçi Reddi Açık (Kalemle çiz, parmakla kaydır)" : "Avuç İçi Reddini Aç (Parmakla Çizimi Kapat)"}
                                     >
                                         <Hand className={cn("h-4 w-4", isPenOnlyMode ? "opacity-40" : "")} />
                                         {isPenOnlyMode && <X className="h-3 w-3 absolute bottom-1.5 right-1.5 text-indigo-600 dark:text-indigo-400" strokeWidth={3} />}
