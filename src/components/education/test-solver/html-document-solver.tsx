@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Maximize2, Minimize2, CheckCircle2, LayoutGrid, X, ChevronRight, Check, AlertCircle, SplitSquareVertical, GripHorizontal, Pen, Eraser, Trash2, Hand } from "lucide-react";
+import { Maximize2, Minimize2, CheckCircle2, LayoutGrid, X, ChevronRight, Check, AlertCircle, SplitSquareVertical, GripHorizontal, Pen, Eraser, Trash2, Hand, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
@@ -37,7 +37,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
     const [isDrawingMode, setIsDrawingMode] = React.useState(false);
     const [drawingTool, setDrawingTool] = React.useState<'pen' | 'eraser'>('pen');
     const [strokeWidth, setStrokeWidth] = React.useState(3);
-    const [isPenOnlyMode, setIsPenOnlyMode] = React.useState(false); // Avuç İçi Reddi State'i
+    const [isPenOnlyMode, setIsPenOnlyMode] = React.useState(false);
 
     const toggleDrawingMode = (forceEnabled?: boolean) => {
         const newMode = forceEnabled !== undefined ? forceEnabled : !isDrawingMode;
@@ -68,6 +68,11 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
         const newMode = !isPenOnlyMode;
         setIsPenOnlyMode(newMode);
         iframeRef.current?.contentWindow?.postMessage({ type: 'SET_PEN_ONLY', enabled: newMode }, '*');
+    };
+
+    // İframe içi kaydırma fonksiyonu
+    const scrollIframe = (direction: 'up' | 'down') => {
+        iframeRef.current?.contentWindow?.postMessage({ type: 'SCROLL', direction }, '*');
     };
 
     const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
@@ -141,7 +146,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             <script src="https://cdn.tailwindcss.com"></script>
             <style>
-                body { font-family: ui-sans-serif, system-ui, sans-serif; color: #334155; line-height: 1.6; ${paddingStyle} }
+                body { font-family: ui-sans-serif, system-ui, sans-serif; color: #334155; line-height: 1.6; ${paddingStyle} scroll-behavior: smooth; }
                 h1, h2, h3 { color: #0f172a; font-weight: 800; margin-top: 1.5em; margin-bottom: 0.5em; }
                 img { border-radius: 1rem; max-width: 100%; height: auto; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); margin: 1.5rem 0; }
                 .question-box { background: #f8fafc; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; margin-bottom: 2rem; }
@@ -163,8 +168,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     canvas.style.left = '0';
                     canvas.style.zIndex = '9999';
                     canvas.style.pointerEvents = 'none';
-                    // Kalemin bozulmaması için BURASI HER ZAMAN NONE KALMALI
-                    canvas.style.touchAction = 'none';
+                    canvas.style.touchAction = 'none'; // Kalemin kusursuz çalışması için hep kapalı
                     document.body.appendChild(canvas);
 
                     const ctx = canvas.getContext('2d');
@@ -172,11 +176,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     let tool = 'pen';
                     let currentWidth = 3;
                     let penOnly = false; 
-                    
-                    // Parmakla kaydırma için state değişkenleri
-                    let isTouchScrolling = false;
-                    let lastTouchX = 0;
-                    let lastTouchY = 0;
                     
                     const resize = () => {
                         canvas.style.display = 'none';
@@ -239,14 +238,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
 
                     const start = (e) => {
                         if(canvas.style.pointerEvents === 'none') return;
-                        
-                        // EĞER SADECE KALEM MODU AÇIKSA VE DOKUNAN ŞEY PARMAK İSE: ÇİZİM YAPMA, KAYDIR!
-                        if (penOnly && e.pointerType === 'touch') {
-                            isTouchScrolling = true;
-                            lastTouchX = e.clientX;
-                            lastTouchY = e.clientY;
-                            return; 
-                        }
+                        if (penOnly && e.pointerType === 'touch') return; 
 
                         isDrawing = true;
                         ctx.beginPath();
@@ -256,17 +248,8 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     };
                     
                     const draw = (e) => {
-                        // Parmakla dokunuyorsak sayfayı manuel kaydırıyoruz (Simüle ediyoruz)
-                        if (penOnly && e.pointerType === 'touch' && isTouchScrolling) {
-                            const deltaX = lastTouchX - e.clientX;
-                            const deltaY = lastTouchY - e.clientY;
-                            window.scrollBy(deltaX, deltaY); // Sayfayı kaydır
-                            lastTouchX = e.clientX;
-                            lastTouchY = e.clientY;
-                            return;
-                        }
-
                         if (!isDrawing) return;
+                        if (penOnly && e.pointerType === 'touch') return;
                         
                         ctx.lineTo(e.pageX, e.pageY);
                         ctx.stroke();
@@ -274,11 +257,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     };
                     
                     const stop = (e) => {
-                        if (penOnly && e.pointerType === 'touch') {
-                            isTouchScrolling = false;
-                            return;
-                        }
-
                         if (!isDrawing) return;
                         isDrawing = false;
                         ctx.closePath();
@@ -313,7 +291,13 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                             ctx.clearRect(0, 0, canvas.width, canvas.height);
                         } else if (msg.type === 'SET_PEN_ONLY') {
                             penOnly = msg.enabled;
-                            // Touch Action ile oynamıyoruz, kalemin hassasiyeti bozulmasın diye.
+                        } else if (msg.type === 'SCROLL') {
+                            // Ekranın %60'ı kadar aşağı veya yukarı kaydır
+                            const scrollAmount = window.innerHeight * 0.6;
+                            window.scrollBy({
+                                top: msg.direction === 'up' ? -scrollAmount : scrollAmount,
+                                behavior: 'smooth'
+                            });
                         }
                     });
                 });
@@ -441,14 +425,13 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                             
                             {isDrawingMode && (
                                 <>
-                                    {/* Yalnızca Kalem Modu Butonu */}
                                     <Button 
                                         type="button" 
                                         variant="ghost" 
                                         size="icon" 
                                         className={cn("rounded-full h-8 w-8 transition-all relative", isPenOnlyMode ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40" : "hover:bg-slate-200 dark:hover:bg-slate-700")}
                                         onClick={togglePenOnlyMode}
-                                        title={isPenOnlyMode ? "Avuç İçi Reddi Açık (Kalemle çiz, parmakla kaydır)" : "Avuç İçi Reddini Aç (Parmakla Çizimi Kapat)"}
+                                        title={isPenOnlyMode ? "Avuç İçi Reddi Açık" : "Avuç İçi Reddini Aç"}
                                     >
                                         <Hand className={cn("h-4 w-4", isPenOnlyMode ? "opacity-40" : "")} />
                                         {isPenOnlyMode && <X className="h-3 w-3 absolute bottom-1.5 right-1.5 text-indigo-600 dark:text-indigo-400" strokeWidth={3} />}
@@ -523,6 +506,27 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                                 className="w-full h-full border-none"
                                 title="Test Content"
                             />
+
+                            {/* Ekranda Yüzen (FAB) Kaydırma Butonları - Çizim Modunda Görünür */}
+                            {isDrawingMode && (
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-40">
+                                    <Button 
+                                        type="button" 
+                                        onClick={() => scrollIframe('up')} 
+                                        className="h-12 w-12 rounded-full bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 backdrop-blur-sm"
+                                    >
+                                        <ChevronUp className="h-6 w-6" />
+                                    </Button>
+                                    <Button 
+                                        type="button" 
+                                        onClick={() => scrollIframe('down')} 
+                                        className="h-12 w-12 rounded-full bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 backdrop-blur-sm"
+                                    >
+                                        <ChevronDown className="h-6 w-6" />
+                                    </Button>
+                                </div>
+                            )}
+
                             {(!isSplitScreenMobile && !isReviewMode) && (
                                 <Button 
                                     type="button"
