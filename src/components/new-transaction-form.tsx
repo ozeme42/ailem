@@ -88,6 +88,7 @@ const formSchema = z.object({
   isInstallment: z.boolean().default(false),
   isRecurring: z.boolean().default(false),
   installmentCount: z.coerce.number().optional(),
+  description: z.string().optional(),
 });
 
 type NewTransactionFormProps = {
@@ -120,6 +121,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
       isInstallment: false,
       isRecurring: false,
       installmentCount: 2,
+      description: "",
     },
   });
   
@@ -134,6 +136,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
         isInstallment: initialData.isInstallment || false,
         isRecurring: initialData.isRecurring || false,
         installmentCount: initialData.installmentDetails?.total || 2,
+        description: initialData.description || "",
       });
     }
   }, [initialData, form, user]);
@@ -253,6 +256,18 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                         <ChevronRight className="h-5 w-5 text-slate-400" />
                     </Button>
                     {errors.accountId && <p className="text-xs font-medium text-rose-500 ml-1">{errors.accountId.message}</p>}
+                </div>
+
+                {/* Açıklama */}
+                <div className="space-y-1.5">
+                    <FormLabel className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Açıklama (Opsiyonel)</FormLabel>
+                    <FormField control={form.control} name="description" render={({ field }) => (
+                        <FormItem>
+                            <FormControl>
+                                <Input placeholder="Örn: Pazar alışverişi" className="h-12 rounded-xl bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10" {...field} />
+                            </FormControl>
+                        </FormItem>
+                    )}/>
                 </div>
 
                 {/* Gelişmiş Seçenekler (Accordion) */}

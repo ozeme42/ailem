@@ -564,6 +564,7 @@ export interface Transaction {
     isInstallment: boolean;
     isRecurring?: boolean;
     isApplied?: boolean;
+    description?: string;
     installmentDetails?: {
         current: number;
         total: number;
