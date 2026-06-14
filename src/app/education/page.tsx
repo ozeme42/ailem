@@ -144,17 +144,31 @@ export default function EducationPage() {
     [selectedStudent, studyAssignments]);
 
   const assignmentsByBook = React.useMemo(() => {
-    const grouped: Record<string, { title: string; assignments: StudyAssignment[]; total: number; completed: number }> = {};
+    const grouped: Record<string, { title: string; plan: StudyPlan; assignments: StudyAssignment[]; total: number; completed: number }> = {};
     assignments.forEach(a => {
       const plan = studyPlans.find(p => p.id === a.studyPlanId);
       if (!plan) return;
-      if (!grouped[plan.id]) grouped[plan.id] = { title: plan.title, assignments: [], total: 0, completed: 0 };
+      if (!grouped[plan.id]) grouped[plan.id] = { title: plan.title, plan, assignments: [], total: 0, completed: 0 };
       grouped[plan.id].assignments.push(a);
       grouped[plan.id].total++;
       if (a.status === 'completed') grouped[plan.id].completed++;
     });
     return Object.entries(grouped)
-      .map(([id, g]) => ({ id, ...g }))
+      .map(([id, g]) => {
+         const topicOrder: Record<string, number> = {};
+         let index = 0;
+         g.plan.subjects.forEach(subject => {
+             subject.topics.forEach(topic => {
+                 topicOrder[topic.id] = index++;
+             });
+         });
+         g.assignments.sort((a, b) => {
+             const idxA = topicOrder[a.topicId] ?? 99999;
+             const idxB = topicOrder[b.topicId] ?? 99999;
+             return idxA - idxB;
+         });
+         return { id, ...g };
+      })
       .filter(g => g.total > 0)
       .sort((a, b) => (b.total - b.completed) - (a.total - a.completed));
   }, [assignments, studyPlans]);
@@ -1093,7 +1107,15 @@ export default function EducationPage() {
                                       {a.status === 'completed' && <Check className="w-3.5 h-3.5 text-white" />}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{a.topic}</p>
+                                      <div className="flex items-center gap-2 mb-0.5">
+                                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{a.topic}</p>
+                                        {a.dueDate && (
+                                            <span className="text-[9px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-1.5 py-0.5 rounded-sm flex items-center gap-1 shrink-0 whitespace-nowrap">
+                                                <CalendarIcon className="w-2.5 h-2.5" />
+                                                {format(new Date(a.dueDate), 'dd MMM', { locale: tr })}
+                                            </span>
+                                        )}
+                                      </div>
                                       <div className="flex items-center gap-3 mt-1 opacity-70">
                                         <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded">{a.subject}</span>
                                       </div>
@@ -1120,7 +1142,15 @@ export default function EducationPage() {
                                           <Check className="w-3.5 h-3.5 text-white" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                          <p className="text-sm font-medium text-slate-400 line-through">{a.topic}</p>
+                                          <div className="flex items-center gap-2 mb-0.5">
+                                            <p className="text-sm font-medium text-slate-400 line-through">{a.topic}</p>
+                                            {a.dueDate && (
+                                                <span className="text-[9px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-sm flex items-center gap-1 shrink-0 whitespace-nowrap">
+                                                    <CalendarIcon className="w-2.5 h-2.5" />
+                                                    {format(new Date(a.dueDate), 'dd MMM', { locale: tr })}
+                                                </span>
+                                            )}
+                                          </div>
                                           <div className="flex items-center gap-3 mt-1 opacity-50">
                                             <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded">{a.subject}</span>
                                           </div>
