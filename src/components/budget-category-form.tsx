@@ -53,17 +53,21 @@ export function BudgetCategoryForm({ onBack }: { onBack: () => void }) {
 
      const handleSaveCategory = async (data: CategoryFormData) => {
         try {
+            const cleanData = { ...data };
+            if (cleanData.limit === undefined || cleanData.limit === null || isNaN(cleanData.limit)) {
+                delete cleanData.limit;
+            }
             if (editingCategory) {
-                await updateBudgetCategory(editingCategory.id, data);
+                await updateBudgetCategory(editingCategory.id, cleanData);
                 toast({ title: 'Kategori Güncellendi' });
             } else {
-                await addBudgetCategory(data);
+                await addBudgetCategory(cleanData);
                 toast({ title: 'Kategori Eklendi' });
             }
             setIsFormVisible(false);
             setEditingCategory(null);
-        } catch (e) {
-            toast({ title: 'Hata', variant: 'destructive' });
+        } catch (e: any) {
+            toast({ title: 'Hata', description: e.message || 'Bir hata oluştu.', variant: 'destructive' });
         }
      };
 
