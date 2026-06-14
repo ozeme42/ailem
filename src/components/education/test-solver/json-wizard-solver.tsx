@@ -11,6 +11,8 @@ import { QuestionPalette } from "./shared-components";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { DrawingOverlay, DrawingOverlayRef } from "./drawing-overlay";
+import { DrawingToolbar } from "./shared-components";
 
 interface JSONWizardSolverProps {
     test: Test;
@@ -24,19 +26,46 @@ export function JSONWizardSolver({ test, questions, studentAnswers, onAnswer, on
     const [currentIndex, setCurrentIndex] = React.useState(0);
     const [isPaletteOpen, setIsPaletteOpen] = React.useState(false);
 
+    // Çizim Araçları State
+    const [isDrawingMode, setIsDrawingMode] = React.useState(false);
+    const [drawingTool, setDrawingTool] = React.useState<'pen' | 'eraser'>('pen');
+    const [strokeWidth, setStrokeWidth] = React.useState(3);
+    const overlayRef = React.useRef<DrawingOverlayRef>(null);
+
     const currentQuestion = questions[currentIndex];
     const qNumStr = (currentIndex + 1).toString();
     const currentAnswer = studentAnswers[qNumStr] || "";
+
+    // Soru değiştiğinde çizimi temizle
+    React.useEffect(() => {
+        overlayRef.current?.clear();
+    }, [currentIndex]);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full items-start pb-20 animate-in fade-in duration-500">
             <div className="lg:col-span-8 space-y-6">
                 <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-                    <div className="bg-indigo-600 p-4 text-white flex justify-between items-center font-bold shrink-0">
-                        <span className="uppercase text-xs tracking-widest">YAZILI SORU {currentIndex + 1} / {questions.length}</span>
-                        {currentAnswer && <Badge className="bg-emerald-500 text-white border-none">CEVAPLANDI</Badge>}
+                    <div className="bg-indigo-600 p-3 md:p-4 text-white flex justify-between items-center font-bold shrink-0">
+                        <span className="uppercase text-xs tracking-widest hidden sm:inline">YAZILI SORU {currentIndex + 1} / {questions.length}</span>
+                        <span className="uppercase text-xs tracking-widest sm:hidden">{currentIndex + 1}/{questions.length}</span>
+                        <div className="flex items-center gap-2">
+                            <DrawingToolbar 
+                                isDrawingMode={isDrawingMode} setIsDrawingMode={setIsDrawingMode}
+                                drawingTool={drawingTool} setDrawingTool={setDrawingTool}
+                                strokeWidth={strokeWidth} setStrokeWidth={setStrokeWidth}
+                                onClear={() => overlayRef.current?.clear()}
+                            />
+                            {currentAnswer && <Badge className="bg-emerald-500 text-white border-none hidden sm:inline-flex">CEVAPLANDI</Badge>}
+                        </div>
                     </div>
-                    <div className="p-6 md:p-10 space-y-8">
+                    <div className="p-6 md:p-10 space-y-8 relative">
+                        {/* Çizim Katmanı */}
+                        <DrawingOverlay 
+                            ref={overlayRef}
+                            disabled={!isDrawingMode}
+                            tool={drawingTool}
+                            strokeWidth={strokeWidth}
+                        />
                         <div className="relative p-8 md:p-14 rounded-[2.5rem] bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 dark:from-indigo-950/30 dark:via-slate-900 dark:to-slate-950 border border-indigo-100/50 dark:border-indigo-500/10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] overflow-hidden mb-10">
                             {/* Decorative background blurs */}
                             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />

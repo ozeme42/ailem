@@ -99,7 +99,6 @@ export function BookDetailDialog({ book, isOpen, onOpenChange, onEdit, onAddToLi
                       <DropdownMenuItem 
                         key={member.id} 
                         onClick={() => onAddToLibrary(book.id, member.id)}
-                        disabled={(book.readers || []).includes(member.id)}
                       >
                         {member.name}
                         {(book.readers || []).includes(member.id) && <span className="text-xs text-muted-foreground ml-auto">Ekli</span>}

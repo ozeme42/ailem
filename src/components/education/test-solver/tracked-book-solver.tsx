@@ -11,6 +11,8 @@ import {
     MessageSquareText 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DrawingOverlay, DrawingOverlayRef } from "./drawing-overlay";
+import { DrawingToolbar } from "./shared-components";
 
 interface TrackedBookSolverProps {
     test: Test;
@@ -23,6 +25,12 @@ interface TrackedBookSolverProps {
 
 export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, onAnswer, onFinish, isReviewMode = false }: TrackedBookSolverProps) {
     const isMCQ = !test.openEnded;
+
+    // Çizim Araçları State
+    const [isDrawingMode, setIsDrawingMode] = React.useState(false);
+    const [drawingTool, setDrawingTool] = React.useState<'pen' | 'eraser'>('pen');
+    const [strokeWidth, setStrokeWidth] = React.useState(3);
+    const overlayRef = React.useRef<DrawingOverlayRef>(null);
 
     return (
         <div className="max-w-4xl mx-auto w-full space-y-6 pb-24 animate-in fade-in duration-500">
@@ -67,14 +75,28 @@ export function TrackedBookSolver({ test, studentAnswers, studentTextAnswers, on
                 </div>
 
                 {!isReviewMode && (
-                    <Button onClick={onFinish} className="h-12 px-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black shadow-lg shadow-indigo-500/20">
-                        <Save className="mr-2 w-5 h-5" /> Testi Bitir
-                    </Button>
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <DrawingToolbar 
+                            isDrawingMode={isDrawingMode} setIsDrawingMode={setIsDrawingMode}
+                            drawingTool={drawingTool} setDrawingTool={setDrawingTool}
+                            strokeWidth={strokeWidth} setStrokeWidth={setStrokeWidth}
+                            onClear={() => overlayRef.current?.clear()}
+                        />
+                        <Button onClick={onFinish} className="h-12 px-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black shadow-lg shadow-indigo-500/20 w-full sm:w-auto">
+                            <Save className="mr-2 w-5 h-5" /> Testi Bitir
+                        </Button>
+                    </div>
                 )}
             </div>
 
             {/* Soru Listesi */}
-            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden p-6">
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden p-6 relative">
+                <DrawingOverlay 
+                    ref={overlayRef}
+                    disabled={!isDrawingMode}
+                    tool={drawingTool}
+                    strokeWidth={strokeWidth}
+                />
                 <div className={cn(
                     isMCQ ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" : "flex flex-col gap-4"
                 )}>

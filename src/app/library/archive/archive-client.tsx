@@ -170,9 +170,17 @@ export function ArchiveClient() {
   const handleAddToLibrary = async (bookId: string, memberId: string) => {
     if (!familyId) return;
     try {
-        await addBookToMemberLibrary(familyId, memberId, bookId);
+        const result = await addBookToMemberLibrary(familyId, memberId, bookId);
         const member = familyMembers.find(m => m.id === memberId);
-        toast({ title: "Kitaplığa Eklendi", description: `${member?.name} kütüphanesine eklendi.` });
+        if (result === 'added') {
+            toast({ title: "Kitaplığa Eklendi", description: `${member?.name} kütüphanesine (Sıradakiler) eklendi.` });
+        } else if (result === 'exists_reading') {
+            toast({ title: "Zaten Ekli", description: `Bu kitap zaten "Şu An Okudukların" listenizde bulunuyor.`, variant: "default" });
+        } else if (result === 'exists_finished') {
+            toast({ title: "Zaten Ekli", description: `Bu kitap zaten "Bitirdiklerim" listenizde bulunuyor.`, variant: "default" });
+        } else {
+            toast({ title: "Zaten Ekli", description: `Bu kitap zaten "Sıradakiler" listenizde bulunuyor.`, variant: "default" });
+        }
     } catch (e) {
         toast({ title: "Hata", variant: "destructive" });
     }

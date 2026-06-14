@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { onSinglePracticeExamUpdate, updateTest } from "@/lib/dataService";
 import { Check, X, Trophy, ListChecks, ChevronRight, AlertCircle, HelpCircle, BarChart3, Eye, EyeOff, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DrawingOverlay, DrawingOverlayRef } from "./drawing-overlay";
+import { DrawingToolbar } from "./shared-components";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { 
     AlertDialog, 
@@ -31,6 +33,12 @@ interface ExamOpticalSolverProps {
 export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, isReviewMode = false }: ExamOpticalSolverProps) {
     const [examDetails, setExamDetails] = React.useState<PracticeExam | null>(null);
     const [openSubject, setOpenSubject] = React.useState<string | null>(null);
+
+    // Çizim Araçları State
+    const [isDrawingMode, setIsDrawingMode] = React.useState(false);
+    const [drawingTool, setDrawingTool] = React.useState<'pen' | 'eraser'>('pen');
+    const [strokeWidth, setStrokeWidth] = React.useState(3);
+    const overlayRef = React.useRef<DrawingOverlayRef>(null);
 
     React.useEffect(() => {
         if (test.sourceId) {
@@ -99,11 +107,19 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                     </div>
                 </div>
 
-                <div className="flex gap-4 items-center w-full md:w-auto justify-center md:justify-end">
+                <div className="flex flex-col sm:flex-row gap-4 items-center w-full md:w-auto justify-center md:justify-end">
                     {!isReviewMode && (
-                        <Button type="button" size="lg" className="h-12 md:h-14 rounded-xl md:rounded-2xl px-6 md:px-10 bg-indigo-600 hover:bg-indigo-500 text-white font-black shadow-lg shadow-indigo-500/20 w-full sm:w-auto" onClick={onFinish}>
-                            Sınavı Bitir
-                        </Button>
+                        <>
+                            <DrawingToolbar 
+                                isDrawingMode={isDrawingMode} setIsDrawingMode={setIsDrawingMode}
+                                drawingTool={drawingTool} setDrawingTool={setDrawingTool}
+                                strokeWidth={strokeWidth} setStrokeWidth={setStrokeWidth}
+                                onClear={() => overlayRef.current?.clear()}
+                            />
+                            <Button type="button" size="lg" className="h-12 md:h-14 rounded-xl md:rounded-2xl px-6 md:px-10 bg-indigo-600 hover:bg-indigo-500 text-white font-black shadow-lg shadow-indigo-500/20 w-full sm:w-auto" onClick={onFinish}>
+                                Sınavı Bitir
+                            </Button>
+                        </>
                     )}
                     {isReviewMode && (
                          <div className="flex items-center gap-2 md:gap-4 bg-white/80 dark:bg-black/40 p-2 px-4 rounded-2xl border-2 border-indigo-500/30 animate-in zoom-in-95 shadow-lg relative z-10">
@@ -134,7 +150,14 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
             </div>
 
             {/* Ders Bazlı Optik Listesi */}
-            <Accordion type="single" collapsible className="space-y-4" value={openSubject || undefined} onValueChange={setOpenSubject}>
+            <div className="relative">
+                <DrawingOverlay 
+                    ref={overlayRef}
+                    disabled={!isDrawingMode}
+                    tool={drawingTool}
+                    strokeWidth={strokeWidth}
+                />
+                <Accordion type="single" collapsible className="space-y-4" value={openSubject || undefined} onValueChange={setOpenSubject}>
                 {examDetails.subjects.map((subject, sIdx) => {
                     // subject.id tanımsızsa döngü indeksi ile string bir ID oluşturuyoruz
                     const safeSubjectId = subject.id ? String(subject.id) : `subject-${sIdx}`;
@@ -302,6 +325,7 @@ export function ExamOpticalSolver({ test, studentAnswers, onAnswer, onFinish, is
                     );
                 })}
             </Accordion>
+            </div>
         </div>
     );
 }

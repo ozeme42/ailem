@@ -10,6 +10,7 @@ import { Maximize2, Minimize2, CheckCircle2, LayoutGrid, X, ChevronRight, Check,
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
+import { DrawingToolbar } from "./shared-components";
 
 interface HTMLDocumentSolverProps {
     test: Test;
@@ -37,7 +38,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
     const [isDrawingMode, setIsDrawingMode] = React.useState(false);
     const [drawingTool, setDrawingTool] = React.useState<'pen' | 'eraser'>('pen');
     const [strokeWidth, setStrokeWidth] = React.useState(3);
-    const [isPenOnlyMode, setIsPenOnlyMode] = React.useState(false);
+    const [stylusOnly, setStylusOnly] = React.useState(false);
 
     const toggleDrawingMode = (forceEnabled?: boolean) => {
         const newMode = forceEnabled !== undefined ? forceEnabled : !isDrawingMode;
@@ -60,15 +61,16 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
         iframeRef.current?.contentWindow?.postMessage({ type: 'SET_WIDTH', width: w }, '*');
     };
 
+    const toggleStylusOnly = (enabled: boolean) => {
+        setStylusOnly(enabled);
+        iframeRef.current?.contentWindow?.postMessage({ type: 'SET_STYLUS_ONLY', enabled }, '*');
+    };
+
     const clearCanvas = () => {
         iframeRef.current?.contentWindow?.postMessage({ type: 'CLEAR' }, '*');
     };
 
-    const togglePenOnlyMode = () => {
-        const newMode = !isPenOnlyMode;
-        setIsPenOnlyMode(newMode);
-        iframeRef.current?.contentWindow?.postMessage({ type: 'SET_PEN_ONLY', enabled: newMode }, '*');
-    };
+
 
     const scrollIframe = (direction: 'up' | 'down') => {
         iframeRef.current?.contentWindow?.postMessage({ type: 'SCROLL', direction }, '*');
@@ -177,7 +179,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     let isDrawing = false;
                     let tool = 'pen';
                     let currentWidth = 3;
-                    let penOnly = false; 
+                    let isStylusOnly = false;
                     
                     // YÜKSEK PERFORMANS İÇİN EKLENEN DEĞİŞKENLER
                     let points = []; // Koordinatları hafızada tutacağımız dizi
@@ -265,8 +267,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
 
                     const start = (e) => {
                         if(canvas.style.pointerEvents === 'none') return;
-                        if (penOnly && e.pointerType === 'touch') return; 
-
+                        if(isStylusOnly && e.pointerType === 'touch') return;
                         isDrawing = true;
                         // Çizime başlandığında ilk noktayı diziye ekle
                         points = [{ x: e.pageX, y: e.pageY }];
@@ -276,7 +277,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     
                     const draw = (e) => {
                         if (!isDrawing) return;
-                        if (penOnly && e.pointerType === 'touch') return;
+                        if (isStylusOnly && e.pointerType === 'touch') return;
                         
                         // Her harekette noktayı diziye kaydet
                         points.push({ x: e.pageX, y: e.pageY });
@@ -285,7 +286,6 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                         if (!raf) {
                             raf = requestAnimationFrame(renderPath);
                         }
-                        
                         e.preventDefault();
                     };
                     
@@ -330,10 +330,11 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                         } else if (msg.type === 'SET_WIDTH') {
                             currentWidth = msg.width;
                             ctx.lineWidth = tool === 'eraser' ? currentWidth * 5 : currentWidth;
+                        } else if (msg.type === 'SET_STYLUS_ONLY') {
+                            isStylusOnly = msg.enabled;
+                            canvas.style.touchAction = msg.enabled ? 'auto' : 'none';
                         } else if (msg.type === 'CLEAR') {
                             ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        } else if (msg.type === 'SET_PEN_ONLY') {
-                            penOnly = msg.enabled;
                         } else if (msg.type === 'SCROLL') {
                             const offset = (msg.direction === 'up' ? -1 : 1) * (window.innerHeight * 0.5);
                             window.scrollBy({ top: offset, behavior: 'smooth' });
@@ -464,74 +465,13 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     </div>
                     <div className="flex items-center gap-1 sm:gap-2">
                         {/* Çizim Araçları */}
-                        <div className="flex items-center gap-1 mr-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-full">
-                            <Button 
-                                type="button" 
-                                variant="ghost" 
-                                size="icon" 
-                                className={cn("rounded-full h-8 w-8 transition-all", isDrawingMode && drawingTool === 'pen' ? "bg-indigo-600 text-white hover:bg-indigo-700" : "hover:bg-slate-200 dark:hover:bg-slate-700")}
-                                onClick={() => { if(!isDrawingMode) toggleDrawingMode(true); setTool('pen'); }}
-                                title="Kalem"
-                            >
-                                <Pen className="h-4 w-4" />
-                            </Button>
-                            
-                            {isDrawingMode && (
-                                <>
-                                    <Button 
-                                        type="button" 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className={cn("rounded-full h-8 w-8 transition-all relative", isPenOnlyMode ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40" : "hover:bg-slate-200 dark:hover:bg-slate-700")}
-                                        onClick={togglePenOnlyMode}
-                                        title={isPenOnlyMode ? "Avuç İçi Reddi Açık" : "Avuç İçi Reddini Aç"}
-                                    >
-                                        <Hand className={cn("h-4 w-4", isPenOnlyMode ? "opacity-40" : "")} />
-                                        {isPenOnlyMode && <X className="h-3 w-3 absolute bottom-1.5 right-1.5 text-indigo-600 dark:text-indigo-400" strokeWidth={3} />}
-                                    </Button>
-
-                                    <div className="hidden sm:flex items-center px-2 w-24">
-                                        <Slider 
-                                            defaultValue={[3]} 
-                                            max={10} 
-                                            min={1} 
-                                            step={1} 
-                                            onValueChange={(v) => setCanvasWidth(v[0])} 
-                                        />
-                                    </div>
-                                    <Button 
-                                        type="button" 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className={cn("rounded-full h-8 w-8 transition-all", drawingTool === 'eraser' ? "bg-rose-500 text-white hover:bg-rose-600" : "hover:bg-slate-200 dark:hover:bg-slate-700")}
-                                        onClick={() => setTool('eraser')}
-                                        title="Silgi"
-                                    >
-                                        <Eraser className="h-4 w-4" />
-                                    </Button>
-                                    <Button 
-                                        type="button" 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="rounded-full h-8 w-8 hover:bg-rose-100 hover:text-rose-600 dark:hover:bg-rose-900/30"
-                                        onClick={clearCanvas}
-                                        title="Tümünü Temizle"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </>
-                            )}
-                            <Button 
-                                type="button" 
-                                variant="ghost" 
-                                size="icon" 
-                                className={cn("rounded-full h-8 w-8", isDrawingMode ? "bg-indigo-100 text-indigo-600" : "")}
-                                onClick={() => toggleDrawingMode()}
-                                title={isDrawingMode ? "Çizim Modunu Kapat" : "Çizim Modunu Aç"}
-                            >
-                                <X className={cn("h-4 w-4 transition-transform", !isDrawingMode && "rotate-45")} />
-                            </Button>
-                        </div>
+                        <DrawingToolbar 
+                            isDrawingMode={isDrawingMode} setIsDrawingMode={toggleDrawingMode}
+                            drawingTool={drawingTool} setDrawingTool={setTool}
+                            strokeWidth={strokeWidth} setStrokeWidth={setCanvasWidth}
+                            onClear={clearCanvas}
+                            stylusOnly={stylusOnly} setStylusOnly={toggleStylusOnly}
+                        />
 
                         <Button type="button" variant={isSplitScreenMobile ? "default" : "ghost"} size="icon" onClick={() => setIsSplitScreenMobile(!isSplitScreenMobile)} className={cn("lg:hidden rounded-full h-8 w-8 sm:h-10 sm:w-10", isSplitScreenMobile ? "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-400" : "hover:bg-slate-100")}>
                             <SplitSquareVertical className="h-5 w-5" />
@@ -542,6 +482,45 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                         {isFullScreen && <Button type="button" variant="ghost" size="icon" onClick={() => setIsFullScreen(false)} className="rounded-full hover:bg-rose-50 text-rose-500"><X className="h-5 w-5"/></Button>}
                     </div>
                 </div>
+
+            <div ref={containerRef} className={cn("flex-1 flex overflow-hidden relative", isSplitScreenMobile ? "flex-col lg:flex-row" : "flex-row")}>
+                
+                {/* Document Area */}
+                <div 
+                    className="relative bg-slate-50 dark:bg-black/20 flex flex-col min-h-0" 
+                    style={isSplitScreenMobile ? { height: `${splitHeightPercent}%` } : { flex: 1 }}
+                >
+                    <div className="flex-1 relative min-h-0">
+                        {/* We add a transparent overlay during drag to prevent iframe from eating mouse events */}
+                        {isDragging && <div className="absolute inset-0 z-50 bg-transparent" />}
+                        
+                        <iframe 
+                            ref={iframeRef}
+                            srcDoc={getIframeDocument(test.htmlContent || "")}
+                            className="w-full h-full border-none"
+                            title="Test Content"
+                        />
+                         {/* Mobile Optic FAB */}
+                        {(!isSplitScreenMobile && !isReviewMode) && (
+                            <Button 
+                                type="button"
+                                onClick={() => setIsOpticalOpenMobile(true)}
+                                className="lg:hidden absolute bottom-6 right-6 h-14 w-14 rounded-full bg-indigo-600 text-white shadow-2xl z-40 border-4 border-white dark:border-slate-800"
+                            >
+                                <LayoutGrid className="w-6 h-6" />
+                            </Button>
+                        )}
+                        {/* Mobile Optic FAB for Review Mode */}
+                        {(!isSplitScreenMobile && isReviewMode) && (
+                            <Button 
+                                type="button"
+                                onClick={() => setIsOpticalOpenMobile(true)}
+                                className="lg:hidden absolute bottom-6 right-6 h-14 w-14 rounded-full bg-slate-800 text-white shadow-2xl z-40 border-4 border-white dark:border-slate-800"
+                            >
+                                <AlertCircle className="w-6 h-6" />
+                            </Button>
+                        )}
+                    </div>
 
                 <div ref={containerRef} className={cn("flex-1 flex overflow-hidden relative", isSplitScreenMobile ? "flex-col lg:flex-row" : "flex-row")}>
                     

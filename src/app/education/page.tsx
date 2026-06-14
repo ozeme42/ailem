@@ -117,7 +117,7 @@ export default function EducationPage() {
   const [studyPlans, setStudyPlans] = React.useState<StudyPlan[]>([]);
   const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
   const [expandedBooks, setExpandedBooks] = React.useState<Set<string>>(new Set());
-  const [todoViewMode, setTodoViewMode] = React.useState<'list' | 'week'>('list');
+  const [todoViewMode, setTodoViewMode] = React.useState<'list' | 'week'>('week');
 
   const studentMembers = React.useMemo(() =>
     familyMembers.filter(m => m.role.includes('Çocuk')), [familyMembers]);

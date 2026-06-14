@@ -6,11 +6,13 @@ import { Test, QuickTestQuestion } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft, ChevronRight, CheckCircle2, ImageIcon, LayoutGrid } from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckCircle2, ImageIcon, LayoutGrid, Maximize2, Minimize2 } from "lucide-react";
 import { QuestionPalette } from "./shared-components";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { DrawingOverlay, DrawingOverlayRef } from "./drawing-overlay";
+import { DrawingToolbar } from "./shared-components";
 
 interface MCQWizardSolverProps {
     test: Test;
@@ -24,23 +26,89 @@ export function MCQWizardSolver({ test, questions, studentAnswers, onAnswer, onF
     const [currentIndex, setCurrentIndex] = React.useState(0);
     const [isPaletteOpen, setIsPaletteOpen] = React.useState(false);
     
+    // Çizim Araçları State
+    const [isDrawingMode, setIsDrawingMode] = React.useState(false);
+    const [drawingTool, setDrawingTool] = React.useState<'pen' | 'eraser'>('pen');
+    const [strokeWidth, setStrokeWidth] = React.useState(3);
+    const overlayRef = React.useRef<DrawingOverlayRef>(null);
+
+    const [isFullScreen, setIsFullScreen] = React.useState(false);
+
     const currentQuestion = questions[currentIndex];
     const qNumStr = (currentIndex + 1).toString();
     const currentAnswer = studentAnswers[qNumStr] || "";
+
+    // Soru değiştiğinde çizimi temizle
+    React.useEffect(() => {
+        overlayRef.current?.clear();
+    }, [currentIndex]);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full items-start pb-20 animate-in fade-in duration-500">
             <div className="lg:col-span-8 space-y-6">
                 <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-                    <div className="bg-indigo-600 p-4 text-white flex justify-between items-center font-bold shrink-0">
-                        <span className="uppercase text-xs tracking-widest">Soru {currentIndex + 1} / {questions.length}</span>
-                        {currentAnswer && <Badge className="bg-emerald-500 text-white border-none">İŞARETLENDİ</Badge>}
+                    <div className="bg-indigo-600 p-3 md:p-4 text-white flex justify-between items-center font-bold shrink-0">
+                        <span className="uppercase text-xs tracking-widest hidden sm:inline">Soru {currentIndex + 1} / {questions.length}</span>
+                        <span className="uppercase text-xs tracking-widest sm:hidden">{currentIndex + 1}/{questions.length}</span>
+                        <div className="flex items-center gap-2">
+                            <DrawingToolbar 
+                                isDrawingMode={isDrawingMode} setIsDrawingMode={setIsDrawingMode}
+                                drawingTool={drawingTool} setDrawingTool={setDrawingTool}
+                                strokeWidth={strokeWidth} setStrokeWidth={setStrokeWidth}
+                                onClear={() => overlayRef.current?.clear()}
+                            />
+                            {currentAnswer && <Badge className="bg-emerald-500 text-white border-none hidden sm:inline-flex">İŞARETLENDİ</Badge>}
+                        </div>
                     </div>
-                    <div className="p-6 md:p-8 space-y-8">
-                        <div className="relative aspect-video w-full rounded-3xl overflow-hidden bg-slate-50 border border-slate-100 flex items-center justify-center group">
+                    <div className="p-6 md:p-8 space-y-8 relative">
+                        <div className={cn(
+                            "transition-all duration-300",
+                            isFullScreen ? "fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center" : "relative aspect-video w-full rounded-3xl overflow-hidden bg-slate-50 border border-slate-100 flex items-center justify-center group"
+                        )}>
                             {currentQuestion?.imageUrl ? (
-                                <Image src={currentQuestion.imageUrl} alt="Soru" fill className="object-contain p-4 transition-transform duration-500 group-hover:scale-105" />
+                                <>
+                                    <Image src={currentQuestion.imageUrl} alt="Soru" fill className="object-contain p-4 transition-transform duration-500" />
+                                    {!isFullScreen && (
+                                        <Button 
+                                            type="button"
+                                            variant="outline" 
+                                            size="icon" 
+                                            className="absolute top-4 right-4 z-50 shadow-xl transition-all bg-slate-900/70 hover:bg-slate-900 text-white border-white/20 backdrop-blur-md"
+                                            onClick={() => setIsFullScreen(true)}
+                                            title="Büyüt"
+                                        >
+                                            <Maximize2 className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </>
                             ) : <ImageIcon className="w-16 h-16 text-slate-200" />}
+                            <DrawingOverlay 
+                                ref={overlayRef}
+                                disabled={!isDrawingMode}
+                                tool={drawingTool}
+                                strokeWidth={strokeWidth}
+                            />
+                            {isFullScreen && (
+                                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-slate-800/80 p-2 rounded-2xl backdrop-blur-md border border-white/10 shadow-2xl">
+                                    <DrawingToolbar 
+                                        isDrawingMode={isDrawingMode} setIsDrawingMode={setIsDrawingMode}
+                                        drawingTool={drawingTool} setDrawingTool={setDrawingTool}
+                                        strokeWidth={strokeWidth} setStrokeWidth={setStrokeWidth}
+                                        onClear={() => overlayRef.current?.clear()}
+                                    />
+                                    <div className="w-px h-8 bg-white/20 mx-1" />
+                                    <Button 
+                                        type="button"
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="rounded-full h-10 w-10 text-white hover:bg-white/20"
+                                        onClick={() => setIsFullScreen(false)}
+                                        title="Küçült"
+                                    >
+                                        <Minimize2 className="h-5 w-5" />
+                                    </Button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="max-w-md mx-auto">

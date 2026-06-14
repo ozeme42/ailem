@@ -15,13 +15,14 @@ interface DrawingOverlayProps {
     tool?: 'pen' | 'eraser';
     color?: string;
     strokeWidth?: number;
+    stylusOnly?: boolean;
     onChange?: () => void; // Triggered on mouse up / touch end
 }
 
 export const DrawingOverlay = React.forwardRef<DrawingOverlayRef, DrawingOverlayProps>(
-    ({ className, disabled = false, tool = 'pen', color = '#ef4444', strokeWidth = 3, onChange }, ref) => {
+    ({ className, disabled = false, tool = 'pen', color = '#ef4444', strokeWidth = 3, stylusOnly = false, onChange }, ref) => {
         const canvasRef = React.useRef<HTMLCanvasElement>(null);
-        const [isDrawing, setIsDrawing] = React.useState(false);
+        const isDrawingRef = React.useRef(false);
         const contextRef = React.useRef<CanvasRenderingContext2D | null>(null);
 
         const initCanvas = React.useCallback(() => {
@@ -111,6 +112,8 @@ export const DrawingOverlay = React.forwardRef<DrawingOverlayRef, DrawingOverlay
 
         const startDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
             if (disabled) return;
+            if (stylusOnly && e.pointerType === 'touch') return;
+            
             const canvas = canvasRef.current;
             if (!canvas) return;
             
@@ -123,12 +126,12 @@ export const DrawingOverlay = React.forwardRef<DrawingOverlayRef, DrawingOverlay
 
             contextRef.current?.beginPath();
             contextRef.current?.moveTo(x, y);
-            setIsDrawing(true);
+            isDrawingRef.current = true;
             e.preventDefault();
         };
 
         const draw = (e: React.PointerEvent<HTMLCanvasElement>) => {
-            if (!isDrawing || disabled) return;
+            if (!isDrawingRef.current || disabled) return;
             const canvas = canvasRef.current;
             if (!canvas) return;
 
@@ -138,13 +141,15 @@ export const DrawingOverlay = React.forwardRef<DrawingOverlayRef, DrawingOverlay
 
             contextRef.current?.lineTo(x, y);
             contextRef.current?.stroke();
+            contextRef.current?.beginPath();
+            contextRef.current?.moveTo(x, y);
             e.preventDefault();
         };
 
         const stopDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
-            if (!isDrawing) return;
+            if (!isDrawingRef.current) return;
             contextRef.current?.closePath();
-            setIsDrawing(false);
+            isDrawingRef.current = false;
             if (canvasRef.current) {
                 canvasRef.current.releasePointerCapture(e.pointerId);
             }
@@ -164,7 +169,7 @@ export const DrawingOverlay = React.forwardRef<DrawingOverlayRef, DrawingOverlay
                     disabled ? "pointer-events-none" : "cursor-crosshair",
                     className
                 )}
-                style={{ touchAction: 'none' }}
+                style={{ touchAction: stylusOnly ? 'auto' : 'none' }}
             />
         );
     }

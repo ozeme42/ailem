@@ -6,13 +6,13 @@ import { Test, QuickTestQuestion } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft, ChevronRight, CheckCircle2, ImageIcon, LayoutGrid, Pen, Eraser, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckCircle2, ImageIcon, LayoutGrid, Pen, Eraser, Trash2, Maximize2, Minimize2 } from "lucide-react";
 import { QuestionPalette } from "./shared-components";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { DrawingOverlay, DrawingOverlayRef } from "./drawing-overlay";
+import { DrawingToolbar } from "./shared-components";
 
 interface OpenEndedWizardSolverProps {
     test: Test;
@@ -32,6 +32,8 @@ export function OpenEndedWizardSolver({ test, questions, studentTextAnswers, onA
     const [strokeWidth, setStrokeWidth] = React.useState(3);
     const [drawings, setDrawings] = React.useState<{ [key: number]: string }>({});
     const drawingRef = React.useRef<DrawingOverlayRef>(null);
+
+    const [isFullScreen, setIsFullScreen] = React.useState(false);
 
     // Save drawing when navigating away or drawing changes
     const saveDrawing = () => {
@@ -55,14 +57,40 @@ export function OpenEndedWizardSolver({ test, questions, studentTextAnswers, onA
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full items-start pb-20 animate-in fade-in duration-500">
             <div className="lg:col-span-8 space-y-6">
                 <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-                    <div className="bg-indigo-600 p-4 text-white flex justify-between items-center font-bold shrink-0">
-                        <span className="uppercase text-xs tracking-widest">Soru {currentIndex + 1} / {questions.length}</span>
-                        {currentAnswer.length > 0 && <Badge className="bg-emerald-500 text-white border-none">CEVAPLANDI</Badge>}
+                    <div className="bg-indigo-600 p-3 md:p-4 text-white flex justify-between items-center font-bold shrink-0">
+                        <span className="uppercase text-xs tracking-widest hidden sm:inline">Soru {currentIndex + 1} / {questions.length}</span>
+                        <span className="uppercase text-xs tracking-widest sm:hidden">{currentIndex + 1}/{questions.length}</span>
+                        <div className="flex items-center gap-2">
+                            <DrawingToolbar 
+                                isDrawingMode={isDrawingMode} setIsDrawingMode={setIsDrawingMode}
+                                drawingTool={drawingTool} setDrawingTool={setDrawingTool}
+                                strokeWidth={strokeWidth} setStrokeWidth={setStrokeWidth}
+                                onClear={() => { drawingRef.current?.clear(); saveDrawing(); }}
+                            />
+                            {currentAnswer.length > 0 && <Badge className="bg-emerald-500 text-white border-none hidden sm:inline-flex">CEVAPLANDI</Badge>}
+                        </div>
                     </div>
-                    <div className="p-6 md:p-8 space-y-8">
-                        <div className="relative aspect-video w-full rounded-3xl overflow-hidden bg-slate-50 border border-slate-100 flex flex-col items-center justify-center group">
+                    <div className="p-6 md:p-8 space-y-8 relative">
+                        <div className={cn(
+                            "transition-all duration-300",
+                            isFullScreen ? "fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center" : "relative aspect-video w-full rounded-3xl overflow-hidden bg-slate-50 border border-slate-100 flex flex-col items-center justify-center group"
+                        )}>
                             {currentQuestion?.imageUrl ? (
-                                <Image src={currentQuestion.imageUrl} alt="Soru" fill className="object-contain p-4 transition-transform duration-500 group-hover:scale-105" />
+                                <>
+                                    <Image src={currentQuestion.imageUrl} alt="Soru" fill className="object-contain p-4 transition-transform duration-500 group-hover:scale-105" />
+                                    {!isFullScreen && (
+                                        <Button 
+                                            type="button"
+                                            variant="outline" 
+                                            size="icon" 
+                                            className="absolute top-4 right-4 z-50 shadow-xl transition-all bg-slate-900/70 hover:bg-slate-900 text-white border-white/20 backdrop-blur-md"
+                                            onClick={() => setIsFullScreen(true)}
+                                            title="Büyüt"
+                                        >
+                                            <Maximize2 className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </>
                             ) : <ImageIcon className="w-16 h-16 text-slate-200" />}
                             
                             {/* Çizim Katmanı */}
@@ -73,79 +101,28 @@ export function OpenEndedWizardSolver({ test, questions, studentTextAnswers, onA
                                 strokeWidth={strokeWidth}
                                 onChange={saveDrawing} 
                             />
-                            
-                            {/* Çizim Kontrolleri */}
-                            <div className="absolute top-4 right-4 z-50 flex gap-2">
-                                {!isDrawingMode ? (
+
+                            {isFullScreen && (
+                                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-slate-800/80 p-2 rounded-2xl backdrop-blur-md border border-white/10 shadow-2xl">
+                                    <DrawingToolbar 
+                                        isDrawingMode={isDrawingMode} setIsDrawingMode={setIsDrawingMode}
+                                        drawingTool={drawingTool} setDrawingTool={setDrawingTool}
+                                        strokeWidth={strokeWidth} setStrokeWidth={setStrokeWidth}
+                                        onClear={() => { drawingRef.current?.clear(); saveDrawing(); }}
+                                    />
+                                    <div className="w-px h-8 bg-white/20 mx-1" />
                                     <Button 
-                                        type="button" 
-                                        variant="secondary" 
+                                        type="button"
+                                        variant="ghost" 
                                         size="icon" 
-                                        className="rounded-full shadow-md bg-white text-slate-600 transition-all hover:bg-slate-100"
-                                        onClick={() => { setIsDrawingMode(true); setDrawingTool('pen'); }}
-                                        title="Çizim Modunu Aç"
+                                        className="rounded-full h-10 w-10 text-white hover:bg-white/20"
+                                        onClick={() => setIsFullScreen(false)}
+                                        title="Küçült"
                                     >
-                                        <Pen className="w-4 h-4" />
+                                        <Minimize2 className="h-5 w-5" />
                                     </Button>
-                                ) : (
-                                    <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-full shadow-lg">
-                                        <Button 
-                                            type="button" 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className={cn("rounded-full h-8 w-8 transition-all", drawingTool === 'pen' ? "bg-indigo-600 text-white" : "hover:bg-slate-200 text-slate-600")}
-                                            onClick={() => setDrawingTool('pen')}
-                                            title="Kalem"
-                                        >
-                                            <Pen className="w-4 h-4" />
-                                        </Button>
-                                        <div className="hidden sm:flex items-center px-2 w-24">
-                                            <Slider 
-                                                defaultValue={[3]} 
-                                                max={10} 
-                                                min={1} 
-                                                step={1} 
-                                                onValueChange={(v) => setStrokeWidth(v[0])} 
-                                            />
-                                        </div>
-                                        <Button 
-                                            type="button" 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className={cn("rounded-full h-8 w-8 transition-all", drawingTool === 'eraser' ? "bg-rose-500 text-white" : "hover:bg-slate-200 text-slate-600")}
-                                            onClick={() => setDrawingTool('eraser')}
-                                            title="Silgi"
-                                        >
-                                            <Eraser className="w-4 h-4" />
-                                        </Button>
-                                        <Button 
-                                            type="button" 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className="rounded-full h-8 w-8 hover:bg-rose-100 text-slate-600 hover:text-rose-600"
-                                            onClick={() => { drawingRef.current?.clear(); saveDrawing(); }}
-                                            title="Tümünü Temizle"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                        <Button 
-                                            type="button" 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className="rounded-full h-8 w-8 bg-indigo-100 text-indigo-600"
-                                            onClick={() => {
-                                                setIsDrawingMode(false);
-                                                // Kullanıcı kapatınca çizimlerin silinmesini istedi
-                                                drawingRef.current?.clear();
-                                                saveDrawing();
-                                            }}
-                                            title="Çizim Modunu Kapat"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="space-y-4">

@@ -222,19 +222,33 @@ export default function LibraryPage() {
         return { readingBooks: [], toReadBooks: [], finishedBooks: [], stats: { finished: 0, total: 0, reading: 0, toRead: 0, percentage: 0 }};
     }
     
-    const memberLibrary = userLibraries.find(lib => lib.memberId === selectedMember.id);
-    if (!memberLibrary) {
+    // Aynı memberId'ye sahip birden fazla belge (fragmentation) varsa kitapları birleştir
+    let allMemberBooks: any[] = [];
+    userLibraries.forEach(lib => {
+        if (lib.memberId === selectedMember.id && lib.books) {
+            allMemberBooks = allMemberBooks.concat(lib.books);
+        }
+    });
+
+    if (allMemberBooks.length === 0) {
         return { readingBooks: [], toReadBooks: [], finishedBooks: [], stats: { finished: 0, total: 0, reading: 0, toRead: 0, percentage: 0 }};
     }
 
-    const myBookDetails = memberLibrary.books.map(libBook => {
+    const uniqueBooks = new Map();
+    allMemberBooks.forEach(libBook => {
       const bookDetail = allBooks.find(b => b.id === libBook.bookId);
-      return bookDetail ? { ...libBook, ...bookDetail } : null;
-    }).filter(Boolean) as (BookType & { status: 'to-read' | 'reading' | 'finished', progress?: number, startedAt?: string, finishedAt?: string })[];
+      if (bookDetail && !uniqueBooks.has(libBook.bookId)) {
+        uniqueBooks.set(libBook.bookId, { ...bookDetail, ...libBook });
+      }
+    });
+    const myBookDetails = Array.from(uniqueBooks.values()) as (BookType & { status: 'to-read' | 'reading' | 'finished', progress?: number, startedAt?: string, finishedAt?: string })[];
 
-    const reading = myBookDetails.filter(b => b.status === 'reading');
-    const toRead = myBookDetails.filter(b => b.status === 'to-read');
-    const finished = myBookDetails.filter(b => b.status === 'finished');
+    const reading = myBookDetails.filter(b => b.status === 'reading')
+        .sort((a, b) => new Date(b.addedAt || 0).getTime() - new Date(a.addedAt || 0).getTime());
+    const toRead = myBookDetails.filter(b => b.status === 'to-read')
+        .sort((a, b) => new Date(b.addedAt || 0).getTime() - new Date(a.addedAt || 0).getTime());
+    const finished = myBookDetails.filter(b => b.status === 'finished')
+        .sort((a, b) => new Date(b.finishedAt || b.addedAt || 0).getTime() - new Date(a.finishedAt || a.addedAt || 0).getTime());
     
     const statistics = {
       finished: finished.length,
@@ -561,16 +575,24 @@ export default function LibraryPage() {
                     )}
                     
                     {/* Sıradakiler */}
-                    {toReadBooks.length > 0 && (
-                        <div className="space-y-4">
-                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                                <BookUp className="w-5 h-5 text-blue-500" /> Sıradakiler
-                            </h2>
-                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    <div className="space-y-4">
+                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <BookUp className="w-5 h-5 text-blue-500" /> Sıradakiler
+                        </h2>
+                        {toReadBooks.length > 0 ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                                 {toReadBooks.map(book => <BookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
                             </div>
-                        </div>
-                    )}
+                        ) : (
+                            <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-center bg-white/50">
+                                <BookUp className="w-8 h-8 text-slate-300 mb-2" />
+                                <p className="text-sm font-medium text-slate-500">Sırada okunacak kitap bulunmuyor.</p>
+                                <Link href="/library/archive" className="mt-3 text-xs font-bold text-amber-600 hover:text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full mb-2">
+                                    Arşivden kitap ekle
+                                </Link>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Bitirilenler */}
                     {finishedBooks.length > 0 && (

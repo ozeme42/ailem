@@ -125,16 +125,56 @@ export const onUserLibrariesUpdate = (familyId: string, callback: (libs: UserLib
 };
 export const onSingleUserLibraryUpdate = (uid: string, cb: (lib: UserLibrary | null) => void) => onSnapshot(doc(db, 'userLibraries', uid), d => cb(d.exists() ? d.data() as UserLibrary : null));
 export const addBookToMemberLibrary = async (fid: string, mid: string, bid: string) => {
-    const libRef = doc(db, 'userLibraries', mid);
-    const newBook: UserLibraryBook = { bookId: bid, status: 'to-read', addedAt: new Date().toISOString(), progress: 0 };
-    await setDoc(libRef, { familyId: fid, memberId: mid, books: arrayUnion(newBook) }, { merge: true });
+    // 1. Üyeye ait var olan kütüphane belgesini bul (ID'si mid olmayabilir!)
+    const q = query(collection(db, 'userLibraries'), where("memberId", "==", mid));
+    const querySnapshot = await getDocs(q);
+    
+    let libRef;
+    let books: any[] = [];
+    
+    if (!querySnapshot.empty) {
+        const existingDoc = querySnapshot.docs[0];
+        libRef = doc(db, 'userLibraries', existingDoc.id);
+        books = existingDoc.data().books || [];
+    } else {
+        libRef = doc(db, 'userLibraries', mid);
+    }
+    
+    // Kitap daha önce eklenmiş mi kontrol et
+    const existingBook = books.find((b: any) => b.bookId === bid);
+    
+    let result = "added";
+    if (existingBook) {
+        result = "exists_" + existingBook.status; // exists_to-read, exists_reading, exists_finished
+    } else {
+        const newBook: UserLibraryBook = { bookId: bid, status: 'to-read', addedAt: new Date().toISOString(), progress: 0 };
+        books.push(newBook);
+        await setDoc(libRef, { familyId: fid, memberId: mid, books }, { merge: true });
+    }
+
+    // mediaItems koleksiyonundaki readers dizisini de güncelle
+    const bookRef = doc(db, 'mediaItems', bid);
+    const bookSnap = await getDoc(bookRef);
+    if (bookSnap.exists()) {
+        await updateDoc(bookRef, { readers: arrayUnion(mid) });
+    }
+    
+    return result;
 };
+
 export const removeBookFromMemberLibrary = async (fid: string, mid: string, bid: string) => {
     const libRef = doc(db, 'userLibraries', mid);
     const snap = await getDoc(libRef);
     if (!snap.exists()) return;
     const books = (snap.data().books || []).filter((b: any) => b.bookId !== bid);
     await updateDoc(libRef, { books });
+
+    // mediaItems koleksiyonundaki readers dizisinden çıkar
+    const bookRef = doc(db, 'mediaItems', bid);
+    const bookSnap = await getDoc(bookRef);
+    if (bookSnap.exists()) {
+        await updateDoc(bookRef, { readers: arrayRemove(mid) });
+    }
 };
 export const updateUserBookStatus = async (fid: string, mid: string, bid: string, status: string, progress?: number) => {
     const libRef = doc(db, 'userLibraries', mid);

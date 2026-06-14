@@ -85,3 +85,99 @@ export function TestTimer({ durationMinutes }: { durationMinutes: number }) {
     </div>
   );
 }
+
+// --- ÇİZİM ARAÇ ÇUBUĞU (DRAWING TOOLBAR) ---
+import { Pen, Eraser, Trash2 } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+
+export function DrawingToolbar({
+    isDrawingMode,
+    setIsDrawingMode,
+    drawingTool,
+    setDrawingTool,
+    strokeWidth,
+    setStrokeWidth,
+    onClear,
+    stylusOnly = false,
+    setStylusOnly
+}: {
+    isDrawingMode: boolean;
+    setIsDrawingMode: (v: boolean) => void;
+    drawingTool: 'pen' | 'eraser';
+    setDrawingTool: (v: 'pen' | 'eraser') => void;
+    strokeWidth: number;
+    setStrokeWidth: (v: number) => void;
+    onClear: () => void;
+    stylusOnly?: boolean;
+    setStylusOnly?: (v: boolean) => void;
+}) {
+    return (
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-full shrink-0 shadow-sm border border-slate-200 dark:border-slate-700">
+            <Button 
+                type="button" 
+                variant="ghost" 
+                size="icon" 
+                className={cn("rounded-full h-8 w-8 transition-all", isDrawingMode && drawingTool === 'pen' ? "bg-indigo-600 text-white hover:bg-indigo-700" : "text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700")}
+                onClick={() => { if(!isDrawingMode) setIsDrawingMode(true); setDrawingTool('pen'); }}
+                title="Kalem"
+            >
+                <Pen className="h-4 w-4" />
+            </Button>
+            {isDrawingMode && (
+                <>
+                    <div className="hidden sm:flex items-center px-2 w-24">
+                        <Slider 
+                            defaultValue={[strokeWidth]} 
+                            max={10} 
+                            min={1} 
+                            step={1} 
+                            onValueChange={(v) => setStrokeWidth(v[0])} 
+                        />
+                    </div>
+                    {setStylusOnly && (
+                        <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="icon" 
+                            className={cn("rounded-full h-8 w-8 transition-all", stylusOnly ? "bg-blue-500 text-white hover:bg-blue-600" : "text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700")}
+                            onClick={() => setStylusOnly(!stylusOnly)}
+                            title={stylusOnly ? "Sadece Kalem Modu (Açık)" : "Sadece Kalem Modu (Kapalı)"}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                        </Button>
+                    )}
+                    <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        className={cn("rounded-full h-8 w-8 transition-all", drawingTool === 'eraser' ? "bg-rose-500 text-white hover:bg-rose-600" : "text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700")}
+                        onClick={() => setDrawingTool('eraser')}
+                        title="Silgi"
+                    >
+                        <Eraser className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        className="rounded-full h-8 w-8 text-slate-600 dark:text-slate-300 hover:bg-rose-100 hover:text-rose-600 dark:hover:bg-rose-900/30"
+                        onClick={onClear}
+                        title="Tümünü Temizle"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </>
+            )}
+            <Button 
+                type="button" 
+                variant="ghost" 
+                size="icon" 
+                className={cn("rounded-full h-8 w-8", isDrawingMode ? "bg-indigo-100 text-indigo-600" : "text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700")}
+                onClick={() => setIsDrawingMode(!isDrawingMode)}
+                title={isDrawingMode ? "Çizim Modunu Kapat" : "Çizim Modunu Aç"}
+            >
+                <X className={cn("h-4 w-4 transition-transform", !isDrawingMode && "rotate-45")} />
+            </Button>
+        </div>
+    );
+}
