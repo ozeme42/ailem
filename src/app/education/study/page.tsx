@@ -6,7 +6,7 @@ import { StudyPlan, StudyAssignment, FamilyMember } from '@/lib/data';
 import { onStudyPlansUpdate, onStudyAssignmentsUpdate, updateStudyAssignment } from '@/lib/dataService';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from "@/components/ui/checkbox";
-import { parseISO, compareAsc, isPast, isToday } from 'date-fns';
+import { parseISO, compareAsc, isPast, isToday, differenceInDays } from 'date-fns';
 import { ExternalLink, ArrowLeft, CheckCircle2, Clock, BookOpen, Sparkles, ChevronRight, GraduationCap, LayoutGrid } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
@@ -80,9 +80,11 @@ export default function StudyPage() {
         return <Badge variant="destructive" className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/50 animate-pulse">Süresi Geçti</Badge>
     }
     if (isToday(dueDate)) {
-        return <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/50">Bugün Bitiyor</Badge>
+        return <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/50 flex items-center gap-1"><Clock className="w-3 h-3" /> Bugün Bitiyor</Badge>
     }
-    return <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900/50">Bekliyor</Badge>
+    const diff = differenceInDays(dueDate, new Date());
+    const daysLeft = diff > 0 ? diff : 1; // If it's less than 24h but not today, just say 1 day
+    return <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900/50 flex items-center gap-1"><Clock className="w-3 h-3" /> {daysLeft} gün kaldı</Badge>
   }
 
   // Derived state
@@ -109,8 +111,42 @@ export default function StudyPage() {
       return Object.entries(grouped);
   };
 
-  const pendingGrouped = groupTasksByPlan(pendingTasks);
-  const completedGrouped = groupTasksByPlan(completedTasks);
+  const pendingGrouped = groupTasksByPlan(pendingTasks).map(([planId, tasks]) => {
+      const plan = studyPlans.find(p => p.id === planId);
+      if (plan) {
+         const topicOrder: Record<string, number> = {};
+         let index = 0;
+         plan.subjects.forEach(subject => {
+             subject.topics.forEach(topic => {
+                 topicOrder[topic.id] = index++;
+             });
+         });
+         tasks.sort((a, b) => {
+             const idxA = topicOrder[a.topicId] ?? 99999;
+             const idxB = topicOrder[b.topicId] ?? 99999;
+             return idxA - idxB;
+         });
+      }
+      return [planId, tasks] as [string, StudyAssignment[]];
+  });
+  const completedGrouped = groupTasksByPlan(completedTasks).map(([planId, tasks]) => {
+      const plan = studyPlans.find(p => p.id === planId);
+      if (plan) {
+         const topicOrder: Record<string, number> = {};
+         let index = 0;
+         plan.subjects.forEach(subject => {
+             subject.topics.forEach(topic => {
+                 topicOrder[topic.id] = index++;
+             });
+         });
+         tasks.sort((a, b) => {
+             const idxA = topicOrder[a.topicId] ?? 99999;
+             const idxB = topicOrder[b.topicId] ?? 99999;
+             return idxA - idxB;
+         });
+      }
+      return [planId, tasks] as [string, StudyAssignment[]];
+  });
 
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-[#0B1120]">
