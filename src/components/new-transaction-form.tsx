@@ -264,7 +264,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                     <FormField control={form.control} name="description" render={({ field }) => (
                         <FormItem>
                             <FormControl>
-                                <Input placeholder="Örn: Pazar alışverişi" className="h-12 rounded-xl bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10" {...field} />
+                                <Input placeholder="Örn: Pazar alışverişi" className="h-12 rounded-xl bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10" {...field} value={field.value ?? ''} />
                             </FormControl>
                         </FormItem>
                     )}/>
