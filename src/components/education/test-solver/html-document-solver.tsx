@@ -483,44 +483,7 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
                     </div>
                 </div>
 
-            <div ref={containerRef} className={cn("flex-1 flex overflow-hidden relative", isSplitScreenMobile ? "flex-col lg:flex-row" : "flex-row")}>
-                
-                {/* Document Area */}
-                <div 
-                    className="relative bg-slate-50 dark:bg-black/20 flex flex-col min-h-0" 
-                    style={isSplitScreenMobile ? { height: `${splitHeightPercent}%` } : { flex: 1 }}
-                >
-                    <div className="flex-1 relative min-h-0">
-                        {/* We add a transparent overlay during drag to prevent iframe from eating mouse events */}
-                        {isDragging && <div className="absolute inset-0 z-50 bg-transparent" />}
-                        
-                        <iframe 
-                            ref={iframeRef}
-                            srcDoc={getIframeDocument(test.htmlContent || "")}
-                            className="w-full h-full border-none"
-                            title="Test Content"
-                        />
-                         {/* Mobile Optic FAB */}
-                        {(!isSplitScreenMobile && !isReviewMode) && (
-                            <Button 
-                                type="button"
-                                onClick={() => setIsOpticalOpenMobile(true)}
-                                className="lg:hidden absolute bottom-6 right-6 h-14 w-14 rounded-full bg-indigo-600 text-white shadow-2xl z-40 border-4 border-white dark:border-slate-800"
-                            >
-                                <LayoutGrid className="w-6 h-6" />
-                            </Button>
-                        )}
-                        {/* Mobile Optic FAB for Review Mode */}
-                        {(!isSplitScreenMobile && isReviewMode) && (
-                            <Button 
-                                type="button"
-                                onClick={() => setIsOpticalOpenMobile(true)}
-                                className="lg:hidden absolute bottom-6 right-6 h-14 w-14 rounded-full bg-slate-800 text-white shadow-2xl z-40 border-4 border-white dark:border-slate-800"
-                            >
-                                <AlertCircle className="w-6 h-6" />
-                            </Button>
-                        )}
-                    </div>
+
 
                 <div ref={containerRef} className={cn("flex-1 flex overflow-hidden relative", isSplitScreenMobile ? "flex-col lg:flex-row" : "flex-row")}>
                     
