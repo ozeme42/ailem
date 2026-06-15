@@ -339,7 +339,7 @@ export function BudgetClient() {
             await deleteTransaction(id); 
             toast({ title: "İşlem silindi", variant: 'destructive' }); 
         } 
-        catch (error) { toast({ variant: "destructive", title: "Hata oluştu" }); }
+        catch (error: any) { console.error("İşlem silme hatası:", error); toast({ variant: "destructive", title: "Hata oluştu", description: error?.message || "Bilinmeyen hata" }); }
     }
     
     const openAccountForm = (account: Account | null, type: Account['type'] = 'bank') => { 
