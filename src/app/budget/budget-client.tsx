@@ -326,7 +326,7 @@ export function BudgetClient() {
     
     const handleDeleteTransaction = async (id: string) => {
         try { 
-            const tx = transactions.find(t => t.id === id);
+            const tx = allTransactions.find(t => t.id === id);
             if (tx) {
                 if (tx.isApplied || tx.isApplied === undefined) {
                     const acc = accounts.find(a => a.id === tx.accountId);
