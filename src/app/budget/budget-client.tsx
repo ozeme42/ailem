@@ -596,7 +596,7 @@ export function BudgetClient() {
                 )}
 
                 {/* --- İÇERİK ALANI --- */}
-                <div className="space-y-6 pb-6">
+                <div className="space-y-4 sm:space-y-6 pb-6">
                     
                     {/* GÜNLÜK GÖRÜNÜM - IOS Gruplu Liste */}
                     {mainTab === 'day' && dailyGroups.map(group => (
@@ -623,33 +623,26 @@ export function BudgetClient() {
                                     const textClass = config.color.split(' ').find(c => c.startsWith('text-')) || 'text-slate-800';
 
                                     return (
-                                        <div key={tx.id} className="relative mb-2 sm:mb-3 last:mb-0">
+                                        <div key={tx.id} className="relative mb-1 sm:mb-2 last:mb-0">
                                             <div 
-                                                className={cn("flex items-center justify-between p-3 sm:p-4 rounded-2xl active:scale-[0.98] transition-all cursor-pointer shadow-sm border border-white/40 dark:border-white/5", bgClass, "dark:bg-opacity-10 dark:bg-slate-800")} 
+                                                className={cn("flex items-center justify-between px-3 py-2.5 sm:p-4 rounded-[14px] sm:rounded-2xl active:scale-[0.98] transition-all cursor-pointer shadow-sm border border-white/40 dark:border-white/5", bgClass, "dark:bg-opacity-10 dark:bg-slate-800")} 
                                                 onClick={() => openTransactionForm(tx)}
                                             >
-                                                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
-                                                    <div className={cn("h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-[14px] sm:rounded-2xl flex items-center justify-center font-bold text-xl shadow-sm bg-white dark:bg-slate-700", textClass)}>
-                                                        {dynamicCategory ? <span className="text-xl sm:text-2xl">{dynamicCategory.icon}</span> : <CategoryIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
+                                                <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+                                                    <div className={cn("h-9 w-9 sm:h-12 sm:w-12 shrink-0 rounded-xl sm:rounded-2xl flex items-center justify-center font-bold text-lg sm:text-xl shadow-sm bg-white dark:bg-slate-700", textClass)}>
+                                                        {dynamicCategory ? <span className="text-lg sm:text-2xl">{dynamicCategory.icon}</span> : <CategoryIcon className="w-4 h-4 sm:w-6 sm:h-6" />}
                                                     </div>
                                                     <div className="min-w-0 pr-2">
-                                                        <p className="text-[14px] sm:text-[16px] font-bold text-slate-800 dark:text-white leading-tight flex items-center gap-1.5 sm:gap-2">
-                                                            {tx.category === 'Fatura' && tx.description ? (
-                                                                <>
-                                                                    <span className="truncate block">{tx.description}</span>
-                                                                    <span className="text-[9px] sm:text-[10px] shrink-0 font-bold uppercase tracking-widest bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md">Fatura</span>
-                                                                </>
-                                                            ) : (
-                                                                <span className="truncate block">
-                                                                    {tx.category}
-                                                                    {tx.description && <span className="text-slate-500 dark:text-slate-400 font-medium text-[13px] sm:text-[14px] ml-1.5">({tx.description})</span>}
-                                                                </span>
-                                                            )}
+                                                        <p className="text-[13px] sm:text-[16px] font-bold text-slate-800 dark:text-white leading-tight flex items-center gap-1 sm:gap-2">
+                                                            <span className="truncate block">
+                                                                {tx.category}
+                                                                {tx.description && <span className="text-slate-500 dark:text-slate-400 font-medium text-[12px] sm:text-[14px] ml-1">({tx.description})</span>}
+                                                            </span>
                                                         </p>
-                                                        <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium mt-0.5 truncate">{account?.name || 'Hesap Yok'}</p>
+                                                        <p className="text-[9px] sm:text-[11px] text-slate-500 font-medium mt-0.5 truncate">{account?.name || 'Hesap Yok'}</p>
                                                     </div>
                                                 </div>
-                                                <p className={cn("font-bold text-[15px] sm:text-[17px] shrink-0", tx.type === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400')}>
+                                                <p className={cn("font-bold text-[14px] sm:text-[17px] shrink-0", tx.type === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400')}>
                                                     {tx.type === 'expense' ? '-' : '+'}{tx.amount.toLocaleString('tr-TR')} ₺
                                                 </p>
                                             </div>
@@ -662,7 +655,7 @@ export function BudgetClient() {
 
                     {/* AYLIK GÖRÜNÜM */}
                     {mainTab === 'month' && (
-                        <div className="px-5 space-y-6">
+                        <div className="px-4 sm:px-5 space-y-4 sm:space-y-6">
                             {/* Sabit Giderler Kartı */}
                             {recurringExpenses.length > 0 && (
                                 <div>
@@ -680,23 +673,23 @@ export function BudgetClient() {
                                             const textClass = config.color.split(' ').find(c => c.startsWith('text-')) || 'text-slate-800';
 
                                             return (
-                                                <div key={tx.id} className="relative mb-2 sm:mb-3 last:mb-0">
-                                                    <div className={cn("flex items-center justify-between p-3 sm:p-4 rounded-2xl border border-white/40 dark:border-white/5 shadow-sm", bgClass, "dark:bg-opacity-10 dark:bg-slate-800")}>
-                                                        <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
-                                                            <div className={cn("h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-[14px] sm:rounded-2xl flex items-center justify-center font-bold text-xl shadow-sm bg-white dark:bg-slate-700", textClass)}>
-                                                                <CategoryIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                                                <div key={tx.id} className="relative mb-0.5 sm:mb-3 last:mb-0">
+                                                    <div className={cn("flex items-center justify-between p-2 sm:p-4 rounded-[12px] sm:rounded-2xl border border-white/40 dark:border-white/5 shadow-sm", bgClass, "dark:bg-opacity-10 dark:bg-slate-800")}>
+                                                        <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1">
+                                                            <div className={cn("h-8 w-8 sm:h-12 sm:w-12 shrink-0 rounded-[10px] sm:rounded-2xl flex items-center justify-center font-bold text-base sm:text-xl shadow-sm bg-white dark:bg-slate-700", textClass)}>
+                                                                <CategoryIcon className="w-4 h-4 sm:w-6 sm:h-6" />
                                                             </div>
                                                             <div className="min-w-0 pr-2">
-                                                                <p className="text-[14px] sm:text-[15px] font-bold text-slate-800 dark:text-white leading-tight flex items-center gap-1.5 sm:gap-2">
+                                                                <p className="text-[12px] sm:text-[15px] font-bold text-slate-800 dark:text-white leading-tight flex items-center gap-1.5 sm:gap-2">
                                                                     <span className="truncate block">
                                                                         {tx.category}
-                                                                        {tx.description && <span className="text-slate-500 dark:text-slate-400 font-medium text-[12px] sm:text-[13px] ml-1.5">({tx.description})</span>}
+                                                                        {tx.description && <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px] sm:text-[13px] ml-1.5">({tx.description})</span>}
                                                                     </span>
                                                                 </p>
-                                                                <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5 uppercase tracking-wider font-semibold truncate">Her Ay</p>
+                                                                <p className="text-[9px] sm:text-[11px] text-slate-500 mt-0.5 uppercase tracking-wider font-semibold truncate">Her Ay</p>
                                                             </div>
                                                         </div>
-                                                        <p className={cn("font-bold text-[14px] sm:text-[15px] shrink-0 text-rose-600 dark:text-rose-400")}>
+                                                        <p className={cn("font-bold text-[13px] sm:text-[15px] shrink-0 text-rose-600 dark:text-rose-400")}>
                                                             -{tx.amount.toLocaleString('tr-TR')} ₺
                                                         </p>
                                                     </div>
