@@ -911,8 +911,9 @@ export function BudgetClient() {
             </div>
 
             {/* --- Dialoglar (Modallar) --- */}
-            <Dialog open={isAccountFormOpen} onOpenChange={setIsAccountFormOpen}>
+            <Dialog open={isAccountFormOpen} onOpenChange={(open) => { if (!open) setEditingAccount(null); setIsAccountFormOpen(open); }}>
                 <DialogContent className="sm:max-w-md rounded-[24px] bg-white dark:bg-[#1C1C1E] border-0 shadow-2xl p-0 overflow-hidden text-[#1C1C1E] dark:text-white">
+                    <DialogTitle className="sr-only">Hesap Formu</DialogTitle>
                     <div className="p-6">
                         <NewAccountForm 
                             familyMembers={familyMembers} 
@@ -932,6 +933,7 @@ export function BudgetClient() {
             
             <Dialog open={isTransactionFormOpen} onOpenChange={(open) => { if (!open) setEditingTransaction(null); setIsTransactionFormOpen(open); }}>
                 <DialogContent className="sm:max-w-md rounded-[24px] bg-white dark:bg-[#1C1C1E] border-0 shadow-2xl p-0 overflow-hidden text-[#1C1C1E] dark:text-white">
+                    <DialogTitle className="sr-only">İşlem Formu</DialogTitle>
                     <div className="p-6">
                         <NewTransactionForm accounts={accounts} familyMembers={familyMembers} onSubmit={handleTransactionSubmit} initialData={editingTransaction} onAddNewAccount={() => { setIsTransactionFormOpen(false); setIsAccountFormOpen(true); }} />
                         {editingTransaction && (
@@ -945,6 +947,7 @@ export function BudgetClient() {
 
             <Dialog open={isBillFormOpen} onOpenChange={(open) => { if (!open) setEditingBill(null); setIsBillFormOpen(open); }}>
                 <DialogContent className="sm:max-w-md rounded-[24px] bg-white dark:bg-[#1C1C1E] border-0 shadow-2xl p-0 overflow-hidden text-[#1C1C1E] dark:text-white">
+                    <DialogTitle className="sr-only">Fatura Formu</DialogTitle>
                     <div className="p-6">
                         <NewBillForm onSubmit={handleBillSubmit} initialData={editingBill} />
                         {editingBill && (
@@ -960,7 +963,7 @@ export function BudgetClient() {
             <Dialog open={!!payingBill} onOpenChange={(open) => { if (!open) setPayingBill(null); }}>
                 <DialogContent className="sm:max-w-md rounded-[24px] bg-white dark:bg-[#1C1C1E] border-0 shadow-2xl p-6 text-[#1C1C1E] dark:text-white">
                     <div className="space-y-4">
-                        <h2 className="text-xl font-bold text-center">Faturayı Öde</h2>
+                        <DialogTitle className="text-xl font-bold text-center">Faturayı Öde</DialogTitle>
                         <div className="text-center p-4 bg-slate-50 dark:bg-white/5 rounded-2xl">
                             <p className="text-sm text-slate-500">{payingBill?.title}</p>
                             <p className="text-3xl font-black text-rose-600 mt-1">{payingBill?.amount.toLocaleString()} ₺</p>
