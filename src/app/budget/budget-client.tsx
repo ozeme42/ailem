@@ -633,8 +633,10 @@ export function BudgetClient() {
                                                         {dynamicCategory ? <span className="text-2xl">{dynamicCategory.icon}</span> : <CategoryIcon className="w-6 h-6" />}
                                                     </div>
                                                     <div>
-                                                        <p className="text-[16px] font-bold text-slate-800 dark:text-white leading-tight">{tx.category}</p>
-                                                        {tx.description && <p className="text-[13px] text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-1 leading-snug">{tx.description}</p>}
+                                                        <p className="text-[16px] font-bold text-slate-800 dark:text-white leading-tight">
+                                                            {tx.category === 'Fatura' && tx.description ? tx.description : tx.category}
+                                                        </p>
+                                                        {tx.category !== 'Fatura' && tx.description && <p className="text-[13px] text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-1 leading-snug">{tx.description}</p>}
                                                         <p className="text-[11px] text-slate-500 font-medium mt-0.5">{account?.name || 'Hesap Yok'}</p>
                                                     </div>
                                                 </div>
@@ -676,8 +678,10 @@ export function BudgetClient() {
                                                                 <CategoryIcon className="w-5 h-5" />
                                                             </div>
                                                             <div>
-                                                                <p className="text-[15px] font-bold text-slate-800 dark:text-white leading-tight">{tx.category}</p>
-                                                                {tx.description && <p className="text-[12px] text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-1 leading-snug">{tx.description}</p>}
+                                                                <p className="text-[15px] font-bold text-slate-800 dark:text-white leading-tight">
+                                                                    {tx.category === 'Fatura' && tx.description ? tx.description : tx.category}
+                                                                </p>
+                                                                {tx.category !== 'Fatura' && tx.description && <p className="text-[12px] text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-1 leading-snug">{tx.description}</p>}
                                                                 <p className="text-[11px] text-slate-500 mt-0.5 uppercase tracking-wider font-semibold">Her Ay</p>
                                                             </div>
                                                         </div>
