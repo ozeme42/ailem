@@ -487,89 +487,96 @@ export function BudgetClient() {
 
             <div className="max-w-2xl mx-auto px-4 pt-4 relative z-10 space-y-5">
                 
-                {/* --- MOBİL ÖZET KARTI (PREMIUM GRADIENT) --- */}
-                <div className="relative overflow-hidden rounded-[32px] p-7 shadow-[0_20px_40px_-15px_rgba(79,70,229,0.3)] hover:shadow-[0_20px_50px_-15px_rgba(79,70,229,0.4)] hover:-translate-y-1 transition-all duration-500 border border-white/20">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-600 to-fuchsia-500 z-0" />
-                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/20 rounded-full blur-[40px] pointer-events-none mix-blend-overlay" />
-                    <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-black/20 rounded-full blur-[40px] pointer-events-none mix-blend-overlay" />
-                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-soft-light pointer-events-none" />
-                    
-                    <div className="relative z-10 flex flex-col justify-between min-h-[160px]">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-white/80 text-[13px] font-bold uppercase tracking-widest mb-1.5 drop-shadow-sm">{labelTotal}</p>
-                                <h2 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white/90 to-white/70 tracking-tight drop-shadow-md">
+                {/* --- BENTO GRID ÖZET ALANI --- */}
+                <div className="grid grid-cols-2 gap-3 mb-2 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="col-span-2 relative overflow-hidden rounded-[28px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-white/60 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl">
+                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/20 dark:bg-indigo-500/30 rounded-full blur-[40px] pointer-events-none" />
+                        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-fuchsia-500/10 dark:bg-fuchsia-500/20 rounded-full blur-[40px] pointer-events-none" />
+                        <div className="relative z-10">
+                            <p className="text-slate-500 dark:text-slate-400 text-[12px] font-bold uppercase tracking-widest mb-1">{labelTotal}</p>
+                            <div className="flex items-end justify-between">
+                                <h2 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-slate-800 to-slate-500 dark:from-white dark:to-white/60 tracking-tight drop-shadow-sm">
                                     {headerTotal.toLocaleString('tr-TR')} ₺
                                 </h2>
-                            </div>
-                            <div className="bg-white/20 p-2.5 rounded-2xl backdrop-blur-md shadow-sm border border-white/20">
-                                {headerTotal >= 0 ? <TrendingUp className="h-6 w-6 text-white" /> : <TrendingDown className="h-6 w-6 text-white" />}
-                            </div>
-                        </div>
-                        
-                        <div className="flex gap-4 mt-6">
-                            <div className="flex-1 bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10">
-                                <div className="flex items-center gap-1.5 mb-1.5">
-                                    <div className="w-6 h-6 rounded-full bg-emerald-400/20 flex items-center justify-center">
-                                        <ArrowDownLeft className="h-3.5 w-3.5 text-emerald-300" />
-                                    </div>
-                                    <p className="text-[10px] text-white/70 uppercase font-bold tracking-widest">{labelIncome}</p>
+                                <div className="bg-white/50 dark:bg-white/10 p-2.5 rounded-2xl shadow-sm border border-white/40 dark:border-white/10 backdrop-blur-sm">
+                                    {headerTotal >= 0 ? <TrendingUp className="h-6 w-6 text-indigo-600 dark:text-indigo-400" /> : <TrendingDown className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />}
                                 </div>
-                                <p className="text-[16px] font-bold text-white">{headerIncome.toLocaleString('tr-TR')} ₺</p>
-                            </div>
-                            <div className="flex-1 bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10">
-                                <div className="flex items-center gap-1.5 mb-1.5">
-                                    <div className="w-6 h-6 rounded-full bg-rose-400/20 flex items-center justify-center">
-                                        <ArrowUpRight className="h-3.5 w-3.5 text-rose-300" />
-                                    </div>
-                                    <p className="text-[10px] text-white/70 uppercase font-bold tracking-widest">{labelExpense}</p>
-                                </div>
-                                <p className="text-[16px] font-bold text-white">{headerExpense.toLocaleString('tr-TR')} ₺</p>
                             </div>
                         </div>
                     </div>
                     
-                    {/* BÜTÇE LİMİTLERİ (Aylık) */}
-                    {limitedCategories.length > 0 && (
-                        <div className="px-5 mt-6 mb-2">
-                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Bütçe Limitleri</h3>
-                            <div className="space-y-3">
-                                {limitedCategories.map(cat => (
-                                    <div key={cat.id} className="bg-white dark:bg-[#1C1C1E] p-3 rounded-2xl shadow-sm">
-                                        <div className="flex justify-between items-center mb-1.5">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-lg">{cat.icon}</span>
-                                                <span className="text-sm font-semibold">{cat.name}</span>
-                                            </div>
-                                            <span className="text-[11px] font-medium text-slate-500">{cat.spent.toLocaleString('tr-TR')} / {cat.limit!.toLocaleString('tr-TR')} ₺</span>
-                                        </div>
-                                        <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                            <div 
-                                                className={cn("h-full rounded-full transition-all duration-500", cat.percent >= 90 ? "bg-rose-500" : cat.percent >= 75 ? "bg-orange-500" : "bg-indigo-500")}
-                                                style={{ width: `${cat.percent}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
+                    <div className="relative overflow-hidden rounded-[24px] p-5 shadow-[0_8px_20px_rgb(0,0,0,0.03)] dark:shadow-[0_8px_20px_rgb(0,0,0,0.2)] border border-white/60 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl">
+                        <div className="absolute -bottom-6 -left-6 w-28 h-28 bg-emerald-500/15 dark:bg-emerald-500/20 rounded-full blur-[24px] pointer-events-none" />
+                        <div className="relative z-10 flex flex-col justify-between h-full">
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="w-8 h-8 rounded-full bg-emerald-100/80 dark:bg-emerald-500/20 flex items-center justify-center border border-emerald-200 dark:border-emerald-500/30">
+                                    <ArrowDownLeft className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                </div>
+                                <p className="text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">{labelIncome}</p>
                             </div>
+                            <p className="text-[19px] font-bold text-slate-800 dark:text-white tracking-tight">{headerIncome.toLocaleString('tr-TR')} ₺</p>
                         </div>
-                    )}
+                    </div>
+
+                    <div className="relative overflow-hidden rounded-[24px] p-5 shadow-[0_8px_20px_rgb(0,0,0,0.03)] dark:shadow-[0_8px_20px_rgb(0,0,0,0.2)] border border-white/60 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl">
+                        <div className="absolute -bottom-6 -right-6 w-28 h-28 bg-rose-500/15 dark:bg-rose-500/20 rounded-full blur-[24px] pointer-events-none" />
+                        <div className="relative z-10 flex flex-col justify-between h-full">
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="w-8 h-8 rounded-full bg-rose-100/80 dark:bg-rose-500/20 flex items-center justify-center border border-rose-200 dark:border-rose-500/30">
+                                    <ArrowUpRight className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                                </div>
+                                <p className="text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">{labelExpense}</p>
+                            </div>
+                            <p className="text-[19px] font-bold text-slate-800 dark:text-white tracking-tight">{headerExpense.toLocaleString('tr-TR')} ₺</p>
+                        </div>
+                    </div>
                 </div>
 
+                {/* BÜTÇE LİMİTLERİ (Aylık) */}
+                {limitedCategories.length > 0 && (
+                    <div className="px-1 mt-4 mb-2 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-150 fill-mode-both">
+                        <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3 ml-2">Bütçe Limitleri</h3>
+                        <div className="space-y-2">
+                            {limitedCategories.map(cat => (
+                                <div key={cat.id} className="relative overflow-hidden bg-white/60 dark:bg-[#1C1C1E]/60 backdrop-blur-md p-3.5 rounded-[20px] shadow-sm border border-white/40 dark:border-white/5">
+                                    <div className="flex justify-between items-center mb-2 relative z-10">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg shadow-inner">
+                                                {cat.icon}
+                                            </div>
+                                            <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{cat.name}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-[12px] font-black text-slate-800 dark:text-slate-200 block">{cat.spent.toLocaleString('tr-TR')} ₺</span>
+                                            <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">/ {cat.limit!.toLocaleString('tr-TR')} ₺</span>
+                                        </div>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden relative z-10">
+                                        <div 
+                                            className={cn("h-full rounded-full transition-all duration-1000 ease-out", cat.percent >= 90 ? "bg-gradient-to-r from-rose-400 to-rose-600" : cat.percent >= 75 ? "bg-gradient-to-r from-orange-400 to-orange-500" : "bg-gradient-to-r from-indigo-400 to-indigo-600")}
+                                            style={{ width: `${cat.percent}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* --- SEGMENTED CONTROL (IOS TARZI SEKMELER) --- */}
-                <div className="bg-white/40 dark:bg-black/30 backdrop-blur-md p-1.5 rounded-[20px] flex w-full mb-4 shadow-[inset_0_2px_10px_rgba(0,0,0,0.02)] border border-white/50 dark:border-white/10 relative z-10">
+                <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-1.5 rounded-[24px] flex w-full mb-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-white/50 dark:border-white/10 relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 fill-mode-both">
                     <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
-                        <TabsList className="bg-transparent w-full grid grid-cols-4 p-0 h-[38px] gap-1">
-                            <TabsTrigger value="day" className="rounded-xl h-full text-[12px] sm:text-[13px] font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-md transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                        <TabsList className="bg-transparent w-full grid grid-cols-4 p-0 h-[42px] gap-1.5">
+                            <TabsTrigger value="day" className="rounded-[18px] h-full text-[13px] font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
                                 Günlük
                             </TabsTrigger>
-                            <TabsTrigger value="month" className="rounded-xl h-full text-[12px] sm:text-[13px] font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-md transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                            <TabsTrigger value="month" className="rounded-[18px] h-full text-[13px] font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
                                 Aylık
                             </TabsTrigger>
-                            <TabsTrigger value="bills" className="rounded-xl h-full text-[12px] sm:text-[13px] font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-md transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                            <TabsTrigger value="bills" className="rounded-[18px] h-full text-[13px] font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
                                 Faturalar
                             </TabsTrigger>
-                            <TabsTrigger value="accounts" className="rounded-xl h-full text-[12px] sm:text-[13px] font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-md transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                            <TabsTrigger value="accounts" className="rounded-[18px] h-full text-[13px] font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
                                 Hesaplar
                             </TabsTrigger>
                         </TabsList>
@@ -603,16 +610,16 @@ export function BudgetClient() {
                 <div className="space-y-4 sm:space-y-6 pb-6">
                     
                     {/* GÜNLÜK GÖRÜNÜM - IOS Gruplu Liste */}
-                    {mainTab === 'day' && dailyGroups.map(group => (
-                        <div key={group.dateISO}>
-                            <h3 className="px-4 mb-1.5 text-[13px] font-medium text-[#8E8E93] uppercase tracking-wide flex justify-between">
-                                <span>{group.date}</span>
-                                <span className="normal-case">
-                                    {group.dayTotalIncome > 0 && <span className="text-[#34C759] ml-2">+{group.dayTotalIncome}₺</span>}
-                                    {group.dayTotalExpense > 0 && <span className="text-[#FF3B30] ml-2">-{group.dayTotalExpense}₺</span>}
+                    {mainTab === 'day' && dailyGroups.map((group, groupIdx) => (
+                        <div key={group.dateISO} className="animate-in fade-in slide-in-from-bottom-10 duration-700 fill-mode-both" style={{ animationDelay: `${400 + groupIdx * 100}ms` }}>
+                            <h3 className="px-3 mb-2.5 text-[12px] font-bold text-slate-500 uppercase tracking-widest flex justify-between items-center">
+                                <span className="bg-white/50 dark:bg-slate-800/50 px-3 py-1 rounded-full backdrop-blur-sm border border-white/20">{group.date}</span>
+                                <span className="normal-case flex gap-2">
+                                    {group.dayTotalIncome > 0 && <span className="text-emerald-600 dark:text-emerald-400 font-black">+{group.dayTotalIncome.toLocaleString('tr-TR')}₺</span>}
+                                    {group.dayTotalExpense > 0 && <span className="text-rose-600 dark:text-rose-400 font-black">-{group.dayTotalExpense.toLocaleString('tr-TR')}₺</span>}
                                 </span>
                             </h3>
-                            <div className={cn("overflow-hidden rounded-2xl", themeClasses.CARD_BG)}>
+                            <div className="space-y-2">
                                 {group.transactions.map((tx, index) => {
                                     const account = accounts.find(a => a.id === tx.accountId);
                                     const dynamicCategory = categories.find(c => c.name === tx.category);
@@ -627,26 +634,26 @@ export function BudgetClient() {
                                     const textClass = config.color.split(' ').find(c => c.startsWith('text-')) || 'text-slate-800';
 
                                     return (
-                                        <div key={tx.id} className="relative mb-1 sm:mb-2 last:mb-0">
+                                        <div key={tx.id} className="relative group">
                                             <div 
-                                                className={cn("flex items-center justify-between px-3 py-2.5 sm:p-4 rounded-[14px] sm:rounded-2xl active:scale-[0.98] transition-all cursor-pointer shadow-sm border border-white/40 dark:border-white/5", bgClass, "dark:bg-opacity-10 dark:bg-slate-800")} 
+                                                className={cn("flex items-center justify-between px-4 py-3.5 rounded-[24px] active:scale-[0.98] transition-all cursor-pointer shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-white/60 dark:border-white/5 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl hover:bg-white dark:hover:bg-slate-800")} 
                                                 onClick={() => openTransactionForm(tx)}
                                             >
-                                                <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
-                                                    <div className={cn("h-9 w-9 sm:h-12 sm:w-12 shrink-0 rounded-xl sm:rounded-2xl flex items-center justify-center font-bold text-lg sm:text-xl shadow-sm bg-white dark:bg-slate-700", textClass)}>
-                                                        {dynamicCategory ? <span className="text-lg sm:text-2xl">{dynamicCategory.icon}</span> : <CategoryIcon className="w-4 h-4 sm:w-6 sm:h-6" />}
+                                                <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                                                    <div className={cn("h-12 w-12 shrink-0 rounded-[18px] flex items-center justify-center font-bold text-xl shadow-sm bg-white dark:bg-slate-800 border border-white/50 dark:border-white/10", textClass)}>
+                                                        {dynamicCategory ? <span className="text-2xl">{dynamicCategory.icon}</span> : <CategoryIcon className="w-6 h-6" />}
                                                     </div>
                                                     <div className="min-w-0 pr-2">
-                                                        <p className="text-[13px] sm:text-[16px] font-bold text-slate-800 dark:text-white leading-tight flex items-center gap-1 sm:gap-2">
+                                                        <p className="text-[16px] font-bold text-slate-800 dark:text-white leading-tight flex items-center gap-2">
                                                             <span className="truncate block">
                                                                 {tx.category}
-                                                                {tx.description && <span className="text-slate-500 dark:text-slate-400 font-medium text-[12px] sm:text-[14px] ml-1">({tx.description})</span>}
+                                                                {tx.description && <span className="text-slate-500 dark:text-slate-400 font-medium text-[14px] ml-1">({tx.description})</span>}
                                                             </span>
                                                         </p>
-                                                        <p className="text-[9px] sm:text-[11px] text-slate-500 font-medium mt-0.5 truncate">{account?.name || 'Hesap Yok'}</p>
+                                                        <p className="text-[12px] text-slate-500 font-semibold mt-0.5 truncate">{account?.name || 'Hesap Yok'}</p>
                                                     </div>
                                                 </div>
-                                                <p className={cn("font-bold text-[14px] sm:text-[17px] shrink-0", tx.type === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400')}>
+                                                <p className={cn("font-black text-[17px] shrink-0 tracking-tight", tx.type === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400')}>
                                                     {tx.type === 'expense' ? '-' : '+'}{tx.amount.toLocaleString('tr-TR')} ₺
                                                 </p>
                                             </div>
@@ -664,7 +671,7 @@ export function BudgetClient() {
                             {recurringExpenses.length > 0 && (
                                 <div>
                                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">Sabit Giderler (Abonelikler)</h3>
-                                    <div className={cn("overflow-hidden rounded-2xl", themeClasses.CARD_BG)}>
+                                    <div className="overflow-hidden rounded-[24px] bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-white/5 shadow-sm p-2 sm:p-3 space-y-2">
                                         {recurringExpenses.map((tx, index) => {
                                             let config = categoryConfig[tx.category];
                                             if (!config) {
@@ -677,9 +684,9 @@ export function BudgetClient() {
                                             const textClass = config.color.split(' ').find(c => c.startsWith('text-')) || 'text-slate-800';
 
                                             return (
-                                                <div key={tx.id} className="relative mb-0.5 sm:mb-3 last:mb-0">
-                                                    <div className={cn("flex items-center justify-between p-2 sm:p-4 rounded-[12px] sm:rounded-2xl border border-white/40 dark:border-white/5 shadow-sm", bgClass, "dark:bg-opacity-10 dark:bg-slate-800")}>
-                                                        <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1">
+                                                <div key={tx.id} className="relative group">
+                                                    <div className={cn("flex items-center justify-between p-3 sm:p-4 rounded-[18px] sm:rounded-2xl border border-white/60 dark:border-white/5 shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-white/80 dark:bg-slate-900/60 hover:bg-white dark:hover:bg-slate-800 transition-all")}>
+                                                        <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
                                                             <div className={cn("h-8 w-8 sm:h-12 sm:w-12 shrink-0 rounded-[10px] sm:rounded-2xl flex items-center justify-center font-bold text-base sm:text-xl shadow-sm bg-white dark:bg-slate-700", textClass)}>
                                                                 <CategoryIcon className="w-4 h-4 sm:w-6 sm:h-6" />
                                                             </div>
@@ -706,7 +713,7 @@ export function BudgetClient() {
 
                             <div>
                                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Aylık Özet</h3>
-                                <div className={cn("overflow-hidden rounded-2xl", themeClasses.CARD_BG)}>
+                                <div className="overflow-hidden rounded-[24px] bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-white/5 shadow-sm">
                             {monthlySummaries.map((summary, index) => {
                                 const isLast = index === monthlySummaries.length - 1;
                                 return (
@@ -749,10 +756,10 @@ export function BudgetClient() {
                         <div className="space-y-6">
                             {/* Varlıklar */}
                             <div>
-                                <h3 className="px-4 mb-1.5 text-[13px] font-medium text-[#8E8E93] uppercase tracking-wide flex items-center gap-2">
+                                <h3 className="px-4 mb-2 text-[13px] font-medium text-[#8E8E93] uppercase tracking-wide flex items-center gap-2">
                                     <div className="w-1.5 h-1.5 rounded-full bg-[#34C759]" /> Varlıklar
                                 </h3>
-                                <div className={cn("overflow-hidden rounded-2xl", themeClasses.CARD_BG)}>
+                                <div className="overflow-hidden rounded-[24px] bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-white/5 shadow-sm">
                                     {accountStats.assets.map((account, index) => {
                                         const isLast = index === accountStats.assets.length - 1;
                                         return (
@@ -785,10 +792,10 @@ export function BudgetClient() {
 
                             {/* Borçlar */}
                             <div>
-                                <h3 className="px-4 mb-1.5 text-[13px] font-medium text-[#8E8E93] uppercase tracking-wide flex items-center gap-2">
+                                <h3 className="px-4 mb-2 text-[13px] font-medium text-[#8E8E93] uppercase tracking-wide flex items-center gap-2">
                                     <div className="w-1.5 h-1.5 rounded-full bg-[#FF3B30]" /> Borçlar
                                 </h3>
-                                <div className={cn("overflow-hidden rounded-2xl", themeClasses.CARD_BG)}>
+                                <div className="overflow-hidden rounded-[24px] bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-white/5 shadow-sm">
                                     {accountStats.debts.map((account, index) => {
                                         const isLast = index === accountStats.debts.length - 1;
                                         return (
@@ -827,10 +834,10 @@ export function BudgetClient() {
                         <div className="space-y-6">
                             {/* Ödenmemiş Faturalar */}
                             <div>
-                                <h3 className="px-4 mb-1.5 text-[13px] font-medium text-[#8E8E93] uppercase tracking-wide flex items-center gap-2">
+                                <h3 className="px-4 mb-2 text-[13px] font-medium text-[#8E8E93] uppercase tracking-wide flex items-center gap-2">
                                     <div className="w-1.5 h-1.5 rounded-full bg-[#FF3B30]" /> Ödenmeyi Bekleyenler
                                 </h3>
-                                <div className={cn("overflow-hidden rounded-2xl", themeClasses.CARD_BG)}>
+                                <div className="overflow-hidden rounded-[24px] bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-white/5 shadow-sm">
                                     {bills.filter(b => !b.isPaid).sort((a,b) => a.dueDate.localeCompare(b.dueDate)).map((bill, index, arr) => {
                                         const isLast = index === arr.length - 1;
                                         const isOverdue = new Date(bill.dueDate) < new Date();
@@ -866,14 +873,14 @@ export function BudgetClient() {
                             {/* Ödenmiş Faturalar */}
                             <div>
                                 <div className="flex items-center justify-between pr-4">
-                                    <h3 className="px-4 mb-1.5 text-[13px] font-medium text-[#8E8E93] uppercase tracking-wide flex items-center gap-2">
+                                    <h3 className="px-4 mb-2 text-[13px] font-medium text-[#8E8E93] uppercase tracking-wide flex items-center gap-2">
                                         <div className="w-1.5 h-1.5 rounded-full bg-[#34C759]" /> Ödenmiş Faturalar
                                     </h3>
-                                    <Button variant="ghost" size="sm" className="text-indigo-600 font-bold mb-1.5 h-7 text-xs px-3 rounded-full bg-indigo-50 hover:bg-indigo-100" onClick={() => setIsBillArchiveOpen(true)}>
+                                    <Button variant="ghost" size="sm" className="text-indigo-600 font-bold mb-2 h-7 text-xs px-3 rounded-full bg-indigo-50 hover:bg-indigo-100" onClick={() => setIsBillArchiveOpen(true)}>
                                         Arşivi / Analizi Gör
                                     </Button>
                                 </div>
-                                <div className={cn("overflow-hidden rounded-2xl", themeClasses.CARD_BG)}>
+                                <div className="overflow-hidden rounded-[24px] bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-white/5 shadow-sm">
                                     {bills.filter(b => b.isPaid).sort((a,b) => (b.paidDate || "").localeCompare(a.paidDate || "")).reverse().slice(0, 10).map((bill, index, arr) => {
                                         const isLast = index === arr.length - 1;
                                         return (
@@ -907,14 +914,14 @@ export function BudgetClient() {
             {/* YENİ İŞLEM EKLE BUTONU (FLOATING) */}
             <div className="fixed bottom-[110px] right-6 z-40">
                 <Button 
-                    className="h-16 w-16 rounded-[24px] rounded-tl-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 bg-gradient-to-br from-blue-500 to-indigo-600 border border-white/20 active:scale-95 transition-all p-0 flex items-center justify-center"
+                    className="h-16 w-16 rounded-full shadow-[0_8px_30px_rgb(79,70,229,0.4)] hover:shadow-[0_8px_40px_rgb(79,70,229,0.6)] hover:-translate-y-1 bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 border border-white/30 active:scale-90 transition-all duration-300 p-0 flex items-center justify-center backdrop-blur-xl group"
                     onClick={() => {
                         if (mainTab === 'accounts') openAccountForm(null, 'bank');
                         else if (mainTab === 'bills') openBillForm(null);
                         else openTransactionForm(null);
                     }}
                 >
-                    <Plus className="h-8 w-8 text-white drop-shadow-md" />
+                    <Plus className="h-8 w-8 text-white drop-shadow-md group-hover:rotate-90 transition-transform duration-300" />
                 </Button>
             </div>
 
