@@ -639,9 +639,13 @@ export function BudgetClient() {
                                                                     <span className="truncate block">{tx.description}</span>
                                                                     <span className="text-[9px] sm:text-[10px] shrink-0 font-bold uppercase tracking-widest bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md">Fatura</span>
                                                                 </>
-                                                            ) : <span className="truncate block">{tx.category}</span>}
+                                                            ) : (
+                                                                <span className="truncate block">
+                                                                    {tx.category}
+                                                                    {tx.description && <span className="text-slate-500 dark:text-slate-400 font-medium text-[13px] sm:text-[14px] ml-1.5">({tx.description})</span>}
+                                                                </span>
+                                                            )}
                                                         </p>
-                                                        {tx.category !== 'Fatura' && tx.description && <p className="text-[12px] sm:text-[13px] text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-1 leading-snug">{tx.description}</p>}
                                                         <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium mt-0.5 truncate">{account?.name || 'Hesap Yok'}</p>
                                                     </div>
                                                 </div>
@@ -684,14 +688,11 @@ export function BudgetClient() {
                                                             </div>
                                                             <div className="min-w-0 pr-2">
                                                                 <p className="text-[14px] sm:text-[15px] font-bold text-slate-800 dark:text-white leading-tight flex items-center gap-1.5 sm:gap-2">
-                                                                    {tx.category === 'Fatura' && tx.description ? (
-                                                                        <>
-                                                                            <span className="truncate block">{tx.description}</span>
-                                                                            <span className="text-[8px] sm:text-[9px] shrink-0 font-bold uppercase tracking-widest bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md">Fatura</span>
-                                                                        </>
-                                                                    ) : <span className="truncate block">{tx.category}</span>}
+                                                                    <span className="truncate block">
+                                                                        {tx.category}
+                                                                        {tx.description && <span className="text-slate-500 dark:text-slate-400 font-medium text-[12px] sm:text-[13px] ml-1.5">({tx.description})</span>}
+                                                                    </span>
                                                                 </p>
-                                                                {tx.category !== 'Fatura' && tx.description && <p className="text-[11px] sm:text-[12px] text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-1 leading-snug">{tx.description}</p>}
                                                                 <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5 uppercase tracking-wider font-semibold truncate">Her Ay</p>
                                                             </div>
                                                         </div>
