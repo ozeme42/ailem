@@ -203,7 +203,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   }, [filteredAccounts, form, transactionType]);
 
   return (
-    <div className="flex flex-col w-full h-full max-h-[85dvh] bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-[2rem] overflow-hidden">
+    <div className="flex flex-col w-full h-full bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-[2rem] overflow-hidden">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full overflow-hidden">
             

@@ -952,9 +952,9 @@ export function BudgetClient() {
             </Dialog>
             
             <Dialog open={isTransactionFormOpen} onOpenChange={(open) => { if (!open) setEditingTransaction(null); setIsTransactionFormOpen(open); }}>
-                <DialogContent className="sm:max-w-md rounded-[24px] bg-white dark:bg-[#1C1C1E] border-0 shadow-2xl p-0 overflow-hidden text-[#1C1C1E] dark:text-white">
+                <DialogContent className="w-[96vw] max-w-md max-h-[92dvh] h-auto rounded-[32px] bg-white dark:bg-slate-950 border border-white/20 dark:border-white/10 shadow-2xl p-0 flex flex-col overflow-hidden focus:outline-none">
                     <DialogTitle className="sr-only">İşlem Formu</DialogTitle>
-                    <div className="p-6">
+                    <div className="flex-1 overflow-hidden flex flex-col h-full w-full">
                         <NewTransactionForm 
                             accounts={accounts} 
                             familyMembers={familyMembers} 
