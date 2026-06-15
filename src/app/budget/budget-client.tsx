@@ -222,10 +222,12 @@ export function BudgetClient() {
         headerIncome = yearlyIncome;
         headerExpense = yearlyExpense;
         headerTotal = headerIncome - headerExpense;
+        labelTotal = `${format(currentDate, 'yyyy')} Net Durumu`;
     } else {
         headerIncome = monthlyIncome;
         headerExpense = monthlyExpense;
         headerTotal = headerIncome - headerExpense;
+        labelTotal = `${format(currentDate, 'MMMM', { locale: tr })} Net Durumu`;
     }
 
     const handleAccountSubmit = async (data: Omit<Account, 'id' | 'familyId'>) => {
