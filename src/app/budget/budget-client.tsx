@@ -623,29 +623,29 @@ export function BudgetClient() {
                                     const textClass = config.color.split(' ').find(c => c.startsWith('text-')) || 'text-slate-800';
 
                                     return (
-                                        <div key={tx.id} className="relative mb-3 last:mb-0">
+                                        <div key={tx.id} className="relative mb-2 sm:mb-3 last:mb-0">
                                             <div 
-                                                className={cn("flex items-center justify-between p-4 rounded-2xl active:scale-[0.98] transition-all cursor-pointer shadow-sm border border-white/40 dark:border-white/5", bgClass, "dark:bg-opacity-10 dark:bg-slate-800")} 
+                                                className={cn("flex items-center justify-between p-3 sm:p-4 rounded-2xl active:scale-[0.98] transition-all cursor-pointer shadow-sm border border-white/40 dark:border-white/5", bgClass, "dark:bg-opacity-10 dark:bg-slate-800")} 
                                                 onClick={() => openTransactionForm(tx)}
                                             >
-                                                <div className="flex items-center gap-3.5">
-                                                    <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center font-bold text-xl shadow-sm bg-white dark:bg-slate-700", textClass)}>
-                                                        {dynamicCategory ? <span className="text-2xl">{dynamicCategory.icon}</span> : <CategoryIcon className="w-6 h-6" />}
+                                                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
+                                                    <div className={cn("h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-[14px] sm:rounded-2xl flex items-center justify-center font-bold text-xl shadow-sm bg-white dark:bg-slate-700", textClass)}>
+                                                        {dynamicCategory ? <span className="text-xl sm:text-2xl">{dynamicCategory.icon}</span> : <CategoryIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
                                                     </div>
-                                                    <div>
-                                                        <p className="text-[16px] font-bold text-slate-800 dark:text-white leading-tight flex items-center gap-2">
+                                                    <div className="min-w-0 pr-2">
+                                                        <p className="text-[14px] sm:text-[16px] font-bold text-slate-800 dark:text-white leading-tight flex items-center gap-1.5 sm:gap-2">
                                                             {tx.category === 'Fatura' && tx.description ? (
                                                                 <>
-                                                                    <span>{tx.description}</span>
-                                                                    <span className="text-[10px] font-bold uppercase tracking-widest bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md">Fatura</span>
+                                                                    <span className="truncate block">{tx.description}</span>
+                                                                    <span className="text-[9px] sm:text-[10px] shrink-0 font-bold uppercase tracking-widest bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md">Fatura</span>
                                                                 </>
-                                                            ) : tx.category}
+                                                            ) : <span className="truncate block">{tx.category}</span>}
                                                         </p>
-                                                        {tx.category !== 'Fatura' && tx.description && <p className="text-[13px] text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-1 leading-snug">{tx.description}</p>}
-                                                        <p className="text-[11px] text-slate-500 font-medium mt-0.5">{account?.name || 'Hesap Yok'}</p>
+                                                        {tx.category !== 'Fatura' && tx.description && <p className="text-[12px] sm:text-[13px] text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-1 leading-snug">{tx.description}</p>}
+                                                        <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium mt-0.5 truncate">{account?.name || 'Hesap Yok'}</p>
                                                     </div>
                                                 </div>
-                                                <p className={cn("font-bold text-[17px]", tx.type === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400')}>
+                                                <p className={cn("font-bold text-[15px] sm:text-[17px] shrink-0", tx.type === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400')}>
                                                     {tx.type === 'expense' ? '-' : '+'}{tx.amount.toLocaleString('tr-TR')} ₺
                                                 </p>
                                             </div>
@@ -676,26 +676,26 @@ export function BudgetClient() {
                                             const textClass = config.color.split(' ').find(c => c.startsWith('text-')) || 'text-slate-800';
 
                                             return (
-                                                <div key={tx.id} className="relative mb-3 last:mb-0">
-                                                    <div className={cn("flex items-center justify-between p-4 rounded-2xl border border-white/40 dark:border-white/5 shadow-sm", bgClass, "dark:bg-opacity-10 dark:bg-slate-800")}>
-                                                        <div className="flex items-center gap-3.5">
-                                                            <div className={cn("h-10 w-10 rounded-2xl flex items-center justify-center font-bold text-lg bg-white dark:bg-slate-700 shadow-sm", textClass)}>
-                                                                <CategoryIcon className="w-5 h-5" />
+                                                <div key={tx.id} className="relative mb-2 sm:mb-3 last:mb-0">
+                                                    <div className={cn("flex items-center justify-between p-3 sm:p-4 rounded-2xl border border-white/40 dark:border-white/5 shadow-sm", bgClass, "dark:bg-opacity-10 dark:bg-slate-800")}>
+                                                        <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
+                                                            <div className={cn("h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-[14px] sm:rounded-2xl flex items-center justify-center font-bold text-xl shadow-sm bg-white dark:bg-slate-700", textClass)}>
+                                                                <CategoryIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                                                             </div>
-                                                            <div>
-                                                                <p className="text-[15px] font-bold text-slate-800 dark:text-white leading-tight flex items-center gap-2">
+                                                            <div className="min-w-0 pr-2">
+                                                                <p className="text-[14px] sm:text-[15px] font-bold text-slate-800 dark:text-white leading-tight flex items-center gap-1.5 sm:gap-2">
                                                                     {tx.category === 'Fatura' && tx.description ? (
                                                                         <>
-                                                                            <span>{tx.description}</span>
-                                                                            <span className="text-[9px] font-bold uppercase tracking-widest bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md">Fatura</span>
+                                                                            <span className="truncate block">{tx.description}</span>
+                                                                            <span className="text-[8px] sm:text-[9px] shrink-0 font-bold uppercase tracking-widest bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md">Fatura</span>
                                                                         </>
-                                                                    ) : tx.category}
+                                                                    ) : <span className="truncate block">{tx.category}</span>}
                                                                 </p>
-                                                                {tx.category !== 'Fatura' && tx.description && <p className="text-[12px] text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-1 leading-snug">{tx.description}</p>}
-                                                                <p className="text-[11px] text-slate-500 mt-0.5 uppercase tracking-wider font-semibold">Her Ay</p>
+                                                                {tx.category !== 'Fatura' && tx.description && <p className="text-[11px] sm:text-[12px] text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-1 leading-snug">{tx.description}</p>}
+                                                                <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5 uppercase tracking-wider font-semibold truncate">Her Ay</p>
                                                             </div>
                                                         </div>
-                                                        <p className="font-bold text-[16px] text-rose-600 dark:text-rose-400">
+                                                        <p className={cn("font-bold text-[14px] sm:text-[15px] shrink-0 text-rose-600 dark:text-rose-400")}>
                                                             -{tx.amount.toLocaleString('tr-TR')} ₺
                                                         </p>
                                                     </div>
