@@ -359,7 +359,7 @@ export function BudgetClient() {
     
     const handleDeleteBill = async (id: string) => {
         try { await deleteBill(id); toast({ title: "Fatura silindi", variant: 'destructive'}); } 
-        catch (error) { toast({ variant: "destructive", title: "Hata oluştu" }); }
+        catch (error: any) { console.error("Fatura silme hatası:", error); toast({ variant: "destructive", title: "Hata oluştu", description: error?.message || "Bilinmeyen hata" }); }
     };
     
     const openBillForm = (bill: Bill | null) => { setEditingBill(bill); setIsBillFormOpen(true); };
