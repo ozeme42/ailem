@@ -380,7 +380,8 @@ export function BudgetClient() {
                 date: format(new Date(), 'yyyy-MM-dd'),
                 isInstallment: false,
                 isRecurring: false,
-                isApplied: true
+                isApplied: true,
+                description: payingBill.title
             };
             await addTransaction(txData);
             await updateBill(payingBill.id, {
