@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { CalendarIcon, Edit, Banknote, Landmark, CreditCard, Wallet, ChevronRight, ChevronLeft } from "lucide-react";
-import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, getDay, isSameDay, isToday } from "date-fns";
+import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, getDay, isSameDay, isToday, subDays } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -245,18 +245,18 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
             </div>
             
             {/* Body: Kaydırılabilir (Scrollable) */}
-            <div className="flex-grow overflow-y-auto p-4 space-y-5">
+            <div className="flex-grow overflow-y-auto p-4 space-y-4">
                 
                 {/* Tutar */}
-                <div className="flex flex-col items-center py-2">
+                <div className="flex flex-col items-center py-4 bg-slate-50/50 dark:bg-white/[0.02] rounded-[24px] mb-2 border border-slate-100 dark:border-white/5">
                     <FormField control={form.control} name="amount" render={({ field }) => (
                         <FormItem className="w-full text-center space-y-0 relative">
                             <div className="flex items-center justify-center relative">
-                                <span className={cn("text-3xl font-bold mr-1 absolute left-4 sm:left-12", transactionType === 'income' ? "text-emerald-600" : "text-rose-600")}>₺</span>
+                                <span className={cn("text-4xl font-bold mr-1 absolute left-6 sm:left-12", transactionType === 'income' ? "text-emerald-500" : "text-rose-500")}>₺</span>
                                 <FormControl>
                                     <Input 
                                         type="number" step="any" placeholder="0" {...field} value={field.value ?? ''} 
-                                        className={cn("bg-transparent border-none text-5xl font-black h-16 text-center w-full focus-visible:ring-0 placeholder:text-slate-300 dark:placeholder:text-slate-700", transactionType === 'income' ? "text-emerald-600" : "text-rose-600")} 
+                                        className={cn("bg-transparent border-none text-6xl font-black h-20 text-center w-full focus-visible:ring-0 placeholder:text-slate-300 dark:placeholder:text-slate-800 tracking-tight", transactionType === 'income' ? "text-emerald-500" : "text-rose-500")} 
                                     />
                                 </FormControl>
                             </div>
@@ -265,51 +265,66 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                     )}/>
                 </div>
 
-                {/* Kategori */}
-                <div className="space-y-1.5">
-                    <FormLabel className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Kategori</FormLabel>
-                    <Button type="button" variant="outline" className="w-full h-12 justify-between px-4 rounded-xl border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 transition-all" onClick={() => setShowCategorySelector(true)}>
-                        {selectedCategory ? (
-                            <div className="flex items-center gap-3">
-                                <span className="text-xl">{selectedCategory.icon}</span>
-                                <span className="text-base font-medium">{selectedCategory.name}</span>
-                            </div>
-                        ) : (
-                            <span className="text-slate-400 text-base">Kategori seçin (Opsiyonel)</span>
-                        )}
-                        <ChevronRight className="h-5 w-5 text-slate-400" />
-                    </Button>
+                {/* Hızlı Tarih Seçimi */}
+                <div className="flex items-center gap-2">
+                    <Button type="button" variant={isToday(form.watch('date')) ? "default" : "outline"} className={cn("flex-1 h-11 rounded-xl font-bold text-sm transition-all", isToday(form.watch('date')) ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20" : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300")} onClick={() => form.setValue('date', new Date())}>Bugün</Button>
+                    <Button type="button" variant={isSameDay(form.watch('date'), subDays(new Date(), 1)) ? "default" : "outline"} className={cn("flex-1 h-11 rounded-xl font-bold text-sm transition-all", isSameDay(form.watch('date'), subDays(new Date(), 1)) ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20" : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300")} onClick={() => form.setValue('date', subDays(new Date(), 1))}>Dün</Button>
+                    <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                        <PopoverTrigger asChild>
+                            <Button type="button" variant="outline" className={cn("w-14 h-11 rounded-xl p-0 shrink-0 transition-all", (!isToday(form.watch('date')) && !isSameDay(form.watch('date'), subDays(new Date(), 1))) ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-500/20" : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300")}>
+                                <CalendarIcon className="h-5 w-5" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl z-50" align="end" sideOffset={10}>
+                            <CustomEmbeddedCalendar selected={form.watch('date')} onSelect={(date) => { form.setValue('date', date); setIsCalendarOpen(false); }} />
+                        </PopoverContent>
+                    </Popover>
                 </div>
 
-                {/* Hesap */}
-                <div className="space-y-1.5">
-                    <FormLabel className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Hesap</FormLabel>
-                    <Button type="button" variant="outline" className="w-full h-12 justify-between px-4 rounded-xl border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 transition-all" onClick={() => setShowAccountSelector(true)}>
-                        {selectedAccountId ? (
-                            <div className="flex items-center gap-3">
-                                <span className="text-xl">{(() => {
-                                    const acc = accounts.find(a => a.id === selectedAccountId);
-                                    if (!acc) return null;
-                                    const Icon = accountIcons[acc.type] || Banknote;
-                                    return <Icon className="h-5 w-5 text-indigo-500" />;
-                                })()}</span>
-                                <span className="text-base font-medium">{accounts.find(a => a.id === selectedAccountId)?.name}</span>
-                            </div>
-                        ) : (
-                            <span className="text-slate-400 text-base">Hesap seçin</span>
-                        )}
-                        <ChevronRight className="h-5 w-5 text-slate-400" />
-                    </Button>
+                {/* Hesap (Hızlı Seçim) */}
+                <div className="space-y-2">
+                    <div className="flex justify-between items-center ml-1">
+                        <FormLabel className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Hesap</FormLabel>
+                    </div>
+                    <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide px-1">
+                        {filteredAccounts.map(acc => {
+                            const Icon = accountIcons[acc.type] || Banknote;
+                            const isSelected = selectedAccountId === acc.id;
+                            return (
+                                <div key={acc.id} onClick={() => handleAccountSelect(acc.id)} className={cn("flex items-center gap-2 px-4 py-3 rounded-[16px] cursor-pointer shrink-0 transition-all border", isSelected ? 'bg-indigo-50 border-indigo-500 dark:bg-indigo-500/20 dark:border-indigo-500/50 shadow-sm' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-indigo-300 dark:hover:border-indigo-700/50')}>
+                                    <Icon className={cn("h-5 w-5", isSelected ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500")} /> 
+                                    <span className={cn("text-[14px] font-bold", isSelected ? "text-indigo-700 dark:text-indigo-300" : "text-slate-700 dark:text-slate-300")}>{acc.name}</span>
+                                </div>
+                            )
+                        })}
+                    </div>
                     {errors.accountId && <p className="text-xs font-medium text-rose-500 ml-1">{errors.accountId.message}</p>}
+                </div>
+
+                {/* Kategori (Hızlı Seçim) */}
+                <div className="space-y-2">
+                    <div className="flex justify-between items-center ml-1">
+                        <FormLabel className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Kategori</FormLabel>
+                        <button type="button" className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider bg-indigo-50 dark:bg-indigo-500/10 px-2 py-1 rounded-md" onClick={() => setShowCategorySelector(true)}>TÜMÜ</button>
+                    </div>
+                    <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide px-1">
+                        {categories.filter(c => c.type === transactionType).slice(0, 10).map(cat => (
+                            <div key={cat.id} onClick={() => handleCategorySelect(cat.name)} className={cn("flex flex-col items-center justify-center gap-1.5 p-2 rounded-[18px] cursor-pointer shrink-0 w-[76px] h-[76px] transition-all border", selectedCategory?.name === cat.name ? 'bg-indigo-50 border-indigo-500 dark:bg-indigo-500/20 dark:border-indigo-500/50 shadow-sm scale-105' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-indigo-300 dark:hover:border-indigo-700/50')}>
+                                <span className="text-[28px] drop-shadow-sm leading-none">{cat.icon}</span>
+                                <span className={cn("text-[10px] font-bold truncate w-full text-center", selectedCategory?.name === cat.name ? "text-indigo-700 dark:text-indigo-300" : "text-slate-600 dark:text-slate-400")}>{cat.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                    {!selectedCategory && <p className="text-xs font-medium text-rose-500 ml-1">Kategori seçimi zorunludur</p>}
                 </div>
 
                 {/* Açıklama */}
                 <div className="space-y-1.5">
-                    <FormLabel className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Açıklama (Opsiyonel)</FormLabel>
+                    <FormLabel className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1">Açıklama (Opsiyonel)</FormLabel>
                     <FormField control={form.control} name="description" render={({ field }) => (
                         <FormItem>
                             <FormControl>
-                                <Input placeholder="Örn: Pazar alışverişi" className="h-12 rounded-xl bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10" {...field} value={field.value ?? ''} />
+                                <Input placeholder="Örn: Pazar alışverişi" className="h-12 rounded-[16px] bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 font-medium px-4 focus-visible:ring-indigo-500/30 text-[15px]" {...field} value={field.value ?? ''} />
                             </FormControl>
                         </FormItem>
                     )}/>
@@ -319,32 +334,9 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                 <Accordion type="single" collapsible className="w-full">
                     <AccordionItem value="advanced" className="border-none bg-slate-50/50 dark:bg-white/[0.02] rounded-2xl px-3 mt-2">
                         <AccordionTrigger className="text-xs font-bold text-slate-500 uppercase tracking-wider py-3 hover:no-underline">
-                            Gelişmiş Seçenekler (Tarih, Taksit vb.)
+                            Gelişmiş Seçenekler (Taksit, Şablon)
                         </AccordionTrigger>
                         <AccordionContent className="space-y-5 pt-2 pb-4">
-                            {/* Tarih */}
-                            <div className="space-y-1.5">
-                                <FormLabel className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Tarih</FormLabel>
-                                <FormField control={form.control} name="date" render={({ field }) => (
-                                    <FormItem className="flex flex-col">
-                                        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                                            <PopoverTrigger asChild>
-                                                <FormControl>
-                                                    <Button variant={"outline"} className={cn("h-12 w-full pl-3 text-left font-medium rounded-xl border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm", !field.value && "text-muted-foreground")}>
-                                                        <CalendarIcon className="mr-3 h-5 w-5 text-indigo-500" />
-                                                        <span className="text-base">{field.value ? format(field.value, "d MMMM yyyy, EEEE", { locale: tr }) : <span>Tarih seçin</span>}</span>
-                                                    </Button>
-                                                </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-[300px] p-0 rounded-2xl overflow-hidden border-none shadow-2xl z-50" align="center" sideOffset={10}>
-                                                <CustomEmbeddedCalendar selected={field.value} onSelect={(date) => { field.onChange(date); setIsCalendarOpen(false); }} />
-                                            </PopoverContent>
-                                        </Popover>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
-                            </div>
-
                             {/* Taksit ve Abonelik (Sadece Gider) */}
                             {transactionType === 'expense' && (
                                 <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm space-y-3">
@@ -379,30 +371,30 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                                     )}
                                 </div>
                             )}
+
+                            {/* Şablon Olarak Kaydet */}
+                            {!initialData && (
+                                <div className="p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 space-y-3">
+                                    <FormField control={form.control} name="saveAsTemplate" render={({ field }) => (
+                                        <FormItem className="flex items-center justify-between space-y-0">
+                                            <FormLabel className="text-sm font-medium text-indigo-700 dark:text-indigo-300">Hızlı İşlem Şablonu Olarak Kaydet</FormLabel>
+                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                        </FormItem>
+                                    )}/>
+                                    {form.watch('saveAsTemplate') && (
+                                        <FormField control={form.control} name="templateName" render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Input placeholder="Şablon Adı (Örn: Haftalık Pazar)" className="h-10 rounded-lg bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-900/50" {...field} value={field.value ?? ''} />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}/>
+                                    )}
+                                </div>
+                            )}
                         </AccordionContent>
                     </AccordionItem>
                 </Accordion>
-                
-                {/* Şablon Olarak Kaydet */}
-                {!initialData && (
-                    <div className="p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 space-y-3">
-                        <FormField control={form.control} name="saveAsTemplate" render={({ field }) => (
-                            <FormItem className="flex items-center justify-between space-y-0">
-                                <FormLabel className="text-sm font-medium text-indigo-700 dark:text-indigo-300">Hızlı İşlem Şablonu Olarak Kaydet</FormLabel>
-                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                            </FormItem>
-                        )}/>
-                        {form.watch('saveAsTemplate') && (
-                            <FormField control={form.control} name="templateName" render={({ field }) => (
-                                <FormItem>
-                                    <FormControl>
-                                        <Input placeholder="Şablon Adı (Örn: Haftalık Pazar)" className="h-10 rounded-lg bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-900/50" {...field} value={field.value ?? ''} />
-                                    </FormControl>
-                                </FormItem>
-                            )}/>
-                        )}
-                    </div>
-                )}
             </div>
             
             {/* Footer: Sabit */}

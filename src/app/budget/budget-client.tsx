@@ -457,13 +457,13 @@ export function BudgetClient() {
     }, [allTransactions]);
 
     return (
-        <div className={cn("min-h-[100dvh] font-sans pb-[calc(100px+env(safe-area-inset-bottom))] relative bg-[#f8fafc] dark:bg-[#09090b] transition-colors duration-500", themeClasses.TEXT_MAIN)}>
+        <div className={cn("min-h-[100dvh] font-sans pb-[calc(100px+env(safe-area-inset-bottom))] relative bg-indigo-50/50 dark:bg-[#0a0a14] transition-colors duration-500", themeClasses.TEXT_MAIN)}>
             
             {/* AMBIENT BACKGROUND */}
-            <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 opacity-50 dark:opacity-30">
-                <div className="absolute top-[-5%] left-[-10%] w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-indigo-300/40 dark:bg-indigo-900/40 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-lighten animate-pulse-slow" />
-                <div className="absolute bottom-[10%] right-[-10%] w-[250px] h-[250px] md:w-[500px] md:h-[500px] bg-fuchsia-300/40 dark:bg-fuchsia-900/40 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-lighten animate-pulse-slow" style={{animationDelay: '2s'}} />
-                <div className="absolute top-[40%] left-[20%] w-[200px] h-[200px] md:w-[400px] md:h-[400px] bg-sky-300/30 dark:bg-sky-900/30 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-lighten animate-pulse-slow" style={{animationDelay: '4s'}} />
+            <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 opacity-80 dark:opacity-40">
+                <div className="absolute top-[-5%] left-[-10%] w-[350px] h-[350px] md:w-[600px] md:h-[600px] bg-indigo-400/50 dark:bg-indigo-600/40 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" />
+                <div className="absolute bottom-[10%] right-[-10%] w-[300px] h-[300px] md:w-[500px] md:h-[500px] bg-fuchsia-400/50 dark:bg-fuchsia-600/40 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{animationDelay: '2s'}} />
+                <div className="absolute top-[40%] left-[20%] w-[250px] h-[250px] md:w-[400px] md:h-[400px] bg-rose-400/40 dark:bg-rose-600/40 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{animationDelay: '4s'}} />
             </div>
 
             {/* MOBİL HEADER (APP BAR) */}
@@ -487,47 +487,52 @@ export function BudgetClient() {
 
             <div className="max-w-2xl mx-auto px-4 pt-4 relative z-10 space-y-5">
                 
-                {/* --- BENTO GRID ÖZET ALANI --- */}
+                {/* --- BENTO GRID ÖZET ALANI (CANLI & VIBRANT) --- */}
                 <div className="grid grid-cols-2 gap-3 mb-2 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <div className="col-span-2 relative overflow-hidden rounded-[28px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-white/60 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl">
-                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/20 dark:bg-indigo-500/30 rounded-full blur-[40px] pointer-events-none" />
-                        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-fuchsia-500/10 dark:bg-fuchsia-500/20 rounded-full blur-[40px] pointer-events-none" />
+                    <div className="col-span-2 relative overflow-hidden rounded-[32px] p-7 shadow-[0_20px_40px_-15px_rgba(99,102,241,0.5)] border border-white/20">
+                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-fuchsia-600 z-0" />
+                        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/20 rounded-full blur-[40px] pointer-events-none mix-blend-overlay" />
+                        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-black/20 rounded-full blur-[40px] pointer-events-none mix-blend-overlay" />
+                        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-soft-light pointer-events-none" />
+                        
                         <div className="relative z-10">
-                            <p className="text-slate-500 dark:text-slate-400 text-[12px] font-bold uppercase tracking-widest mb-1">{labelTotal}</p>
+                            <p className="text-white/80 text-[13px] font-bold uppercase tracking-widest mb-1.5 drop-shadow-sm">{labelTotal}</p>
                             <div className="flex items-end justify-between">
-                                <h2 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-slate-800 to-slate-500 dark:from-white dark:to-white/60 tracking-tight drop-shadow-sm">
+                                <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-md">
                                     {headerTotal.toLocaleString('tr-TR')} ₺
                                 </h2>
-                                <div className="bg-white/50 dark:bg-white/10 p-2.5 rounded-2xl shadow-sm border border-white/40 dark:border-white/10 backdrop-blur-sm">
-                                    {headerTotal >= 0 ? <TrendingUp className="h-6 w-6 text-indigo-600 dark:text-indigo-400" /> : <TrendingDown className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />}
+                                <div className="bg-white/20 p-2.5 rounded-2xl shadow-sm border border-white/20 backdrop-blur-md">
+                                    {headerTotal >= 0 ? <TrendingUp className="h-6 w-6 text-white drop-shadow" /> : <TrendingDown className="h-6 w-6 text-white drop-shadow" />}
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div className="relative overflow-hidden rounded-[24px] p-5 shadow-[0_8px_20px_rgb(0,0,0,0.03)] dark:shadow-[0_8px_20px_rgb(0,0,0,0.2)] border border-white/60 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl">
-                        <div className="absolute -bottom-6 -left-6 w-28 h-28 bg-emerald-500/15 dark:bg-emerald-500/20 rounded-full blur-[24px] pointer-events-none" />
+                    <div className="relative overflow-hidden rounded-[24px] p-5 shadow-[0_10px_30px_-10px_rgba(16,185,129,0.4)] border border-white/20">
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-600 z-0" />
+                        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/20 rounded-full blur-[20px] pointer-events-none mix-blend-overlay" />
                         <div className="relative z-10 flex flex-col justify-between h-full">
                             <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 rounded-full bg-emerald-100/80 dark:bg-emerald-500/20 flex items-center justify-center border border-emerald-200 dark:border-emerald-500/30">
-                                    <ArrowDownLeft className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center border border-white/30 backdrop-blur-sm">
+                                    <ArrowDownLeft className="h-4 w-4 text-white drop-shadow-sm" />
                                 </div>
-                                <p className="text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">{labelIncome}</p>
+                                <p className="text-white/90 text-[11px] font-bold uppercase tracking-wider">{labelIncome}</p>
                             </div>
-                            <p className="text-[19px] font-bold text-slate-800 dark:text-white tracking-tight">{headerIncome.toLocaleString('tr-TR')} ₺</p>
+                            <p className="text-[20px] font-bold text-white tracking-tight drop-shadow-sm">{headerIncome.toLocaleString('tr-TR')} ₺</p>
                         </div>
                     </div>
 
-                    <div className="relative overflow-hidden rounded-[24px] p-5 shadow-[0_8px_20px_rgb(0,0,0,0.03)] dark:shadow-[0_8px_20px_rgb(0,0,0,0.2)] border border-white/60 dark:border-white/10 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl">
-                        <div className="absolute -bottom-6 -right-6 w-28 h-28 bg-rose-500/15 dark:bg-rose-500/20 rounded-full blur-[24px] pointer-events-none" />
+                    <div className="relative overflow-hidden rounded-[24px] p-5 shadow-[0_10px_30px_-10px_rgba(244,63,94,0.4)] border border-white/20">
+                        <div className="absolute inset-0 bg-gradient-to-br from-rose-500 to-pink-600 z-0" />
+                        <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/20 rounded-full blur-[20px] pointer-events-none mix-blend-overlay" />
                         <div className="relative z-10 flex flex-col justify-between h-full">
                             <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 rounded-full bg-rose-100/80 dark:bg-rose-500/20 flex items-center justify-center border border-rose-200 dark:border-rose-500/30">
-                                    <ArrowUpRight className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center border border-white/30 backdrop-blur-sm">
+                                    <ArrowUpRight className="h-4 w-4 text-white drop-shadow-sm" />
                                 </div>
-                                <p className="text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">{labelExpense}</p>
+                                <p className="text-white/90 text-[11px] font-bold uppercase tracking-wider">{labelExpense}</p>
                             </div>
-                            <p className="text-[19px] font-bold text-slate-800 dark:text-white tracking-tight">{headerExpense.toLocaleString('tr-TR')} ₺</p>
+                            <p className="text-[20px] font-bold text-white tracking-tight drop-shadow-sm">{headerExpense.toLocaleString('tr-TR')} ₺</p>
                         </div>
                     </div>
                 </div>
