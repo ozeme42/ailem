@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider";
-import { Account, FamilyMember, Transaction, BudgetCategory } from "@/lib/data";
+import { Account, FamilyMember, Transaction, BudgetCategory, TransactionTemplate } from "@/lib/data";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -89,6 +89,8 @@ const formSchema = z.object({
   isRecurring: z.boolean().default(false),
   installmentCount: z.coerce.number().optional(),
   description: z.string().optional(),
+  saveAsTemplate: z.boolean().default(false).optional(),
+  templateName: z.string().optional(),
 });
 
 type NewTransactionFormProps = {
@@ -97,11 +99,13 @@ type NewTransactionFormProps = {
   onSubmit: (data: any) => void; 
   initialData?: Transaction | null;
   onAddNewAccount?: () => void;
+  transactionTemplates?: TransactionTemplate[];
+  onSaveTemplate?: (templateData: Omit<TransactionTemplate, 'id' | 'familyId'>) => void;
 };
 
 const accountIcons: { [key: string]: React.ElementType } = { 'cash': Banknote, 'bank': Landmark, 'credit-card': CreditCard, 'other': Wallet, 'debt': Wallet };
 
-export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialData }: NewTransactionFormProps) {
+export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialData, transactionTemplates, onSaveTemplate }: NewTransactionFormProps) {
   const [categories, setCategories] = React.useState<BudgetCategory[]>([]);
   const [showCategorySelector, setShowCategorySelector] = React.useState(false);
   const [showAccountSelector, setShowAccountSelector] = React.useState(false);
@@ -122,6 +126,8 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
       isRecurring: false,
       installmentCount: 2,
       description: "",
+      saveAsTemplate: false,
+      templateName: "",
     },
   });
   
@@ -163,7 +169,20 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
       date: format(values.date, 'yyyy-MM-dd'),
       ...(values.isInstallment && { installmentDetails: { total: values.installmentCount || 1, current: 1 } })
     };
-    onSubmit(dataToSend);
+    
+    if (values.saveAsTemplate && onSaveTemplate) {
+        onSaveTemplate({
+            name: values.templateName || values.description || values.category || 'Yeni Şablon',
+            amount: values.amount,
+            type: values.type,
+            accountId: values.accountId,
+            category: values.category || 'Diğer',
+            description: values.description,
+        });
+    }
+
+    const { saveAsTemplate, templateName, ...finalDataToSend } = dataToSend;
+    onSubmit(finalDataToSend);
     form.reset();
   }
   
@@ -197,6 +216,32 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                         <TabsTrigger value="expense" className="rounded-lg data-[state=active]:bg-rose-600 data-[state=active]:text-white font-bold transition-all">Gider</TabsTrigger>
                     </TabsList>
                 </Tabs>
+                
+                {/* Hızlı İşlemler (Şablonlar) */}
+                {transactionTemplates && transactionTemplates.length > 0 && !initialData && (
+                    <div className="mt-3 flex gap-2 overflow-x-auto pb-1 scrollbar-hide px-1">
+                        {transactionTemplates.map(template => (
+                            <Button 
+                                key={template.id} 
+                                type="button" 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-8 rounded-full text-[11px] font-semibold shrink-0 bg-white dark:bg-slate-800"
+                                onClick={() => {
+                                    form.setValue('type', template.type);
+                                    form.setValue('category', template.category);
+                                    if (template.accountId && accounts.some(a => a.id === template.accountId)) {
+                                        form.setValue('accountId', template.accountId);
+                                    }
+                                    if (template.description) form.setValue('description', template.description);
+                                    if (template.amount) form.setValue('amount', template.amount);
+                                }}
+                            >
+                                {template.name}
+                            </Button>
+                        ))}
+                    </div>
+                )}
             </div>
             
             {/* Body: Kaydırılabilir (Scrollable) */}
@@ -337,6 +382,27 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                         </AccordionContent>
                     </AccordionItem>
                 </Accordion>
+                
+                {/* Şablon Olarak Kaydet */}
+                {!initialData && (
+                    <div className="p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 space-y-3">
+                        <FormField control={form.control} name="saveAsTemplate" render={({ field }) => (
+                            <FormItem className="flex items-center justify-between space-y-0">
+                                <FormLabel className="text-sm font-medium text-indigo-700 dark:text-indigo-300">Hızlı İşlem Şablonu Olarak Kaydet</FormLabel>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )}/>
+                        {form.watch('saveAsTemplate') && (
+                            <FormField control={form.control} name="templateName" render={({ field }) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <Input placeholder="Şablon Adı (Örn: Haftalık Pazar)" className="h-10 rounded-lg bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-900/50" {...field} value={field.value ?? ''} />
+                                    </FormControl>
+                                </FormItem>
+                            )}/>
+                        )}
+                    </div>
+                )}
             </div>
             
             {/* Footer: Sabit */}

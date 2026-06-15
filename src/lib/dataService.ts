@@ -2,7 +2,7 @@
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit, Unsubscribe, serverTimestamp } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, PrayerProgress, Video, CalorieLog, DailyTracking, BankQuestion, TrackedBook, TrackedBookTest, BudgetCategory, PomodoroProject, PomodoroSession, Summary, PerformanceGoal, Bill } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, PrayerProgress, Video, CalorieLog, DailyTracking, BankQuestion, TrackedBook, TrackedBookTest, BudgetCategory, PomodoroProject, PomodoroSession, Summary, PerformanceGoal, Bill, TransactionTemplate } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth, isFuture, subMonths, addMonths } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
@@ -106,6 +106,16 @@ export const addBill = async (data: Omit<Bill, 'id' | 'familyId'>) => {
 };
 export const updateBill = (id: string, data: Partial<Bill>) => updateDoc(doc(db, 'bills', id), removeUndefined(data));
 export const deleteBill = (id: string) => deleteDoc(doc(db, "bills", id));
+
+// --- TRANSACTION TEMPLATES ---
+export const onTransactionTemplatesUpdate = (callback: (templates: TransactionTemplate[]) => void, runOnce = false) => onFamilyDataUpdate<TransactionTemplate>('transactionTemplates', callback, runOnce);
+export const addTransactionTemplate = async (data: Omit<TransactionTemplate, 'id' | 'familyId'>) => {
+    const familyId = await getCurrentFamilyId();
+    if (!familyId) throw new Error("User not in a family");
+    return addDoc(collection(db, 'transactionTemplates'), { ...removeUndefined(data), familyId });
+};
+export const deleteTransactionTemplate = (id: string) => deleteDoc(doc(db, "transactionTemplates", id));
+
 
 // --- BOOKS & LIBRARY ---
 export const onBooksUpdate = (callback: (books: Book[]) => void, runOnce = false) => onFamilyDataUpdate<Book>('mediaItems', callback, runOnce);

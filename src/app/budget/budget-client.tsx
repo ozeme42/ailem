@@ -11,8 +11,8 @@ import { NewAccountForm } from "@/components/new-account-form";
 import { NewTransactionForm } from "@/components/new-transaction-form";
 import { NewBillForm } from "@/components/new-bill-form";
 import { useAuth } from "@/components/auth-provider";
-import { onAccountsUpdate, deleteAccount, addAccount, updateAccount, addTransaction, updateTransaction, deleteTransaction, onTransactionsUpdate, onBudgetCategoriesUpdate, onBillsUpdate, addBill, updateBill, deleteBill } from "@/lib/dataService";
-import type { Account, Transaction, BudgetCategory, Bill } from "@/lib/data";
+import { onAccountsUpdate, deleteAccount, addAccount, updateAccount, addTransaction, updateTransaction, deleteTransaction, onTransactionsUpdate, onBudgetCategoriesUpdate, onBillsUpdate, addBill, updateBill, deleteBill, onTransactionTemplatesUpdate, addTransactionTemplate } from "@/lib/dataService";
+import type { Account, Transaction, BudgetCategory, Bill, TransactionTemplate } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfYear, endOfYear, subYears, parseISO, addYears, eachMonthOfInterval, subMonths, addMonths, getYear, isSameMonth } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -65,6 +65,7 @@ export function BudgetClient() {
     const [allTransactions, setAllTransactions] = React.useState<Transaction[]>([]);
     const [categories, setCategories] = React.useState<BudgetCategory[]>([]);
     const [bills, setBills] = React.useState<Bill[]>([]);
+    const [transactionTemplates, setTransactionTemplates] = React.useState<TransactionTemplate[]>([]);
     
     const [isAccountFormOpen, setIsAccountFormOpen] = React.useState(false);
     const [isTransactionFormOpen, setIsTransactionFormOpen] = React.useState(false);
@@ -88,7 +89,8 @@ export function BudgetClient() {
         const unsubTransactions = onTransactionsUpdate(setAllTransactions, subYears(new Date(), 5), addYears(new Date(), 5));
         const unsubCategories = onBudgetCategoriesUpdate(setCategories);
         const unsubBills = onBillsUpdate(setBills);
-        return () => { unsubAccounts(); unsubTransactions(); unsubCategories(); unsubBills(); };
+        const unsubTemplates = onTransactionTemplatesUpdate(setTransactionTemplates);
+        return () => { unsubAccounts(); unsubTransactions(); unsubCategories(); unsubBills(); unsubTemplates(); };
     }, [familyId]);
     
     // İleri tarihli (pending) işlemleri günü geldiğinde otomatik olarak hesaplara yansıt
@@ -941,7 +943,21 @@ export function BudgetClient() {
                 <DialogContent className="sm:max-w-md rounded-[24px] bg-white dark:bg-[#1C1C1E] border-0 shadow-2xl p-0 overflow-hidden text-[#1C1C1E] dark:text-white">
                     <DialogTitle className="sr-only">İşlem Formu</DialogTitle>
                     <div className="p-6">
-                        <NewTransactionForm accounts={accounts} familyMembers={familyMembers} onSubmit={handleTransactionSubmit} initialData={editingTransaction} onAddNewAccount={() => { setIsTransactionFormOpen(false); setIsAccountFormOpen(true); }} />
+                        <NewTransactionForm 
+                            accounts={accounts} 
+                            familyMembers={familyMembers} 
+                            onSubmit={handleTransactionSubmit} 
+                            initialData={editingTransaction} 
+                            transactionTemplates={transactionTemplates}
+                            onSaveTemplate={async (data) => {
+                                try {
+                                    await addTransactionTemplate(data);
+                                } catch (error) {
+                                    console.error("Error saving template:", error);
+                                }
+                            }}
+                            onAddNewAccount={() => { setIsTransactionFormOpen(false); setIsAccountFormOpen(true); }} 
+                        />
                         {editingTransaction && (
                              <Button variant="destructive" className="w-full mt-4 rounded-xl" onClick={() => {handleDeleteTransaction(editingTransaction.id); setIsTransactionFormOpen(false);}}>
                                 İşlemi Sil

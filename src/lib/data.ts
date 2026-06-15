@@ -572,6 +572,16 @@ export interface Transaction {
     };
 }
 
+export interface TransactionTemplate {
+    id: string;
+    familyId: string;
+    name: string;
+    amount?: number;
+    type: 'income' | 'expense';
+    accountId: string;
+    category: string;
+    description?: string;
+}
 export interface BudgetCategory {
     id: string;
     familyId: string;
