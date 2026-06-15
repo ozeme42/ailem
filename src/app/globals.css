@@ -103,3 +103,24 @@
     pointer-events: auto !important;
   }
 }
+
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  /* Hide elements that shouldn't be printed */
+  .print-hidden, 
+  [role="dialog"], 
+  button[variant="ghost"] {
+    /* Note: mostly handled by tailwind print:hidden */
+  }
+
+  /* Ensure the background gradients don't ruin printing */
+  .animate-pulse-slow {
+    display: none !important;
+  }
+}

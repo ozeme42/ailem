@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Trash2, Banknote, Landmark, CreditCard, BarChart2, ArrowUpRight, ArrowDownLeft, Calendar as CalendarIcon, ArrowLeft, ShoppingCart, Utensils, Bus, FileText, Gamepad2, HeartPulse, Shirt, GraduationCap, DollarSign, Briefcase, PlusCircle, CircleEllipsis } from "lucide-react";
+import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Trash2, Banknote, Landmark, CreditCard, BarChart2, ArrowUpRight, ArrowDownLeft, Calendar as CalendarIcon, ArrowLeft, ShoppingCart, Utensils, Bus, FileText, Gamepad2, HeartPulse, Shirt, GraduationCap, DollarSign, Briefcase, PlusCircle, CircleEllipsis, Printer } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -460,7 +460,7 @@ export function BudgetClient() {
         <div className={cn("min-h-[100dvh] font-sans pb-[calc(100px+env(safe-area-inset-bottom))] relative bg-indigo-50/50 dark:bg-[#0a0a14] transition-colors duration-500", themeClasses.TEXT_MAIN)}>
             
             {/* AMBIENT BACKGROUND */}
-            <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 opacity-80 dark:opacity-40">
+            <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 opacity-80 dark:opacity-40 print:hidden">
                 <div className="absolute top-[-5%] left-[-10%] w-[350px] h-[350px] md:w-[600px] md:h-[600px] bg-indigo-400/50 dark:bg-indigo-600/40 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" />
                 <div className="absolute bottom-[10%] right-[-10%] w-[300px] h-[300px] md:w-[500px] md:h-[500px] bg-fuchsia-400/50 dark:bg-fuchsia-600/40 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{animationDelay: '2s'}} />
                 <div className="absolute top-[40%] left-[20%] w-[250px] h-[250px] md:w-[400px] md:h-[400px] bg-rose-400/40 dark:bg-rose-600/40 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{animationDelay: '4s'}} />
@@ -477,11 +477,16 @@ export function BudgetClient() {
                         Bütçe Takibi
                     </h1>
 
-                    <Link href="/budget/stats">
-                        <Button variant="ghost" size="icon" className="text-[#007AFF] dark:text-[#0A84FF] hover:bg-transparent active:opacity-50">
-                            <BarChart2 className="w-6 h-6" />
+                    <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => window.print()} className="text-[#007AFF] dark:text-[#0A84FF] hover:bg-transparent active:opacity-50 print:hidden">
+                            <Printer className="w-5 h-5" />
                         </Button>
-                    </Link>
+                        <Link href="/budget/stats" className="print:hidden">
+                            <Button variant="ghost" size="icon" className="text-[#007AFF] dark:text-[#0A84FF] hover:bg-transparent active:opacity-50">
+                                <BarChart2 className="w-6 h-6" />
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
             </header>
 
@@ -571,7 +576,7 @@ export function BudgetClient() {
                 {/* --- SEGMENTED CONTROL (IOS TARZI SEKMELER) --- */}
                 <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-1.5 rounded-[24px] flex w-full mb-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-white/50 dark:border-white/10 relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 fill-mode-both">
                     <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
-                        <TabsList className="bg-transparent w-full grid grid-cols-4 p-0 h-[42px] gap-1.5">
+                        <TabsList className="bg-transparent w-full grid grid-cols-4 p-0 h-[42px] gap-1.5 print:hidden">
                             <TabsTrigger value="day" className="rounded-[18px] h-full text-[13px] font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
                                 Günlük
                             </TabsTrigger>
@@ -917,7 +922,7 @@ export function BudgetClient() {
             </div>
 
             {/* YENİ İŞLEM EKLE BUTONU (FLOATING) */}
-            <div className="fixed bottom-[110px] right-6 z-40">
+            <div className="fixed bottom-[110px] right-6 z-40 print:hidden">
                 <Button 
                     className="h-16 w-16 rounded-full shadow-[0_8px_30px_rgb(79,70,229,0.4)] hover:shadow-[0_8px_40px_rgb(79,70,229,0.6)] hover:-translate-y-1 bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 border border-white/30 active:scale-90 transition-all duration-300 p-0 flex items-center justify-center backdrop-blur-xl group"
                     onClick={() => {
