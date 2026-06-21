@@ -106,6 +106,7 @@ export interface UserLibraryBook {
     addedAt: string;
     startedAt?: string;
     finishedAt?: string;
+    summaryImageUrl?: string;
 }
 
 export interface UserLibrary {

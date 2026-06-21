@@ -194,7 +194,7 @@ export const removeBookFromMemberLibrary = async (fid: string, mid: string, bid:
     }
 };
 
-export const updateUserBookStatus = async (fid: string, mid: string, bid: string, status: string, progress?: number) => {
+export const updateUserBookStatus = async (fid: string, mid: string, bid: string, status: string, progress?: number, summaryImageUrl?: string) => {
     const q = query(collection(db, 'userLibraries'), where("memberId", "==", mid));
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) return;
@@ -205,6 +205,10 @@ export const updateUserBookStatus = async (fid: string, mid: string, bid: string
         
         if (idx !== -1) {
             books[idx] = { ...books[idx], status, progress: progress ?? books[idx].progress };
+            
+            if (summaryImageUrl) {
+                books[idx].summaryImageUrl = summaryImageUrl;
+            }
             
             // Okunuyor durumuna geçtiyse ve başlama tarihi yoksa ekle
             if (status === 'reading' && !books[idx].startedAt) {
@@ -221,6 +225,15 @@ export const updateUserBookStatus = async (fid: string, mid: string, bid: string
             return; // Bulduk ve güncelledik, diğer fragmanlara bakmaya gerek yok
         }
     }
+};
+
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from './firebase';
+
+export const uploadImageToStorage = async (file: File, path: string): Promise<string> => {
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    return await getDownloadURL(storageRef);
 };
 
 // --- VIDEOS ---

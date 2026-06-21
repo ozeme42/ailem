@@ -10,7 +10,7 @@ import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookF
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart2, Book as BookIcon, Clock, Heart, Check, ChevronLeft, ChevronRight, Calendar as CalendarIcon, ArrowLeft } from 'lucide-react';
+import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart2, Book as BookIcon, Clock, Heart, Check, ChevronLeft, ChevronRight, Calendar as CalendarIcon, ArrowLeft, Camera, Sparkles } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -48,6 +48,74 @@ const progressFormSchema = z.object({
 });
 
 // --- HELPER COMPONENTS ---
+
+function FinishChildBookDialog({ open, onOpenChange, book, onUploadAndFinish, isUploading }: {
+    open: boolean,
+    onOpenChange: (open: boolean) => void,
+    book: any,
+    onUploadAndFinish: (file: File) => void,
+    isUploading: boolean
+}) {
+    const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+
+    React.useEffect(() => {
+        if (!open) setSelectedFile(null);
+    }, [open]);
+
+    if (!book) return null;
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="bg-white border-slate-200 text-slate-900 rounded-3xl shadow-xl sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="text-xl font-bold flex items-center gap-2 text-indigo-600">
+                        <Sparkles className="w-5 h-5" /> Harika Bir İş Çıkardın!
+                    </DialogTitle>
+                    <DialogDescription className="text-slate-600">
+                        "{book.title}" kitabını bitirdiğin için seni tebrik ederiz! Kitabı bitmiş olarak işaretlemek için <strong>kendi el yazınla yazdığın özetin bir fotoğrafını</strong> çekip yüklemelisin.
+                    </DialogDescription>
+                </DialogHeader>
+                
+                <div className="py-4 space-y-4">
+                    <div className="flex flex-col items-center justify-center w-full">
+                        <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-40 border-2 border-indigo-200 border-dashed rounded-2xl cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6 text-indigo-600">
+                                {selectedFile ? (
+                                    <>
+                                        <Check className="w-10 h-10 mb-2 text-green-500" />
+                                        <p className="text-sm font-semibold text-center px-4 line-clamp-1">{selectedFile.name}</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Camera className="w-10 h-10 mb-3" />
+                                        <p className="mb-2 text-sm font-semibold">Fotoğraf Çek veya Seç</p>
+                                        <p className="text-xs opacity-70">Sadece resim dosyaları</p>
+                                    </>
+                                )}
+                            </div>
+                            <input id="dropzone-file" type="file" className="hidden" accept="image/*" capture="environment" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
+                        </label>
+                    </div>
+                </div>
+
+                <DialogFooter className="flex-col gap-2 sm:gap-2">
+                    <Button 
+                        onClick={() => {
+                            if (selectedFile) onUploadAndFinish(selectedFile);
+                        }} 
+                        disabled={!selectedFile || isUploading}
+                        className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+                    >
+                        {isUploading ? "Yükleniyor..." : "Yükle ve Bitir"}
+                    </Button>
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="w-full rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100">
+                        İptal
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 function ProgressDialog({ open, onOpenChange, book, onSaveSession }: { 
     open: boolean,
@@ -131,6 +199,8 @@ export default function LibraryPage() {
   const [viewingBook, setViewingBook] = React.useState<any | null>(null);
   const [editingProgressForBook, setEditingProgressForBook] = React.useState<any | null>(null);
   const [readingStatsPeriod, setReadingStatsPeriod] = React.useState<'weekly' | 'monthly'>('weekly');
+  const [childBookToFinish, setChildBookToFinish] = React.useState<any | null>(null);
+  const [isUploadingSummary, setIsUploadingSummary] = React.useState(false);
   
   // YENİ STATE: Grafik referans tarihi (Varsayılan: Bugün)
   const [chartReferenceDate, setChartReferenceDate] = React.useState(new Date());
@@ -159,6 +229,15 @@ export default function LibraryPage() {
   
   const handleUpdateStatus = async (bookId: string, newStatus: 'reading' | 'finished', progress?: number) => {
       if (!familyId || !selectedMember) return;
+
+      if (newStatus === 'finished') {
+          const bookDetail = allBooks.find(b => b.id === bookId);
+          if (bookDetail && bookDetail.isForChildren) {
+              setChildBookToFinish({ ...bookDetail, pendingProgress: progress });
+              return;
+          }
+      }
+
       try {
         await updateUserBookStatus(familyId, selectedMember.id, bookId, newStatus, progress);
         toast({ title: "Durum Güncellendi", description: "Kitabın okuma durumu değiştirildi." });
@@ -203,8 +282,8 @@ export default function LibraryPage() {
         
         // Kitap ilerlemesini de güncelle
         if (session.newProgress !== undefined) {
-             const status = session.newProgress >= 100 ? 'finished' : 'reading';
-             await updateUserBookStatus(familyId, selectedMember.id, book.id, status, session.newProgress);
+             const status = (session.newProgress >= 100 && !book.isForChildren) ? 'finished' : 'reading';
+             await handleUpdateStatus(book.id, status, session.newProgress);
         }
         
         toast({ title: "Okuma İlerlemesi Kaydedildi!", description: `${session.pagesRead} sayfa okudun.` });
@@ -642,6 +721,27 @@ export default function LibraryPage() {
         onOpenChange={() => setEditingProgressForBook(null)}
         onSaveSession={handleSaveSession}
       />
+      <FinishChildBookDialog
+         open={!!childBookToFinish}
+         onOpenChange={(open) => { if (!open) setChildBookToFinish(null); }}
+         book={childBookToFinish}
+         isUploading={isUploadingSummary}
+         onUploadAndFinish={async (file) => {
+             if (!familyId || !selectedMember || !childBookToFinish) return;
+             setIsUploadingSummary(true);
+             try {
+                 const { uploadImageToStorage } = await import('@/lib/dataService');
+                 const url = await uploadImageToStorage(file, `summaries/${familyId}/${selectedMember.id}/${childBookToFinish.id}_${Date.now()}`);
+                 await updateUserBookStatus(familyId, selectedMember.id, childBookToFinish.id, 'finished', childBookToFinish.pendingProgress, url);
+                 toast({ title: "Tebrikler!", description: "Özetin başarıyla kaydedildi ve kitap bitirildi.", className: "bg-green-600 text-white border-none" });
+                 setChildBookToFinish(null);
+             } catch(e) {
+                 toast({ title: "Hata", description: "Fotoğraf yüklenirken bir sorun oluştu.", variant: "destructive" });
+             } finally {
+                 setIsUploadingSummary(false);
+             }
+         }}
+      />
       <Dialog open={isGoalDialogOpen} onOpenChange={setIsGoalDialogOpen}>
           <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl">
               <DialogHeader>
@@ -780,10 +880,21 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
                     <DialogTitle className="text-center text-lg text-slate-800">{book.title}</DialogTitle>
                     <DialogDescription className="text-center text-slate-500">{book.author}</DialogDescription>
                 </DialogHeader>
-                <div className="py-6 flex justify-center">
+                <div className="py-6 flex flex-col items-center gap-4">
                      <div className="relative w-32 shadow-lg rotate-3 transition-transform hover:rotate-0">
                         <Image src={book.image} alt={book.title} width={150} height={225} className="w-full object-cover rounded-lg aspect-[2/3]" />
                      </div>
+                     {book.summaryImageUrl && (
+                         <div className="w-full px-4 flex flex-col items-center mt-2">
+                             <h4 className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-1"><Sparkles className="w-4 h-4 text-indigo-500"/> Kitap Özeti</h4>
+                             <a href={book.summaryImageUrl} target="_blank" rel="noopener noreferrer" className="block relative w-full aspect-video rounded-xl overflow-hidden border-2 border-indigo-100 shadow-sm group">
+                                 <Image src={book.summaryImageUrl} alt="Kitap Özeti" fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                     <span className="text-white font-medium text-sm">Büyütmek için tıkla</span>
+                                 </div>
+                             </a>
+                         </div>
+                     )}
                 </div>
                 <DialogFooter className="flex-col gap-2 sm:gap-2">
                      <Button variant="secondary" className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 border-0" onClick={() => { onUpdateStatus(book.id, 'reading', 0); setIsOpen(false); }}>

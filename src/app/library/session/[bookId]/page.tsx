@@ -203,7 +203,7 @@ export default function ReadingSessionPage() {
 
         if (book.pageCount) {
             const newProgressPercent = Math.min(Math.round((currentEndPage / book.pageCount) * 100), 100);
-            const newStatus = newProgressPercent >= 100 ? 'finished' : 'reading';
+            const newStatus = (newProgressPercent >= 100 && !book.isForChildren) ? 'finished' : 'reading';
             await updateUserBookStatus(familyId, memberId, book.id, newStatus, newProgressPercent);
         }
         
