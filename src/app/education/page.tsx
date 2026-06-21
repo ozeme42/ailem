@@ -178,6 +178,7 @@ export default function EducationPage() {
       .filter(t => t.status === 'Atandı')
       .map(t => {
         const dateObj = parse(t.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+        const startObj = t.assignedDate ? parse(t.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : dateObj;
         return {
           id: t.id,
           type: 'test',
@@ -185,6 +186,7 @@ export default function EducationPage() {
           subject: getCategoryName(t),
           dueDateStr: t.dueDate,
           dueDateObj: dateObj,
+          startDateObj: startObj,
           questionCount: t.questionCount,
           durationMinutes: (t.questionCount || 0) * 2 || 30,
         };
@@ -194,6 +196,7 @@ export default function EducationPage() {
       .filter(a => a.status === 'assigned')
       .map(a => {
         const dateObj = new Date(a.dueDate);
+        const startObj = a.startDate ? new Date(a.startDate) : dateObj;
         const plan = studyPlans.find(p => p.id === a.studyPlanId);
         return {
           id: a.id,
@@ -202,6 +205,7 @@ export default function EducationPage() {
           subject: a.subject,
           dueDateStr: format(dateObj, 'dd MMMM yyyy', { locale: tr }),
           dueDateObj: dateObj,
+          startDateObj: startObj,
           questionCount: null,
           planName: plan?.title || 'Bireysel Çalışma',
           planLink: plan?.link,
@@ -778,10 +782,15 @@ export default function EducationPage() {
                     const isDayToday = isToday(currentDay);
                     
                     const dayTasks = pendingTasks.filter(t => {
+                      const cTime = new Date(currentDay).setHours(0,0,0,0);
+                      const sTime = new Date(t.startDateObj).setHours(0,0,0,0);
+                      const eTime = new Date(t.dueDateObj).setHours(0,0,0,0);
+                      const isBetween = cTime >= sTime && cTime <= eTime;
+
                       if (isDayToday) {
-                        return isSameDay(t.dueDateObj, currentDay) || (isPast(t.dueDateObj) && !isToday(t.dueDateObj));
+                        return isBetween || (isPast(t.dueDateObj) && !isToday(t.dueDateObj));
                       }
-                      return isSameDay(t.dueDateObj, currentDay);
+                      return isBetween;
                     });
 
                     return (
@@ -817,9 +826,20 @@ export default function EducationPage() {
                                 <div className={cn("bg-white dark:bg-slate-950 rounded-2xl p-3 border transition-all shadow-sm hover:shadow-md", theme.border, isDayToday && overdue ? "border-rose-300 dark:border-rose-800 bg-rose-50/30 dark:bg-rose-950/20" : "")}>
                                   <div className="flex items-start justify-between mb-2 gap-2">
                                     <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-1.5 mb-1">
-                                        <div className={cn("w-1.5 h-1.5 rounded-full", theme.accent)} />
-                                        <span className={cn("text-[9px] font-black uppercase tracking-widest truncate", theme.text)}>{category}</span>
+                                      <div className="flex items-center justify-between mb-1">
+                                        <div className="flex items-center gap-1.5">
+                                          <div className={cn("w-1.5 h-1.5 rounded-full", theme.accent)} />
+                                          <span className={cn("text-[9px] font-black uppercase tracking-widest truncate", theme.text)}>{category}</span>
+                                        </div>
+                                        {!overdue && differenceInDays(tDate, currentDay) > 0 ? (
+                                            <span className="text-[9px] font-black text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-full">
+                                                {differenceInDays(tDate, currentDay)} GÜN KALDI
+                                            </span>
+                                        ) : !overdue && isSameDay(tDate, currentDay) ? (
+                                            <span className="text-[9px] font-black text-amber-500 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full">
+                                                SON GÜN
+                                            </span>
+                                        ) : null}
                                       </div>
                                       <h4 className="text-[11px] font-bold text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight">{task.title}</h4>
                                     </div>
@@ -857,9 +877,20 @@ export default function EducationPage() {
                                 <div className={cn("bg-white dark:bg-slate-950 rounded-2xl p-3 border transition-all shadow-sm hover:shadow-md", theme.border, isDayToday && overdue ? "border-rose-300 dark:border-rose-800 bg-rose-50/30 dark:bg-rose-950/20" : "")}>
                                   <div className="flex items-start justify-between mb-2 gap-2">
                                     <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-1.5 mb-1">
-                                        <div className={cn("w-1.5 h-1.5 rounded-full", theme.accent)} />
-                                        <span className={cn("text-[9px] font-black uppercase tracking-widest truncate", theme.text)}>{category}</span>
+                                      <div className="flex items-center justify-between mb-1">
+                                        <div className="flex items-center gap-1.5">
+                                          <div className={cn("w-1.5 h-1.5 rounded-full", theme.accent)} />
+                                          <span className={cn("text-[9px] font-black uppercase tracking-widest truncate", theme.text)}>{category}</span>
+                                        </div>
+                                        {!overdue && differenceInDays(tDate, currentDay) > 0 ? (
+                                            <span className="text-[9px] font-black text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-full">
+                                                {differenceInDays(tDate, currentDay)} GÜN KALDI
+                                            </span>
+                                        ) : !overdue && isSameDay(tDate, currentDay) ? (
+                                            <span className="text-[9px] font-black text-amber-500 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full">
+                                                SON GÜN
+                                            </span>
+                                        ) : null}
                                       </div>
                                       <h4 className="text-[11px] font-bold text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight">{task.title}</h4>
                                     </div>
