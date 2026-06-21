@@ -22,7 +22,7 @@ import { useAuth } from "./auth-provider";
 // SCHEMAS & TYPES
 const formSchema = z.object({
   title: z.string().min(2, "Liste adı en az 2 karakter olmalıdır."),
-  assigneeId: z.string({ required_error: "Lütfen bir sorumlu seçin." }),
+  assigneeId: z.string().min(1, "Lütfen bir sorumlu seçin."),
   url: z.string().url("Geçerli bir YouTube URL'si girin.").optional().or(z.literal('')),
   tags: z.array(z.string()).optional(),
   description: z.string().optional(),
@@ -48,6 +48,7 @@ export function NewVideoForm({ onSubmit, initialData, existingTags, familyMember
       tags: [],
       description: "",
       totalVideos: 10,
+      assigneeId: "",
     },
   });
   
