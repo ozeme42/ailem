@@ -573,6 +573,7 @@ export default function LibraryPage() {
                                     <ReadingBookCard 
                                         key={book.id} 
                                         book={book} 
+                                        memberId={selectedMember?.id}
                                         onUpdateStatus={handleUpdateStatus} 
                                         onRemove={handleRemoveFromLibrary} 
                                         onViewDetails={() => setViewingBook(book)} 
@@ -661,7 +662,7 @@ export default function LibraryPage() {
 
 // --- SUB COMPONENTS (AÇIK TEMA) ---
 
-function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onOpenProgressDialog }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void, onViewDetails: () => void, onOpenProgressDialog: () => void }) {
+function ReadingBookCard({ book, memberId, onUpdateStatus, onRemove, onViewDetails, onOpenProgressDialog }: { book: any, memberId?: string, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void, onViewDetails: () => void, onOpenProgressDialog: () => void }) {
     const pagesRead = book.pageCount ? Math.round((book.progress || 0) / 100 * book.pageCount) : 0;
     
     return (
@@ -709,7 +710,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onOpen
                     {/* Aksiyon Butonları Grubu */}
                     <div className="flex flex-wrap items-center gap-2">
                          {/* Oynat / Devam Et */}
-                         <Link href={`/library/session/${book.id}?memberId=${selectedMember?.id}`} className="flex-1 sm:flex-none">
+                         <Link href={`/library/session/${book.id}?memberId=${memberId}`} className="flex-1 sm:flex-none">
                             <Button className="w-full sm:w-auto rounded-xl bg-amber-600 hover:bg-amber-700 text-white shadow-md h-10 px-4">
                                 <Play className="h-4 w-4 fill-current mr-2"/> Oku
                             </Button>
