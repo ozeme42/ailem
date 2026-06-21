@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
-import { onBooksUpdate, addReadingSession, updateUserBookStatus, onAmbientSoundsUpdate, onSingleUserLibraryUpdate } from "@/lib/dataService";
+import { onBooksUpdate, addReadingSession, updateUserBookStatus, onAmbientSoundsUpdate, onUserLibrariesUpdate } from "@/lib/dataService";
 import type { Book, ReadingSession, AmbientSound, UserLibrary } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -70,9 +70,11 @@ function formatDuration(seconds: number) {
 export default function ReadingSessionPage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
     const { familyId, user } = useAuth();
     const bookId = params.bookId as string;
+    const memberId = searchParams.get('memberId') || user?.uid;
 
     const [book, setBook] = React.useState<Book | null>(null);
     const [userLibrary, setUserLibrary] = React.useState<UserLibrary | null>(null);
@@ -111,9 +113,10 @@ export default function ReadingSessionPage() {
         });
         const unsubscribeSounds = onAmbientSoundsUpdate(setAmbientSounds);
         let unsubscribeLibrary = () => {};
-        if (user) {
-            unsubscribeLibrary = onSingleUserLibraryUpdate(user.uid, (lib) => {
-                setUserLibrary(lib);
+        if (familyId && memberId) {
+            unsubscribeLibrary = onUserLibrariesUpdate(familyId, (libs) => {
+                const lib = libs.find(l => l.memberId === memberId);
+                setUserLibrary(lib || null);
             });
         }
         return () => {
@@ -121,7 +124,7 @@ export default function ReadingSessionPage() {
             unsubscribeSounds();
             unsubscribeLibrary();
         };
-    }, [bookId, user]);
+    }, [bookId, familyId, memberId]);
 
     // --- SAYFA BAŞLANGICI ---
     React.useEffect(() => {
@@ -150,15 +153,15 @@ export default function ReadingSessionPage() {
             intervalRef.current = setInterval(() => {
                 setElapsedTime(prev => prev + 1);
             }, 1000);
-        } else {
-            if (intervalRef.current) clearInterval(intervalRef.current);
+        } else if (intervalRef.current) {
+            clearInterval(intervalRef.current);
         }
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
     }, [timerRunning]);
 
-    // --- SES MANTIĞI ---
+    // Ses Çalma Efekti
     React.useEffect(() => {
         if (!audioRef.current) {
             audioRef.current = new Audio();
@@ -168,22 +171,26 @@ export default function ReadingSessionPage() {
         if (sound) {
             audioRef.current.src = sound.url;
             audioRef.current.loop = sound.loop;
-            audioRef.current.play().catch(e => console.error("Ses çalma hatası:", e));
+            if (timerRunning) {
+                audioRef.current.play().catch(e => console.error("Ses oynatılamadı", e));
+            } else {
+                audioRef.current.pause();
+            }
         } else {
             audioRef.current.pause();
             audioRef.current.currentTime = 0;
         }
-    }, [selectedSoundId, ambientSounds]);
+    }, [selectedSoundId, ambientSounds, timerRunning]);
 
     const handleSaveSession = async () => {
-        if (!familyId || !user || !book) {
+        if (!user || !familyId || !memberId || !book) {
             toast({ title: "Hata", description: "Kullanıcı bilgileri eksik.", variant: "destructive" });
             return;
         }
         const pagesReadInSession = Math.max(0, currentEndPage - startPage);
         const durationSeconds = elapsedTime;
         const newSession: Omit<ReadingSession, 'id' | 'familyId'> = {
-            memberId: user.uid,
+            memberId: memberId,
             bookId: book.id,
             startTime: startTime.toISOString(),
             endTime: new Date().toISOString(),
@@ -197,7 +204,7 @@ export default function ReadingSessionPage() {
         if (book.pageCount) {
             const newProgressPercent = Math.min(Math.round((currentEndPage / book.pageCount) * 100), 100);
             const newStatus = newProgressPercent >= 100 ? 'finished' : 'reading';
-            await updateUserBookStatus(familyId, user.uid, book.id, newStatus, newProgressPercent);
+            await updateUserBookStatus(familyId, memberId, book.id, newStatus, newProgressPercent);
         }
         
         toast({ 

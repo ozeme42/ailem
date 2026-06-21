@@ -709,7 +709,7 @@ function ReadingBookCard({ book, onUpdateStatus, onRemove, onViewDetails, onOpen
                     {/* Aksiyon Butonları Grubu */}
                     <div className="flex flex-wrap items-center gap-2">
                          {/* Oynat / Devam Et */}
-                         <Link href={`/library/session/${book.id}`} className="flex-1 sm:flex-none">
+                         <Link href={`/library/session/${book.id}?memberId=${selectedMember?.id}`} className="flex-1 sm:flex-none">
                             <Button className="w-full sm:w-auto rounded-xl bg-amber-600 hover:bg-amber-700 text-white shadow-md h-10 px-4">
                                 <Play className="h-4 w-4 fill-current mr-2"/> Oku
                             </Button>
