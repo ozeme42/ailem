@@ -103,7 +103,7 @@ export function NewJsonTestForm({
       subject: initialData?.subject || "",
       topic: initialData?.topicId ? initialData.topicId : ((initialData as any)?.topic || ""),
       assigneeId: initialData?.studentId || undefined,
-      dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      dueDate: initialData?.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 6 * 24 * 60 * 60 * 1000),
       jsonContent: initialData?.jsonQuestions ? JSON.stringify(initialData.jsonQuestions, null, 2) : "",
     },
   });
@@ -139,7 +139,7 @@ export function NewJsonTestForm({
         subject: initialData.subject,
         topic: initialData.topicId ? initialData.topicId : ((initialData as any)?.topic || ""),
         assigneeId: initialData.studentId, 
-        dueDate: initialData.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        dueDate: initialData.dueDate ? parse(initialData.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : new Date(Date.now() + 6 * 24 * 60 * 60 * 1000),
         jsonContent: initialData.jsonQuestions ? JSON.stringify(initialData.jsonQuestions, null, 2) : "",
       });
     }

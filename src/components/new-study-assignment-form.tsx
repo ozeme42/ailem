@@ -47,7 +47,7 @@ export function NewStudyAssignmentForm({ students, availableSubjects, onAssign }
       sources: "",
       dateRange: {
         from: new Date(),
-        to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        to: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000),
       },
     },
   });

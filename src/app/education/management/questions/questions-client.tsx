@@ -459,7 +459,7 @@ function AssignTestDialog({ isOpen, onOpenChange, allQuestions, allMistakes, sel
   const { familyMembers } = useAuth();
   const [loading, setLoading] = useState(false);
   const students = useMemo(() => familyMembers.filter((m:any) => m.role.includes('Çocuk')), [familyMembers]);
-  const form = useForm<z.infer<typeof assignFormSchema>>({ resolver: zodResolver(assignFormSchema), defaultValues: { title: "", studentIds: [], dateRange: { from: new Date(), to: addDays(new Date(), 7) } } });
+  const form = useForm<z.infer<typeof assignFormSchema>>({ resolver: zodResolver(assignFormSchema), defaultValues: { title: "", studentIds: [], dateRange: { from: new Date(), to: addDays(new Date(), 6) } } });
   const handleAssignmentSubmit = async (values: z.infer<typeof assignFormSchema>) => {
     setLoading(true);
     const source = type === 'bank' ? allQuestions : allMistakes;
