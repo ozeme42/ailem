@@ -177,10 +177,14 @@ export const removeBookFromMemberLibrary = async (fid: string, mid: string, bid:
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) return;
 
-    const libDoc = querySnapshot.docs[0];
-    const libRef = doc(db, 'userLibraries', libDoc.id);
-    const books = (libDoc.data().books || []).filter((b: any) => b.bookId !== bid);
-    await updateDoc(libRef, { books });
+    for (const libDoc of querySnapshot.docs) {
+        const books = libDoc.data().books || [];
+        const filteredBooks = books.filter((b: any) => b.bookId !== bid);
+        if (books.length !== filteredBooks.length) {
+            const libRef = doc(db, 'userLibraries', libDoc.id);
+            await updateDoc(libRef, { books: filteredBooks });
+        }
+    }
 
     // mediaItems koleksiyonundaki readers dizisinden çıkar
     const bookRef = doc(db, 'mediaItems', bid);
@@ -195,25 +199,27 @@ export const updateUserBookStatus = async (fid: string, mid: string, bid: string
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) return;
 
-    const libDoc = querySnapshot.docs[0];
-    const libRef = doc(db, 'userLibraries', libDoc.id);
-    const books = libDoc.data().books || [];
-    const idx = books.findIndex((b: any) => b.bookId === bid);
-    
-    if (idx !== -1) {
-        books[idx] = { ...books[idx], status, progress: progress ?? books[idx].progress };
+    for (const libDoc of querySnapshot.docs) {
+        const books = libDoc.data().books || [];
+        const idx = books.findIndex((b: any) => b.bookId === bid);
         
-        // Okunuyor durumuna geçtiyse ve başlama tarihi yoksa ekle
-        if (status === 'reading' && !books[idx].startedAt) {
-            books[idx].startedAt = new Date().toISOString();
+        if (idx !== -1) {
+            books[idx] = { ...books[idx], status, progress: progress ?? books[idx].progress };
+            
+            // Okunuyor durumuna geçtiyse ve başlama tarihi yoksa ekle
+            if (status === 'reading' && !books[idx].startedAt) {
+                books[idx].startedAt = new Date().toISOString();
+            }
+            
+            // Bitti durumuna geçtiyse bitiş tarihini ve %100 ilerlemeyi kaydet
+            if (status === 'finished') {
+                books[idx].finishedAt = new Date().toISOString();
+            }
+            
+            const libRef = doc(db, 'userLibraries', libDoc.id);
+            await updateDoc(libRef, { books });
+            return; // Bulduk ve güncelledik, diğer fragmanlara bakmaya gerek yok
         }
-        
-        // Bitti durumuna geçtiyse bitiş tarihini ve %100 ilerlemeyi kaydet
-        if (status === 'finished') {
-            books[idx].finishedAt = new Date().toISOString();
-        }
-        
-        await updateDoc(libRef, { books });
     }
 };
 
