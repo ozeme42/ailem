@@ -53,7 +53,7 @@ function ProgressDialog({ open, onOpenChange, book, onSaveSession }: {
     open: boolean,
     onOpenChange: (open: boolean) => void,
     book: (BookType & { progress?: number }) | null, 
-    onSaveSession: (book: BookType, session: { pagesRead: number }) => void,
+    onSaveSession: (book: BookType, session: { pagesRead: number, newProgress?: number }) => void,
 }) {
     const form = useForm<z.infer<typeof progressFormSchema>>({
         resolver: zodResolver(progressFormSchema),
@@ -79,7 +79,9 @@ function ProgressDialog({ open, onOpenChange, book, onSaveSession }: {
             newPagesReadThisSession = targetPage - pagesReadCurrently;
         }
 
-        onSaveSession(book, { pagesRead: newPagesReadThisSession });
+        const newProgressPercentage = Math.round((targetPage / book.pageCount) * 100);
+
+        onSaveSession(book, { pagesRead: newPagesReadThisSession, newProgress: newProgressPercentage });
         onOpenChange(false);
     };
 
@@ -186,7 +188,7 @@ export default function LibraryPage() {
     }
   };
   
-  const handleSaveSession = async (book: BookType, session: { pagesRead: number }) => {
+  const handleSaveSession = async (book: BookType, session: { pagesRead: number, newProgress?: number }) => {
      if (!familyId || !selectedMember) return;
      
      try {
@@ -198,9 +200,16 @@ export default function LibraryPage() {
             durationSeconds: 0, 
             pagesRead: session.pagesRead,
         });
-        toast({ title: "Okuma Oturumu Kaydedildi!", description: `${session.pagesRead} sayfa okudun.` });
+        
+        // Kitap ilerlemesini de güncelle
+        if (session.newProgress !== undefined) {
+             const status = session.newProgress >= 100 ? 'finished' : 'reading';
+             await updateUserBookStatus(familyId, selectedMember.id, book.id, status, session.newProgress);
+        }
+        
+        toast({ title: "Okuma İlerlemesi Kaydedildi!", description: `${session.pagesRead} sayfa okudun.` });
      } catch(e) {
-         toast({ title: "Hata", description: "Oturum kaydedilirken bir sorun oluştu.", variant: "destructive" });
+         toast({ title: "Hata", description: "İlerleme kaydedilirken bir sorun oluştu.", variant: "destructive" });
      }
   };
 
