@@ -228,7 +228,6 @@ export const updateUserBookStatus = async (fid: string, mid: string, bid: string
 };
 
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from './firebase';
 
 export const uploadImageToStorage = async (file: File, path: string): Promise<string> => {
     const storageRef = ref(storage, path);
