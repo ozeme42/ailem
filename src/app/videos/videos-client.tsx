@@ -642,6 +642,18 @@ export function VideosClient() {
     setIsFormOpen(true);
   }, []);
 
+  // --- KAYBOLAN VİDEOLARI KURTARMA ---
+  useEffect(() => {
+    if (videos.length > 0 && familyMembers.length > 0) {
+      const lostVideos = videos.filter(v => !v.assigneeId || v.assigneeId === "");
+      if (lostVideos.length > 0) {
+        lostVideos.forEach(v => {
+          updateVideo(v.id, { assigneeId: familyMembers[0].id });
+        });
+      }
+    }
+  }, [videos, familyMembers]);
+
   const handleAddOrUpdateVideo = async (formData: VideoFormData) => {
     setIsSubmitting(true);
     const getYouTubeThumbnail = (url: string) => {

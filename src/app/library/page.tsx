@@ -691,7 +691,7 @@ export default function LibraryPage() {
                                 <BookCheck className="w-5 h-5 text-emerald-500" /> Bitirdiklerim
                             </h2>
                             <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide -mx-2 px-2">
-                                {finishedBooks.map(book => <FinishedBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
+                                {finishedBooks.map(book => <FinishedBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary} onUploadSummary={(book) => setChildBookToFinish(book)} />)}
                             </div>
                         </div>
                     )}
@@ -844,7 +844,7 @@ function ReadingBookCard({ book, memberId, onUpdateStatus, onRemove, onViewDetai
     )
 }
 
-function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
+function FinishedBookCard({ book, onUpdateStatus, onRemove, onUploadSummary }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void, onUploadSummary: (book: any) => void }) {
     const [isOpen, setIsOpen] = React.useState(false);
     const finishedDate = book.finishedAt ? format(parseISO(book.finishedAt), 'd MMM yyyy', { locale: tr }) : '';
 
@@ -893,6 +893,14 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpd
                                      <span className="text-white font-medium text-sm">Büyütmek için tıkla</span>
                                  </div>
                              </a>
+                         </div>
+                     )}
+                     {book.isForChildren && (
+                         <div className="w-full px-4 mt-2">
+                             <Button onClick={() => { setIsOpen(false); onUploadSummary(book); }} className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-0 shadow-sm rounded-xl h-10 font-bold">
+                                 <Camera className="w-4 h-4 mr-2" />
+                                 {book.summaryImageUrl ? "Özeti Güncelle" : "Özet Ekle"}
+                             </Button>
                          </div>
                      )}
                 </div>
