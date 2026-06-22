@@ -268,7 +268,7 @@ function HourglassTimer({ className, isFocus = false, topSandPct, bottomSandPct,
                             )
                         ) : (
                             bottomSandPct > 1 && (
-                                <motion.ellipse cx={midX} cy={bottomSandTopY} rx={6} ry={2}
+                                <motion.ellipse cx={midX} cy={bottomSandFreeY} rx={6} ry={2}
                                     fill={sandColor2} fillOpacity={0.4}
                                     animate={{ rx: [4, 8, 4], fillOpacity: [0.2, 0.5, 0.2] }}
                                     transition={{ repeat: Infinity, duration: 0.6, ease: "easeInOut" }}
