@@ -613,6 +613,7 @@ export default function LibraryPage() {
                                                 if (active && payload && payload.length) {
                                                     const data = payload[0].payload;
                                                     const isMet = data.dailyGoal && data.pagesRead >= data.dailyGoal;
+                                                    const shortfall = data.dailyGoal ? Math.max(0, data.dailyGoal - data.pagesRead) : 0;
                                                     return (
                                                         <div className="bg-white border border-slate-200 p-2.5 rounded-xl shadow-xl text-xs flex flex-col gap-1.5 min-w-[120px]">
                                                             <p className="font-bold text-slate-800 border-b border-slate-100 pb-1">{data.fullDate || data.month}</p>
@@ -629,6 +630,11 @@ export default function LibraryPage() {
                                                             {data.dailyGoal > 0 && isMet && (
                                                               <div className="mt-1 flex items-center justify-center gap-1 bg-emerald-50 text-emerald-600 py-1 rounded-lg font-bold">
                                                                 🎯 Hedef Tamam!
+                                                              </div>
+                                                            )}
+                                                            {data.dailyGoal > 0 && !isMet && shortfall > 0 && (
+                                                              <div className="mt-1 flex items-center justify-center gap-1 bg-rose-50 text-rose-600 py-1 rounded-lg font-bold">
+                                                                ⚠️ {shortfall} syf eksik
                                                               </div>
                                                             )}
                                                         </div>
