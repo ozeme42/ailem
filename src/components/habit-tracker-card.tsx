@@ -8,7 +8,7 @@ import { Flame, Check, MoreHorizontal, Edit, Trash2, CalendarDays, TrendingUp, T
 import { Task } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -132,11 +132,11 @@ export const HabitTrackerCard = React.forwardRef<HTMLDivElement, HabitTrackerCar
 
         {/* DETAYLI İSTATİSTİK MODALI */}
         <Dialog open={isStatsOpen} onOpenChange={setIsStatsOpen}>
-            <DialogContent className="sm:max-w-md bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-white/10 p-0 overflow-hidden rounded-[2rem] shadow-2xl">
+            <DialogContent aria-describedby={undefined} className="sm:max-w-md bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-white/10 p-0 overflow-hidden rounded-[2rem] shadow-2xl">
                 <div className="p-6 pb-4 border-b border-slate-200 dark:border-white/10">
                     <div className="flex justify-between items-start mb-4">
                         <div>
-                            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{task.title}</h2>
+                            <DialogTitle className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{task.title}</DialogTitle>
                             {assignee && (
                                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
                                     <span className="w-2 h-2 rounded-full" style={{backgroundColor: assignee.color || '#ccc'}} />
