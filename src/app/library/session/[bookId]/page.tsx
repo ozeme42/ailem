@@ -134,6 +134,11 @@ function HourglassTimer({ className, isFocus = false, topSandPct, bottomSandPct,
                         <stop offset="0%" stopColor={sandColor2} />
                         <stop offset="100%" stopColor={sandColor} />
                     </linearGradient>
+                    {/* Alt hazne için ayrı gradient: altta koyu, üstte açık — alttan doluyor hissi */}
+                    <linearGradient id="hg-sandGradBottom" x1="0" y1="1" x2="0" y2="0">
+                        <stop offset="0%" stopColor={sandColor} />
+                        <stop offset="100%" stopColor={sandColor2} />
+                    </linearGradient>
                     <linearGradient id="hg-glassBody" x1="0" y1="0" x2="1" y2="0">
                         <stop offset="0%"   stopColor="white" stopOpacity="0.25" />
                         <stop offset="40%"  stopColor="white" stopOpacity="0.05" />
@@ -169,12 +174,12 @@ function HourglassTimer({ className, isFocus = false, topSandPct, bottomSandPct,
                         stroke="white" strokeWidth="2" strokeOpacity="0.4" strokeLinecap="round" />
                 )}
 
-                {/* Alt kum */}
+                {/* Alt kum — alttan yukarıya dolar, gradient de alttan açığa */}
                 {bottomSandPct > 0 && (
                     <polygon
                         clipPath="url(#hg-bottomChamber)"
                         points={`${midX-bottomSandTopW/2},${bottomSandTopY} ${midX+bottomSandTopW/2},${bottomSandTopY} ${W-8},${H-rimH} ${8},${H-rimH}`}
-                        fill="url(#hg-sandGrad)" opacity="0.92"
+                        fill="url(#hg-sandGradBottom)" opacity="0.92"
                     />
                 )}
                 {bottomSandPct > 1 && (
@@ -525,8 +530,8 @@ export default function ReadingSessionPage() {
                 )}
             </AnimatePresence>
 
-            {/* NORMAL ARAYÜZ (Mobile-First Vertical Stack) */}
-            <div className={cn("relative z-10 flex flex-col h-[100dvh] w-full max-w-md mx-auto transition-opacity duration-300", isFocusMode && "opacity-0 pointer-events-none")}>
+            {/* NORMAL ARAYÜZ — mobile-first, scrollable */}
+            <div className={cn("relative z-10 flex flex-col min-h-[100dvh] w-full max-w-md mx-auto transition-opacity duration-300", isFocusMode && "opacity-0 pointer-events-none")}>
                 
                 {/* ÜST BİLGİ & HEADER */}
                 <header className="flex-none p-4 pb-2">
@@ -608,16 +613,16 @@ export default function ReadingSessionPage() {
                     </div>
                 </header>
 
-                {/* ORTA BÖLÜM: ZAMANLAYICI & KONTROLLER */}
-                <main className="flex-1 flex flex-col items-center justify-center p-4 relative">
-                     {/* Cam Küre Zamanlayıcı */}
-                     <div className="flex flex-col items-center gap-2 mb-2">
-                         <HourglassTimer className="w-[180px] h-[280px] sm:w-[220px] sm:h-[320px]" {...hourglassProps} />
-                         <div className="flex flex-col items-center gap-0.5">
-                             <span className={cn("text-4xl sm:text-5xl font-black tracking-tighter tabular-nums bg-gradient-to-br from-indigo-600 to-cyan-500 bg-clip-text text-transparent drop-shadow", isOvertime && "from-red-500 to-orange-400 animate-pulse")}>
+                {/* ORTA BÖLÜM: ZAMANLAYICI & KONTROLLER — shrink-0 ile footer'a yer bırak */}
+                <main className="flex-1 flex flex-col items-center justify-center p-3 pb-2 relative overflow-visible">
+                     {/* Kum Saati + Süre */}
+                     <div className="flex flex-col items-center gap-1 mb-3">
+                         <HourglassTimer className="w-[140px] h-[210px] sm:w-[180px] sm:h-[270px]" {...hourglassProps} />
+                         <div className="flex flex-col items-center gap-0">
+                             <span className={cn("text-3xl sm:text-4xl font-black tracking-tighter tabular-nums bg-gradient-to-br from-indigo-600 to-cyan-500 bg-clip-text text-transparent", isOvertime && "from-red-500 to-orange-400 animate-pulse")}>
                                  {formatDuration(displaySeconds)}
                              </span>
-                             <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                             <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">
                                  {isOvertime ? "SÜRE DOLDU" : (timerRunning ? "Akışta" : "Duraklatıldı")}
                              </span>
                          </div>
