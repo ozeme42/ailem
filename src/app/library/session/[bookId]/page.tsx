@@ -25,7 +25,7 @@ function useWakeLock(enabled: boolean) {
 
     React.useEffect(() => {
         const requestWakeLock = async () => {
-            if ('wakeLock' in navigator && enabled) {
+            if ('wakeLock' in navigator && enabled && document.visibilityState === 'visible') {
                 try {
                     wakeLockRef.current = await navigator.wakeLock.request('screen');
                     console.log('Ekran uyanık modu aktif.');
@@ -37,21 +37,32 @@ function useWakeLock(enabled: boolean) {
 
         const releaseWakeLock = async () => {
             if (wakeLockRef.current) {
-                await wakeLockRef.current.release();
+                try {
+                    await wakeLockRef.current.release();
+                } catch (err) {
+                    // Ignore release errors
+                }
                 wakeLockRef.current = null;
+            }
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && enabled) {
+                requestWakeLock();
             }
         };
 
         if (enabled) {
             requestWakeLock();
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible' && enabled) requestWakeLock();
-            });
+            document.addEventListener('visibilitychange', handleVisibilityChange);
         } else {
             releaseWakeLock();
         }
 
-        return () => { releaseWakeLock(); };
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            releaseWakeLock();
+        };
     }, [enabled]);
 }
 
