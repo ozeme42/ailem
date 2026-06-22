@@ -91,7 +91,7 @@ export function AddOfflineResultDialog({ students, trackedBooks, studyPlans, onR
         return test.subject || 'Diğer';
     };
 
-    tests.forEach(t => {
+    (tests || []).forEach(t => {
         const subj = getCategoryName(t);
         const topic = t.topicId || t.topic || t._topicName;
         if (subj && topic && topic !== 'Genel' && subj !== 'Diğer') {
@@ -100,7 +100,7 @@ export function AddOfflineResultDialog({ students, trackedBooks, studyPlans, onR
         }
     });
 
-    bankQuestions.forEach(q => {
+    (bankQuestions || []).forEach(q => {
         if (q.subject && q.topic && q.topic !== 'Genel') {
             if (!map.has(q.subject)) map.set(q.subject, new Set());
             map.get(q.subject)!.add(q.topic);
@@ -112,7 +112,7 @@ export function AddOfflineResultDialog({ students, trackedBooks, studyPlans, onR
         topics.forEach(t => map.get(subj)!.add(t));
     });
 
-    trackedBooks.forEach(b => {
+    (trackedBooks || []).forEach(b => {
         (b.subjects || []).forEach((s: any) => {
             if (!map.has(s.name)) map.set(s.name, new Set());
             (s.topics || []).forEach((t: any) => map.get(s.name)!.add(t.name));
