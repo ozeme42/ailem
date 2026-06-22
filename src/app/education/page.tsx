@@ -8,7 +8,7 @@ import {
   Layers, PieChart, GraduationCap, AlertCircle, Timer, 
   BookOpen, ChevronDown, ChevronRight, Check, Sparkles, TrendingUp, 
   TrendingDown, PlayCircle, CalendarClock, Target, BarChart,
-  User, Settings, ScrollText, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, FileText, ClipboardList, ListTree, LayoutGrid, CalendarDays
+  User, Settings, ScrollText, Ruler, TestTube2, BookCopy, Globe, MessageSquare, Gamepad2, FileText, ClipboardList, ListTree, LayoutGrid, CalendarDays, Plus
 } from "lucide-react";
 
 import { Test, StudyAssignment, StudyPlan, TrackedBook } from "@/lib/data";
@@ -21,6 +21,7 @@ import { tr } from 'date-fns/locale';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { AddOfflineResultDialog } from "@/components/education/add-offline-result-dialog";
 
 // ─── RENK SİSTEMİ (Daha Kurumsal ve Yumuşak Tonlar) ───────────────────────
 const C = {
@@ -303,7 +304,16 @@ export default function EducationPage() {
                 )
               })}
             </div>
-            <Link href="/education/management" className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 border border-transparent dark:border-slate-700">
+            <AddOfflineResultDialog 
+               students={studentMembers} 
+               onResultAdded={() => { window.location.reload(); }}
+               trigger={
+                  <button className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-transparent dark:border-indigo-800 hover:scale-105 transition-transform">
+                     <Plus className="w-4 h-4" />
+                  </button>
+               }
+            />
+            <Link href="/education/management" className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 border border-transparent dark:border-slate-700 hover:scale-105 transition-transform">
               <Settings className="w-4 h-4" />
             </Link>
           </div>
