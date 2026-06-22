@@ -48,11 +48,11 @@ const glassColors = {
 };
 
 const taskColors = [
-    'bg-blue-50 border-blue-200 text-blue-900 dark:bg-blue-600/20 dark:border-blue-400/30 dark:text-blue-200',
-    'bg-emerald-50 border-emerald-200 text-emerald-900 dark:bg-emerald-600/20 dark:border-emerald-400/30 dark:text-emerald-200',
-    'bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-600/20 dark:border-amber-400/30 dark:text-amber-200',
-    'bg-rose-50 border-rose-200 text-rose-900 dark:bg-rose-600/20 dark:border-rose-400/30 dark:text-rose-200',
-    'bg-violet-50 border-violet-200 text-violet-900 dark:bg-violet-600/20 dark:border-violet-400/30 dark:text-violet-200',
+    'bg-blue-100 border-blue-300 text-blue-950 dark:bg-blue-500/30 dark:border-blue-400/50 dark:text-blue-100',
+    'bg-emerald-100 border-emerald-300 text-emerald-950 dark:bg-emerald-500/30 dark:border-emerald-400/50 dark:text-emerald-100',
+    'bg-amber-100 border-amber-300 text-amber-950 dark:bg-amber-500/30 dark:border-amber-400/50 dark:text-amber-100',
+    'bg-rose-100 border-rose-300 text-rose-950 dark:bg-rose-500/30 dark:border-rose-400/50 dark:text-rose-100',
+    'bg-violet-100 border-violet-300 text-violet-950 dark:bg-violet-500/30 dark:border-violet-400/50 dark:text-violet-100',
 ];
 
 
@@ -97,8 +97,8 @@ const ModuleTaskItem = ({ task, assignee }: { task: any, assignee: any }) => {
         <div className={cn(
             "group relative flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 border backdrop-blur-md",
             task.isCompleted 
-                ? "bg-slate-50/50 dark:bg-slate-900/30 border-transparent shadow-none" 
-                : glassColors.CARD_BG + " hover:shadow-lg dark:hover:shadow-indigo-500/10 hover:border-indigo-200 dark:hover:border-indigo-500/30"
+                ? "bg-slate-50/50 dark:bg-slate-900/30 border-transparent shadow-none opacity-60" 
+                : cn(task.bgClass || glassColors.CARD_BG, "hover:scale-[1.01] shadow-sm hover:shadow-md")
         )}>
             {/* SOL: CHECKBOX & BİLGİ */}
             <div className="flex-1 flex items-start gap-2 sm:gap-3">
@@ -261,6 +261,7 @@ type ModuleTask = {
               dueDate: sa.dueDate,
               icon: BookOpen,
               color: 'text-blue-500 bg-blue-500/10 dark:bg-blue-500/20',
+              bgClass: 'bg-blue-100 border-blue-300 text-blue-950 dark:bg-blue-500/30 dark:border-blue-400/50 dark:text-blue-100',
               onToggle: async (completed) => {
                   await updateStudyAssignment(sa.id, { status: completed ? 'completed' : 'assigned' });
               }
@@ -289,6 +290,7 @@ type ModuleTask = {
                   isCompleted,
                   icon: GraduationCap,
                   color: 'text-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/20',
+                  bgClass: 'bg-emerald-100 border-emerald-300 text-emerald-950 dark:bg-emerald-500/30 dark:border-emerald-400/50 dark:text-emerald-100',
                   onToggle: async (completed) => {
                       await updateMemorizationProgress(mi.id, member.id, completed);
                   }
@@ -321,6 +323,7 @@ type ModuleTask = {
                   isCompleted,
                   icon: Target,
                   color: 'text-amber-500 bg-amber-500/10 dark:bg-amber-500/20',
+                  bgClass: 'bg-amber-100 border-amber-300 text-amber-950 dark:bg-amber-500/30 dark:border-amber-400/50 dark:text-amber-100',
                   onToggle: async (completed) => {
                       let newCompletions = [...completions];
                       if (completed && !newCompletions.includes(prayer)) newCompletions.push(prayer);

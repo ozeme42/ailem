@@ -82,11 +82,10 @@ export const HabitTrackerCard = React.forwardRef<HTMLDivElement, HabitTrackerCar
   return (
     <>
         {/* LİSTE ÖĞESİ GÖRÜNÜMÜ */}
-        <div ref={ref} className={cn("group flex items-center justify-between p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-300 relative overflow-hidden cursor-pointer", glassColors.CARD_BG, glassColors.CARD_HOVER)} onClick={() => setIsStatsOpen(true)}>
-            <div className={cn("absolute left-0 top-0 bottom-0 w-1 sm:w-1.5 opacity-60", colorClass?.split(' ')[0] || "bg-indigo-500")} />
+        <div ref={ref} className={cn("group flex items-center justify-between p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-300 relative overflow-hidden cursor-pointer", colorClass || glassColors.CARD_BG, "hover:scale-[1.01] shadow-sm hover:shadow-md")} onClick={() => setIsStatsOpen(true)}>
             
             <div className="flex flex-col flex-1 min-w-0 pl-1 sm:pl-2">
-                <h4 className={cn("font-bold truncate text-sm sm:text-base", glassColors.TEXT_MAIN)}>{task.title}</h4>
+                <h4 className={cn("font-bold truncate text-sm sm:text-base", colorClass ? "opacity-90" : glassColors.TEXT_MAIN)}>{task.title}</h4>
                 <div className="flex items-center gap-2 mt-0.5">
                     {assignee && (
                         <div className="flex items-center gap-1 opacity-70">

@@ -116,12 +116,12 @@ export function TaskItem({ task, assignee, onEdit, colorClass, onDelete }: TaskI
               htmlFor={`task-${task.id}`}
               className={cn(
                   "font-bold text-xs sm:text-base transition-colors cursor-pointer block truncate", 
-                  isCompleted && !task.isRecurring ? 'line-through text-slate-500 dark:text-slate-500' : 'text-slate-900 dark:text-slate-100'
+                  isCompleted && !task.isRecurring ? 'line-through opacity-50' : (colorClass ? 'opacity-90' : 'text-slate-900 dark:text-slate-100')
               )}
             >
               {task.title}
             </label>
-            <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 mt-0 sm:mt-1 text-[9px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">
+            <div className={cn("flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 mt-0 sm:mt-1 text-[9px] sm:text-xs font-medium", colorClass ? 'opacity-75' : 'text-slate-500 dark:text-slate-400')}>
                 <p>{task.dueDate}</p>
                 {task.isRecurring && <Repeat className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5" />}
                 
