@@ -549,29 +549,29 @@ export default function LibraryPage() {
                 <div className="lg:col-span-1 space-y-6">
                     {/* Kütüphane Özeti */}
                     <Card className={cn(themeColors.CARD_BG)}>
-                        <CardHeader className="pb-2">
-                            <CardTitle className={cn("text-sm font-bold uppercase tracking-wider text-slate-400")}>Kütüphane Özeti</CardTitle>
+                        <CardHeader className="pb-2 pt-3 sm:pt-6 px-3 sm:px-6">
+                            <CardTitle className={cn("text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400")}>Kütüphane Özeti</CardTitle>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-4">
-                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                                <BookOpen className="h-6 w-6 text-amber-500 mb-1" />
-                                <p className="text-2xl font-black text-slate-800">{stats.reading}</p>
-                                <p className="text-xs text-slate-500 font-bold uppercase">Okunuyor</p>
+                        <CardContent className="grid grid-cols-4 sm:grid-cols-2 gap-2 sm:gap-4 px-3 pb-3 sm:px-6 sm:pb-6">
+                            <div className="bg-slate-50 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center">
+                                <BookOpen className="h-4 w-4 sm:h-6 sm:w-6 text-amber-500 mb-0.5 sm:mb-1" />
+                                <p className="text-lg sm:text-2xl font-black text-slate-800 leading-none">{stats.reading}</p>
+                                <p className="text-[9px] sm:text-xs text-slate-500 font-bold uppercase mt-1">Okunuyor</p>
                             </div>
-                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                                <BookCheck className="h-6 w-6 text-emerald-500 mb-1" />
-                                <p className="text-2xl font-black text-slate-800">{stats.finished}</p>
-                                <p className="text-xs text-slate-500 font-bold uppercase">Bitti</p>
+                            <div className="bg-slate-50 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center">
+                                <BookCheck className="h-4 w-4 sm:h-6 sm:w-6 text-emerald-500 mb-0.5 sm:mb-1" />
+                                <p className="text-lg sm:text-2xl font-black text-slate-800 leading-none">{stats.finished}</p>
+                                <p className="text-[9px] sm:text-xs text-slate-500 font-bold uppercase mt-1">Bitti</p>
                             </div>
-                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                                <BookUp className="h-6 w-6 text-blue-500 mb-1" />
-                                <p className="text-2xl font-black text-slate-800">{stats.toRead}</p>
-                                <p className="text-xs text-slate-500 font-bold uppercase">Sırada</p>
+                            <div className="bg-slate-50 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center">
+                                <BookUp className="h-4 w-4 sm:h-6 sm:w-6 text-blue-500 mb-0.5 sm:mb-1" />
+                                <p className="text-lg sm:text-2xl font-black text-slate-800 leading-none">{stats.toRead}</p>
+                                <p className="text-[9px] sm:text-xs text-slate-500 font-bold uppercase mt-1">Sırada</p>
                             </div>
-                             <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                                <BookIcon className="h-6 w-6 text-purple-500 mb-1" />
-                                <p className="text-2xl font-black text-slate-800">{stats.total}</p>
-                                <p className="text-xs text-slate-500 font-bold uppercase">Toplam</p>
+                             <div className="bg-slate-50 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center">
+                                <BookIcon className="h-4 w-4 sm:h-6 sm:w-6 text-purple-500 mb-0.5 sm:mb-1" />
+                                <p className="text-lg sm:text-2xl font-black text-slate-800 leading-none">{stats.total}</p>
+                                <p className="text-[9px] sm:text-xs text-slate-500 font-bold uppercase mt-1">Toplam</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -581,16 +581,16 @@ export default function LibraryPage() {
                         <Card className={cn(themeColors.CARD_BG, "relative overflow-hidden")}>
                             <Tabs defaultValue={readingGoals?.monthly?.pages || readingGoals?.monthly?.books ? "monthly" : "weekly"}>
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-                                <CardHeader className="pb-2 relative z-10 flex flex-row items-center justify-between space-y-0">
-                                    <CardTitle className={cn("text-sm font-bold uppercase tracking-wider text-slate-400")}>Hedefler</CardTitle>
-                                    <TabsList className="bg-slate-100 border border-slate-200 h-8 p-0.5">
-                                        {(readingGoals?.weekly?.pages || readingGoals?.weekly?.books) && <TabsTrigger value="weekly" className="text-xs h-7 px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Haftalık</TabsTrigger>}
-                                        {(readingGoals?.monthly?.pages || readingGoals?.monthly?.books) && <TabsTrigger value="monthly" className="text-xs h-7 px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Aylık</TabsTrigger>}
+                                <CardHeader className="pb-2 pt-3 sm:pt-6 px-3 sm:px-6 relative z-10 flex flex-row items-center justify-between space-y-0">
+                                    <CardTitle className={cn("text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400")}>Hedefler</CardTitle>
+                                    <TabsList className="bg-slate-100 border border-slate-200 h-7 sm:h-8 p-0.5">
+                                        {(readingGoals?.weekly?.pages || readingGoals?.weekly?.books) && <TabsTrigger value="weekly" className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Haftalık</TabsTrigger>}
+                                        {(readingGoals?.monthly?.pages || readingGoals?.monthly?.books) && <TabsTrigger value="monthly" className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Aylık</TabsTrigger>}
                                     </TabsList>
                                 </CardHeader>
-                                <CardContent className="relative z-10 pt-2">
+                                <CardContent className="relative z-10 pt-1 px-3 pb-3 sm:px-6 sm:pb-6">
                                     {(readingGoals?.weekly?.pages || readingGoals?.weekly?.books) && (
-                                        <TabsContent value="weekly" className="space-y-6 mt-0">
+                                        <TabsContent value="weekly" className="space-y-3 sm:space-y-6 mt-0">
                                             {readingGoals?.weekly?.pages ? (
                                                 <div>
                                                     <div className="flex justify-between text-xs font-bold mb-2">
@@ -612,7 +612,7 @@ export default function LibraryPage() {
                                         </TabsContent>
                                     )}
                                     {(readingGoals?.monthly?.pages || readingGoals?.monthly?.books) && (
-                                        <TabsContent value="monthly" className="space-y-6 mt-0">
+                                        <TabsContent value="monthly" className="space-y-3 sm:space-y-6 mt-0">
                                             {readingGoals?.monthly?.pages ? (
                                                 <div>
                                                     <div className="flex justify-between text-xs font-bold mb-2">
@@ -640,13 +640,13 @@ export default function LibraryPage() {
 
                     {/* Okuma İstatistikleri Grafik */}
                     <Card className={cn(themeColors.CARD_BG)}>
-                        <CardHeader className="flex flex-col gap-2 pb-2">
+                        <CardHeader className="flex flex-col gap-2 pb-2 pt-3 sm:pt-6 px-3 sm:px-6">
                             <div className="flex flex-row items-center justify-between w-full">
-                                <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-400">Okuma Grafiği</CardTitle>
+                                <CardTitle className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400">Okuma Grafiği</CardTitle>
                                 <Tabs value={readingStatsPeriod} onValueChange={(v) => setReadingStatsPeriod(v as any)}>
-                                    <TabsList className="bg-slate-100 border border-slate-200 h-8 p-0.5">
-                                        <TabsTrigger value="weekly" className="text-xs h-7 px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Haftalık</TabsTrigger>
-                                        <TabsTrigger value="monthly" className="text-xs h-7 px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Aylık</TabsTrigger>
+                                    <TabsList className="bg-slate-100 border border-slate-200 h-7 sm:h-8 p-0.5">
+                                        <TabsTrigger value="weekly" className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Haftalık</TabsTrigger>
+                                        <TabsTrigger value="monthly" className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Aylık</TabsTrigger>
                                     </TabsList>
                                 </Tabs>
                             </div>
@@ -654,25 +654,25 @@ export default function LibraryPage() {
                             {/* Haftalık Gezinme Kontrolleri */}
                             {readingStatsPeriod === 'weekly' && (
                                 <div className="flex items-center justify-between bg-slate-50 rounded-lg p-1 px-2 border border-slate-100">
-                                    <Button variant="ghost" size="sm" onClick={handlePrevWeek} className="h-7 w-7 p-0 rounded-full hover:bg-slate-200 text-slate-600">
-                                        <ChevronLeft className="h-4 w-4" />
+                                    <Button variant="ghost" size="sm" onClick={handlePrevWeek} className="h-6 w-6 sm:h-7 sm:w-7 p-0 rounded-full hover:bg-slate-200 text-slate-600">
+                                        <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
                                     </Button>
                                     
-                                    <div className="flex items-center gap-2 cursor-pointer" onClick={handleResetDate} title="Bugüne Dön">
-                                        <span className="text-xs font-bold text-slate-700">{readingStatsByPeriod.weekLabel}</span>
+                                    <div className="flex items-center gap-1.5 sm:gap-2 cursor-pointer" onClick={handleResetDate} title="Bugüne Dön">
+                                        <span className="text-[10px] sm:text-xs font-bold text-slate-700">{readingStatsByPeriod.weekLabel}</span>
                                         {!isSameDay(new Date(), chartReferenceDate) && (
-                                            <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">Arşiv</span>
+                                            <span className="text-[8px] sm:text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">Arşiv</span>
                                         )}
                                     </div>
 
-                                    <Button variant="ghost" size="sm" onClick={handleNextWeek} className="h-7 w-7 p-0 rounded-full hover:bg-slate-200 text-slate-600">
-                                        <ChevronRight className="h-4 w-4" />
+                                    <Button variant="ghost" size="sm" onClick={handleNextWeek} className="h-6 w-6 sm:h-7 sm:w-7 p-0 rounded-full hover:bg-slate-200 text-slate-600">
+                                        <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
                                     </Button>
                                 </div>
                             )}
                         </CardHeader>
-                         <CardContent>
-                             <div className="h-40 w-full mt-4">
+                         <CardContent className="px-1 pb-3 sm:px-6 sm:pb-6">
+                             <div className="h-36 sm:h-48 w-full mt-2 sm:mt-4">
                                 <ChartContainer config={{ pages: { label: "Sayfa", color: "#f59e0b" } }} className="h-full w-full">
                                     <BarChart 
                                         data={readingStatsPeriod === 'weekly' ? readingStatsByPeriod.weeklyChartData : readingStatsByPeriod.monthlyPageData} 
