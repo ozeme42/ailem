@@ -260,6 +260,226 @@ function HourglassTimer({ className, isFocus = false, topSandPct, bottomSandPct,
     );
 }
 
+// ==============================
+// TIMER ANIMATION VARIANTS
+// ==============================
+
+type TimerStyle = 'hourglass' | 'ring' | 'orb' | 'digital';
+
+interface BaseTimerProps {
+    className?: string;
+    isFocus?: boolean;
+    fillPercent: number;
+    isOvertime: boolean;
+    displaySeconds: number;
+    timerRunning: boolean;
+    isFlowing: boolean;
+}
+
+// --- HALKA ZAMANLAYICI ---
+function RingTimer({ className, isFocus, fillPercent, isOvertime, displaySeconds, timerRunning }: BaseTimerProps) {
+    const color  = isOvertime ? '#ef4444' : (isFocus ? '#10b981' : '#6366f1');
+    const color2 = isOvertime ? '#f97316' : (isFocus ? '#34d399' : '#06b6d4');
+    const R = 80;
+    const sw = 14;
+    const circ = 2 * Math.PI * R;
+    const offset = circ * (1 - Math.min(fillPercent, 100) / 100);
+
+    return (
+        <div className={cn('relative flex items-center justify-center select-none', className)}>
+            {/* Ambient glow */}
+            <div className="absolute inset-0 rounded-full blur-[40px] opacity-25 pointer-events-none"
+                style={{ background: `radial-gradient(circle, ${color2}99, transparent 70%)` }} />
+            <svg viewBox="0 0 200 200" className="w-full h-full" style={{ filter: `drop-shadow(0 0 18px ${color}66)` }}>
+                <defs>
+                    <linearGradient id="rg-grad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor={color2} />
+                        <stop offset="100%" stopColor={color} />
+                    </linearGradient>
+                    {/* Tick dashes bg */}
+                </defs>
+                {/* Arka halka */}
+                <circle cx="100" cy="100" r={R} fill="none" stroke={isFocus ? 'rgba(255,255,255,0.12)' : 'rgba(99,102,241,0.12)'} strokeWidth={sw} />
+                {/* İlerleme halkası */}
+                <motion.circle
+                    cx="100" cy="100" r={R}
+                    fill="none"
+                    stroke="url(#rg-grad)"
+                    strokeWidth={sw}
+                    strokeLinecap="round"
+                    strokeDasharray={circ}
+                    animate={{ strokeDashoffset: offset }}
+                    transition={{ duration: 1, ease: 'linear' }}
+                    style={{ transformOrigin: '100px 100px', rotate: '-90deg' }}
+                />
+                {/* İç parlama noktası (önde giden uç) */}
+                {fillPercent > 2 && (
+                    <motion.circle
+                        r={sw / 2 + 2}
+                        fill={color2}
+                        opacity={0.7}
+                        animate={{
+                            cx: 100 + R * Math.cos((2 * Math.PI * (fillPercent / 100)) - Math.PI / 2),
+                            cy: 100 + R * Math.sin((2 * Math.PI * (fillPercent / 100)) - Math.PI / 2),
+                        }}
+                        transition={{ duration: 1, ease: 'linear' }}
+                        style={{ filter: `blur(4px)` }}
+                    />
+                )}
+                {/* Süre */}
+                <text x="100" y="95" textAnchor="middle" dominantBaseline="middle"
+                    fontSize="34" fontWeight="900" fontFamily="monospace"
+                    fill={isFocus ? 'white' : (isOvertime ? '#ef4444' : '#312e81')}
+                    style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.2))' }}>
+                    {formatDuration(displaySeconds)}
+                </text>
+                <text x="100" y="118" textAnchor="middle" dominantBaseline="middle"
+                    fontSize="9" fontWeight="700" fontFamily="sans-serif" letterSpacing="2"
+                    fill={isFocus ? 'rgba(255,255,255,0.7)' : 'rgba(100,116,139,0.9)'} style={{ textTransform: 'uppercase' }}>
+                    {isOvertime ? 'SÜRE DOLDU' : (timerRunning ? 'AKIŞTA' : 'DURAKLATTI')}
+                </text>
+            </svg>
+        </div>
+    );
+}
+
+// --- SIVI KÜRE ZAMANLAYICI ---
+function OrbTimer({ className, isFocus, fillPercent, isOvertime, displaySeconds, timerRunning, isFlowing }: BaseTimerProps) {
+    const color  = isOvertime ? '#ef4444' : (isFocus ? '#10b981' : '#6366f1');
+    const color2 = isOvertime ? '#f97316' : (isFocus ? '#34d399' : '#818cf8');
+    const pct    = Math.min(fillPercent, 100) / 100;
+    // Daire viewbox: 200x200, merkez 100,100, r=85
+    const r = 85;
+    const cx = 100;
+    const cy = 100;
+    // Sıvı seviyesi: pct=0 → tamamen boş (y=100+85=185), pct=1 → tamamen dolu (y=100-85=15)
+    const liquidY = cy + r - pct * 2 * r;
+    // Dalga path (basit sinüs)
+    const waveW = 200;
+    const waveH = 8;
+    const waveAmp = isFlowing ? 5 : 2;
+    const wavePath = `M -${waveW} ${liquidY} 
+        Q -${waveW * 0.75} ${liquidY - waveAmp} -${waveW * 0.5} ${liquidY}
+        Q -${waveW * 0.25} ${liquidY + waveAmp} 0 ${liquidY}
+        Q ${waveW * 0.25} ${liquidY - waveAmp} ${waveW * 0.5} ${liquidY}
+        Q ${waveW * 0.75} ${liquidY + waveAmp} ${waveW} ${liquidY}
+        L ${waveW} 200 L -${waveW} 200 Z`;
+
+    return (
+        <div className={cn('relative flex items-center justify-center select-none', className)}>
+            <div className="absolute inset-0 rounded-full blur-[50px] opacity-30 pointer-events-none"
+                style={{ background: `radial-gradient(circle, ${color2}88, transparent 70%)` }} />
+            <svg viewBox="0 0 200 200" className="w-full h-full" style={{ filter: `drop-shadow(0 8px 24px ${color}44)` }}>
+                <defs>
+                    <radialGradient id="orb-bg" cx="40%" cy="35%">
+                        <stop offset="0%" stopColor="white" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor={color} stopOpacity="0.05" />
+                    </radialGradient>
+                    <linearGradient id="orb-liq" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={color2} stopOpacity="0.85" />
+                        <stop offset="100%" stopColor={color} stopOpacity="0.95" />
+                    </linearGradient>
+                    <clipPath id="orb-clip">
+                        <circle cx={cx} cy={cy} r={r} />
+                    </clipPath>
+                </defs>
+                {/* Küre arka planı */}
+                <circle cx={cx} cy={cy} r={r} fill="url(#orb-bg)" stroke={color2} strokeWidth="2" strokeOpacity="0.4" />
+                {/* Sıvı */}
+                <motion.path
+                    d={wavePath}
+                    fill="url(#orb-liq)"
+                    clipPath="url(#orb-clip)"
+                    animate={{
+                        d: [
+                            `M -200 ${liquidY} Q -150 ${liquidY-waveAmp} -100 ${liquidY} Q -50 ${liquidY+waveAmp} 0 ${liquidY} Q 50 ${liquidY-waveAmp} 100 ${liquidY} Q 150 ${liquidY+waveAmp} 200 ${liquidY} L 200 200 L -200 200 Z`,
+                            `M -200 ${liquidY} Q -150 ${liquidY+waveAmp} -100 ${liquidY} Q -50 ${liquidY-waveAmp} 0 ${liquidY} Q 50 ${liquidY+waveAmp} 100 ${liquidY} Q 150 ${liquidY-waveAmp} 200 ${liquidY} L 200 200 L -200 200 Z`,
+                        ]
+                    }}
+                    transition={{ repeat: Infinity, duration: isFlowing ? 2 : 4, ease: 'easeInOut', repeatType: 'reverse' }}
+                />
+                {/* Cam yansıması */}
+                <ellipse cx="72" cy="60" rx="18" ry="28" fill="white" fillOpacity="0.18" style={{ filter: 'blur(4px)' }} />
+                {/* Küre çerçevesi */}
+                <circle cx={cx} cy={cy} r={r} fill="none" stroke="white" strokeWidth="2" strokeOpacity="0.3" />
+                {/* Süre */}
+                <text x="100" y="95" textAnchor="middle" dominantBaseline="middle"
+                    fontSize="34" fontWeight="900" fontFamily="monospace" fill="white"
+                    style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.5))' }}>
+                    {formatDuration(displaySeconds)}
+                </text>
+                <text x="100" y="118" textAnchor="middle" dominantBaseline="middle"
+                    fontSize="9" fontWeight="700" fontFamily="sans-serif" letterSpacing="2"
+                    fill="rgba(255,255,255,0.8)" style={{ textTransform: 'uppercase' }}>
+                    {isOvertime ? 'SÜRE DOLDU' : (timerRunning ? 'AKIŞTA' : 'DURAKLATTI')}
+                </text>
+            </svg>
+        </div>
+    );
+}
+
+// --- DİJİTAL ZAMANLAYICI ---
+function DigitalTimer({ className, isFocus, fillPercent, isOvertime, displaySeconds, timerRunning, isFlowing }: BaseTimerProps) {
+    const color  = isOvertime ? '#ef4444' : (isFocus ? '#10b981' : '#6366f1');
+    const color2 = isOvertime ? '#f97316' : (isFocus ? '#34d399' : '#06b6d4');
+    const pct    = Math.min(fillPercent, 100) / 100;
+
+    return (
+        <div className={cn('relative flex flex-col items-center justify-center select-none gap-3', className)}>
+            {/* Ambient glow */}
+            <div className="absolute inset-0 rounded-3xl blur-[50px] opacity-20 pointer-events-none"
+                style={{ background: `radial-gradient(ellipse, ${color2}aa, transparent 70%)` }} />
+
+            {/* Büyük saat kutusu */}
+            <div className="relative flex flex-col items-center justify-center
+                            bg-white/10 backdrop-blur-md border border-white/20
+                            rounded-3xl px-8 py-6 shadow-2xl w-full"
+                style={{ boxShadow: `0 0 40px ${color}33, inset 0 1px 0 rgba(255,255,255,0.2)` }}>
+
+                {/* Sayılar */}
+                <span
+                    className="font-black tabular-nums tracking-tight leading-none"
+                    style={{
+                        fontSize: 'clamp(3rem, 12vw, 5rem)',
+                        background: `linear-gradient(135deg, ${color2}, ${color})`,
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        filter: `drop-shadow(0 0 20px ${color}88)`,
+                    }}
+                >
+                    {formatDuration(displaySeconds)}
+                </span>
+
+                {/* Alt durum */}
+                <div className="flex items-center gap-2 mt-2">
+                    {isFlowing && (
+                        <motion.div
+                            className="w-2 h-2 rounded-full"
+                            style={{ background: color2 }}
+                            animate={{ opacity: [1, 0.2, 1], scale: [1, 0.6, 1] }}
+                            transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
+                        />
+                    )}
+                    <span className="text-[10px] font-bold uppercase tracking-widest"
+                        style={{ color: isFocus ? 'rgba(255,255,255,0.7)' : 'rgba(100,116,139,0.9)' }}>
+                        {isOvertime ? 'SÜRE DOLDU' : (timerRunning ? 'Akışta' : 'Duraklatıldı')}
+                    </span>
+                </div>
+
+                {/* İnce progress bar altta */}
+                <div className="w-full mt-4 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                    <motion.div
+                        className="h-full rounded-full"
+                        style={{ background: `linear-gradient(90deg, ${color2}, ${color})` }}
+                        animate={{ width: `${pct * 100}%` }}
+                        transition={{ duration: 1, ease: 'linear' }}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function ReadingSessionPage() {
     const params = useParams();
     const router = useRouter();
@@ -290,6 +510,7 @@ export default function ReadingSessionPage() {
     
     const [selectedSoundId, setSelectedSoundId] = React.useState<string | null>(null);
     const [isFocusMode, setIsFocusMode] = React.useState(false);
+    const [timerStyle, setTimerStyle] = React.useState<TimerStyle>('hourglass');
     // Kronometre modunda dakika dolunca kum saatini ters çevirmek için
     const [flipCount, setFlipCount] = React.useState(0);
     const prevMinutesRef = React.useRef(0);
@@ -464,6 +685,25 @@ export default function ReadingSessionPage() {
     const isFlowing = timerRunning && !isOvertime;
 
     const hourglassProps = { topSandPct, bottomSandPct, isFlowing, isOvertime, flipCount, isFlipped };
+    const baseTimerProps: BaseTimerProps = { fillPercent, isOvertime, displaySeconds, timerRunning, isFlowing };
+
+    // Animasyon seçenekleri
+    const TIMER_STYLES: { key: TimerStyle; label: string; emoji: string }[] = [
+        { key: 'hourglass', label: 'Kum Saati', emoji: '⌛' },
+        { key: 'ring',      label: 'Halka',     emoji: '○' },
+        { key: 'orb',       label: 'Küre',      emoji: '🔵' },
+        { key: 'digital',   label: 'Dijital',   emoji: '🔢' },
+    ];
+
+    function renderTimer(sz: string, focus = false) {
+        const shared = { className: sz, isFocus: focus };
+        switch (timerStyle) {
+            case 'ring':    return <RingTimer    {...shared} {...baseTimerProps} />;
+            case 'orb':     return <OrbTimer     {...shared} {...baseTimerProps} />;
+            case 'digital': return <DigitalTimer {...shared} {...baseTimerProps} />;
+            default:        return <HourglassTimer {...shared} {...hourglassProps} />;
+        }
+    }
 
     return (
         <div className="relative min-h-[100dvh] w-full bg-slate-50 selection:bg-indigo-500/20 overflow-hidden flex flex-col">
@@ -497,19 +737,25 @@ export default function ReadingSessionPage() {
                              <p className="text-slate-400 text-sm">{book.author}</p>
                         </div>
 
-                        {/* Dev Odak Küresi */}
+                        {/* Dev Zamanlayıcı (Seçili stile göre) */}
                         <div className="relative flex flex-col items-center justify-center gap-12 w-full max-w-md z-40">
-                             <div className="flex flex-col items-center gap-3">
-                                 <HourglassTimer className="w-[200px] h-[300px] sm:w-[250px] sm:h-[350px]" isFocus={true} {...hourglassProps} />
-                                 <div className="flex flex-col items-center gap-1">
-                                     <span className={cn("text-5xl sm:text-6xl font-black tracking-tighter tabular-nums text-white drop-shadow-lg", isOvertime && "text-red-300 animate-pulse")}>
-                                         {formatDuration(displaySeconds)}
-                                     </span>
-                                     <span className="text-xs font-bold uppercase tracking-widest text-white/70">
-                                         {isOvertime ? "SÜRE DOLDU" : (timerRunning ? "Akışta" : "Duraklatıldı")}
-                                     </span>
-                                 </div>
-                             </div>
+                            <div className="flex flex-col items-center gap-3">
+                                {timerStyle === 'hourglass' ? (
+                                    <>
+                                        {renderTimer('w-[200px] h-[300px] sm:w-[250px] sm:h-[350px]', true)}
+                                        <div className="flex flex-col items-center gap-1">
+                                            <span className={cn('text-5xl sm:text-6xl font-black tracking-tighter tabular-nums text-white drop-shadow-lg', isOvertime && 'text-red-300 animate-pulse')}>
+                                                {formatDuration(displaySeconds)}
+                                            </span>
+                                            <span className="text-xs font-bold uppercase tracking-widest text-white/70">
+                                                {isOvertime ? 'SÜRE DOLDU' : (timerRunning ? 'Akışta' : 'Duraklatıldı')}
+                                            </span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    renderTimer('w-[240px] h-[240px] sm:w-[300px] sm:h-[300px]', true)
+                                )}
+                            </div>
                              
                              {/* Oynat/Duraklat (Görünmezden parlayan buton) */}
                              <Button
@@ -615,17 +861,43 @@ export default function ReadingSessionPage() {
 
                 {/* ORTA BÖLÜM: ZAMANLAYICI & KONTROLLER — shrink-0 ile footer'a yer bırak */}
                 <main className="flex-1 flex flex-col items-center justify-center p-3 pb-2 relative overflow-visible">
-                     {/* Kum Saati + Süre */}
-                     <div className="flex flex-col items-center gap-1 mb-3">
-                         <HourglassTimer className="w-[140px] h-[210px] sm:w-[180px] sm:h-[270px]" {...hourglassProps} />
-                         <div className="flex flex-col items-center gap-0">
-                             <span className={cn("text-3xl sm:text-4xl font-black tracking-tighter tabular-nums bg-gradient-to-br from-indigo-600 to-cyan-500 bg-clip-text text-transparent", isOvertime && "from-red-500 to-orange-400 animate-pulse")}>
-                                 {formatDuration(displaySeconds)}
-                             </span>
-                             <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">
-                                 {isOvertime ? "SÜRE DOLDU" : (timerRunning ? "Akışta" : "Duraklatıldı")}
-                             </span>
+                     {/* Animasyon Seçici + Timer */}
+                     <div className="flex flex-col items-center gap-2 mb-3 w-full">
+                         {/* Seçici çubuk */}
+                         <div className="flex gap-1 bg-white/40 backdrop-blur-md border border-white/60 rounded-full px-2 py-1.5 shadow-sm">
+                             {TIMER_STYLES.map(s => (
+                                 <button
+                                     key={s.key}
+                                     onClick={() => setTimerStyle(s.key)}
+                                     className={cn(
+                                         'flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold transition-all duration-200',
+                                         timerStyle === s.key
+                                             ? 'bg-indigo-600 text-white shadow-md scale-105'
+                                             : 'text-slate-500 hover:bg-white/60'
+                                     )}
+                                 >
+                                     <span>{s.emoji}</span>
+                                     <span className="hidden sm:inline">{s.label}</span>
+                                 </button>
+                             ))}
                          </div>
+
+                         {/* Seçili timer */}
+                         {timerStyle === 'hourglass' ? (
+                             <>
+                                 {renderTimer('w-[140px] h-[210px] sm:w-[170px] sm:h-[255px]')}
+                                 <div className="flex flex-col items-center gap-0">
+                                     <span className={cn('text-3xl sm:text-4xl font-black tracking-tighter tabular-nums bg-gradient-to-br from-indigo-600 to-cyan-500 bg-clip-text text-transparent', isOvertime && 'from-red-500 to-orange-400 animate-pulse')}>
+                                         {formatDuration(displaySeconds)}
+                                     </span>
+                                     <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">
+                                         {isOvertime ? 'SÜRE DOLDU' : (timerRunning ? 'Akışta' : 'Duraklatıldı')}
+                                     </span>
+                                 </div>
+                             </>
+                         ) : (
+                             renderTimer('w-[200px] h-[200px] sm:w-[220px] sm:h-[220px]')
+                         )}
                      </div>
 
                      {/* Orta Kontroller (Ses, Oynat, Genişlet, Sıfırla) */}
