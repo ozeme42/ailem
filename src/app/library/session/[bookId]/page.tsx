@@ -232,70 +232,87 @@ export default function ReadingSessionPage() {
         fillPercent = (remaining / targetSeconds) * 100;
     }
 
-    // --- CAM KÜRE (GLASS ORB) SIVI ZAMANLAYICI ---
-    const GlassOrbTimer = ({ className, isFocus = false }: { className?: string, isFocus?: boolean }) => {
-        const bubbles = [1, 2, 3, 4, 5, 6, 7];
+    // --- KUM SAATİ (HOURGLASS) ZAMANLAYICI ---
+    const HourglassTimer = ({ className, isFocus = false }: { className?: string, isFocus?: boolean }) => {
+        // Zaman moduna göre doluluk yüzdesini hesaplayalım.
+        // Geri sayım (timer) modunda: fillPercent (0-100) mevcut sürenin yüzdesidir. Yukarıdaki kum azalır, aşağıdaki artar.
+        // Kronometre (stopwatch) modunda: Her dakikada %0'dan %100'e çıkar. Sonra kum saati döner.
+        
+        const flipRotation = mode === 'stopwatch' ? Math.floor(elapsedTime / 60) * 180 : 0;
+        const displayPercent = mode === 'timer' ? fillPercent : ((elapsedTime % 60) / 60) * 100;
 
         return (
-            <div className={cn("relative flex items-center justify-center rounded-full shadow-[0_0_50px_rgba(0,0,0,0.1)] overflow-hidden transition-all duration-500", 
-                 isFocus ? "border-0 shadow-none" : "border-8 border-white/20 bg-white/10 backdrop-blur-md",
-                 isOvertime && !isFocus ? "border-red-500/50 shadow-[0_0_50px_rgba(239,68,68,0.3)]" : "",
-                 className)}>
-                
-                {/* Küre İçi Gölgelendirme (3D Efekti) */}
-                <div className="absolute inset-0 rounded-full shadow-[inset_0_-20px_60px_rgba(0,0,0,0.2),inset_0_20px_40px_rgba(255,255,255,0.4)] z-20 pointer-events-none"></div>
-                <div className="absolute top-[5%] left-[15%] w-[30%] h-[15%] bg-white/40 rounded-full blur-[4px] -rotate-12 z-20 pointer-events-none"></div>
-
-                {/* Sıvı Arka Planı */}
-                <motion.div 
-                    className={cn(
-                        "absolute bottom-0 left-0 right-0 opacity-90 transition-colors duration-1000 z-0",
-                        isOvertime ? "bg-red-500" : (isFocus ? "bg-emerald-500/80" : "bg-gradient-to-t from-indigo-500 via-purple-500 to-cyan-400")
-                    )}
-                    initial={false}
-                    animate={{ height: `${fillPercent}%` }}
-                    transition={{ type: "spring", stiffness: 20, damping: 20, duration: 2 }}
-                >
-                    {/* Dalga Efekti */}
-                    <div className="absolute -top-4 left-0 right-0 h-8 w-[200%] flex" style={{ transform: 'translateX(-50%)' }}>
-                        <motion.div 
-                            className="w-full h-full bg-[url('https://raw.githubusercontent.com/svg-backgrounds/svg-backgrounds.github.io/main/svg/wave.svg')] bg-repeat-x bg-cover"
-                            animate={{ x: [0, -100] }}
-                            transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
-                            style={{ filter: "brightness(0) invert(1) opacity(0.3)" }}
-                        />
-                    </div>
-
-                    {/* Kabarcıklar */}
-                    {timerRunning && fillPercent > 5 && bubbles.map((b, i) => (
-                        <motion.div
-                            key={i}
-                            className="absolute bg-white/40 rounded-full backdrop-blur-sm"
-                            style={{
-                                width: Math.random() * 8 + 4,
-                                height: Math.random() * 8 + 4,
-                                left: `${Math.random() * 80 + 10}%`,
-                            }}
-                            initial={{ bottom: -20, opacity: 0 }}
-                            animate={{ bottom: "110%", opacity: [0, 1, 0], x: Math.sin(i) * 15 }}
-                            transition={{ duration: Math.random() * 3 + 2, repeat: Infinity, ease: "linear", delay: Math.random() * 2 }}
-                        />
-                    ))}
-                </motion.div>
-
-                {/* Metin İçeriği */}
-                <div className="relative z-30 flex flex-col items-center gap-1 drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]">
-                    <span className={cn("text-6xl sm:text-7xl lg:text-8xl font-black tracking-tighter tabular-nums text-white", isOvertime && "text-red-100 animate-pulse")}>
-                        {formatDuration(displaySeconds)}
-                    </span>
-                    <div className="flex items-center gap-2 mt-2">
-                         {isFocus && <Clock className="w-4 h-4 text-white/80" />}
-                         <Badge variant="outline" className={cn("text-[10px] sm:text-xs uppercase tracking-widest px-3 border-white/30 text-white", isFocus ? "bg-transparent border-0 opacity-80" : "bg-black/20")}>
-                             {isOvertime ? "Süre Doldu" : (timerRunning ? "Akışta" : "Duraklatıldı")}
-                         </Badge>
-                    </div>
+            <motion.div 
+                className={cn("relative flex flex-col items-center justify-center transition-all duration-700", className)}
+                animate={{ rotate: flipRotation }}
+                transition={{ type: "spring", stiffness: 30, damping: 15 }}
+            >
+                {/* Dış Cam Çerçeve (Cam tüp etkisi) */}
+                <div className={cn("absolute inset-0 z-20 pointer-events-none rounded-[3rem]", 
+                     isFocus ? "border-0 shadow-none" : "border-[6px] border-white/30 bg-white/5 backdrop-blur-sm shadow-[0_0_50px_rgba(0,0,0,0.1)]",
+                     isOvertime && !isFocus ? "border-red-500/50 shadow-[0_0_50px_rgba(239,68,68,0.3)]" : "")}>
+                     {/* Cam İçi Gölgelendirme (3D) */}
+                     <div className="absolute inset-0 rounded-[3rem] shadow-[inset_0_-10px_30px_rgba(0,0,0,0.1),inset_0_10px_20px_rgba(255,255,255,0.4)] z-20"></div>
+                     {/* Cam parlaması */}
+                     <div className="absolute top-[5%] left-[10%] w-[10%] h-[40%] bg-white/40 rounded-full blur-[6px] z-20 pointer-events-none"></div>
                 </div>
-            </div>
+
+                <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden rounded-[2.5rem] py-2">
+                    
+                    {/* ÜST HAZNE */}
+                    <div className="relative w-[80%] flex-1 flex flex-col justify-end items-center overflow-hidden drop-shadow-md" style={{ clipPath: 'polygon(0 0, 100% 0, 60% 100%, 40% 100%)' }}>
+                        <motion.div 
+                            className={cn("w-full transition-colors duration-1000 blur-[1px]", isOvertime ? "bg-red-500" : (isFocus ? "bg-emerald-500/80" : "bg-gradient-to-b from-indigo-500 to-cyan-400"))}
+                            initial={false}
+                            animate={{ height: mode === 'timer' ? `${displayPercent}%` : `${100 - displayPercent}%` }}
+                            transition={{ type: "tween", duration: 1, ease: "linear" }}
+                        />
+                    </div>
+                    
+                    {/* KUM AKIŞI (Ortadaki ince bağlantı) */}
+                    <div className="relative w-full h-4 flex justify-center items-center my-1 z-10">
+                        <AnimatePresence>
+                            {timerRunning && !isOvertime && (
+                                <motion.div 
+                                    className={cn("absolute w-1 rounded-full", isFocus ? "bg-emerald-400" : "bg-cyan-400")}
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "400%", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                    style={{ boxShadow: "0 0 10px rgba(34, 211, 238, 0.8)" }}
+                                />
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* ALT HAZNE */}
+                    <div className="relative w-[80%] flex-1 flex flex-col justify-end items-center overflow-hidden drop-shadow-md" style={{ clipPath: 'polygon(40% 0, 60% 0, 100% 100%, 0 100%)' }}>
+                        <motion.div 
+                            className={cn("w-full transition-colors duration-1000 blur-[1px]", isOvertime ? "bg-red-500" : (isFocus ? "bg-emerald-500/80" : "bg-gradient-to-t from-indigo-500 to-cyan-400"))}
+                            initial={false}
+                            animate={{ height: mode === 'timer' ? `${100 - displayPercent}%` : `${displayPercent}%` }}
+                            transition={{ type: "tween", duration: 1, ease: "linear" }}
+                        />
+                    </div>
+
+                    {/* METİN İÇERİĞİ (Ters Dönmeyi Engellemek İçin Zıt Yönde Döndürülür) */}
+                    <motion.div 
+                        className="absolute inset-0 z-30 flex flex-col items-center justify-center drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)]"
+                        animate={{ rotate: -flipRotation }}
+                        transition={{ type: "spring", stiffness: 30, damping: 15 }}
+                    >
+                        <span className={cn("text-5xl sm:text-6xl lg:text-7xl font-black tracking-tighter tabular-nums text-white", isOvertime && "text-red-100 animate-pulse")}>
+                            {formatDuration(displaySeconds)}
+                        </span>
+                        <div className="flex items-center gap-2 mt-1 bg-black/10 px-3 py-1 rounded-full backdrop-blur-md">
+                             {isFocus && <Clock className="w-3 h-3 text-white/80" />}
+                             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-white/90">
+                                 {isOvertime ? "Süre Doldu" : (timerRunning ? "Akışta" : "Duraklatıldı")}
+                             </span>
+                        </div>
+                    </motion.div>
+                </div>
+            </motion.div>
         );
     };
 
@@ -333,7 +350,7 @@ export default function ReadingSessionPage() {
 
                         {/* Dev Odak Küresi */}
                         <div className="relative flex flex-col items-center justify-center gap-12 w-full max-w-md z-40">
-                             <GlassOrbTimer className="w-[280px] h-[280px] sm:w-[350px] sm:h-[350px]" isFocus={true} />
+                             <HourglassTimer className="w-[200px] h-[300px] sm:w-[250px] sm:h-[350px]" isFocus={true} />
                              
                              {/* Oynat/Duraklat (Görünmezden parlayan buton) */}
                              <Button
@@ -440,7 +457,7 @@ export default function ReadingSessionPage() {
                 {/* ORTA BÖLÜM: ZAMANLAYICI & KONTROLLER */}
                 <main className="flex-1 flex flex-col items-center justify-center p-4 relative">
                      {/* Cam Küre Zamanlayıcı */}
-                     <GlassOrbTimer className="w-64 h-64 sm:w-72 sm:h-72 mb-8" />
+                     <HourglassTimer className="w-[180px] h-[280px] sm:w-[220px] sm:h-[320px] mb-8" />
 
                      {/* Orta Kontroller (Ses, Oynat, Genişlet, Sıfırla) */}
                      <div className="flex items-center gap-4 sm:gap-6 bg-white/40 backdrop-blur-xl border border-white/60 rounded-full px-6 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
