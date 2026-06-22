@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { NewTaskForm } from "@/components/new-task-form"; 
 
 import { TaskItem } from "@/components/task-item"; 
+import { HabitTrackerCard } from "@/components/habit-tracker-card";
 import { Task, StudyAssignment, MemorizationItem, MemorizationProgress, PrayerProgress } from "@/lib/data";
 import { 
     onTasksUpdate, updateHabitCompletion, deleteTask,
@@ -54,145 +55,7 @@ const taskColors = [
     'bg-violet-50 border-violet-200 text-violet-900 dark:bg-violet-600/20 dark:border-violet-400/30 dark:text-violet-200',
 ];
 
-// --- HABIT TRACKER CARD (Lokal Tanım) ---
-interface HabitTrackerCardProps {
-  task: Task;
-  assignee?: { name: string; avatar?: string; color?: string };
-  onToggleDay: (day: Date, isCompleted: boolean) => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  colorClass?: string;
-}
 
-const HabitTrackerCard = React.forwardRef<HTMLDivElement, HabitTrackerCardProps>(({ 
-  task, 
-  assignee, 
-  onToggleDay, 
-  onEdit, 
-  onDelete,
-  colorClass 
-}, ref) => {
-  
-  const days = React.useMemo(() => {
-    return Array.from({ length: 7 }).map((_, i) => {
-      const d = subDays(new Date(), 6 - i);
-      return startOfDay(d);
-    });
-  }, []);
-
-  const isDayCompleted = (day: Date) => {
-    return task.completedDates?.some(d => isSameDay(new Date(d), day));
-  };
-
-  const currentStreak = React.useMemo(() => {
-    let streak = 0;
-    const today = startOfDay(new Date());
-    let checkDate = isDayCompleted(today) ? today : subDays(today, 1);
-    
-    while (task.completedDates?.some(d => isSameDay(new Date(d), checkDate))) {
-        streak++;
-        checkDate = subDays(checkDate, 1);
-    }
-    return streak;
-  }, [task.completedDates]);
-
-  return (
-    <div ref={ref} className={cn("rounded-xl sm:rounded-2xl p-3 sm:p-4 transition-all duration-300 relative overflow-hidden", glassColors.CARD_BG, glassColors.CARD_HOVER)}>
-      <div className={cn("absolute left-0 top-0 bottom-0 w-1 sm:w-1.5 opacity-60", colorClass?.split(' ')[0] || "bg-indigo-500")} />
-      
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pl-1 sm:pl-2">
-        <div className="flex items-start gap-2.5 sm:gap-3 flex-1">
-            <div className={cn("w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 sm:mt-1 shadow-sm", "bg-fuchsia-100 text-fuchsia-600 border border-fuchsia-200 dark:bg-fuchsia-600/30 dark:text-fuchsia-300 dark:border-fuchsia-500/30")}>
-                <Flame className={cn("w-4 h-4 sm:w-5 sm:h-5", currentStreak > 2 ? "fill-current animate-pulse text-fuchsia-500 dark:text-fuchsia-400" : "")} />
-            </div>
-            
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                    <h4 className={cn("font-bold truncate text-sm sm:text-base", glassColors.TEXT_MAIN)}>{task.title}</h4>
-                    {currentStreak > 0 && (
-                        <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-600/30 dark:text-orange-300 dark:border-orange-500/30 flex items-center gap-1 shadow-sm">
-                             🔥 {currentStreak} Gün
-                        </span>
-                    )}
-                </div>
-                
-                <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
-                    {assignee && (
-                        <div className={cn("flex items-center gap-1.5 text-[10px] sm:text-xs px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-medium shadow-sm", "bg-slate-100 border-slate-200 text-slate-700 dark:bg-white/5 dark:border-white/10 dark:text-slate-300")}>
-                            <span 
-                                className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" 
-                                style={{backgroundColor: assignee.color || '#ccc'}} 
-                            />
-                            {assignee.name}
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-
-        <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-3 w-full sm:w-auto mt-2 sm:mt-0">
-             {days.map((day) => {
-                 const completed = isDayCompleted(day);
-                 const isTodayDate = isSameDay(day, new Date());
-                 
-                 return (
-                     <div key={day.toISOString()} className="flex flex-col items-center gap-1 sm:gap-1.5">
-                         <span className={cn("text-[8px] sm:text-[10px] font-bold uppercase", glassColors.TEXT_MUTED)}>
-                             {format(day, 'EEE', { locale: tr }).slice(0, 1)}
-                         </span>
-                         <button
-                            onClick={() => onToggleDay(day, !completed)}
-                            className={cn(
-                                "w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-300 border-2",
-                                completed 
-                                    ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20 scale-110" 
-                                    : "bg-slate-100 border-slate-200 text-transparent hover:border-emerald-300 hover:bg-slate-50 dark:bg-white/5 dark:border-white/10 dark:hover:border-emerald-500/50 dark:hover:bg-white/10",
-                                isTodayDate && !completed && "ring-2 ring-offset-2 ring-emerald-500/50 border-emerald-400 dark:ring-offset-slate-900"
-                            )}
-                         >
-                             <Check className={cn("w-3 h-3 sm:w-4 sm:h-4 stroke-[3]", completed ? "opacity-100" : "opacity-0")} /> 
-                         </button>
-                     </div>
-                 )
-             })}
-
-             <div className="ml-2">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className={cn("h-8 w-8 p-0 rounded-full", glassColors.TEXT_MUTED, "hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/10 dark:hover:text-white")}>
-                            <MoreHorizontal className="h-5 w-5" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-100 rounded-xl shadow-xl" align="end">
-                        <DropdownMenuItem onClick={onEdit} className="hover:bg-slate-100 dark:hover:bg-white/10 cursor-pointer font-medium m-1 rounded-lg">
-                            <Edit className="mr-2 h-4 w-4 text-blue-500 dark:text-blue-400" /> Düzenle
-                        </DropdownMenuItem>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-rose-600 dark:text-rose-400 focus:text-rose-700 dark:focus:text-rose-300 focus:bg-rose-50 dark:focus:bg-rose-500/10 cursor-pointer font-medium m-1 rounded-lg">
-                                    <Trash2 className="mr-2 h-4 w-4" /> Sil
-                                </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-100 rounded-[2rem] p-6 shadow-2xl">
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle className="text-xl font-black">Emin misin?</AlertDialogTitle>
-                                    <AlertDialogDescription className={glassColors.TEXT_MUTED}>Bu alışkanlığı ve tüm geçmişini silmek üzeresin.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter className="mt-6 gap-3">
-                                    <AlertDialogCancel className="h-12 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/5 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10 border-none flex-1 sm:flex-none">Vazgeç</AlertDialogCancel>
-                                    <AlertDialogAction onClick={onDelete} className="h-12 rounded-xl font-bold bg-rose-600 hover:bg-rose-700 text-white flex-1 sm:flex-none">Sil</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-             </div>
-        </div>
-      </div>
-    </div>
-  );
-});
-HabitTrackerCard.displayName = 'HabitTrackerCard';
 
 // --- YARDIMCI BİLEŞENLER ---
 const GlassStatCard = ({ icon: Icon, label, value, color }: any) => (
