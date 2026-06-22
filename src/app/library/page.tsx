@@ -576,73 +576,12 @@ export default function LibraryPage() {
                         </CardContent>
                     </Card>
 
-                    {/* Hedefler */}
-                    {(readingGoals?.monthly?.pages || readingGoals?.monthly?.books || readingGoals?.weekly?.pages || readingGoals?.weekly?.books) && (
-                        <Card className={cn(themeColors.CARD_BG, "relative overflow-hidden")}>
-                            <Tabs defaultValue={readingGoals?.monthly?.pages || readingGoals?.monthly?.books ? "monthly" : "weekly"}>
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-                                <CardHeader className="pb-2 pt-3 sm:pt-6 px-3 sm:px-6 relative z-10 flex flex-row items-center justify-between space-y-0">
-                                    <CardTitle className={cn("text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400")}>Hedefler</CardTitle>
-                                    <TabsList className="bg-slate-100 border border-slate-200 h-7 sm:h-8 p-0.5">
-                                        {(readingGoals?.weekly?.pages || readingGoals?.weekly?.books) && <TabsTrigger value="weekly" className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Haftalık</TabsTrigger>}
-                                        {(readingGoals?.monthly?.pages || readingGoals?.monthly?.books) && <TabsTrigger value="monthly" className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Aylık</TabsTrigger>}
-                                    </TabsList>
-                                </CardHeader>
-                                <CardContent className="relative z-10 pt-1 px-3 pb-3 sm:px-6 sm:pb-6">
-                                    {(readingGoals?.weekly?.pages || readingGoals?.weekly?.books) && (
-                                        <TabsContent value="weekly" className="space-y-3 sm:space-y-6 mt-0">
-                                            {readingGoals?.weekly?.pages ? (
-                                                <div>
-                                                    <div className="flex justify-between text-xs font-bold mb-2">
-                                                        <span className="text-slate-500">Sayfa Hedefi</span>
-                                                        <span className="text-amber-600">{weeklyGoalProgress.pagesRead} / {readingGoals.weekly.pages}</span>
-                                                    </div>
-                                                    <Progress value={weeklyGoalProgress.pages} className="h-2 bg-slate-100" indicatorClassName="bg-amber-500" />
-                                                </div>
-                                            ) : null}
-                                            {readingGoals?.weekly?.books ? (
-                                                <div>
-                                                    <div className="flex justify-between text-xs font-bold mb-2">
-                                                        <span className="text-slate-500">Kitap Hedefi</span>
-                                                        <span className="text-orange-600">{weeklyGoalProgress.booksRead} / {readingGoals.weekly.books}</span>
-                                                    </div>
-                                                    <Progress value={weeklyGoalProgress.books} className="h-2 bg-slate-100" indicatorClassName="bg-orange-500" />
-                                                </div>
-                                            ) : null}
-                                        </TabsContent>
-                                    )}
-                                    {(readingGoals?.monthly?.pages || readingGoals?.monthly?.books) && (
-                                        <TabsContent value="monthly" className="space-y-3 sm:space-y-6 mt-0">
-                                            {readingGoals?.monthly?.pages ? (
-                                                <div>
-                                                    <div className="flex justify-between text-xs font-bold mb-2">
-                                                        <span className="text-slate-500">Sayfa Hedefi</span>
-                                                        <span className="text-amber-600">{monthlyGoalProgress.pagesRead} / {readingGoals.monthly.pages}</span>
-                                                    </div>
-                                                    <Progress value={monthlyGoalProgress.pages} className="h-2 bg-slate-100" indicatorClassName="bg-amber-500" />
-                                                </div>
-                                            ) : null}
-                                            {readingGoals?.monthly?.books ? (
-                                                <div>
-                                                    <div className="flex justify-between text-xs font-bold mb-2">
-                                                        <span className="text-slate-500">Kitap Hedefi</span>
-                                                        <span className="text-orange-600">{monthlyGoalProgress.booksRead} / {readingGoals.monthly.books}</span>
-                                                    </div>
-                                                    <Progress value={monthlyGoalProgress.books} className="h-2 bg-slate-100" indicatorClassName="bg-orange-500" />
-                                                </div>
-                                            ) : null}
-                                        </TabsContent>
-                                    )}
-                                </CardContent>
-                            </Tabs>
-                        </Card>
-                    )}
-
-                    {/* Okuma İstatistikleri Grafik */}
-                    <Card className={cn(themeColors.CARD_BG)}>
-                        <CardHeader className="flex flex-col gap-2 pb-2 pt-3 sm:pt-6 px-3 sm:px-6">
+                    {/* Okuma İstatistikleri ve Hedefler (Birleştirilmiş) */}
+                    <Card className={cn(themeColors.CARD_BG, "relative overflow-hidden flex flex-col")}>
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                        <CardHeader className="flex flex-col gap-2 pb-2 pt-3 sm:pt-6 px-3 sm:px-6 relative z-10">
                             <div className="flex flex-row items-center justify-between w-full">
-                                <CardTitle className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400">Okuma Grafiği</CardTitle>
+                                <CardTitle className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400">Performans Özeti</CardTitle>
                                 <Tabs value={readingStatsPeriod} onValueChange={(v) => setReadingStatsPeriod(v as any)}>
                                     <TabsList className="bg-slate-100 border border-slate-200 h-7 sm:h-8 p-0.5">
                                         <TabsTrigger value="weekly" className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Haftalık</TabsTrigger>
@@ -650,29 +589,87 @@ export default function LibraryPage() {
                                     </TabsList>
                                 </Tabs>
                             </div>
-                            
-                            {/* Haftalık Gezinme Kontrolleri */}
-                            {readingStatsPeriod === 'weekly' && (
-                                <div className="flex items-center justify-between bg-slate-50 rounded-lg p-1 px-2 border border-slate-100">
-                                    <Button variant="ghost" size="sm" onClick={handlePrevWeek} className="h-6 w-6 sm:h-7 sm:w-7 p-0 rounded-full hover:bg-slate-200 text-slate-600">
-                                        <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
-                                    </Button>
-                                    
-                                    <div className="flex items-center gap-1.5 sm:gap-2 cursor-pointer" onClick={handleResetDate} title="Bugüne Dön">
-                                        <span className="text-[10px] sm:text-xs font-bold text-slate-700">{readingStatsByPeriod.weekLabel}</span>
-                                        {!isSameDay(new Date(), chartReferenceDate) && (
-                                            <span className="text-[8px] sm:text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">Arşiv</span>
-                                        )}
-                                    </div>
-
-                                    <Button variant="ghost" size="sm" onClick={handleNextWeek} className="h-6 w-6 sm:h-7 sm:w-7 p-0 rounded-full hover:bg-slate-200 text-slate-600">
-                                        <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
-                                    </Button>
-                                </div>
-                            )}
                         </CardHeader>
-                         <CardContent className="px-1 pb-3 sm:px-6 sm:pb-6">
-                             <div className="h-36 sm:h-48 w-full mt-2 sm:mt-4">
+                        
+                        <CardContent className="relative z-10 px-1 sm:px-6 pb-3 sm:pb-6 flex-1 flex flex-col gap-4">
+                            {/* Aktif Periyoda Göre Hedefler */}
+                            <div className="px-2 sm:px-0">
+                                {readingStatsPeriod === 'weekly' && (readingGoals?.weekly?.pages || readingGoals?.weekly?.books) && (
+                                    <div className="space-y-3">
+                                        {readingGoals?.weekly?.pages ? (
+                                            <div>
+                                                <div className="flex justify-between text-[10px] sm:text-xs font-bold mb-1.5">
+                                                    <span className="text-slate-500">Haftalık Sayfa Hedefi</span>
+                                                    <span className="text-amber-600">{weeklyGoalProgress.pagesRead} / {readingGoals.weekly.pages}</span>
+                                                </div>
+                                                <Progress value={weeklyGoalProgress.pages} className="h-1.5 sm:h-2 bg-slate-100" indicatorClassName="bg-amber-500" />
+                                            </div>
+                                        ) : null}
+                                        {readingGoals?.weekly?.books ? (
+                                            <div>
+                                                <div className="flex justify-between text-[10px] sm:text-xs font-bold mb-1.5">
+                                                    <span className="text-slate-500">Haftalık Kitap Hedefi</span>
+                                                    <span className="text-orange-600">{weeklyGoalProgress.booksRead} / {readingGoals.weekly.books}</span>
+                                                </div>
+                                                <Progress value={weeklyGoalProgress.books} className="h-1.5 sm:h-2 bg-slate-100" indicatorClassName="bg-orange-500" />
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                )}
+
+                                {readingStatsPeriod === 'monthly' && (readingGoals?.monthly?.pages || readingGoals?.monthly?.books) && (
+                                    <div className="space-y-3">
+                                        {readingGoals?.monthly?.pages ? (
+                                            <div>
+                                                <div className="flex justify-between text-[10px] sm:text-xs font-bold mb-1.5">
+                                                    <span className="text-slate-500">Aylık Sayfa Hedefi</span>
+                                                    <span className="text-amber-600">{monthlyGoalProgress.pagesRead} / {readingGoals.monthly.pages}</span>
+                                                </div>
+                                                <Progress value={monthlyGoalProgress.pages} className="h-1.5 sm:h-2 bg-slate-100" indicatorClassName="bg-amber-500" />
+                                            </div>
+                                        ) : null}
+                                        {readingGoals?.monthly?.books ? (
+                                            <div>
+                                                <div className="flex justify-between text-[10px] sm:text-xs font-bold mb-1.5">
+                                                    <span className="text-slate-500">Aylık Kitap Hedefi</span>
+                                                    <span className="text-orange-600">{monthlyGoalProgress.booksRead} / {readingGoals.monthly.books}</span>
+                                                </div>
+                                                <Progress value={monthlyGoalProgress.books} className="h-1.5 sm:h-2 bg-slate-100" indicatorClassName="bg-orange-500" />
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Çizgi / Ayırıcı */}
+                            {((readingStatsPeriod === 'weekly' && (readingGoals?.weekly?.pages || readingGoals?.weekly?.books)) || 
+                              (readingStatsPeriod === 'monthly' && (readingGoals?.monthly?.pages || readingGoals?.monthly?.books))) && (
+                                <div className="h-px w-full bg-slate-100 my-1"></div>
+                            )}
+
+                            {/* Grafik Gezinme ve Grafik */}
+                            <div className="flex-1 flex flex-col min-h-0">
+                                {/* Haftalık Gezinme Kontrolleri */}
+                                {readingStatsPeriod === 'weekly' && (
+                                    <div className="flex items-center justify-between bg-slate-50 rounded-lg p-1 px-2 border border-slate-100 mb-2 sm:mb-4 mx-2 sm:mx-0">
+                                        <Button variant="ghost" size="sm" onClick={handlePrevWeek} className="h-6 w-6 sm:h-7 sm:w-7 p-0 rounded-full hover:bg-slate-200 text-slate-600">
+                                            <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                                        </Button>
+                                        
+                                        <div className="flex items-center gap-1.5 sm:gap-2 cursor-pointer" onClick={handleResetDate} title="Bugüne Dön">
+                                            <span className="text-[10px] sm:text-xs font-bold text-slate-700">{readingStatsByPeriod.weekLabel}</span>
+                                            {!isSameDay(new Date(), chartReferenceDate) && (
+                                                <span className="text-[8px] sm:text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">Arşiv</span>
+                                            )}
+                                        </div>
+
+                                        <Button variant="ghost" size="sm" onClick={handleNextWeek} className="h-6 w-6 sm:h-7 sm:w-7 p-0 rounded-full hover:bg-slate-200 text-slate-600">
+                                            <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                                        </Button>
+                                    </div>
+                                )}
+                                
+                                <div className="h-36 sm:h-48 w-full mt-2 sm:mt-4">
                                 <ChartContainer config={{ pages: { label: "Sayfa", color: "#f59e0b" } }} className="h-full w-full">
                                     <BarChart 
                                         data={readingStatsPeriod === 'weekly' ? readingStatsByPeriod.weeklyChartData : readingStatsByPeriod.monthlyPageData} 
@@ -767,6 +764,7 @@ export default function LibraryPage() {
                                     </BarChart>
                                 </ChartContainer>
                              </div>
+                            </div>
                           </CardContent>
                     </Card>
                 </div>
