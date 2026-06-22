@@ -227,34 +227,42 @@ function ItemRow({ item, theme, onToggle, onConfirmBuy, onDelete, isBought }: {
   return (
     <div onClick={onToggle}
       className={cn(
-        "group flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.99] border",
+        "group relative flex items-center gap-3 pl-3 pr-4 py-3 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.99] border overflow-hidden",
         isBought
           ? "bg-slate-50/80 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800/50 opacity-60"
-          : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm"
+          : cn("bg-white dark:bg-slate-900 hover:shadow-md", catCfg.border, "border-l-[3px]", "border-y border-r border-slate-200 dark:border-slate-800 hover:border-l-[3px]")
       )}>
-      {/* Circle check */}
+      {/* Subtle colored background wash */}
+      {!isBought && (
+        <div className={cn("absolute inset-0 opacity-[0.04] dark:opacity-[0.07] pointer-events-none", catCfg.bg)} />
+      )}
+
+      {/* Circle check — category colored when unchecked */}
       <div className={cn(
-        "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all",
+        "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all relative z-10",
         isBought
-          ? "bg-emerald-500 border-emerald-500"
-          : `border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900`
+          ? "bg-emerald-500 border-emerald-500 shadow-sm shadow-emerald-500/40"
+          : cn(catCfg.border, "bg-white dark:bg-slate-900")
       )}>
         {isBought && <Check className="h-3.5 w-3.5 text-white stroke-[3]" />}
       </div>
 
-      {/* Category icon pill */}
-      <div className={cn("p-1.5 rounded-lg flex-shrink-0", catCfg.bg, catCfg.border, "border")}>
-        <CatIcon className={cn("h-3.5 w-3.5", catCfg.color)} />
+      {/* Category icon badge — bigger, more colorful */}
+      <div className={cn(
+        "p-2 rounded-xl flex-shrink-0 relative z-10 shadow-sm",
+        catCfg.bg, catCfg.border, "border"
+      )}>
+        <CatIcon className={cn("h-4 w-4", catCfg.color)} />
       </div>
 
       {/* Name */}
-      <span className={cn("flex-grow font-semibold text-sm transition-all",
+      <span className={cn("flex-grow font-semibold text-sm transition-all relative z-10",
         isBought ? "line-through text-slate-400 dark:text-slate-500" : "text-slate-800 dark:text-slate-200")}>
         {item.name}
       </span>
 
       {/* Actions */}
-      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+      <div className="flex items-center gap-1 relative z-10" onClick={e => e.stopPropagation()}>
         {isBought && (
           <button onClick={onConfirmBuy}
             className="h-8 w-8 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-all active:scale-90">
@@ -477,11 +485,15 @@ export default function ShoppingPage() {
                     const CatIcon = catCfg.icon;
                     return (
                       <div key={category}>
-                        {/* Category header */}
-                        <div className={cn("flex items-center gap-2 px-3 py-2 rounded-xl mb-2", catCfg.bg, catCfg.border, "border")}>
-                          <CatIcon className={cn("h-4 w-4", catCfg.color)} />
-                          <span className={cn("text-xs font-black uppercase tracking-wider", catCfg.color)}>{category}</span>
-                          <span className={cn("ml-auto text-[10px] font-black px-2 py-0.5 rounded-full", catCfg.bg, catCfg.color)}>{items.length}</span>
+                        {/* Category header — gradient pill */}
+                        <div className={cn("flex items-center gap-2.5 px-4 py-2.5 rounded-2xl mb-3 border shadow-sm", catCfg.bg, catCfg.border)}>
+                          <div className={cn("p-1.5 rounded-xl", catCfg.bg, catCfg.border, "border")}>
+                            <CatIcon className={cn("h-4 w-4", catCfg.color)} />
+                          </div>
+                          <span className={cn("text-xs font-black uppercase tracking-widest", catCfg.color)}>{category}</span>
+                          <div className={cn("ml-auto flex items-center justify-center min-w-[22px] h-[22px] rounded-full text-[11px] font-black border", catCfg.bg, catCfg.color, catCfg.border)}>
+                            {items.length}
+                          </div>
                         </div>
                         {/* Items */}
                         <div className="space-y-2">
