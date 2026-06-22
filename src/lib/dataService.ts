@@ -718,4 +718,8 @@ export const addReadingSession = async (data: any) => {
     if (familyId) return addDoc(collection(db, 'readingSessions'), { ...data, familyId });
 };
 
+export const deleteReadingSession = async (sessionId: string) => {
+    await deleteDoc(doc(db, 'readingSessions', sessionId));
+};
+
 export const onAmbientSoundsUpdate = (cb: (s: AmbientSound[]) => void) => onFamilyDataUpdate<AmbientSound>('ambientSounds', cb);

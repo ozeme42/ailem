@@ -5,12 +5,12 @@ import Image from "next/image";
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
 import { Book, UserLibrary, FamilyMember, ReadingGoals, ReadingSession, Book as BookType } from '@/lib/data';
-import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookFromMemberLibrary, addReadingSession, onReadingSessionsUpdate, updateFamilyMemberInFamily } from '@/lib/dataService';
+import { onBooksUpdate, onUserLibrariesUpdate, updateUserBookStatus, removeBookFromMemberLibrary, addReadingSession, deleteReadingSession, onReadingSessionsUpdate, updateFamilyMemberInFamily } from '@/lib/dataService';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart2, Book as BookIcon, Clock, Heart, Check, ChevronLeft, ChevronRight, Calendar as CalendarIcon, ArrowLeft, Camera, Sparkles } from 'lucide-react';
+import { BookOpen, CheckSquare, Target, Library, BookUp, BookCheck, Trash2, ChevronDown, PlusCircle, MoreVertical, Edit, RotateCcw, Play, Pause, BarChart2, Book as BookIcon, Clock, Heart, Check, ChevronLeft, ChevronRight, Calendar as CalendarIcon, ArrowLeft, Camera, Sparkles, History } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -196,6 +196,7 @@ export default function LibraryPage() {
   const [readingSessions, setReadingSessions] = React.useState<ReadingSession[]>([]);
   const [selectedMember, setSelectedMember] = React.useState<FamilyMember | null>(null);
   const [isGoalDialogOpen, setIsGoalDialogOpen] = React.useState(false);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = React.useState(false);
   const [viewingBook, setViewingBook] = React.useState<any | null>(null);
   const [editingProgressForBook, setEditingProgressForBook] = React.useState<any | null>(null);
   const [readingStatsPeriod, setReadingStatsPeriod] = React.useState<'weekly' | 'monthly'>('weekly');
@@ -290,6 +291,15 @@ export default function LibraryPage() {
      } catch(e) {
          toast({ title: "Hata", description: "İlerleme kaydedilirken bir sorun oluştu.", variant: "destructive" });
      }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+      try {
+          await deleteReadingSession(sessionId);
+          toast({ title: "Kayıt Silindi", description: "Okuma geçmişinden başarıyla silindi." });
+      } catch(e) {
+          toast({ title: "Hata", description: "Kayıt silinirken hata oluştu.", variant: "destructive" });
+      }
   };
 
   // Grafikte haftalar arası geçiş fonksiyonları
@@ -466,6 +476,9 @@ export default function LibraryPage() {
                 </div>
 
                 <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                    <Button variant="outline" className="rounded-full px-6 font-bold border-slate-200 text-slate-600 hover:bg-slate-50" onClick={() => setIsHistoryDialogOpen(true)}>
+                        <History className="mr-2 h-4 w-4"/> Geçmiş
+                    </Button>
                     <Link href="/library/archive">
                         <Button variant="outline" className="rounded-full px-6 font-bold border-slate-200 text-slate-600 hover:bg-slate-50">
                             <Library className="mr-2 h-4 w-4"/> Arşiv
@@ -809,6 +822,40 @@ export default function LibraryPage() {
                       initialGoals={selectedMember?.readingGoals}
                       onSave={handleSaveGoals}
                   />
+              </div>
+          </DialogContent>
+      </Dialog>
+      <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
+          <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl max-h-[80vh] flex flex-col">
+              <DialogHeader>
+                  <DialogTitle>Okuma Geçmişi</DialogTitle>
+                  <DialogDescription className="text-slate-500">{selectedMember?.name} adlı kişinin son okuma kayıtları.</DialogDescription>
+              </DialogHeader>
+              <div className="overflow-y-auto flex-1 pr-2 space-y-3">
+                  {readingSessions.filter(s => s.memberId === selectedMember?.id).sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).length === 0 ? (
+                      <p className="text-sm text-slate-500 text-center py-4">Henüz okuma geçmişi bulunmuyor.</p>
+                  ) : (
+                      readingSessions.filter(s => s.memberId === selectedMember?.id).sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()).map(session => {
+                          const book = allBooks.find(b => b.id === session.bookId);
+                          return (
+                              <div key={session.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50">
+                                  <div>
+                                      <p className="text-sm font-bold text-slate-800 line-clamp-1">{book?.title || 'Bilinmeyen Kitap'}</p>
+                                      <div className="flex items-center gap-2 mt-1">
+                                          <span className="text-xs text-slate-500">{format(parseISO(session.startTime), 'd MMM yyyy HH:mm', { locale: tr })}</span>
+                                          <span className="text-xs font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">+{session.pagesRead} Sayfa</span>
+                                      </div>
+                                  </div>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-100 rounded-full shrink-0" onClick={() => handleDeleteSession(session.id)}>
+                                      <Trash2 className="h-4 w-4" />
+                                  </Button>
+                              </div>
+                          )
+                      })
+                  )}
+              </div>
+              <div className="pt-2 border-t border-slate-100 mt-2">
+                  <p className="text-[10px] text-slate-400 text-center">Not: Kayıt silindiğinde günlük grafikler güncellenir ancak kitabın okuma yüzdesini manuel düzeltmeniz gerekebilir.</p>
               </div>
           </DialogContent>
       </Dialog>
