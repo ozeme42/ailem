@@ -403,7 +403,9 @@ type ModuleTask = {
       memorizationItems.forEach(mi => {
           familyMembers.forEach(member => {
               const prog = memorizationProgress.find(p => p.itemId === mi.id && p.memberId === member.id);
-              const isCompleted = prog ? prog.completed : false;
+              if (!prog) return; // Sadece atanmış ezberler görev olarak görünsün
+              
+              const isCompleted = prog.completed;
               
               const searchMatch = mi.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                                   (member.name.toLowerCase().includes(searchTerm.toLowerCase()));
