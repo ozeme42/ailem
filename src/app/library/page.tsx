@@ -27,7 +27,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell, PieChart, Pie, Legend, LabelList } from "recharts";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell, PieChart, Pie, Legend, LabelList, ReferenceLine } from "recharts";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { useRouter } from "next/navigation";
 
@@ -380,6 +380,7 @@ export default function LibraryPage() {
       day: format(parseISO(dayKey), 'EEE', { locale: tr }),
       fullDate: format(parseISO(dayKey), 'd MMM', { locale: tr }),
       pagesRead: dailyPages.get(dayKey) || 0,
+      dailyGoal: readingGoals?.daily?.pages || 0,
     }));
   
     // Monthly Stats for Chart
@@ -611,17 +612,40 @@ export default function LibraryPage() {
                                             content={({ active, payload, label }) => {
                                                 if (active && payload && payload.length) {
                                                     const data = payload[0].payload;
+                                                    const isMet = data.dailyGoal && data.pagesRead >= data.dailyGoal;
                                                     return (
-                                                        <div className="bg-white border border-slate-200 p-2 rounded-lg shadow-lg text-xs">
-                                                            <p className="font-bold text-slate-800 mb-1">{data.fullDate || data.month}</p>
-                                                            <p className="text-amber-600 font-semibold">{payload[0].value} Sayfa</p>
+                                                        <div className="bg-white border border-slate-200 p-2.5 rounded-xl shadow-xl text-xs flex flex-col gap-1.5 min-w-[120px]">
+                                                            <p className="font-bold text-slate-800 border-b border-slate-100 pb-1">{data.fullDate || data.month}</p>
+                                                            <div className="flex items-center justify-between gap-3">
+                                                              <span className="text-slate-500">Okunan:</span>
+                                                              <span className="text-amber-600 font-bold">{payload[0].value} syf</span>
+                                                            </div>
+                                                            {data.dailyGoal > 0 && (
+                                                              <div className="flex items-center justify-between gap-3">
+                                                                <span className="text-slate-500">Hedef:</span>
+                                                                <span className="text-slate-700 font-bold">{data.dailyGoal} syf</span>
+                                                              </div>
+                                                            )}
+                                                            {data.dailyGoal > 0 && isMet && (
+                                                              <div className="mt-1 flex items-center justify-center gap-1 bg-emerald-50 text-emerald-600 py-1 rounded-lg font-bold">
+                                                                🎯 Hedef Tamam!
+                                                              </div>
+                                                            )}
                                                         </div>
                                                     );
                                                 }
                                                 return null;
                                             }}
                                         />
+                                        {readingStatsPeriod === 'weekly' && readingGoals?.daily?.pages && readingGoals.daily.pages > 0 && (
+                                            <ReferenceLine y={readingGoals.daily.pages} stroke="#10b981" strokeDasharray="3 3" opacity={0.6} />
+                                        )}
                                         <Bar dataKey="pagesRead" fill="var(--color-pages)" radius={[4, 4, 4, 4]}>
+                                            {readingStatsPeriod === 'weekly' ? readingStatsByPeriod.weeklyChartData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.dailyGoal > 0 && entry.pagesRead >= entry.dailyGoal ? "#10b981" : "#f59e0b"} />
+                                            )) : readingStatsByPeriod.monthlyPageData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill="#f59e0b" />
+                                            ))}
                                              <LabelList 
                                                 dataKey="pagesRead" 
                                                 position="top" 
