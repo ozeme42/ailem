@@ -451,6 +451,34 @@ export default function LibraryPage() {
     };
   }, [readingGoals, readingSessions, userLibraries, selectedMember]);
 
+  const weeklyGoalProgress = React.useMemo(() => {
+    if (!readingGoals?.weekly || !selectedMember) return { pages: 0, books: 0, pagesRead: 0, booksRead: 0 };
+    
+    const startOfWeekDate = startOfWeek(new Date(), { weekStartsOn: 1 });
+
+    const memberSessions = readingSessions.filter(s => s.memberId === selectedMember.id);
+    const weeklySessions = memberSessions.filter(s => parseISO(s.startTime) >= startOfWeekDate);
+    const pagesRead = weeklySessions.reduce((sum, s) => sum + s.pagesRead, 0);
+    
+    const finishedBookIds = new Set(
+        userLibraries.find(lib => lib.memberId === selectedMember.id)?.books
+            .filter(b => {
+                if (b.status !== 'finished' || !b.finishedAt) return false;
+                const finishedDate = parseISO(b.finishedAt);
+                return finishedDate >= startOfWeekDate;
+            })
+            .map(b => b.bookId)
+    );
+    const booksRead = finishedBookIds.size;
+
+    return {
+        pages: (pagesRead / (readingGoals.weekly?.pages || 1)) * 100,
+        books: (booksRead / (readingGoals.weekly?.books || 1)) * 100,
+        pagesRead,
+        booksRead
+    };
+  }, [readingGoals, readingSessions, userLibraries, selectedMember]);
+
   return (
     <div className={cn("min-h-[100dvh] font-sans pb-24 relative overflow-hidden", themeColors.PAGE_BG, themeColors.TEXT_MAIN)}>
          {/* Minimalist Background (Açık Tema İçin) */}
@@ -549,28 +577,64 @@ export default function LibraryPage() {
                     </Card>
 
                     {/* Hedefler */}
-                    {readingGoals && (
+                    {(readingGoals?.monthly?.pages || readingGoals?.monthly?.books || readingGoals?.weekly?.pages || readingGoals?.weekly?.books) && (
                         <Card className={cn(themeColors.CARD_BG, "relative overflow-hidden")}>
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-                            <CardHeader className="pb-2 relative z-10">
-                                <CardTitle className={cn("text-sm font-bold uppercase tracking-wider text-slate-400")}>Bu Ayki Hedefler</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-6 relative z-10">
-                                <div>
-                                    <div className="flex justify-between text-xs font-bold mb-2">
-                                        <span className="text-slate-500">Sayfa Hedefi</span>
-                                        <span className="text-amber-600">{monthlyGoalProgress.pagesRead} / {readingGoals.monthly?.pages || 0}</span>
-                                    </div>
-                                    <Progress value={monthlyGoalProgress.pages} className="h-2 bg-slate-100" indicatorClassName="bg-amber-500" />
-                                </div>
-                                <div>
-                                    <div className="flex justify-between text-xs font-bold mb-2">
-                                        <span className="text-slate-500">Kitap Hedefi</span>
-                                        <span className="text-orange-600">{monthlyGoalProgress.booksRead} / {readingGoals.monthly?.books || 0}</span>
-                                    </div>
-                                    <Progress value={monthlyGoalProgress.books} className="h-2 bg-slate-100" indicatorClassName="bg-orange-500" />
-                                </div>
-                            </CardContent>
+                            <Tabs defaultValue={readingGoals?.monthly?.pages || readingGoals?.monthly?.books ? "monthly" : "weekly"}>
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                                <CardHeader className="pb-2 relative z-10 flex flex-row items-center justify-between space-y-0">
+                                    <CardTitle className={cn("text-sm font-bold uppercase tracking-wider text-slate-400")}>Hedefler</CardTitle>
+                                    <TabsList className="bg-slate-100 border border-slate-200 h-8 p-0.5">
+                                        {(readingGoals?.weekly?.pages || readingGoals?.weekly?.books) && <TabsTrigger value="weekly" className="text-xs h-7 px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Haftalık</TabsTrigger>}
+                                        {(readingGoals?.monthly?.pages || readingGoals?.monthly?.books) && <TabsTrigger value="monthly" className="text-xs h-7 px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Aylık</TabsTrigger>}
+                                    </TabsList>
+                                </CardHeader>
+                                <CardContent className="relative z-10 pt-2">
+                                    {(readingGoals?.weekly?.pages || readingGoals?.weekly?.books) && (
+                                        <TabsContent value="weekly" className="space-y-6 mt-0">
+                                            {readingGoals?.weekly?.pages ? (
+                                                <div>
+                                                    <div className="flex justify-between text-xs font-bold mb-2">
+                                                        <span className="text-slate-500">Sayfa Hedefi</span>
+                                                        <span className="text-amber-600">{weeklyGoalProgress.pagesRead} / {readingGoals.weekly.pages}</span>
+                                                    </div>
+                                                    <Progress value={weeklyGoalProgress.pages} className="h-2 bg-slate-100" indicatorClassName="bg-amber-500" />
+                                                </div>
+                                            ) : null}
+                                            {readingGoals?.weekly?.books ? (
+                                                <div>
+                                                    <div className="flex justify-between text-xs font-bold mb-2">
+                                                        <span className="text-slate-500">Kitap Hedefi</span>
+                                                        <span className="text-orange-600">{weeklyGoalProgress.booksRead} / {readingGoals.weekly.books}</span>
+                                                    </div>
+                                                    <Progress value={weeklyGoalProgress.books} className="h-2 bg-slate-100" indicatorClassName="bg-orange-500" />
+                                                </div>
+                                            ) : null}
+                                        </TabsContent>
+                                    )}
+                                    {(readingGoals?.monthly?.pages || readingGoals?.monthly?.books) && (
+                                        <TabsContent value="monthly" className="space-y-6 mt-0">
+                                            {readingGoals?.monthly?.pages ? (
+                                                <div>
+                                                    <div className="flex justify-between text-xs font-bold mb-2">
+                                                        <span className="text-slate-500">Sayfa Hedefi</span>
+                                                        <span className="text-amber-600">{monthlyGoalProgress.pagesRead} / {readingGoals.monthly.pages}</span>
+                                                    </div>
+                                                    <Progress value={monthlyGoalProgress.pages} className="h-2 bg-slate-100" indicatorClassName="bg-amber-500" />
+                                                </div>
+                                            ) : null}
+                                            {readingGoals?.monthly?.books ? (
+                                                <div>
+                                                    <div className="flex justify-between text-xs font-bold mb-2">
+                                                        <span className="text-slate-500">Kitap Hedefi</span>
+                                                        <span className="text-orange-600">{monthlyGoalProgress.booksRead} / {readingGoals.monthly.books}</span>
+                                                    </div>
+                                                    <Progress value={monthlyGoalProgress.books} className="h-2 bg-slate-100" indicatorClassName="bg-orange-500" />
+                                                </div>
+                                            ) : null}
+                                        </TabsContent>
+                                    )}
+                                </CardContent>
+                            </Tabs>
                         </Card>
                     )}
 
