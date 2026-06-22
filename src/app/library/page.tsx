@@ -555,23 +555,23 @@ export default function LibraryPage() {
                             <CardTitle className={cn("text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400")}>Kütüphane Özeti</CardTitle>
                         </CardHeader>
                         <CardContent className="grid grid-cols-4 sm:grid-cols-2 gap-2 sm:gap-4 px-3 pb-3 sm:px-6 sm:pb-6">
-                            <div className="bg-slate-50 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                                <BookOpen className="h-4 w-4 sm:h-6 sm:w-6 text-amber-500 mb-0.5 sm:mb-1" />
+                            <div className="bg-white/50 backdrop-blur-sm p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/60 shadow-sm flex flex-col items-center justify-center text-center hover:bg-white/70 transition-colors">
+                                <BookOpen className="h-4 w-4 sm:h-6 sm:w-6 text-amber-500 mb-0.5 sm:mb-1 drop-shadow-sm" />
                                 <p className="text-lg sm:text-2xl font-black text-slate-800 leading-none">{stats.reading}</p>
                                 <p className="text-[9px] sm:text-xs text-slate-500 font-bold uppercase mt-1">Okunuyor</p>
                             </div>
-                            <div className="bg-slate-50 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                                <BookCheck className="h-4 w-4 sm:h-6 sm:w-6 text-emerald-500 mb-0.5 sm:mb-1" />
+                            <div className="bg-white/50 backdrop-blur-sm p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/60 shadow-sm flex flex-col items-center justify-center text-center hover:bg-white/70 transition-colors">
+                                <BookCheck className="h-4 w-4 sm:h-6 sm:w-6 text-emerald-500 mb-0.5 sm:mb-1 drop-shadow-sm" />
                                 <p className="text-lg sm:text-2xl font-black text-slate-800 leading-none">{stats.finished}</p>
                                 <p className="text-[9px] sm:text-xs text-slate-500 font-bold uppercase mt-1">Bitti</p>
                             </div>
-                            <div className="bg-slate-50 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                                <BookUp className="h-4 w-4 sm:h-6 sm:w-6 text-blue-500 mb-0.5 sm:mb-1" />
+                            <div className="bg-white/50 backdrop-blur-sm p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/60 shadow-sm flex flex-col items-center justify-center text-center hover:bg-white/70 transition-colors">
+                                <BookUp className="h-4 w-4 sm:h-6 sm:w-6 text-blue-500 mb-0.5 sm:mb-1 drop-shadow-sm" />
                                 <p className="text-lg sm:text-2xl font-black text-slate-800 leading-none">{stats.toRead}</p>
                                 <p className="text-[9px] sm:text-xs text-slate-500 font-bold uppercase mt-1">Sırada</p>
                             </div>
-                             <div className="bg-slate-50 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                                <BookIcon className="h-4 w-4 sm:h-6 sm:w-6 text-purple-500 mb-0.5 sm:mb-1" />
+                             <div className="bg-white/50 backdrop-blur-sm p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/60 shadow-sm flex flex-col items-center justify-center text-center hover:bg-white/70 transition-colors">
+                                <BookIcon className="h-4 w-4 sm:h-6 sm:w-6 text-purple-500 mb-0.5 sm:mb-1 drop-shadow-sm" />
                                 <p className="text-lg sm:text-2xl font-black text-slate-800 leading-none">{stats.total}</p>
                                 <p className="text-[9px] sm:text-xs text-slate-500 font-bold uppercase mt-1">Toplam</p>
                             </div>
@@ -585,9 +585,9 @@ export default function LibraryPage() {
                             <div className="flex flex-row items-center justify-between w-full">
                                 <CardTitle className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400">Performans Özeti</CardTitle>
                                 <Tabs value={readingStatsPeriod} onValueChange={(v) => setReadingStatsPeriod(v as any)}>
-                                    <TabsList className="bg-slate-100 border border-slate-200 h-7 sm:h-8 p-0.5">
-                                        <TabsTrigger value="weekly" className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Haftalık</TabsTrigger>
-                                        <TabsTrigger value="monthly" className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500">Aylık</TabsTrigger>
+                                    <TabsList className="bg-white/50 border border-white/60 h-7 sm:h-8 p-0.5 shadow-inner">
+                                        <TabsTrigger value="weekly" className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3 data-[state=active]:bg-white/90 data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500 transition-colors">Haftalık</TabsTrigger>
+                                        <TabsTrigger value="monthly" className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3 data-[state=active]:bg-white/90 data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500 transition-colors">Aylık</TabsTrigger>
                                     </TabsList>
                                 </Tabs>
                             </div>
@@ -604,7 +604,7 @@ export default function LibraryPage() {
                                                     <span className="text-slate-500">Haftalık Sayfa Hedefi</span>
                                                     <span className="text-amber-600">{weeklyGoalProgress.pagesRead} / {readingGoals.weekly.pages}</span>
                                                 </div>
-                                                <Progress value={weeklyGoalProgress.pages} className="h-1.5 sm:h-2 bg-slate-100" indicatorClassName="bg-amber-500" />
+                                                <Progress value={weeklyGoalProgress.pages} className="h-1.5 sm:h-2 bg-white/60 shadow-inner" indicatorClassName="bg-amber-500" />
                                             </div>
                                         ) : null}
                                         {readingGoals?.weekly?.books ? (
@@ -613,7 +613,7 @@ export default function LibraryPage() {
                                                     <span className="text-slate-500">Haftalık Kitap Hedefi</span>
                                                     <span className="text-orange-600">{weeklyGoalProgress.booksRead} / {readingGoals.weekly.books}</span>
                                                 </div>
-                                                <Progress value={weeklyGoalProgress.books} className="h-1.5 sm:h-2 bg-slate-100" indicatorClassName="bg-orange-500" />
+                                                <Progress value={weeklyGoalProgress.books} className="h-1.5 sm:h-2 bg-white/60 shadow-inner" indicatorClassName="bg-orange-500" />
                                             </div>
                                         ) : null}
                                     </div>
@@ -627,7 +627,7 @@ export default function LibraryPage() {
                                                     <span className="text-slate-500">Aylık Sayfa Hedefi</span>
                                                     <span className="text-amber-600">{monthlyGoalProgress.pagesRead} / {readingGoals.monthly.pages}</span>
                                                 </div>
-                                                <Progress value={monthlyGoalProgress.pages} className="h-1.5 sm:h-2 bg-slate-100" indicatorClassName="bg-amber-500" />
+                                                <Progress value={monthlyGoalProgress.pages} className="h-1.5 sm:h-2 bg-white/60 shadow-inner" indicatorClassName="bg-amber-500" />
                                             </div>
                                         ) : null}
                                         {readingGoals?.monthly?.books ? (
@@ -636,7 +636,7 @@ export default function LibraryPage() {
                                                     <span className="text-slate-500">Aylık Kitap Hedefi</span>
                                                     <span className="text-orange-600">{monthlyGoalProgress.booksRead} / {readingGoals.monthly.books}</span>
                                                 </div>
-                                                <Progress value={monthlyGoalProgress.books} className="h-1.5 sm:h-2 bg-slate-100" indicatorClassName="bg-orange-500" />
+                                                <Progress value={monthlyGoalProgress.books} className="h-1.5 sm:h-2 bg-white/60 shadow-inner" indicatorClassName="bg-orange-500" />
                                             </div>
                                         ) : null}
                                     </div>
@@ -653,8 +653,8 @@ export default function LibraryPage() {
                             <div className="flex-1 flex flex-col min-h-0">
                                 {/* Haftalık Gezinme Kontrolleri */}
                                 {readingStatsPeriod === 'weekly' && (
-                                    <div className="flex items-center justify-between bg-slate-50 rounded-lg p-1 px-2 border border-slate-100 mb-2 sm:mb-4 mx-2 sm:mx-0">
-                                        <Button variant="ghost" size="sm" onClick={handlePrevWeek} className="h-6 w-6 sm:h-7 sm:w-7 p-0 rounded-full hover:bg-slate-200 text-slate-600">
+                                    <div className="flex items-center justify-between bg-white/50 backdrop-blur-sm rounded-lg p-1 px-2 border border-white/60 shadow-sm mb-2 sm:mb-4 mx-2 sm:mx-0">
+                                        <Button variant="ghost" size="sm" onClick={handlePrevWeek} className="h-6 w-6 sm:h-7 sm:w-7 p-0 rounded-full hover:bg-white/80 text-slate-600 transition-colors">
                                             <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
                                         </Button>
                                         
@@ -665,7 +665,7 @@ export default function LibraryPage() {
                                             )}
                                         </div>
 
-                                        <Button variant="ghost" size="sm" onClick={handleNextWeek} className="h-6 w-6 sm:h-7 sm:w-7 p-0 rounded-full hover:bg-slate-200 text-slate-600">
+                                        <Button variant="ghost" size="sm" onClick={handleNextWeek} className="h-6 w-6 sm:h-7 sm:w-7 p-0 rounded-full hover:bg-white/80 text-slate-600 transition-colors">
                                             <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
                                         </Button>
                                     </div>
@@ -806,7 +806,7 @@ export default function LibraryPage() {
                                 {toReadBooks.map(book => <BookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
                             </div>
                         ) : (
-                            <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-center bg-white/50">
+                            <div className="p-8 border-2 border-dashed border-white/60 rounded-2xl flex flex-col items-center justify-center text-center bg-white/40 backdrop-blur-sm shadow-sm">
                                 <BookUp className="w-8 h-8 text-slate-300 mb-2" />
                                 <p className="text-sm font-medium text-slate-500">Sırada okunacak kitap bulunmuyor.</p>
                                 <Link href="/library/archive" className="mt-3 text-xs font-bold text-amber-600 hover:text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full mb-2">
