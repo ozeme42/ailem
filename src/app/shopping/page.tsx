@@ -2,13 +2,12 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Plus, ArrowLeft, ListChecks, ShoppingCart, Trash2, MoreVertical, CheckCircle2, Search, Sparkles, Home, Cake, Notebook, Edit, Check, ChevronUp, ChevronDown, Mic } from "lucide-react";
+import { Plus, ArrowLeft, ListChecks, ShoppingCart, Trash2, MoreVertical, CheckCircle2, Search, Sparkles, Home, Cake, Notebook, Edit, Check, ChevronUp, ChevronDown, Mic, Apple, Beef, Milk, Wheat, Coffee, Package, Droplets, Baby, Shirt, Star, ShoppingBag, X, ChevronRight } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,293 +19,269 @@ import { generateShoppingListItems } from '@/ai/flows/generate-shopping-list-flo
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 
-// --- DESIGN SYSTEM: Modern Mobile App Theme ---
-const glassColors = {
-    PAGE_BG_SOFT: "bg-slate-50 dark:bg-slate-950", 
-    HEADER_BG_SOFT: "bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 supports-[backdrop-filter]:bg-white/60",
-    CARD_BG_MATTE: "bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm", 
-    CARD_HOVER_MATTE: "hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-md transition-all duration-200 active:scale-[0.98]",
-    TEXT_MAIN: "text-slate-900 dark:text-slate-100",
-    TEXT_MUTED: "text-slate-500 dark:text-slate-400",
-    ICON_BOX: "bg-gradient-to-br p-2.5 rounded-[1rem] shadow-sm text-white shrink-0", 
+// ─── CATEGORY CONFIG ──────────────────────────────────────────────────────────
+const CATEGORY_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: string; border: string; dot: string }> = {
+  'Meyve ve Sebze':      { icon: Apple,    color: 'text-green-600 dark:text-green-400',   bg: 'bg-green-50 dark:bg-green-950/50',    border: 'border-green-200 dark:border-green-800',   dot: 'bg-green-500' },
+  'Et ve Tavuk Ürünleri':{ icon: Beef,     color: 'text-red-600 dark:text-red-400',      bg: 'bg-red-50 dark:bg-red-950/50',        border: 'border-red-200 dark:border-red-800',       dot: 'bg-red-500' },
+  'Süt Ürünleri':        { icon: Milk,     color: 'text-blue-600 dark:text-blue-400',    bg: 'bg-blue-50 dark:bg-blue-950/50',      border: 'border-blue-200 dark:border-blue-800',     dot: 'bg-blue-500' },
+  'Unlu Mamüller':       { icon: Wheat,    color: 'text-amber-600 dark:text-amber-400',  bg: 'bg-amber-50 dark:bg-amber-950/50',    border: 'border-amber-200 dark:border-amber-800',   dot: 'bg-amber-500' },
+  'Temel Gıda':          { icon: Package,  color: 'text-orange-600 dark:text-orange-400',bg: 'bg-orange-50 dark:bg-orange-950/50',  border: 'border-orange-200 dark:border-orange-800', dot: 'bg-orange-500' },
+  'Atıştırmalık':        { icon: Coffee,   color: 'text-purple-600 dark:text-purple-400',bg: 'bg-purple-50 dark:bg-purple-950/50',  border: 'border-purple-200 dark:border-purple-800', dot: 'bg-purple-500' },
+  'İçecekler':           { icon: Droplets, color: 'text-cyan-600 dark:text-cyan-400',    bg: 'bg-cyan-50 dark:bg-cyan-950/50',      border: 'border-cyan-200 dark:border-cyan-800',     dot: 'bg-cyan-500' },
+  'Dondurulmuş Gıdalar': { icon: Package,  color: 'text-sky-600 dark:text-sky-400',      bg: 'bg-sky-50 dark:bg-sky-950/50',        border: 'border-sky-200 dark:border-sky-800',       dot: 'bg-sky-500' },
+  'Temizlik Ürünleri':   { icon: Droplets, color: 'text-teal-600 dark:text-teal-400',    bg: 'bg-teal-50 dark:bg-teal-950/50',      border: 'border-teal-200 dark:border-teal-800',     dot: 'bg-teal-500' },
+  'Kişisel Bakım':       { icon: Star,     color: 'text-pink-600 dark:text-pink-400',    bg: 'bg-pink-50 dark:bg-pink-950/50',      border: 'border-pink-200 dark:border-pink-800',     dot: 'bg-pink-500' },
+  'Bebek Ürünleri':      { icon: Baby,     color: 'text-violet-600 dark:text-violet-400',bg: 'bg-violet-50 dark:bg-violet-950/50',  border: 'border-violet-200 dark:border-violet-800', dot: 'bg-violet-500' },
+  'Diğer':               { icon: ShoppingBag, color: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-50 dark:bg-slate-900',     border: 'border-slate-200 dark:border-slate-700',   dot: 'bg-slate-400' },
 };
+const CATEGORY_ORDER = ['Meyve ve Sebze','Et ve Tavuk Ürünleri','Süt Ürünleri','Unlu Mamüller','Temel Gıda','Atıştırmalık','İçecekler','Dondurulmuş Gıdalar','Temizlik Ürünleri','Kişisel Bakım','Bebek Ürünleri','Diğer'];
 
-const themeColors = [
-    { 
-        id: 'ocean', 
-        name: 'Okyanus', 
-        icon: 'from-cyan-500 to-blue-500',
-        accent: 'bg-cyan-500 dark:bg-cyan-600',
-        checkbox: 'border-cyan-500 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500 data-[state=checked]:text-white',
-        badge: 'bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800'
-    },
-    { 
-        id: 'sunset', 
-        name: 'Gün Batımı', 
-        icon: 'from-orange-500 to-rose-500',
-        accent: 'bg-orange-500 dark:bg-orange-600',
-        checkbox: 'border-orange-500 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500 data-[state=checked]:text-white',
-        badge: 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800'
-    },
-    { 
-        id: 'forest', 
-        name: 'Orman', 
-        icon: 'from-emerald-500 to-teal-500',
-        accent: 'bg-emerald-500 dark:bg-emerald-600',
-        checkbox: 'border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 data-[state=checked]:text-white',
-        badge: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
-    },
-    { 
-        id: 'berry', 
-        name: 'Böğürtlen', 
-        icon: 'from-fuchsia-500 to-purple-500',
-        accent: 'bg-fuchsia-500 dark:bg-fuchsia-600',
-        checkbox: 'border-fuchsia-500 data-[state=checked]:bg-fuchsia-500 data-[state=checked]:border-fuchsia-500 data-[state=checked]:text-white',
-        badge: 'bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-200 dark:border-fuchsia-800'
-    },
-    { 
-        id: 'royal', 
-        name: 'Asil', 
-        icon: 'from-indigo-500 to-violet-500',
-        accent: 'bg-indigo-500 dark:bg-indigo-600',
-        checkbox: 'border-indigo-500 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500 data-[state=checked]:text-white',
-        badge: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'
-    },
+// ─── THEME CONFIG ─────────────────────────────────────────────────────────────
+const LIST_THEMES = [
+  { id: 'indigo',   label: 'Mor',        gradient: 'from-indigo-500 to-violet-500',   ring: 'ring-indigo-500',   fab: 'bg-indigo-600 hover:bg-indigo-700', fabShadow: 'shadow-indigo-500/30' },
+  { id: 'emerald',  label: 'Yeşil',      gradient: 'from-emerald-500 to-teal-500',    ring: 'ring-emerald-500',  fab: 'bg-emerald-600 hover:bg-emerald-700', fabShadow: 'shadow-emerald-500/30' },
+  { id: 'rose',     label: 'Pembe',      gradient: 'from-rose-500 to-pink-500',       ring: 'ring-rose-500',     fab: 'bg-rose-600 hover:bg-rose-700', fabShadow: 'shadow-rose-500/30' },
+  { id: 'amber',    label: 'Sarı',       gradient: 'from-amber-500 to-orange-500',    ring: 'ring-amber-500',    fab: 'bg-amber-600 hover:bg-amber-700', fabShadow: 'shadow-amber-500/30' },
+  { id: 'cyan',     label: 'Mavi',       gradient: 'from-cyan-500 to-blue-500',       ring: 'ring-cyan-500',     fab: 'bg-cyan-600 hover:bg-cyan-700', fabShadow: 'shadow-cyan-500/30' },
+  { id: 'fuchsia',  label: 'Fuşya',      gradient: 'from-fuchsia-500 to-purple-500',  ring: 'ring-fuchsia-500',  fab: 'bg-fuchsia-600 hover:bg-fuchsia-700', fabShadow: 'shadow-fuchsia-500/30' },
 ];
+const listIcons = { ShoppingCart, Home, ListChecks, Cake, Notebook, ShoppingBag };
+const getTheme = (id?: string) => LIST_THEMES.find(t => t.id === id) || LIST_THEMES[0];
 
-const listIcons = {
-  ShoppingCart: ShoppingCart,
-  Home: Home,
-  ListChecks: ListChecks,
-  Cake: Cake,
-  Notebook: Notebook,
-};
-
+// ─── FORM SCHEMA ──────────────────────────────────────────────────────────────
 const createListSchema = z.object({
-  name: z.string().min(2, "Liste adı en az 2 karakter olmalıdır."),
-  icon: z.string().min(1, "Bir ikon seçmelisiniz."),
+  name:    z.string().min(2, "Liste adı en az 2 karakter olmalıdır."),
+  icon:    z.string().min(1),
   colorId: z.string().optional(),
 });
-
 type CreateListFormData = z.infer<typeof createListSchema>;
 
-// --- COMPONENTS ---
-
-const CreateListDialog = ({ isOpen, onOpenChange, onCreate, initialData }: {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onCreate: (data: CreateListFormData) => void;
+// ─── CREATE / EDIT LIST DIALOG ────────────────────────────────────────────────
+function CreateListDialog({ isOpen, onOpenChange, onCreate, initialData }: {
+  isOpen: boolean; onOpenChange: (o: boolean) => void;
+  onCreate: (d: CreateListFormData) => void;
   initialData?: ShoppingList | null;
-}) => {
-    const form = useForm<CreateListFormData>({
-        resolver: zodResolver(createListSchema),
-        defaultValues: { name: '', icon: 'ShoppingCart', colorId: 'ocean' },
-    });
-    
-    useEffect(() => {
-        if(isOpen) {
-            if(initialData) {
-                form.reset({ name: initialData.name, icon: initialData.icon, colorId: initialData.colorId || 'ocean' });
-            } else {
-                form.reset({ name: '', icon: 'ShoppingCart', colorId: 'ocean' });
-            }
-        }
-    }, [initialData, form, isOpen]);
+}) {
+  const form = useForm<CreateListFormData>({ resolver: zodResolver(createListSchema), defaultValues: { name: '', icon: 'ShoppingCart', colorId: 'indigo' } });
+  useEffect(() => {
+    if (isOpen) form.reset(initialData ? { name: initialData.name, icon: initialData.icon, colorId: initialData.colorId || 'indigo' } : { name: '', icon: 'ShoppingCart', colorId: 'indigo' });
+  }, [initialData, form, isOpen]);
 
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95%] max-w-md bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-[2rem] p-5 shadow-2xl">
-                <DialogHeader>
-                    <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">
-                        {initialData ? 'Listeyi Düzenle' : 'Yeni Liste Oluştur'}
-                    </DialogTitle>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onCreate)} className="space-y-5 pt-2">
-                        <FormField
-                            control={form.control}
-                            name="name"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">Liste Adı</FormLabel>
-                                    <FormControl>
-                                        <Input 
-                                            placeholder="Örn: Haftalık Pazar..." 
-                                            className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 rounded-xl h-12 focus:border-indigo-500 dark:focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-900 transition-all text-base" 
-                                            {...field} 
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        
-                        <div className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name="icon"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">İkon</FormLabel>
-                                        <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                                            {Object.keys(listIcons).map(iconName => {
-                                                const Icon = listIcons[iconName as keyof typeof listIcons];
-                                                const isSelected = field.value === iconName;
-                                                return (
-                                                    <div 
-                                                        key={iconName}
-                                                        onClick={() => field.onChange(iconName)}
-                                                        className={cn(
-                                                            "p-3 rounded-xl cursor-pointer transition-all border active:scale-95 shrink-0",
-                                                            isSelected ? "bg-indigo-600 text-white border-indigo-500 shadow-md" : "bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-700"
-                                                        )}
-                                                    >
-                                                        <Icon className="h-5 w-5 md:h-6 md:w-6" />
-                                                    </div>
-                                                )
-                                            })}
-                                        </div>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                             <FormField
-                                control={form.control}
-                                name="colorId"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">Tema</FormLabel>
-                                        <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                                            {themeColors.map(color => (
-                                                <div
-                                                    key={color.id}
-                                                    onClick={() => field.onChange(color.id)}
-                                                    className={cn(
-                                                        "w-10 h-10 rounded-full cursor-pointer transition-all flex items-center justify-center border-2 shrink-0 active:scale-90",
-                                                        "bg-white dark:bg-slate-800",
-                                                        field.value === color.id ? "border-slate-900 dark:border-white scale-110 shadow-md" : "border-transparent hover:scale-105 shadow-sm"
-                                                    )}
-                                                >
-                                                    <div className={cn("w-full h-full rounded-full bg-gradient-to-br", color.icon)}></div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="w-[95%] max-w-md bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-black text-slate-900 dark:text-white">
+            {initialData ? '✏️ Listeyi Düzenle' : '🛒 Yeni Liste Oluştur'}
+          </DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onCreate)} className="space-y-5 pt-2">
+            <FormField control={form.control} name="name" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">Liste Adı</FormLabel>
+                <FormControl>
+                  <Input placeholder="Örn: Haftalık Market..." className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl h-12 text-base focus:border-indigo-500 transition-all" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
 
-                        <DialogFooter className="gap-2 sm:gap-3 flex-row justify-end mt-2">
-                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-slate-500 hover:text-slate-900 dark:hover:text-white flex-1 sm:flex-none h-12 rounded-xl">İptal</Button>
-                            <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl px-6 flex-1 sm:flex-none h-12">Kaydet</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    );
-};
-
-const ListCard = ({ list, onClick, onEdit, onDelete, onMove, isFirst, isLast }: { 
-    list: ShoppingList; 
-    onClick: () => void;
-    onEdit: () => void;
-    onDelete: (id: string) => void;
-    onMove: (direction: 'up' | 'down') => void;
-    isFirst: boolean;
-    isLast: boolean;
-}) => {
-    const Icon = listIcons[list.icon as keyof typeof listIcons] || ShoppingCart;
-    const items = list.items || [];
-    const boughtItems = list.boughtItems || [];
-    const totalItems = items.length + boughtItems.length;
-    const progress = totalItems === 0 ? 0 : Math.round((boughtItems.length / totalItems) * 100);
-    const theme = themeColors.find(c => c.id === (list.colorId || 'ocean')) || themeColors[0];
-
-    return (
-        <div 
-            className={cn(
-                "group relative rounded-[1.5rem] p-4 md:p-5 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-between min-h-[160px] md:h-[200px] border active:scale-[0.98]",
-                glassColors.CARD_BG_MATTE,
-                glassColors.CARD_HOVER_MATTE
-            )}
-            onClick={onClick}
-        >
-            <div className={cn("absolute inset-0 opacity-[0.04] dark:opacity-[0.1] bg-gradient-to-br pointer-events-none", theme.icon)}></div>
-            
-            <div className="flex justify-between items-start relative z-10">
-                <div className={cn(glassColors.ICON_BOX, theme.icon)}>
-                    <Icon className="h-5 w-5 md:h-6 md:w-6 text-white" />
+            <FormField control={form.control} name="icon" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">İkon</FormLabel>
+                <div className="flex gap-2.5">
+                  {Object.keys(listIcons).map(iconName => {
+                    const Icon = listIcons[iconName as keyof typeof listIcons];
+                    return (
+                      <div key={iconName} onClick={() => field.onChange(iconName)}
+                        className={cn("p-3 rounded-xl cursor-pointer transition-all border-2 active:scale-95",
+                          field.value === iconName ? "bg-indigo-600 text-white border-indigo-500 shadow-lg scale-110" : "bg-slate-50 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-indigo-300")}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                    );
+                  })}
                 </div>
-                
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 active:scale-95" onClick={(e) => e.stopPropagation()}>
-                            <MoreVertical className="h-5 p-0 w-5" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl shadow-xl w-48 p-1">
-                        {!isFirst && (
-                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove('up'); }} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg">
-                                <ChevronUp className="mr-2 h-4 w-4 text-indigo-500"/> Yukarı Taşı
-                            </DropdownMenuItem>
-                        )}
-                        {!isLast && (
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove('down'); }} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg">
-                                <ChevronDown className="mr-2 h-4 w-4 text-indigo-500"/> Aşağı Taşı
-                            </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg">
-                            <Edit className="mr-2 h-4 w-4 text-slate-500"/> Düzenle
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={e => e.preventDefault()} onClick={(e) => e.stopPropagation()} className="text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer focus:text-rose-700 rounded-lg">
-                                    <Trash2 className="mr-2 h-4 w-4"/> Sil
-                                </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="w-[90%] max-w-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl p-5" onClick={(e) => e.stopPropagation()}>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitleComponent>Emin misiniz?</AlertDialogTitleComponent>
-                                    <AlertDialogDescription className="text-slate-500 dark:text-slate-400">Bu liste kalıcı olarak silinecektir.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter className="mt-4 gap-2">
-                                    <AlertDialogCancel className="bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 w-full sm:w-auto h-11 rounded-xl m-0">İptal</AlertDialogCancel>
-                                    <AlertDialogAction onClick={(e) => { e.stopPropagation(); onDelete(list.id); }} className="bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white w-full sm:w-auto h-11 rounded-xl m-0">Sil</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
+              </FormItem>
+            )} />
 
-            <div className="relative z-10 mt-4 md:mt-auto">
-                <h3 className="font-extrabold text-lg md:text-2xl mb-1.5 truncate tracking-tight text-slate-900 dark:text-white">{list.name}</h3>
-                <div className="flex items-center justify-between text-[10px] md:text-xs font-bold uppercase tracking-wider mb-2 text-slate-500 dark:text-slate-400">
-                    <span>{items.length} alınacak</span>
-                    <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">{progress}%</span>
+            <FormField control={form.control} name="colorId" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">Tema Rengi</FormLabel>
+                <div className="flex gap-3 flex-wrap">
+                  {LIST_THEMES.map(theme => (
+                    <div key={theme.id} onClick={() => field.onChange(theme.id)}
+                      className={cn("group flex flex-col items-center gap-1 cursor-pointer transition-all active:scale-90")}>
+                      <div className={cn("w-10 h-10 rounded-full bg-gradient-to-br transition-all", theme.gradient,
+                        field.value === theme.id ? "ring-2 ring-offset-2 ring-slate-900 dark:ring-white scale-110 shadow-lg" : "opacity-70 hover:opacity-100 hover:scale-105")} />
+                      <span className="text-[9px] font-bold text-slate-400">{theme.label}</span>
+                    </div>
+                  ))}
                 </div>
-                <Progress value={progress} className="h-1.5 md:h-2 rounded-full bg-slate-100 dark:bg-slate-800" indicatorClassName={cn(theme.accent)} />
-            </div>
+              </FormItem>
+            )} />
+
+            <DialogFooter className="gap-2 flex-row justify-end mt-2">
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-slate-500 flex-1 h-12 rounded-xl">İptal</Button>
+              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-6 flex-1 h-12">Kaydet</Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── LIST CARD (Home screen) ──────────────────────────────────────────────────
+function ListCard({ list, onClick, onEdit, onDelete, onMove, isFirst, isLast }: {
+  list: ShoppingList; onClick: () => void; onEdit: () => void;
+  onDelete: (id: string) => void; onMove: (d: 'up' | 'down') => void;
+  isFirst: boolean; isLast: boolean;
+}) {
+  const Icon = listIcons[list.icon as keyof typeof listIcons] || ShoppingCart;
+  const items = list.items || [];
+  const boughtItems = list.boughtItems || [];
+  const total = items.length + boughtItems.length;
+  const progress = total === 0 ? 0 : Math.round((boughtItems.length / total) * 100);
+  const theme = getTheme(list.colorId);
+  const done = progress === 100 && total > 0;
+
+  return (
+    <div onClick={onClick}
+      className="group relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[1.5rem] overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.98] active:shadow-sm">
+      {/* Top color band */}
+      <div className={cn("h-1.5 w-full bg-gradient-to-r", theme.gradient)} />
+
+      {/* Content */}
+      <div className="p-4">
+        {/* Top row */}
+        <div className="flex items-start justify-between mb-3">
+          <div className={cn("p-2.5 rounded-[14px] bg-gradient-to-br text-white shadow-sm", theme.gradient)}>
+            <Icon className="h-5 w-5" />
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon"
+                className="h-8 w-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 active:scale-95"
+                onClick={e => e.stopPropagation()}>
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl shadow-xl w-44 p-1">
+              {!isFirst && <DropdownMenuItem onClick={e => { e.stopPropagation(); onMove('up'); }} className="cursor-pointer rounded-lg gap-2"><ChevronUp className="h-4 w-4 text-indigo-500" />Yukarı Taşı</DropdownMenuItem>}
+              {!isLast && <DropdownMenuItem onClick={e => { e.stopPropagation(); onMove('down'); }} className="cursor-pointer rounded-lg gap-2"><ChevronDown className="h-4 w-4 text-indigo-500" />Aşağı Taşı</DropdownMenuItem>}
+              <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />
+              <DropdownMenuItem onClick={e => { e.stopPropagation(); onEdit(); }} className="cursor-pointer rounded-lg gap-2"><Edit className="h-4 w-4 text-slate-500" />Düzenle</DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem onSelect={e => e.preventDefault()} onClick={e => e.stopPropagation()} className="text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer rounded-lg gap-2">
+                    <Trash2 className="h-4 w-4" />Sil
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="w-[90%] max-w-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-2xl p-5" onClick={e => e.stopPropagation()}>
+                  <AlertDialogHeader>
+                    <AlertDialogTitleComponent>Listeyi sil?</AlertDialogTitleComponent>
+                    <AlertDialogDescription className="text-slate-500 dark:text-slate-400">Bu liste ve tüm ürünleri kalıcı olarak silinecek.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="mt-4 gap-2">
+                    <AlertDialogCancel className="bg-slate-100 dark:bg-slate-800 border-0 h-11 rounded-xl m-0">İptal</AlertDialogCancel>
+                    <AlertDialogAction onClick={e => { e.stopPropagation(); onDelete(list.id); }} className="bg-rose-600 hover:bg-rose-700 text-white h-11 rounded-xl m-0">Sil</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-    );
-};
 
+        {/* Name */}
+        <h3 className="font-black text-base leading-snug text-slate-900 dark:text-white mb-1 truncate">{list.name}</h3>
+
+        {/* Stats */}
+        <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3">
+          <span>{items.length} ürün bekliyor</span>
+          {done
+            ? <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Tamamlandı</span>
+            : <span>{boughtItems.length}/{total} alındı</span>
+          }
+        </div>
+
+        {/* Progress */}
+        <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+          <div className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-500", theme.gradient)} style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ITEM ROW (inside list view) ──────────────────────────────────────────────
+function ItemRow({ item, theme, onToggle, onConfirmBuy, onDelete, isBought }: {
+  item: ShoppingListItemType; theme: typeof LIST_THEMES[0];
+  onToggle: () => void; onConfirmBuy: () => void; onDelete: () => void; isBought: boolean;
+}) {
+  const catCfg = CATEGORY_CONFIG[item.category || 'Diğer'] || CATEGORY_CONFIG['Diğer'];
+  const CatIcon = catCfg.icon;
+
+  return (
+    <div onClick={onToggle}
+      className={cn(
+        "group flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.99] border",
+        isBought
+          ? "bg-slate-50/80 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800/50 opacity-60"
+          : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm"
+      )}>
+      {/* Circle check */}
+      <div className={cn(
+        "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all",
+        isBought
+          ? "bg-emerald-500 border-emerald-500"
+          : `border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900`
+      )}>
+        {isBought && <Check className="h-3.5 w-3.5 text-white stroke-[3]" />}
+      </div>
+
+      {/* Category icon pill */}
+      <div className={cn("p-1.5 rounded-lg flex-shrink-0", catCfg.bg, catCfg.border, "border")}>
+        <CatIcon className={cn("h-3.5 w-3.5", catCfg.color)} />
+      </div>
+
+      {/* Name */}
+      <span className={cn("flex-grow font-semibold text-sm transition-all",
+        isBought ? "line-through text-slate-400 dark:text-slate-500" : "text-slate-800 dark:text-slate-200")}>
+        {item.name}
+      </span>
+
+      {/* Actions */}
+      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+        {isBought && (
+          <button onClick={onConfirmBuy}
+            className="h-8 w-8 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-all active:scale-90">
+            <CheckCircle2 className="h-4 w-4" />
+          </button>
+        )}
+        <button onClick={onDelete}
+          className="h-8 w-8 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 md:opacity-0 md:group-hover:opacity-100 transition-all active:scale-90">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function ShoppingPage() {
   const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const { toast } = useToast();
-  
+
   const [isListDialogOpen, setListDialogOpen] = useState(false);
   const [editingList, setEditingList] = useState<ShoppingList | null>(null);
   const [selectedList, setSelectedList] = useState<ShoppingList | null>(null);
-  
-  const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'pending' | 'bought'>('pending');
+
+  const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [newItemName, setNewItemName] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
@@ -314,514 +289,409 @@ export default function ShoppingPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
 
+  // ── Data loading ───────────────────────────────────────────────────────────
   useEffect(() => {
-    const unsubShopping = onShoppingListsUpdate((lists) => {
-        const sortedLists = lists.sort((a, b) => {
-            const orderA = a.order ?? 0;
-            const orderB = b.order ?? 0;
-            if (orderA !== orderB) return orderA - orderB;
-            return (new Date(b.createdAt || 0).getTime()) - (new Date(a.createdAt || 0).getTime());
-        });
-        setShoppingLists(sortedLists);
-        setIsLoaded(true);
+    const unsub = onShoppingListsUpdate(lists => {
+      setShoppingLists(lists.sort((a, b) => {
+        const oA = a.order ?? 0, oB = b.order ?? 0;
+        if (oA !== oB) return oA - oB;
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      }));
+      setIsLoaded(true);
     });
-    return () => unsubShopping();
+    return () => unsub();
   }, []);
 
   useEffect(() => {
-    if (selectedList && shoppingLists) {
-      const updatedList = shoppingLists.find(l => l.id === selectedList.id);
-      setSelectedList(updatedList || null);
+    if (selectedList) {
+      const updated = shoppingLists.find(l => l.id === selectedList.id);
+      setSelectedList(updated || null);
     }
-  }, [shoppingLists, selectedList]);
-  
+  }, [shoppingLists, selectedList?.id]);
+
+  // ── Suggestions ────────────────────────────────────────────────────────────
   const historicalItems = useMemo(() => {
     const items = new Set<string>();
-    shoppingLists.forEach(list => {
-      (list.items || []).forEach(item => items.add(item.name));
-      (list.boughtItems || []).forEach(item => items.add(item.name));
+    shoppingLists.forEach(l => {
+      (l.items || []).forEach(i => items.add(i.name));
+      (l.boughtItems || []).forEach(i => items.add(i.name));
     });
     return Array.from(items);
   }, [shoppingLists]);
 
   useEffect(() => {
-    if (newItemName.trim() === '') {
-      setSuggestions([]);
-      return;
-    }
-    const lowercasedQuery = newItemName.toLowerCase();
-    const filteredHistory = historicalItems.filter(item => item.toLowerCase().startsWith(lowercasedQuery)).slice(0, 3);
-    const filteredDefaults = defaultShoppingItems.filter(item => item.toLowerCase().startsWith(lowercasedQuery) && !filteredHistory.includes(item)).slice(0, 3);
-    setSuggestions([...filteredHistory, ...filteredDefaults]);
+    if (!newItemName.trim()) { setSuggestions([]); return; }
+    const q = newItemName.toLowerCase();
+    const hist = historicalItems.filter(i => i.toLowerCase().startsWith(q)).slice(0, 3);
+    const def = defaultShoppingItems.filter(i => i.toLowerCase().startsWith(q) && !hist.includes(i)).slice(0, 3);
+    setSuggestions([...hist, ...def]);
   }, [newItemName, historicalItems]);
 
-
-  const toggleVoiceInput = (e: React.MouseEvent) => {
+  // ── Voice ──────────────────────────────────────────────────────────────────
+  const toggleVoice = (e: React.MouseEvent) => {
     e.preventDefault();
-    
-    if (isListening && recognitionRef.current) {
-        recognitionRef.current.stop();
-        setIsListening(false);
-        return;
-    }
-
+    if (isListening && recognitionRef.current) { recognitionRef.current.stop(); setIsListening(false); return; }
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        toast({ title: "Desteklenmiyor", description: "Tarayıcınız sesli girişi desteklemiyor.", variant: 'destructive' });
-        return;
+      toast({ title: "Desteklenmiyor", variant: 'destructive' }); return;
     }
-    
     // @ts-ignore
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognitionRef.current = recognition;
-    
-    recognition.lang = 'tr-TR';
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    const baseText = newItemName ? newItemName + ' ' : '';
-
-    recognition.onstart = () => setIsListening(true);
-    recognition.onresult = (event: any) => {
-        let transcript = '';
-        for (let i = 0; i < event.results.length; ++i) {
-            transcript += event.results[i][0].transcript;
-        }
-        setNewItemName(baseText + transcript);
-        if (inputRef.current) inputRef.current.focus();
-    };
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
-    
-    recognition.start();
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec = new SR(); recognitionRef.current = rec;
+    rec.lang = 'tr-TR'; rec.continuous = true; rec.interimResults = true;
+    const base = newItemName ? newItemName + ' ' : '';
+    rec.onstart = () => setIsListening(true);
+    rec.onresult = (ev: any) => { let t = ''; for (let i = 0; i < ev.results.length; ++i) t += ev.results[i][0].transcript; setNewItemName(base + t); inputRef.current?.focus(); };
+    rec.onerror = rec.onend = () => setIsListening(false);
+    rec.start();
   };
 
+  // ── CRUD ───────────────────────────────────────────────────────────────────
   const handleCreateOrUpdateList = async (data: CreateListFormData) => {
     try {
-        if (editingList) {
-            await updateShoppingList(editingList.id, { name: data.name, icon: data.icon, colorId: data.colorId }); 
-            toast({ title: "Liste Güncellendi" });
-        } else {
-            await addShoppingList(data.name, data.icon, data.colorId);
-            toast({ title: "Harika! Yeni listeniz hazır 🚀" });
-        }
-        setListDialogOpen(false);
-        setEditingList(null);
-    } catch(e: any) {
-        console.error("List process error:", e);
-        toast({ title: "Hata", description: "Liste kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.", variant: 'destructive'});
-    }
+      if (editingList) { await updateShoppingList(editingList.id, { name: data.name, icon: data.icon, colorId: data.colorId }); toast({ title: "Liste güncellendi ✅" }); }
+      else { await addShoppingList(data.name, data.icon, data.colorId); toast({ title: "Yeni liste oluşturuldu 🛒" }); }
+      setListDialogOpen(false); setEditingList(null);
+    } catch { toast({ title: "Hata", variant: 'destructive' }); }
   };
-  
-  const handleAddItem = async (e?: React.FormEvent, itemName?: string) => {
-    e?.preventDefault();
-    const itemToAdd = itemName || newItemName;
-    if (!itemToAdd.trim() || !selectedList) return;
 
+  const handleAddItem = async (e?: React.FormEvent, name?: string) => {
+    e?.preventDefault();
+    const itemName = name || newItemName;
+    if (!itemName.trim() || !selectedList) return;
     setIsAiProcessing(true);
     try {
-        const isComplex = itemToAdd.includes(',') || itemToAdd.includes('malzemeleri') || itemToAdd.includes('için');
-
-        if(isComplex) {
-             const aiResult = await generateShoppingListItems(itemToAdd.trim());
-             if (aiResult?.items?.length > 0) {
-                for (const item of aiResult.items) {
-                    await addShoppingListItemToList(selectedList.id, item);
-                }
-                toast({ title: "✨ Ürünler Eklendi", description: `${aiResult.items.length} ürün listelendi.` });
-            } else {
-                 await addShoppingListItemToList(selectedList.id, { name: itemToAdd.trim(), category: 'Diğer' });
-            }
-        } else {
-             await addShoppingListItemToList(selectedList.id, { name: itemToAdd.trim(), category: 'Diğer' });
-        }
-
-    } catch (error) {
-        await addShoppingListItemToList(selectedList.id, { name: itemToAdd.trim(), category: 'Diğer' });
-    } finally {
-        setNewItemName('');
-        setIsAiProcessing(false);
-        inputRef.current?.focus();
-    }
-  };
-
-  const handleSuggestionClick = (suggestion: string) => {
-    handleAddItem(undefined, suggestion);
-    setNewItemName('');
-    setSuggestions([]);
+      const complex = itemName.includes(',') || itemName.includes('malzemeleri') || itemName.includes('için');
+      if (complex) {
+        const res = await generateShoppingListItems(itemName.trim());
+        if (res?.items?.length > 0) { for (const it of res.items) await addShoppingListItemToList(selectedList.id, it); toast({ title: `✨ ${res.items.length} ürün eklendi` }); }
+        else await addShoppingListItemToList(selectedList.id, { name: itemName.trim(), category: 'Diğer' });
+      } else {
+        await addShoppingListItemToList(selectedList.id, { name: itemName.trim(), category: 'Diğer' });
+      }
+    } catch { await addShoppingListItemToList(selectedList.id, { name: itemName.trim(), category: 'Diğer' }); }
+    finally { setNewItemName(''); setIsAiProcessing(false); inputRef.current?.focus(); }
   };
 
   const handleDeleteList = async (id: string) => {
-      try {
-          await deleteShoppingList(id);
-          toast({ title: "Liste Silindi" });
-      } catch (error) {
-          toast({ title: "Hata", description: "Liste silinirken bir sorun oluştu.", variant: "destructive" });
-      }
-  };
-  
-  const handleMoveList = async (list: ShoppingList, direction: 'up' | 'down') => {
-    const currentIndex = shoppingLists.findIndex(l => l.id === list.id);
-    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    if (targetIndex < 0 || targetIndex >= shoppingLists.length) return;
-    const targetList = shoppingLists[targetIndex];
-    const currentOrder = list.order ?? currentIndex;
-    const targetOrder = targetList.order ?? targetIndex;
-
-    try {
-        await updateShoppingList(list.id, { order: targetOrder });
-        await updateShoppingList(targetList.id, { order: currentOrder });
-    } catch (error) {
-        toast({ title: "Hata", description: "Sıralama güncellenemedi.", variant: "destructive" });
-    }
+    try { await deleteShoppingList(id); toast({ title: "Liste silindi" }); }
+    catch { toast({ title: "Hata", variant: "destructive" }); }
   };
 
-  const toggleItemCheck = async (listId: string, item: ShoppingListItemType) => {
-    await toggleShoppingListItemStatusInList(listId, item.id, !item.isBought);
-  }
+  const handleMoveList = async (list: ShoppingList, dir: 'up' | 'down') => {
+    const idx = shoppingLists.findIndex(l => l.id === list.id);
+    const tIdx = dir === 'up' ? idx - 1 : idx + 1;
+    if (tIdx < 0 || tIdx >= shoppingLists.length) return;
+    const target = shoppingLists[tIdx];
+    try { await updateShoppingList(list.id, { order: target.order ?? tIdx }); await updateShoppingList(target.id, { order: list.order ?? idx }); }
+    catch { toast({ title: "Hata", variant: "destructive" }); }
+  };
 
-  const moveItemToHistory = async (listId: string, item: ShoppingListItemType) => {
-    await moveItemToBought(listId, item.id);
-  }
-  
-  const moveItemToPendingList = async (listId: string, item: ShoppingListItemType) => {
-    await moveItemToPending(listId, item.id);
-  }
+  // ── Loading ────────────────────────────────────────────────────────────────
+  if (!isLoaded) return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600" />
+    </div>
+  );
 
-  const handleDeleteItem = async (listId: string, itemId: string, fromBought: boolean) => {
-    try {
-        await deleteShoppingListItemFromList(listId, itemId, fromBought);
-    } catch(e) {
-        toast({ title: "Hata", variant: "destructive" });
-    }
-  }
-
-  if (!isLoaded) {
-    return (
-        <div className={cn("min-h-screen flex items-center justify-center transition-colors duration-500", glassColors.PAGE_BG_SOFT)}>
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
-        </div>
-    );
-  }
-
-  // --- INSIDE A LIST VIEW ---
+  // ══════════════════════════════════════════════════════════════════════════
+  // ─── LIST DETAIL VIEW ─────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
   if (selectedList) {
-    const theme = themeColors.find(c => c.id === (selectedList.colorId || 'ocean')) || themeColors[0];
-    const pendingItems = (selectedList.items || []).sort((a,b) => (new Date(b.createdAt||0).getTime()) - (new Date(a.createdAt||0).getTime()));
-    const boughtItems = (selectedList.boughtItems || []).sort((a,b) => (new Date(b.createdAt||0).getTime()) - (new Date(a.createdAt||0).getTime()));
-        
-    const groupedPendingItems = pendingItems.reduce((acc, item) => {
-            const category = item.category || 'Diğer';
-            if (!acc[category]) acc[category] = [];
-            acc[category].push(item);
-            return acc;
-        }, {} as Record<string, ShoppingListItemType[]>);
-        
-    const categoryOrder: { [key: string]: number } = {
-        'Meyve ve Sebze': 1, 'Et ve Tavuk Ürünleri': 2, 'Süt Ürünleri': 3, 'Unlu Mamüller': 4,
-        'Temel Gıda': 5, 'Atıştırmalık': 6, 'İçecekler': 7, 'Dondurulmuş Gıdalar': 8,
-        'Temizlik Ürünleri': 9, 'Kişisel Bakım': 10, 'Bebek Ürünleri': 11, 'Diğer': 99
-    };
-    
-    const sortedPendingCategories = Object.entries(groupedPendingItems).sort(([catA], [catB]) => {
-        return (categoryOrder[catA] || 99) - (categoryOrder[catB] || 99);
-    });
+    const theme = getTheme(selectedList.colorId);
+    const pendingItems = (selectedList.items || []).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    const boughtItems  = (selectedList.boughtItems || []).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    const total = pendingItems.length + boughtItems.length;
+    const progress = total === 0 ? 0 : Math.round((boughtItems.length / total) * 100);
+
+    // Group pending by category
+    const grouped = pendingItems.reduce((acc, item) => {
+      const cat = item.category || 'Diğer';
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(item);
+      return acc;
+    }, {} as Record<string, ShoppingListItemType[]>);
+    const sortedCategories = Object.entries(grouped).sort(([a], [b]) =>
+      (CATEGORY_ORDER.indexOf(a) ?? 99) - (CATEGORY_ORDER.indexOf(b) ?? 99)
+    );
+
+    const ListIcon = listIcons[selectedList.icon as keyof typeof listIcons] || ShoppingCart;
 
     return (
-        <div className={cn("min-h-screen font-sans relative flex flex-col transition-colors duration-500 pb-20", glassColors.PAGE_BG_SOFT)}>
-            
-            {/* Header - App Bar Style */}
-            <div className={cn("sticky top-0 z-40 transition-all duration-300", glassColors.HEADER_BG_SOFT)}>
-                <div className="px-4 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500 dark:text-slate-400 active:scale-95 transition-all" onClick={() => setSelectedList(null)}>
-                            <ArrowLeft className="h-5 w-5 md:h-6 md:w-6" />
-                        </Button>
-                        <div className="flex flex-col ml-1">
-                             <h1 className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-tight truncate max-w-[200px] sm:max-w-[300px]">{selectedList.name}</h1>
-                             <span className="text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400">{pendingItems.length} alınacak</span>
-                        </div>
-                    </div>
-                     <div className={cn("p-2 rounded-xl text-white shadow-sm bg-gradient-to-br shrink-0", theme.icon)}>
-                        {React.createElement(listIcons[selectedList.icon as keyof typeof listIcons] || ShoppingCart, { className: "h-4 w-4 md:h-5 md:w-5" })}
-                    </div>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col pb-28">
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/60">
+          {/* Color bar */}
+          <div className={cn("h-1 w-full bg-gradient-to-r", theme.gradient)} />
+          <div className="px-4 py-3 flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 active:scale-95" onClick={() => setSelectedList(null)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className={cn("p-2 rounded-xl bg-gradient-to-br text-white shadow-sm", theme.gradient)}>
+              <ListIcon className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-base font-black text-slate-900 dark:text-white leading-tight truncate">{selectedList.name}</h1>
+              <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">{pendingItems.length} bekliyor · {boughtItems.length} alındı</p>
+            </div>
+            {total > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div className={cn("h-full rounded-full bg-gradient-to-r transition-all", theme.gradient)} style={{ width: `${progress}%` }} />
                 </div>
-            </div>
+                <span className="text-xs font-black text-slate-500 dark:text-slate-400">{progress}%</span>
+              </div>
+            )}
+          </div>
 
-            {/* Content with Tabs */}
-            <div className="flex-1 flex flex-col relative z-10 mt-4 md:mt-6 max-w-3xl mx-auto w-full px-3 md:px-6">
-                <Tabs defaultValue="pending" className="flex flex-col flex-1 w-full">
-                    <div className="flex-shrink-0 mb-4 md:mb-6">
-                        <TabsList className="w-full h-11 md:h-12 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl md:rounded-2xl border border-slate-200 dark:border-slate-800">
-                            <TabsTrigger value="pending" className="flex-1 h-full rounded-lg md:rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:shadow-sm text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 transition-all">
-                                Alınacaklar
-                            </TabsTrigger>
-                            <TabsTrigger value="bought" className="flex-1 h-full rounded-lg md:rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:shadow-sm text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 transition-all">
-                                Sepetim ({boughtItems.length})
-                            </TabsTrigger>
-                        </TabsList>
-                    </div>
-
-                    <TabsContent value="pending" className="pb-32 space-y-2 focus-visible:outline-none w-full animate-in fade-in zoom-in-95 duration-300">
-                        {pendingItems.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-[40vh] text-center space-y-4 opacity-70">
-                                <div className="p-5 md:p-6 rounded-full bg-slate-100 dark:bg-slate-800">
-                                    <ListChecks className="h-10 w-10 md:h-12 md:w-12 text-slate-400 dark:text-slate-500" />
-                                </div>
-                                <div>
-                                    <p className="text-base md:text-lg font-bold text-slate-900 dark:text-white">Listeniz boş</p>
-                                    <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-[200px] mx-auto">Aşağıdaki + butonuna basarak ürün ekleyebilirsin.</p>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="space-y-6 md:space-y-8 w-full">
-                                {sortedPendingCategories.map(([category, items]) => (
-                                    <div key={category} className="w-full">
-                                        {category !== 'Diğer' && (
-                                            <h3 className="font-bold text-[10px] md:text-xs uppercase tracking-widest py-2 pl-2 flex items-center gap-1.5 mb-1.5 md:mb-2 text-slate-500 dark:text-slate-400">
-                                                <div className={cn("w-1.5 h-1.5 rounded-full", theme.accent)}></div>
-                                                {category}
-                                            </h3>
-                                        )}
-                                        <div className="grid gap-2 md:gap-3 w-full">
-                                        {items.map((item, index) => (
-                                            <div 
-                                                key={`${item.id}-${index}`} 
-                                                onClick={() => toggleItemCheck(selectedList.id, item)} 
-                                                className={cn(
-                                                    "group flex items-center gap-3 py-3 px-4 rounded-[1rem] md:rounded-[1.25rem] transition-all cursor-pointer w-full active:scale-[0.99]",
-                                                    glassColors.CARD_BG_MATTE,
-                                                    glassColors.CARD_HOVER_MATTE,
-                                                    item.isBought && "opacity-60 bg-slate-50 dark:bg-slate-900/50"
-                                                )}
-                                            >
-                                                <Checkbox 
-                                                    id={item.id} 
-                                                    checked={item.isBought} 
-                                                    className={cn(
-                                                        "size-5 md:size-6 rounded-full border-2 transition-all pointer-events-none bg-white dark:bg-slate-900",
-                                                        item.isBought 
-                                                            ? `bg-slate-400 border-slate-400 dark:bg-slate-600 dark:border-slate-600 text-white` 
-                                                            : theme.checkbox
-                                                    )}
-                                                />
-                                                
-                                                <label 
-                                                    htmlFor={item.id} 
-                                                    className={cn(
-                                                        "font-bold flex-grow cursor-pointer text-sm md:text-base transition-all",
-                                                        item.isBought ? "line-through text-slate-400 dark:text-slate-500" : "text-slate-800 dark:text-slate-200"
-                                                    )}
-                                                >
-                                                    {item.name}
-                                                </label>
-
-                                                <div className="flex items-center gap-0.5">
-                                                    {item.isBought ? (
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="icon" 
-                                                            className="h-8 w-8 md:h-10 md:w-10 rounded-full text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-all active:scale-95" 
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                moveItemToHistory(selectedList!.id, item);
-                                                            }}
-                                                        >
-                                                            <Check className="h-4 w-4 md:h-5 md:w-5" />
-                                                        </Button>
-                                                    ) : null}
-                                                    
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="icon" 
-                                                        className="h-8 w-8 md:h-10 md:w-10 rounded-full text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-all md:opacity-0 md:group-hover:opacity-100 active:scale-95" 
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleDeleteItem(selectedList!.id, item.id, false);
-                                                        }}
-                                                    >
-                                                        <Trash2 className="h-4 w-4 md:h-5 md:w-5" />
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </TabsContent>
-
-                    <TabsContent value="bought" className="pb-32 focus-visible:outline-none w-full animate-in fade-in zoom-in-95 duration-300">
-                        {boughtItems.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-[30vh] text-center opacity-50">
-                                <p className="font-medium text-slate-500 dark:text-slate-400 text-sm">Henüz satın alınan ürün yok.</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-2 md:space-y-3 w-full mt-2">
-                                {boughtItems.map((item, index) => (
-                                    <div key={`${item.id}-${index}`} className="flex items-center gap-3 py-2.5 px-4 group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl md:rounded-2xl hover:border-slate-300 dark:hover:border-slate-700 transition-all active:scale-[0.99]">
-                                        <div 
-                                            className="h-6 w-6 rounded-full flex items-center justify-center cursor-pointer bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800 flex-shrink-0 active:scale-90 transition-transform"
-                                            onClick={() => moveItemToPendingList(selectedList.id, item)}
-                                        >
-                                            <CheckCircle2 className="h-4 w-4" />
-                                        </div>
-                                        <span className="flex-grow font-medium text-sm md:text-base line-through text-slate-400 dark:text-slate-500 truncate">{item.name}</span>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-full active:scale-95" onClick={() => handleDeleteItem(selectedList.id, item.id, true)}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </TabsContent>
-                </Tabs>
-            </div>
-            
-             {/* FAB - FLOATING ACTION BUTTON */}
-             <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50">
-                <Button className={cn("rounded-[1.2rem] md:rounded-[1.5rem] w-14 h-14 md:w-16 md:h-16 shadow-lg shadow-indigo-500/20 transition-transform hover:scale-105 active:scale-90 text-white", theme.accent)} size="icon" onClick={() => setIsAddItemDialogOpen(true)}>
-                    <Plus className="h-6 w-6 md:h-8 md:w-8"/>
-                </Button>
-            </div>
-
-            {/* ADD ITEM DIALOG (BOTTOM SHEET STYLE) */}
-            <Dialog open={isAddItemDialogOpen} onOpenChange={setIsAddItemDialogOpen}>
-                <DialogContent className="w-[95%] sm:max-w-md rounded-[2rem] border-slate-200 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 top-[40%] p-5">
-                    <DialogHeader className="text-left">
-                        <DialogTitle className="text-lg md:text-xl font-black text-slate-900 dark:text-white">Yeni Ürün Ekle</DialogTitle>
-                        <DialogDescription className="text-slate-500 dark:text-slate-400 text-xs md:text-sm font-medium">Hızlıca ekle veya yapay zeka ile listeni oluştur.</DialogDescription>
-                    </DialogHeader>
-                    <div className="pt-2 space-y-3">
-                        <form onSubmit={handleAddItem} className="relative flex items-center gap-2">
-                            <div className="relative flex-grow group">
-                                <Input 
-                                    ref={inputRef}
-                                    value={newItemName}
-                                    onChange={(e) => setNewItemName(e.target.value)}
-                                    placeholder="2kg domates, süt..."
-                                    className="pl-4 pr-20 h-12 md:h-14 rounded-2xl text-sm md:text-base bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all shadow-inner"
-                                    autoComplete="off"
-                                />
-                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                                    <Button 
-                                        type="button" 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        onClick={toggleVoiceInput} 
-                                        className={cn("h-8 w-8 md:h-10 md:w-10 rounded-xl transition-all", isListening ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 animate-pulse" : "text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30")}
-                                    >
-                                        <Mic className="h-4 w-4 md:h-5 md:w-5" />
-                                    </Button>
-                                    {isAiProcessing && (
-                                        <Sparkles className="h-5 w-5 text-indigo-500 animate-pulse" />
-                                    )}
-                                </div>
-                            </div>
-                            <Button type="submit" size="icon" className="h-12 w-12 md:h-14 md:w-14 shrink-0 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 shadow-md text-white active:scale-95 transition-transform" disabled={!newItemName.trim() || isAiProcessing}>
-                                <Plus className="h-5 w-5 md:h-6 md:w-6" />
-                            </Button>
-                        </form>
-                        {suggestions.length > 0 && newItemName.length > 0 && (
-                            <div className="p-1.5 border border-slate-200 dark:border-slate-800 rounded-[1.25rem] bg-white dark:bg-slate-900 shadow-xl max-h-40 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                                <div className="flex flex-col gap-1">
-                                    {suggestions.map((s, i) => (
-                                        <button
-                                            key={i}
-                                            type="button"
-                                            onClick={() => handleSuggestionClick(s)}
-                                            className="px-3 py-2.5 active:bg-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 dark:active:bg-slate-700 rounded-xl text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300 transition-colors text-left flex items-center gap-2.5 group"
-                                        >
-                                            <Search className="h-3.5 w-3.5 md:h-4 md:w-4 text-slate-400 group-hover:text-indigo-500" />
-                                            {s}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </DialogContent>
-            </Dialog>
+          {/* Tabs */}
+          <div className="px-4 pb-3 flex gap-2">
+            {(['pending', 'bought'] as const).map(tab => (
+              <button key={tab} onClick={() => setActiveTab(tab)}
+                className={cn("flex-1 h-9 rounded-xl text-xs font-bold transition-all",
+                  activeTab === tab
+                    ? cn("bg-gradient-to-r text-white shadow-md", theme.gradient)
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                )}>
+                {tab === 'pending' ? `🛒 Alınacaklar (${pendingItems.length})` : `✅ Alınanlar (${boughtItems.length})`}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Content */}
+        <div className="flex-1 max-w-2xl mx-auto w-full px-4 pt-4">
+          {activeTab === 'pending' && (
+            <>
+              {pendingItems.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+                    <ListChecks className="h-10 w-10 text-slate-400" />
+                  </div>
+                  <p className="font-bold text-slate-800 dark:text-slate-200 text-lg">Liste boş!</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Aşağıdaki + butonuna basarak ürün ekle.</p>
+                </div>
+              ) : (
+                <div className="space-y-6 pb-4">
+                  {sortedCategories.map(([category, items]) => {
+                    const catCfg = CATEGORY_CONFIG[category] || CATEGORY_CONFIG['Diğer'];
+                    const CatIcon = catCfg.icon;
+                    return (
+                      <div key={category}>
+                        {/* Category header */}
+                        <div className={cn("flex items-center gap-2 px-3 py-2 rounded-xl mb-2", catCfg.bg, catCfg.border, "border")}>
+                          <CatIcon className={cn("h-4 w-4", catCfg.color)} />
+                          <span className={cn("text-xs font-black uppercase tracking-wider", catCfg.color)}>{category}</span>
+                          <span className={cn("ml-auto text-[10px] font-black px-2 py-0.5 rounded-full", catCfg.bg, catCfg.color)}>{items.length}</span>
+                        </div>
+                        {/* Items */}
+                        <div className="space-y-2">
+                          {items.map((item, idx) => (
+                            <ItemRow key={`${item.id}-${idx}`} item={item} theme={theme} isBought={!!item.isBought}
+                              onToggle={() => toggleShoppingListItemStatusInList(selectedList.id, item.id, !item.isBought)}
+                              onConfirmBuy={() => moveItemToBought(selectedList.id, item.id)}
+                              onDelete={() => deleteShoppingListItemFromList(selectedList.id, item.id, false)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === 'bought' && (
+            <>
+              {boughtItems.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center opacity-50">
+                  <CheckCircle2 className="h-12 w-12 text-slate-400 mb-3" />
+                  <p className="font-bold text-slate-500 dark:text-slate-400">Henüz alınan ürün yok.</p>
+                </div>
+              ) : (
+                <div className="space-y-2 pb-4">
+                  {boughtItems.map((item, idx) => (
+                    <div key={`${item.id}-${idx}`}
+                      className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl group">
+                      <button onClick={() => moveItemToPending(selectedList.id, item.id)}
+                        className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0 hover:bg-emerald-600 active:scale-90 transition-all">
+                        <Check className="h-3.5 w-3.5 text-white stroke-[3]" />
+                      </button>
+                      <span className="flex-grow font-semibold text-sm line-through text-slate-400 dark:text-slate-500 truncate">{item.name}</span>
+                      <button onClick={() => deleteShoppingListItemFromList(selectedList.id, item.id, true)}
+                        className="h-8 w-8 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 md:opacity-0 md:group-hover:opacity-100 transition-all active:scale-90">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* FAB */}
+        <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50">
+          <Button
+            className={cn("rounded-[1.2rem] w-14 h-14 shadow-xl text-white active:scale-90 transition-all", theme.fab, theme.fabShadow, "shadow-lg")}
+            size="icon" onClick={() => setIsAddItemOpen(true)}>
+            <Plus className="h-6 w-6" />
+          </Button>
+        </div>
+
+        {/* Add Item Dialog */}
+        <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
+          <DialogContent className="w-[95%] sm:max-w-md rounded-[2rem] border-slate-200 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-900 top-[40%] p-5">
+            <DialogHeader className="text-left">
+              <DialogTitle className="text-lg font-black text-slate-900 dark:text-white">🛒 Ürün Ekle</DialogTitle>
+              <DialogDescription className="text-slate-500 dark:text-slate-400 text-xs font-medium">Hızlı ekle veya yapay zeka ile liste oluştur.</DialogDescription>
+            </DialogHeader>
+            <div className="pt-2 space-y-3">
+              <form onSubmit={handleAddItem} className="flex items-center gap-2">
+                <div className="relative flex-grow">
+                  <Input ref={inputRef} value={newItemName} onChange={e => setNewItemName(e.target.value)}
+                    placeholder="2kg domates, süt, ekmek..." autoComplete="off"
+                    className="pl-4 pr-20 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:border-indigo-500 transition-all text-sm" />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    <button type="button" onClick={toggleVoice}
+                      className={cn("h-8 w-8 rounded-xl flex items-center justify-center transition-all",
+                        isListening ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 animate-pulse" : "text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30")}>
+                      <Mic className="h-4 w-4" />
+                    </button>
+                    {isAiProcessing && <Sparkles className="h-4 w-4 text-indigo-500 animate-pulse" />}
+                  </div>
+                </div>
+                <Button type="submit" size="icon"
+                  className={cn("h-12 w-12 shrink-0 rounded-2xl shadow-md text-white active:scale-95 transition-all", theme.fab)}
+                  disabled={!newItemName.trim() || isAiProcessing}>
+                  <Plus className="h-5 w-5" />
+                </Button>
+              </form>
+              {suggestions.length > 0 && newItemName.length > 0 && (
+                <div className="border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 shadow-xl overflow-hidden">
+                  {suggestions.map((s, i) => (
+                    <button key={i} type="button" onClick={() => { handleAddItem(undefined, s); setNewItemName(''); setSuggestions([]); }}
+                      className="w-full px-4 py-2.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0">
+                      <Search className="h-3.5 w-3.5 text-slate-400" />
+                      {s}
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-300 ml-auto" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     );
   }
 
-  // --- HOME VIEW (APP-LIKE MAIN PAGE) ---
+  // ══════════════════════════════════════════════════════════════════════════
+  // ─── HOME VIEW ────────────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  const totalPending = shoppingLists.reduce((sum, l) => sum + (l.items || []).length, 0);
+  const totalBought  = shoppingLists.reduce((sum, l) => sum + (l.boughtItems || []).length, 0);
+
   return (
-    <div className={cn("min-h-screen font-sans relative overflow-x-hidden transition-colors duration-500", glassColors.PAGE_BG_SOFT, glassColors.TEXT_MAIN)}>
-        
-        {/* Ambient Background */}
-        <div className="fixed inset-0 z-0 pointer-events-none opacity-40 dark:opacity-20">
-            <div className="absolute top-[-10%] left-[-10%] w-[300px] h-[300px] md:w-[500px] md:h-[500px] bg-indigo-200 dark:bg-indigo-900/40 rounded-full blur-[100px]" />
-            <div className="absolute top-[30%] right-[-10%] w-[250px] h-[250px] md:w-[400px] md:h-[400px] bg-fuchsia-200 dark:bg-fuchsia-900/40 rounded-full blur-[80px]" />
-        </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 relative overflow-x-hidden">
+      {/* Ambient glow */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-200/40 dark:bg-indigo-900/20 rounded-full blur-[120px]" />
+        <div className="absolute bottom-1/4 right-0 w-72 h-72 bg-fuchsia-200/30 dark:bg-fuchsia-900/10 rounded-full blur-[100px]" />
+      </div>
 
-        <div className="space-y-6 md:space-y-8 max-w-5xl mx-auto px-4 py-6 md:p-6 relative z-10 pb-28">
-            {/* Header */}
-            <div className="pt-2 md:pt-8 flex-shrink-0 relative">
-                <div className="flex items-center gap-2.5 mb-1.5 md:mb-2">
-                    <div className="p-2 md:p-3 bg-white dark:bg-slate-900 rounded-[14px] md:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                        <ShoppingCart className="w-6 h-6 md:w-8 md:h-8 text-indigo-600 dark:text-indigo-400" />
-                    </div>
-                    <h1 className="text-2xl md:text-4xl font-black tracking-tight">
-                        Alışveriş <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-fuchsia-600 dark:from-indigo-400 dark:to-fuchsia-400">Listelerim</span>
-                    </h1>
-                </div>
-                <p className="text-slate-500 dark:text-slate-400 text-xs md:text-sm font-medium ml-1">İhtiyaçlarını organize et, eksikleri tamamla.</p>
+      <div className="relative z-10 max-w-5xl mx-auto px-4 py-6 pb-32 space-y-8">
+        {/* ── Header ── */}
+        <div className="pt-4 md:pt-8">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="p-2.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <ShoppingCart className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
             </div>
-
-            {shoppingLists.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-                    {shoppingLists.map((list, index) => (
-                        <ListCard 
-                            key={list.id} 
-                            list={list} 
-                            onClick={() => setSelectedList(list)}
-                            onEdit={() => { setEditingList(list); setListDialogOpen(true); }}
-                            onDelete={handleDeleteList}
-                            onMove={(dir) => handleMoveList(list, dir)}
-                            isFirst={index === 0}
-                            isLast={index === shoppingLists.length - 1}
-                        />
-                    ))}
-                    
-                    {/* Add New List Card */}
-                    <button 
-                        onClick={() => { setEditingList(null); setListDialogOpen(true); }}
-                        className="group flex flex-col items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-[1.5rem] p-4 min-h-[160px] hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all duration-300 bg-white/50 dark:bg-slate-900/50 active:scale-95"
-                    >
-                        <div className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-white dark:bg-slate-800 shadow-sm group-active:scale-90 flex items-center justify-center mb-3 transition-transform border border-slate-200 dark:border-slate-700 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/50">
-                            <Plus className="h-6 w-6 text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
-                        </div>
-                        <span className="font-bold text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 text-xs md:text-sm text-center px-2">Yeni Liste Oluştur</span>
-                    </button>
-                </div>
-            ) : (
-                <div className="flex flex-col items-center justify-center min-h-[50vh] text-center max-w-sm mx-auto px-4">
-                    <div className="relative mb-6">
-                        <div className="absolute inset-0 bg-indigo-200 dark:bg-indigo-900/50 blur-3xl opacity-50 rounded-full animate-pulse"></div>
-                        <div className="h-20 w-20 md:h-24 md:w-24 rounded-[1.5rem] md:rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-center shadow-xl relative z-10 rotate-6 transition-transform hover:rotate-0">
-                            <ShoppingCart className="h-10 w-10 md:h-12 md:w-12 text-indigo-600 dark:text-indigo-400" />
-                        </div>
-                    </div>
-                    <h3 className="text-xl md:text-2xl font-black mb-2 text-slate-900 dark:text-white">Alışverişe Başla</h3>
-                    <p className="text-slate-500 dark:text-slate-400 mb-8 text-xs md:text-sm leading-relaxed font-medium">Hiç listeniz yok. Haftalık market, pazar veya özel günler için şık listeler oluşturun.</p>
-                    <Button onClick={() => { setEditingList(null); setListDialogOpen(true); }} className="rounded-xl md:rounded-2xl w-full h-12 md:h-14 text-sm md:text-base font-bold bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800 shadow-md active:scale-[0.98] transition-transform">
-                        <Plus className="mr-2 h-4 w-4 md:h-5 md:w-5" /> Liste Oluştur
-                    </Button>
-                </div>
-            )}
+            <div>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+                Alışveriş <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-fuchsia-600">Listeleri</span>
+              </h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">İhtiyaçlarını organize et.</p>
+            </div>
+          </div>
         </div>
 
-        {/* FAB (Floating Action Button for Mobile on Main Screen) */}
+        {/* ── Stats Strip ── */}
         {shoppingLists.length > 0 && (
-            <div className="fixed bottom-24 right-4 md:hidden z-40">
-                <Button className="rounded-[1.2rem] w-14 h-14 shadow-lg shadow-indigo-500/20 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white active:scale-90 transition-transform" size="icon" onClick={() => { setEditingList(null); setListDialogOpen(true); }}>
-                    <Plus className="h-6 w-6"/>
-                </Button>
-            </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: 'Liste', val: shoppingLists.length, icon: '📋', bg: 'from-indigo-500 to-violet-500' },
+              { label: 'Alınacak', val: totalPending, icon: '🛒', bg: 'from-amber-500 to-orange-500' },
+              { label: 'Alındı', val: totalBought, icon: '✅', bg: 'from-emerald-500 to-teal-500' },
+            ].map(s => (
+              <div key={s.label} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center gap-1 shadow-sm">
+                <span className="text-2xl">{s.icon}</span>
+                <span className="text-2xl font-black text-slate-900 dark:text-white">{s.val}</span>
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{s.label}</span>
+              </div>
+            ))}
+          </div>
         )}
+
+        {/* ── Lists Grid ── */}
+        {shoppingLists.length > 0 ? (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Listelerim</h2>
+              <Button onClick={() => { setEditingList(null); setListDialogOpen(true); }}
+                className="h-8 px-4 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
+                <Plus className="h-3.5 w-3.5 mr-1" /> Yeni Liste
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+              {shoppingLists.map((list, index) => (
+                <ListCard key={list.id} list={list}
+                  onClick={() => { setSelectedList(list); setActiveTab('pending'); }}
+                  onEdit={() => { setEditingList(list); setListDialogOpen(true); }}
+                  onDelete={handleDeleteList}
+                  onMove={dir => handleMoveList(list, dir)}
+                  isFirst={index === 0}
+                  isLast={index === shoppingLists.length - 1}
+                />
+              ))}
+              {/* Add new card */}
+              <button onClick={() => { setEditingList(null); setListDialogOpen(true); }}
+                className="group border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-[1.5rem] flex flex-col items-center justify-center min-h-[160px] gap-3 hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-white dark:hover:bg-slate-900 transition-all duration-300 active:scale-95 bg-transparent">
+                <div className="w-12 h-12 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-700 group-hover:border-indigo-400 dark:group-hover:border-indigo-500 flex items-center justify-center transition-all">
+                  <Plus className="h-5 w-5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                </div>
+                <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-500 transition-colors">Yeni Liste</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Empty state */
+          <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
+            <div className="relative mb-8">
+              <div className="absolute inset-0 bg-indigo-200 dark:bg-indigo-900/50 blur-3xl opacity-40 rounded-full" />
+              <div className="relative w-24 h-24 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2rem] flex items-center justify-center shadow-xl rotate-6 hover:rotate-0 transition-transform duration-500">
+                <ShoppingCart className="h-12 w-12 text-indigo-600 dark:text-indigo-400" />
+              </div>
+            </div>
+            <h3 className="text-2xl font-black mb-2 text-slate-900 dark:text-white">Alışverişe Başla</h3>
+            <p className="text-slate-500 dark:text-slate-400 mb-8 text-sm leading-relaxed max-w-xs">Haftalık market, pazar veya özel günler için listeler oluşturun ve takip edin.</p>
+            <Button onClick={() => { setEditingList(null); setListDialogOpen(true); }}
+              className="rounded-2xl h-14 px-8 text-base font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/25 active:scale-[0.98]">
+              <Plus className="mr-2 h-5 w-5" /> İlk Listeyi Oluştur
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile FAB */}
+      {shoppingLists.length > 0 && (
+        <div className="fixed bottom-24 right-4 md:hidden z-40">
+          <Button className="rounded-[1.2rem] w-14 h-14 shadow-xl shadow-indigo-500/30 bg-indigo-600 hover:bg-indigo-700 text-white active:scale-90 transition-all"
+            size="icon" onClick={() => { setEditingList(null); setListDialogOpen(true); }}>
+            <Plus className="h-6 w-6" />
+          </Button>
+        </div>
+      )}
 
       <CreateListDialog isOpen={isListDialogOpen} onOpenChange={setListDialogOpen} onCreate={handleCreateOrUpdateList} initialData={editingList} />
     </div>
