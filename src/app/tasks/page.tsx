@@ -232,48 +232,48 @@ const ModuleTaskItem = ({ task, assignee }: { task: any, assignee: any }) => {
 
     return (
         <div className={cn(
-            "group relative flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-3xl transition-all duration-300 border backdrop-blur-md",
+            "group relative flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-2xl transition-all duration-300 border backdrop-blur-md",
             task.isCompleted 
                 ? "bg-slate-50/50 dark:bg-slate-900/30 border-transparent shadow-none" 
                 : glassColors.CARD_BG + " hover:shadow-lg dark:hover:shadow-indigo-500/10 hover:border-indigo-200 dark:hover:border-indigo-500/30"
         )}>
             {/* SOL: CHECKBOX & BİLGİ */}
-            <div className="flex-1 flex items-start gap-4">
+            <div className="flex-1 flex items-start gap-3">
                 <button 
                     onClick={handleToggle}
                     disabled={isLoading}
                     className={cn(
-                        "mt-1 w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all duration-300 focus:outline-none",
+                        "mt-0.5 w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all duration-300 focus:outline-none",
                         isLoading ? "opacity-50 cursor-wait" : "hover:scale-110 active:scale-95",
                         task.isCompleted 
                             ? "bg-indigo-500 border-indigo-500 text-white shadow-md shadow-indigo-500/30" 
                             : "border-slate-300 dark:border-slate-600 text-transparent hover:border-indigo-500 dark:hover:border-indigo-400"
                     )}
                 >
-                    <Check className={cn("w-4 h-4", task.isCompleted ? "scale-100 opacity-100" : "scale-50 opacity-0", "transition-all duration-300")} strokeWidth={4} />
+                    <Check className={cn("w-3 h-3", task.isCompleted ? "scale-100 opacity-100" : "scale-50 opacity-0", "transition-all duration-300")} strokeWidth={4} />
                 </button>
                 
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className={cn(
-                            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider",
+                            "inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider",
                             task.color
                         )}>
-                            <Icon className="w-3.5 h-3.5" />
+                            <Icon className="w-3 h-3" />
                             {task.module}
                         </span>
                     </div>
                     
                     <h4 className={cn(
-                        "text-base font-bold truncate transition-colors duration-300",
+                        "text-sm font-bold truncate transition-colors duration-300",
                         task.isCompleted ? "text-slate-400 dark:text-slate-500 line-through" : glassColors.TEXT_MAIN
                     )}>
                         {task.title}
                     </h4>
 
                     {task.dueDate && !task.isCompleted && (
-                        <p className={cn("text-xs font-medium mt-1.5 flex items-center gap-1", glassColors.TEXT_MUTED)}>
-                            <Calendar className="w-3.5 h-3.5" /> 
+                        <p className={cn("text-[10px] font-medium mt-1 flex items-center gap-1", glassColors.TEXT_MUTED)}>
+                            <Calendar className="w-3 h-3" /> 
                             Son Tarih: <span className={cn("font-bold", "text-amber-600 dark:text-amber-400")}>{new Date(task.dueDate).toLocaleDateString('tr-TR')}</span>
                         </p>
                     )}
@@ -282,14 +282,14 @@ const ModuleTaskItem = ({ task, assignee }: { task: any, assignee: any }) => {
 
             {/* SAĞ: ATANAN KİŞİ */}
             {assignee && (
-                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center ml-11 sm:ml-0 bg-slate-100 dark:bg-slate-800/50 py-1.5 px-3 rounded-xl border border-slate-200 dark:border-white/5">
-                    <Avatar className="w-6 h-6 border-2 border-white dark:border-slate-800 shadow-sm">
+                <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center ml-9 sm:ml-0 bg-slate-100 dark:bg-slate-800/50 py-1 px-2.5 rounded-xl border border-slate-200 dark:border-white/5">
+                    <Avatar className="w-5 h-5 border-2 border-white dark:border-slate-800 shadow-sm">
                         <AvatarImage src={assignee.avatar} />
-                        <AvatarFallback style={{backgroundColor: assignee.color}} className="text-white text-[10px] font-bold">
+                        <AvatarFallback style={{backgroundColor: assignee.color}} className="text-white text-[9px] font-bold">
                             {assignee.name.substring(0,2).toUpperCase()}
                         </AvatarFallback>
                     </Avatar>
-                    <span className={cn("text-xs font-bold truncate max-w-[80px]", glassColors.TEXT_MAIN)}>{assignee.name}</span>
+                    <span className={cn("text-[10px] font-bold truncate max-w-[70px]", glassColors.TEXT_MAIN)}>{assignee.name}</span>
                 </div>
             )}
         </div>
@@ -311,6 +311,7 @@ export default function TasksPage() {
   const [editingTask, setEditingTask] = React.useState<Task | null>(null);
   const [activeTab, setActiveTab] = React.useState<'tasks' | 'habits'>('tasks');
   const [taskFilter, setTaskFilter] = React.useState<'pending' | 'completed'>('pending');
+  const [activeModuleTab, setActiveModuleTab] = React.useState<'Tümü' | 'Eğitim' | 'Ezber' | 'Namaz'>('Tümü');
   
   const { toast } = useToast();
 
@@ -609,14 +610,35 @@ type ModuleTask = {
 
                                 {pendingModuleTasks.length > 0 && (
                                     <div className="pt-6">
-                                        <h3 className="text-lg font-black mb-4 px-2 flex items-center gap-2">
-                                            <LayoutGrid className="w-5 h-5 text-indigo-500" />
-                                            Diğer Modüllerden
-                                        </h3>
-                                        <div className="space-y-4">
-                                            {pendingModuleTasks.map(mt => (
-                                                <ModuleTaskItem key={mt.id} task={mt} assignee={getAssignee(mt.assigneeId)} />
-                                            ))}
+                                        <div className="flex flex-col gap-3 mb-4">
+                                            <h3 className="text-lg font-black px-2 flex items-center gap-2">
+                                                <LayoutGrid className="w-5 h-5 text-indigo-500" />
+                                                Diğer Modüllerden
+                                            </h3>
+                                            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 px-2">
+                                                {['Tümü', 'Eğitim', 'Ezber', 'Namaz'].map(tab => (
+                                                    <button 
+                                                        key={tab}
+                                                        onClick={() => setActiveModuleTab(tab as any)}
+                                                        className={cn(
+                                                            "px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all shadow-sm whitespace-nowrap", 
+                                                            activeModuleTab === tab ? "bg-slate-800 text-white dark:bg-white dark:text-slate-900" : glassColors.BUTTON_GLASS
+                                                        )}
+                                                    >
+                                                        {tab}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-3">
+                                            {pendingModuleTasks
+                                                .filter(mt => activeModuleTab === 'Tümü' || mt.module === activeModuleTab)
+                                                .map(mt => (
+                                                    <ModuleTaskItem key={mt.id} task={mt} assignee={getAssignee(mt.assigneeId)} />
+                                                ))}
+                                            {pendingModuleTasks.filter(mt => activeModuleTab === 'Tümü' || mt.module === activeModuleTab).length === 0 && (
+                                                <p className={cn("text-xs font-medium px-2", glassColors.TEXT_MUTED)}>Bu kategoride bekleyen görev yok.</p>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -640,16 +662,37 @@ type ModuleTask = {
 
                                 {completedModuleTasks.length > 0 && (
                                     <div className="pt-6">
-                                        <h3 className="text-lg font-black mb-4 px-2 flex items-center gap-2 opacity-70">
-                                            <LayoutGrid className="w-5 h-5" />
-                                            Diğer Modüllerden
-                                        </h3>
-                                        <div className="space-y-4">
-                                            {completedModuleTasks.map(mt => (
-                                                <div key={mt.id} className="opacity-70 hover:opacity-100 transition-opacity">
-                                                    <ModuleTaskItem task={mt} assignee={getAssignee(mt.assigneeId)} />
-                                                </div>
-                                            ))}
+                                        <div className="flex flex-col gap-3 mb-4 opacity-70">
+                                            <h3 className="text-lg font-black px-2 flex items-center gap-2">
+                                                <LayoutGrid className="w-5 h-5" />
+                                                Diğer Modüllerden
+                                            </h3>
+                                            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 px-2">
+                                                {['Tümü', 'Eğitim', 'Ezber', 'Namaz'].map(tab => (
+                                                    <button 
+                                                        key={tab}
+                                                        onClick={() => setActiveModuleTab(tab as any)}
+                                                        className={cn(
+                                                            "px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all shadow-sm whitespace-nowrap", 
+                                                            activeModuleTab === tab ? "bg-slate-800 text-white dark:bg-white dark:text-slate-900" : glassColors.BUTTON_GLASS
+                                                        )}
+                                                    >
+                                                        {tab}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-3">
+                                            {completedModuleTasks
+                                                .filter(mt => activeModuleTab === 'Tümü' || mt.module === activeModuleTab)
+                                                .map(mt => (
+                                                    <div key={mt.id} className="opacity-70 hover:opacity-100 transition-opacity">
+                                                        <ModuleTaskItem task={mt} assignee={getAssignee(mt.assigneeId)} />
+                                                    </div>
+                                                ))}
+                                            {completedModuleTasks.filter(mt => activeModuleTab === 'Tümü' || mt.module === activeModuleTab).length === 0 && (
+                                                <p className={cn("text-xs font-medium px-2", glassColors.TEXT_MUTED)}>Bu kategoride tamamlanmış görev yok.</p>
+                                            )}
                                         </div>
                                     </div>
                                 )}
