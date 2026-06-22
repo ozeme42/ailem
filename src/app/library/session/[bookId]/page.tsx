@@ -109,23 +109,43 @@ function HourglassTimer({ className, isFocus = false, topSandPct, bottomSandPct,
     const rimH  = 18;
     const neckY = H / 2;
 
-    const topInnerH   = neckY - rimH;
-    const topSandH    = (topSandPct / 100) * topInnerH;
-    const topSandTopY = neckY - topSandH;
+    const topIsFilling = isFlipped;
+    const bottomIsFilling = !isFlipped;
+
+    // --- Top Chamber ---
+    const topInnerH = neckY - rimH;
+    const topSandH  = (topSandPct / 100) * topInnerH;
+    const topSandFreeY = topIsFilling ? rimH + topSandH : neckY - topSandH;
+    
+    const topPolyY1 = topIsFilling ? rimH : topSandFreeY;
+    const topPolyY2 = topIsFilling ? topSandFreeY : neckY;
+
     const topWidthAtY = (y: number) => {
         const t = (y - rimH) / topInnerH;
         return (W - 16) * (1 - t) + neckW * t;
     };
-    const topSandTopW = topWidthAtY(Math.max(rimH, topSandTopY));
+    const topFreeW = topWidthAtY(topSandFreeY);
+    const topPolyW1 = topWidthAtY(topPolyY1);
+    const topPolyW2 = topWidthAtY(topPolyY2);
 
-    const bottomInnerH   = (H - rimH) - neckY;
-    const bottomSandH    = (bottomSandPct / 100) * bottomInnerH;
-    const bottomSandTopY = (H - rimH) - bottomSandH;
+    // --- Bottom Chamber ---
+    const bottomInnerH = (H - rimH) - neckY;
+    const bottomSandH  = (bottomSandPct / 100) * bottomInnerH;
+
+    const bottomSandFreeY = bottomIsFilling ? (H - rimH) - bottomSandH : neckY + bottomSandH;
+
+    const bottomPolyY1 = bottomIsFilling ? bottomSandFreeY : neckY;
+    const bottomPolyY2 = bottomIsFilling ? H - rimH : bottomSandFreeY;
+
     const bottomWidthAtY = (y: number) => {
         const t = (y - neckY) / bottomInnerH;
         return neckW * (1 - t) + (W - 16) * t;
     };
-    const bottomSandTopW = bottomWidthAtY(Math.min(H - rimH, bottomSandTopY));
+    const bottomFreeW = bottomWidthAtY(bottomSandFreeY);
+    const bottomPolyW1 = bottomWidthAtY(bottomPolyY1);
+    const bottomPolyW2 = bottomWidthAtY(bottomPolyY2);
+
+    const activeGrad = isFlipped ? "url(#hg-sandGradInverted)" : "url(#hg-sandGrad)";
 
     return (
         <div className={cn("relative flex flex-col items-center justify-center select-none", className)}>
@@ -145,8 +165,7 @@ function HourglassTimer({ className, isFocus = false, topSandPct, bottomSandPct,
                         <stop offset="0%" stopColor={sandColor2} />
                         <stop offset="100%" stopColor={sandColor} />
                     </linearGradient>
-                    {/* Alt hazne için ayrı gradient: altta koyu, üstte açık — alttan doluyor hissi */}
-                    <linearGradient id="hg-sandGradBottom" x1="0" y1="1" x2="0" y2="0">
+                    <linearGradient id="hg-sandGradInverted" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={sandColor} />
                         <stop offset="100%" stopColor={sandColor2} />
                     </linearGradient>
@@ -176,25 +195,25 @@ function HourglassTimer({ className, isFocus = false, topSandPct, bottomSandPct,
                 {topSandPct > 0 && (
                     <polygon
                         clipPath="url(#hg-topChamber)"
-                        points={`${midX-topSandTopW/2},${topSandTopY} ${midX+topSandTopW/2},${topSandTopY} ${midX+neckW/2},${neckY} ${midX-neckW/2},${neckY}`}
-                        fill="url(#hg-sandGrad)" opacity="0.92"
+                        points={`${midX-topPolyW1/2},${topPolyY1} ${midX+topPolyW1/2},${topPolyY1} ${midX+topPolyW2/2},${topPolyY2} ${midX-topPolyW2/2},${topPolyY2}`}
+                        fill={activeGrad} opacity="0.92"
                     />
                 )}
                 {topSandPct > 1 && (
-                    <line x1={midX-topSandTopW/2+2} y1={topSandTopY+1} x2={midX+topSandTopW/2-2} y2={topSandTopY+1}
+                    <line x1={midX-topFreeW/2+2} y1={topSandFreeY+(topIsFilling?-1:1)} x2={midX+topFreeW/2-2} y2={topSandFreeY+(topIsFilling?-1:1)}
                         stroke="white" strokeWidth="2" strokeOpacity="0.4" strokeLinecap="round" />
                 )}
 
-                {/* Alt kum — alttan yukarıya dolar, gradient de alttan açığa */}
+                {/* Alt kum */}
                 {bottomSandPct > 0 && (
                     <polygon
                         clipPath="url(#hg-bottomChamber)"
-                        points={`${midX-bottomSandTopW/2},${bottomSandTopY} ${midX+bottomSandTopW/2},${bottomSandTopY} ${W-8},${H-rimH} ${8},${H-rimH}`}
-                        fill="url(#hg-sandGradBottom)" opacity="0.92"
+                        points={`${midX-bottomPolyW1/2},${bottomPolyY1} ${midX+bottomPolyW1/2},${bottomPolyY1} ${midX+bottomPolyW2/2},${bottomPolyY2} ${midX-bottomPolyW2/2},${bottomPolyY2}`}
+                        fill={activeGrad} opacity="0.92"
                     />
                 )}
                 {bottomSandPct > 1 && (
-                    <line x1={midX-bottomSandTopW/2+2} y1={bottomSandTopY+1} x2={midX+bottomSandTopW/2-2} y2={bottomSandTopY+1}
+                    <line x1={midX-bottomFreeW/2+2} y1={bottomSandFreeY+(bottomIsFilling?1:-1)} x2={midX+bottomFreeW/2-2} y2={bottomSandFreeY+(bottomIsFilling?1:-1)}
                         stroke="white" strokeWidth="2" strokeOpacity="0.35" strokeLinecap="round" />
                 )}
 
@@ -209,27 +228,25 @@ function HourglassTimer({ className, isFocus = false, topSandPct, bottomSandPct,
                 {/* Boyun */}
                 <rect x={midX-neckW/2} y={neckY-2} width={neckW} height={4} fill={sandColor} rx="2" opacity="0.7" />
 
-                {/* Kum akışı — isFlipped iken tanecikler SVG'de yukarıya akar (ekranda aşağıya görünür) */}
+                {/* Kum akışı */}
                 {isFlowing && (
                     <>
-                        {/* Akış çizgisi: dolmakta olan hazneye doğru */}
                         <motion.rect
                             x={midX-1}
-                            y={isFlipped ? topSandTopY : neckY+2}
+                            y={isFlipped ? topSandFreeY : neckY+2}
                             width={2}
                             height={isFlipped
-                                ? (neckY - topSandTopY > 14 ? neckY - topSandTopY - 14 : 28)
-                                : (bottomSandTopY > neckY+14 ? bottomSandTopY-neckY-14 : 28)}
+                                ? (neckY - topSandFreeY > 14 ? neckY - topSandFreeY - 14 : 28)
+                                : (bottomSandFreeY > neckY+14 ? bottomSandFreeY-neckY-14 : 28)}
                             rx={1} fill={sandColor2} opacity={0.55}
                             animate={{ opacity: [0.35, 0.65, 0.35] }}
                             transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
                         />
-                        {/* Kum taneleri — dolmakta olan hazneye doğru animate edilir */}
                         {SAND_PARTICLES.map((p, i) => {
                             const startY = neckY + (isFlipped ? -4 : 4);
                             const endY   = isFlipped
-                                ? (topSandTopY < neckY-20 ? topSandTopY+4 : neckY-60)   // SVG yukarı
-                                : (bottomSandTopY > neckY+20 ? bottomSandTopY-4 : neckY+60); // SVG aşağı
+                                ? (topSandFreeY < neckY-20 ? topSandFreeY+4 : neckY-60)
+                                : (bottomSandFreeY > neckY+20 ? bottomSandFreeY-4 : neckY+60);
                             return (
                                 <motion.circle
                                     key={i} cx={midX+p.dx} r={p.size}
@@ -243,7 +260,7 @@ function HourglassTimer({ className, isFocus = false, topSandPct, bottomSandPct,
                         {/* Çarptığı yerde yayılma parlaması */}
                         {isFlipped ? (
                             topSandPct > 1 && (
-                                <motion.ellipse cx={midX} cy={topSandTopY} rx={6} ry={2}
+                                <motion.ellipse cx={midX} cy={topSandFreeY} rx={6} ry={2}
                                     fill={sandColor2} fillOpacity={0.4}
                                     animate={{ rx: [4, 8, 4], fillOpacity: [0.2, 0.5, 0.2] }}
                                     transition={{ repeat: Infinity, duration: 0.6, ease: "easeInOut" }}
