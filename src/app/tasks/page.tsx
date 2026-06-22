@@ -237,6 +237,7 @@ type ModuleTask = {
     dueDate?: string;
     icon: any;
     color: string;
+    bgClass?: string;
     onToggle: (completed: boolean) => Promise<void>;
 };
 
