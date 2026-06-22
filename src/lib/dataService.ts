@@ -227,7 +227,7 @@ export const updateUserBookStatus = async (fid: string, mid: string, bid: string
     }
 };
 
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 export const uploadImageToStorage = async (file: File, path: string): Promise<string> => {
     const storageRef = ref(storage, path);
@@ -239,6 +239,16 @@ export const uploadFileToStorage = async (file: File, path: string): Promise<str
     const storageRef = ref(storage, path);
     await uploadBytes(storageRef, file);
     return await getDownloadURL(storageRef);
+};
+
+export const deleteFileFromStorage = async (fileUrl: string): Promise<void> => {
+    try {
+        if (!fileUrl.includes('firebasestorage.googleapis.com')) return;
+        const storageRef = ref(storage, fileUrl);
+        await deleteObject(storageRef);
+    } catch (error) {
+        console.error("Storage'dan dosya silinirken hata:", error);
+    }
 };
 
 // --- VIDEOS ---
@@ -292,7 +302,12 @@ export const addTest = async (data: Omit<Test, 'id' | 'familyId' | 'questions'>,
     }
 };
 export const updateTest = async (id: string, data: Partial<Omit<Test, 'id' | 'familyId'>>) => updateDoc(doc(db, 'tests', id), removeUndefined(data));
-export const deleteTest = (id: string) => deleteDoc(doc(db, "tests", id));
+export const deleteTest = async (id: string, fileUrl?: string) => {
+    if (fileUrl) {
+        await deleteFileFromStorage(fileUrl);
+    }
+    return deleteDoc(doc(db, "tests", id));
+};
 
 // --- GOALS ---
 export const onGoalsUpdate = (callback: (goals: Goal[]) => void) => onFamilyDataUpdate<Goal>('goals', callback);

@@ -423,6 +423,11 @@ export interface JsonTestQuestion {
   answer: string;
 }
 
+export interface TestSection {
+    name: string;
+    questionCount: number;
+}
+
 export interface Test {
   id: string;
   familyId: string;
@@ -438,6 +443,7 @@ export interface Test {
   sourceType: 'bank' | 'quick' | 'exam' | 'mistake' | 'trackedBook' | 'json' | 'html' | 'pdf';
   sourceId?: string;
   fileUrl?: string;
+  sections?: TestSection[];
   gradingType?: GradingType;
   score?: number;
   correctAnswers?: number;

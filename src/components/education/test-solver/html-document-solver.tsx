@@ -362,6 +362,65 @@ export function HTMLDocumentSolver({ test, studentAnswers, onAnswer, onFinish, i
         `;
     };
 
+    
+    const renderQuestionRow = (qNum: string, displayNumber: number) => {
+        const currentAns = studentAnswers[qNum] || "";
+        const correctAns = test.answerKey?.[qNum];
+        const isAnswered = !!currentAns;
+        const isCorrect = isAnswered && currentAns === correctAns;
+        const isWrong = isAnswered && currentAns !== correctAns;
+        const isEmpty = !isAnswered;
+
+        return (
+            <div key={qNum} className={cn(
+                "flex items-center gap-3 p-1 rounded-lg transition-colors",
+                isReviewMode && isCorrect && "bg-emerald-500/10",
+                isReviewMode && isWrong && "bg-rose-500/10",
+                isReviewMode && isEmpty && "bg-slate-100/50"
+            )}>
+                <span className={cn(
+                    "w-6 text-xs font-black",
+                    isReviewMode ? (isCorrect ? "text-emerald-600" : isWrong ? "text-rose-600" : "text-slate-400") : "text-slate-400"
+                )}>
+                    {displayNumber}.
+                </span>
+                <div className="flex items-center gap-1.5 flex-1">
+                    {['A', 'B', 'C', 'D', 'E'].map(opt => {
+                        const isSelected = currentAns === opt;
+                        const isCorrectOpt = isReviewMode && opt === correctAns;
+                        const isWrongSelection = isReviewMode && isSelected && opt !== correctAns;
+
+                        return (
+                            <div key={opt} className="flex-1">
+                                <button
+                                    type="button"
+                                    disabled={isReviewMode}
+                                    onClick={() => onAnswer(qNum, isSelected ? "" : opt)}
+                                    className={cn(
+                                        "flex items-center justify-center h-8 w-full rounded-lg border text-[10px] font-black transition-all",
+                                        !isReviewMode ? (
+                                            isSelected 
+                                                ? "bg-indigo-600 border-indigo-600 text-white shadow-md" 
+                                                : "bg-white dark:bg-slate-800 border-slate-200 text-slate-400 hover:border-indigo-400"
+                                        ) : (
+                                            isCorrectOpt 
+                                                ? "bg-emerald-600 border-emerald-600 text-white shadow-md scale-105" 
+                                                : isWrongSelection 
+                                                    ? "bg-rose-600 border-rose-600 text-white" 
+                                                    : "bg-white dark:bg-slate-800 border-slate-200 text-slate-300 opacity-40"
+                                        )
+                                    )}
+                                >
+                                    {opt}
+                                </button>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
+    
     const renderOpticalForm = () => (
         <div className="flex flex-col h-full bg-white dark:bg-slate-900 w-full overflow-hidden">
              <div className={cn("p-4 border-b flex justify-between items-center shrink-0", isReviewMode ? "bg-indigo-600 text-white" : "bg-slate-50 dark:bg-slate-950")}>

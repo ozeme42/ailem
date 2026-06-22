@@ -11,9 +11,10 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Check, Save, ListPlus, Type, FileJson, Copy } from "lucide-react";
+import { Save, ListPlus, Copy, Check, FileJson, Type, ChevronDown, ChevronRight } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "./ui/textarea";
+import { TestSection } from "@/lib/data";
 
 // --- DESIGN SYSTEM: Modern & Light Glassmorphism ---
 const glassColors = {
@@ -37,7 +38,9 @@ type AnswerKey = { [key: number | string]: string };
 const formSchema = z.object({
   answers: z.array(
     z.object({
-      questionNumber: z.number(),
+      questionNumber: z.union([z.string(), z.number()]),
+      sectionName: z.string().optional(),
+      displayNumber: z.number().optional(),
       value: z.string().nullable(),
     })
   ),
@@ -45,6 +48,7 @@ const formSchema = z.object({
 
 type AnswerKeyFormProps = {
   totalQuestions: number;
+  sections?: TestSection[];
   answerKey: AnswerKey;
   onSave: (newKey: AnswerKey) => void;
 };
@@ -59,30 +63,62 @@ const sampleJsonPlaceholder = `[
   }
 ]`;
 
-export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFormProps) {
+export function AnswerKeyForm({ totalQuestions, sections, answerKey, onSave }: AnswerKeyFormProps) {
   const { toast } = useToast();
   const [isBulkDialogOpen, setIsBulkDialogOpen] = React.useState(false);
+  const [collapsedSections, setCollapsedSections] = React.useState<Record<string, boolean>>({});
+
+  const toggleSection = (sectionName: string) => {
+      setCollapsedSections(prev => ({
+          ...prev,
+          [sectionName]: prev[sectionName] === false ? true : false
+      }));
+  };
   const [bulkInput, setBulkInput] = React.useState("");
   const [copied, setCopied] = React.useState(false);
 
+  
+
+
+  const buildDefaultAnswers = React.useCallback(() => {
+      let defaultAnswers: any[] = [];
+      if (sections && sections.length > 0) {
+          sections.forEach((sec, sIdx) => {
+              const effectiveName = sec.name?.trim() ? sec.name.trim() : `Bölüm ${sIdx + 1}`;
+              for (let i = 1; i <= (Number(sec.questionCount) || 0); i++) {
+                  const key = `${effectiveName}-${i}`;
+                  defaultAnswers.push({
+                      questionNumber: key,
+                      value: answerKey[key] || null,
+                      sectionName: effectiveName,
+                      displayNumber: i,
+                  });
+              }
+          });
+      } else {
+          defaultAnswers = Array.from({ length: totalQuestions }, (_, i) => ({
+              questionNumber: String(i + 1),
+              value: answerKey[i + 1] || null,
+              sectionName: "Genel",
+              displayNumber: i + 1,
+          }));
+      }
+      return defaultAnswers;
+  }, [sections, totalQuestions, answerKey]);
+    
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      answers: Array.from({ length: totalQuestions }, (_, i) => ({
-        questionNumber: i + 1,
-        value: answerKey[i + 1] || null,
-      })),
+      answers: buildDefaultAnswers(),
     },
   });
+        
 
   React.useEffect(() => {
     form.reset({
-      answers: Array.from({ length: totalQuestions }, (_, i) => ({
-        questionNumber: i + 1,
-        value: answerKey[i + 1] || null,
-      })),
+      answers: buildDefaultAnswers(),
     });
-  }, [totalQuestions, answerKey, form]);
+  }, [totalQuestions, JSON.stringify(sections), answerKey, form, buildDefaultAnswers]);
 
   const { fields } = useFieldArray({
     control: form.control,
@@ -93,7 +129,7 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
     const newKey: AnswerKey = {};
     data.answers.forEach((ans) => {
       if (ans.value) {
-        newKey[ans.questionNumber] = ans.value;
+        newKey[String(ans.questionNumber)] = ans.value;
       }
     });
     onSave(newKey);
@@ -103,6 +139,22 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
         className: "bg-emerald-900 border-emerald-800 text-white" 
     });
   };
+
+  
+  const sampleJsonPlaceholder = React.useMemo(() => {
+      if (sections && sections.length > 0) {
+          const sample: any = {};
+          sections.forEach(sec => {
+              sample[sec.name] = {};
+              for(let i=1; i<=Math.min(3, sec.questionCount); i++) {
+                  sample[sec.name][String(i)] = "A";
+              }
+          });
+          return JSON.stringify(sample, null, 2);
+      }
+      return JSON.stringify({"1":"A", "2":"B", "3":"C"}, null, 2);
+  }, [sections]);
+    
 
   const handleCopySample = () => {
     navigator.clipboard.writeText(sampleJsonPlaceholder);
@@ -186,7 +238,7 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
     setBulkInput("");
     toast({ 
         title: "Toplu Giriş Yapıldı", 
-        description: `${Math.min(detectedAnswers.length, totalQuestions)} soru güncellendi.`,
+        description: `Cevap anahtarı toplu olarak güncellendi.`,
         className: "bg-indigo-900 border-indigo-800 text-white"
     });
   };
@@ -251,53 +303,74 @@ export function AnswerKeyForm({ totalQuestions, answerKey, onSave }: AnswerKeyFo
 
         <ScrollArea className="flex-1 -mr-4 pr-4">
           <div className="flex flex-col">
-            {fields.map((field, index) => (
-              <FormField
-                key={field.id}
-                control={form.control}
-                name={`answers.${index}.value`}
-                render={({ field }) => (
-                  <FormItem className={cn("space-y-0", glassColors.ITEM_BG)}>
-                    <div className="flex items-center gap-3">
-                        <div className={glassColors.NUMBER_BADGE}>
-                            {index + 1}
-                        </div>
+            {fields.map((field, index) => {
+              const prevSection = index > 0 ? fields[index - 1].sectionName : null;
+              const currentSection = field.sectionName;
+              const displayNumber = field.displayNumber;
+              const showHeader = sections && sections.length > 0 && currentSection !== prevSection && currentSection;
+              const isCollapsed = (sections && sections.length > 0 && currentSection) ? collapsedSections[currentSection] !== false : false;
+              
+              return (
+                <React.Fragment key={field.id}>
+                  {showHeader && (
+                    <div 
+                        onClick={() => currentSection && toggleSection(currentSection)}
+                        className="bg-indigo-900/40 hover:bg-indigo-900/60 transition-colors text-indigo-200 text-xs font-bold uppercase px-4 py-3 border-y border-indigo-500/20 sticky top-0 z-10 backdrop-blur-md flex items-center justify-between cursor-pointer"
+                    >
+                      <span>{currentSection}</span>
+                      {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </div>
-                    
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        value={field.value || ""}
-                        className="flex items-center gap-2"
-                      >
-                        {["A", "B", "C", "D", "E"].map((option) => (
-                          <FormItem
-                            key={option}
-                            className="flex items-center space-x-0 space-y-0"
-                          >
-                            <FormControl>
-                              <div className="relative">
-                                  <RadioGroupItem 
-                                    value={option} 
-                                    id={`q${index}-${option}`} 
-                                    className="peer sr-only" 
-                                  />
-                                  <Label 
-                                    htmlFor={`q${index}-${option}`}
-                                    className={glassColors.OPTION_BUTTON}
-                                  >
-                                    {option}
-                                  </Label>
+                  )}
+                  
+                  {!isCollapsed && (
+                    <FormField
+                      control={form.control}
+                      name={`answers.${index}.value`}
+                      render={({ field: formField }) => (
+                        <FormItem className={cn("space-y-0", glassColors.ITEM_BG)}>
+                          <div className="flex items-center gap-3">
+                              <div className={glassColors.NUMBER_BADGE}>
+                                  {displayNumber || index + 1}
                               </div>
-                            </FormControl>
-                          </FormItem>
-                        ))}
-                      </RadioGroup>
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            ))}
+                          </div>
+                          
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={formField.onChange}
+                              value={formField.value || ""}
+                              className="flex items-center gap-2"
+                            >
+                              {["A", "B", "C", "D", "E"].map((option) => (
+                                <FormItem
+                                  key={option}
+                                  className="flex items-center space-x-0 space-y-0"
+                                >
+                                  <FormControl>
+                                    <div className="relative">
+                                        <RadioGroupItem 
+                                          value={option} 
+                                          id={`q${index}-${option}`} 
+                                          className="peer sr-only" 
+                                        />
+                                        <Label 
+                                          htmlFor={`q${index}-${option}`}
+                                          className={glassColors.OPTION_BUTTON}
+                                        >
+                                          {option}
+                                        </Label>
+                                    </div>
+                                  </FormControl>
+                                </FormItem>
+                              ))}
+                            </RadioGroup>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            })}
           </div>
         </ScrollArea>
         

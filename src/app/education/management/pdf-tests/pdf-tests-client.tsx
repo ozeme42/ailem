@@ -88,9 +88,9 @@ export function PdfTestsClient() {
     }
   };
 
-  const handleDeleteTest = async (testId: string) => {
+  const handleDeleteTest = async (testId: string, fileUrl?: string) => {
     try {
-      await deleteTest(testId);
+      await deleteTest(testId, fileUrl);
       toast({ title: "🗑️ Test Silindi", variant: "destructive" });
     } catch (e) {
       toast({ title: "❌ Hata", variant: "destructive" });
@@ -192,7 +192,7 @@ export function PdfTestsClient() {
                                                                 </AlertDialogHeader>
                                                                 <AlertDialogFooter>
                                                                     <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-slate-200">İptal</AlertDialogCancel>
-                                                                    <AlertDialogAction onClick={() => handleDeleteTest(test.id)} className="bg-rose-600 hover:bg-rose-700 border-none">Evet, Sil</AlertDialogAction>
+                                                                    <AlertDialogAction onClick={() => handleDeleteTest(test.id, test.fileUrl)} className="bg-rose-600 hover:bg-rose-700 border-none">Evet, Sil</AlertDialogAction>
                                                                 </AlertDialogFooter>
                                                             </AlertDialogContent>
                                                         </AlertDialog>

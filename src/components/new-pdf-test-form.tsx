@@ -3,11 +3,11 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { format, parse } from "date-fns";
 import { tr } from "date-fns/locale";
-import { CalendarIcon, Loader2, Code, User, BookOpen, Calendar as CalendarLucide, FileCode, Layers } from "lucide-react";
+import { CalendarIcon, Loader2, Code, User, BookOpen, Calendar as CalendarLucide, FileCode, Layers, Plus, Trash2, SplitSquareHorizontal } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,10 @@ const formSchema = z.object({
   dueDate: z.date({ required_error: "Lütfen bir bitiş tarihi seçin." }),
   fileUrl: z.string().optional(),
   questionCount: z.coerce.number().min(1, "Soru sayısı en az 1 olmalıdır."),
+  sections: z.array(z.object({
+    name: z.string().min(1, "Bölüm adı zorunludur."),
+    questionCount: z.coerce.number().min(1, "Soru sayısı en az 1 olmalıdır.")
+  })).default([]),
   answerKey: z.record(z.string()).default({}),
 });
 
@@ -84,10 +88,16 @@ export function NewPdfTestForm({
       fileUrl: initialData?.fileUrl || "",
       questionCount: initialData?.questionCount || 10,
       answerKey: initialData?.answerKey || {},
+      sections: initialData?.sections || [],
     },
   });
 
   const watchedSubject = form.watch("subject");
+  const { fields: sectionFields, append: appendSection, remove: removeSection } = useFieldArray({
+    control: form.control,
+    name: "sections",
+  });
+  const watchedSections = form.watch("sections");
 
   // Hiyerarşik Konu Listesi: Seçilen derse göre filtreleme
   const filteredTopicsOptions = React.useMemo(() => {
@@ -145,7 +155,8 @@ export function NewPdfTestForm({
         title: values.title,
         subject: values.subject,
         studentId: values.assigneeId,
-        questionCount: values.questionCount,
+        questionCount: values.sections && values.sections.length > 0 ? values.sections.reduce((acc, sec) => acc + sec.questionCount, 0) : values.questionCount,
+        sections: values.sections,
         assignedDate: (initialData && !isReassigning) ? initialData.assignedDate : format(new Date(), 'dd MMMM yyyy', { locale: tr }),
         dueDate: format(values.dueDate, 'dd MMMM yyyy', { locale: tr }),
         status: (initialData && !isReassigning) ? initialData.status : 'Atandı',
@@ -271,13 +282,44 @@ export function NewPdfTestForm({
                         </FormItem>
                     )}/>
 
-                    <FormField control={form.control} name="questionCount" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel className={glassColors.LABEL}>Soru Sayısı</FormLabel>
-                            <FormControl><Input type="number" {...field} className={glassColors.INPUT_BG}/></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}/>
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                            <FormLabel className={glassColors.LABEL}><SplitSquareHorizontal className="w-3.5 h-3.5 text-orange-400"/> Bölümler (Opsiyonel)</FormLabel>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => appendSection({ name: "", questionCount: 10 })} className="h-8 text-[11px] font-bold text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
+                                <Plus className="w-3.5 h-3.5 mr-1.5" /> Bölüm Ekle
+                            </Button>
+                        </div>
+                        
+                        {sectionFields.length > 0 ? (
+                            <div className="space-y-3">
+                                {sectionFields.map((field, index) => (
+                                    <div key={field.id} className="flex items-center gap-2 bg-slate-900/30 p-2 rounded-xl border border-white/5">
+                                        <FormField control={form.control} name={`sections.${index}.name`} render={({ field: nameField }) => (
+                                            <FormItem className="flex-1 space-y-0">
+                                                <FormControl><Input placeholder="Bölüm Adı (Örn: Türkçe)" {...nameField} className={cn(glassColors.INPUT_BG, "h-9 text-sm")} /></FormControl>
+                                            </FormItem>
+                                        )} />
+                                        <FormField control={form.control} name={`sections.${index}.questionCount`} render={({ field: countField }) => (
+                                            <FormItem className="w-24 space-y-0">
+                                                <FormControl><Input type="number" {...countField} className={cn(glassColors.INPUT_BG, "h-9 text-sm")} /></FormControl>
+                                            </FormItem>
+                                        )} />
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeSection(index)} className="h-9 w-9 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg">
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <FormField control={form.control} name="questionCount" render={({ field }) => (
+                                <FormItem>
+                                    <FormControl><Input type="number" {...field} className={glassColors.INPUT_BG}/></FormControl>
+                                    <FormMessage />
+                                    <p className="text-[10px] text-slate-500 mt-1">Eğer testiniz birden fazla branş içeriyorsa (Örn: Türkçe ve Matematik), yukarıdan bölüm ekleyebilirsiniz.</p>
+                                </FormItem>
+                            )}/>
+                        )}
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -326,7 +368,8 @@ export function NewPdfTestForm({
                          <FormLabel className={glassColors.LABEL}>Optik Cevap Anahtarı</FormLabel>
                          <div className="flex-1 bg-black/20 border border-white/10 rounded-md overflow-hidden">
                             <AnswerKeyForm 
-                                totalQuestions={watchedQuestionCount} 
+                                totalQuestions={watchedSections?.length > 0 ? watchedSections.reduce((acc, sec) => acc + Number(sec.questionCount || 0), 0) : watchedQuestionCount} 
+                                sections={watchedSections}
                                 answerKey={watchedAnswerKey} 
                                 onSave={(newKey) => form.setValue('answerKey', newKey as any)} 
                             />
