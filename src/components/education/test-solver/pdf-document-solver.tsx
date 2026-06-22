@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Maximize2, Minimize2, CheckCircle2, LayoutGrid, X, ChevronRight, Check, AlertCircle, SplitSquareVertical, GripHorizontal, Pen, Eraser, Trash2, Hand, ChevronUp, ChevronDown } from "lucide-react";
+import { Maximize2, Minimize2, CheckCircle2, LayoutGrid, X, ChevronRight, Check, AlertCircle, SplitSquareVertical, GripHorizontal, Pen, Eraser, Trash2, Hand, ChevronUp, ChevronDown, ZoomIn, ZoomOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DrawingOverlay, DrawingOverlayRef } from "./drawing-overlay";
@@ -28,9 +28,10 @@ interface PdfDocumentSolverProps {
     isReviewMode?: boolean;
 }
 
-function LazyPdfPage({ index, containerWidth, isDrawingMode, drawingTool, strokeWidth, stylusOnly, overlayRef }: { 
+function LazyPdfPage({ index, containerWidth, pdfScale, isDrawingMode, drawingTool, strokeWidth, stylusOnly, overlayRef }: { 
     index: number; 
-    containerWidth: number; 
+    containerWidth: number;
+    pdfScale: number; 
     isDrawingMode: boolean; 
     drawingTool: 'pen' | 'eraser'; 
     strokeWidth: number; 
@@ -53,12 +54,12 @@ function LazyPdfPage({ index, containerWidth, isDrawingMode, drawingTool, stroke
     }, [hasIntersected]);
 
     return (
-        <div ref={ref} className="relative mb-6 shadow-xl rounded-md bg-white border border-slate-200 dark:border-slate-800 min-h-[800px] flex items-center justify-center flex-col" style={{ width: containerWidth ? containerWidth - 32 : 'auto' }}>
+        <div ref={ref} className="relative mb-6 shadow-xl rounded-md bg-white border border-slate-200 dark:border-slate-800 min-h-[800px] flex items-center justify-center flex-col" style={{ width: containerWidth ? (containerWidth - 32) * pdfScale : 'auto' }}>
             {hasIntersected ? (
                 <>
                     <Page 
                         pageNumber={index + 1} 
-                        width={containerWidth ? containerWidth - 32 : undefined} 
+                        width={containerWidth ? (containerWidth - 32) * pdfScale : undefined} 
                         renderTextLayer={false}
                         renderAnnotationLayer={false}
                         className="w-full"
@@ -103,6 +104,7 @@ export function PdfDocumentSolver({ test, studentAnswers, onAnswer, onFinish, is
 
     // PDF States
     const [numPages, setNumPages] = React.useState<number>(0);
+    const [pdfScale, setPdfScale] = React.useState<number>(1);
     const [containerWidth, setContainerWidth] = React.useState<number>(0);
 
     const pdfContainerRef = React.useRef<HTMLDivElement>(null);
@@ -370,6 +372,14 @@ export function PdfDocumentSolver({ test, studentAnswers, onAnswer, onFinish, is
                                 <Button variant="ghost" size="icon" className="md:hidden h-10 w-10 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800" onClick={() => setIsOpticalOpenMobile(true)}>
                                     <LayoutGrid className="w-5 h-5 text-indigo-500" />
                                 </Button>
+                                
+                                <Button type="button" variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 flex" onClick={() => setPdfScale(s => Math.max(0.5, s - 0.2))}>
+                                    <ZoomOut className="w-5 h-5 text-slate-500" />
+                                </Button>
+                                <div className="text-xs font-bold text-slate-500 w-8 text-center">{Math.round(pdfScale * 100)}%</div>
+                                <Button type="button" variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 flex" onClick={() => setPdfScale(s => Math.min(3, s + 0.2))}>
+                                    <ZoomIn className="w-5 h-5 text-slate-500" />
+                                </Button>
                                 <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 flex" onClick={() => setIsFullScreen(!isFullScreen)}>
                                     {isFullScreen ? <Minimize2 className="w-5 h-5 text-slate-500" /> : <Maximize2 className="w-5 h-5 text-slate-500" />}
                                 </Button>
@@ -379,11 +389,11 @@ export function PdfDocumentSolver({ test, studentAnswers, onAnswer, onFinish, is
 
                     {/* Content */}
                     <div 
-                        className="flex-1 overflow-y-auto relative custom-scrollbar" 
+                        className="flex-1 overflow-auto relative custom-scrollbar" 
                         ref={pdfContainerRef}
                     >
                         {test.fileUrl ? (
-                            <div className="w-full flex flex-col items-center py-6 px-2 bg-slate-100 dark:bg-slate-950 min-h-full">
+                            <div className="min-w-full w-max flex flex-col items-center py-6 px-2 bg-slate-100 dark:bg-slate-950 min-h-full">
                                 <Document
                                     file={`/api/pdf-proxy?url=${encodeURIComponent(test.fileUrl)}`}
                                     onLoadSuccess={onDocumentLoadSuccess}
@@ -399,6 +409,7 @@ export function PdfDocumentSolver({ test, studentAnswers, onAnswer, onFinish, is
                                             key={`page_${index + 1}`}
                                             index={index}
                                             containerWidth={containerWidth}
+                                            pdfScale={pdfScale}
                                             isDrawingMode={isDrawingMode}
                                             drawingTool={drawingTool}
                                             strokeWidth={strokeWidth}
