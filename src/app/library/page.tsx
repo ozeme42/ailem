@@ -31,16 +31,16 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell, PieCha
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { useRouter } from "next/navigation";
 
-// --- TASARIM DEĞİŞKENLERİ (PREMIUM KOYU/RENKLİ TEMA) ---
+// --- TASARIM DEĞİŞKENLERİ (PREMIUM AÇIK & RENKLİ TEMA) ---
 const themeColors = {
-    PAGE_BG: "bg-slate-950", // Sayfa arka planı
-    HEADER_BG: "bg-slate-950/40 backdrop-blur-xl border-b border-white/10 shadow-lg", // Header
-    CARD_BG: "bg-slate-900/50 backdrop-blur-xl border border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.3)]", // Kartlar
-    CARD_HOVER: "hover:shadow-[0_8px_30px_rgb(99,102,241,0.2)] hover:bg-slate-800/60 hover:border-white/20 hover:-translate-y-1 transition-all duration-300",
-    TEXT_MAIN: "text-slate-100",
-    TEXT_MUTED: "text-slate-400",
+    PAGE_BG: "bg-slate-50", // Sayfa arka planı
+    HEADER_BG: "bg-white/40 backdrop-blur-xl border-b border-white/60 shadow-sm", // Header
+    CARD_BG: "bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.06)]", // Kartlar
+    CARD_HOVER: "hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:bg-white/60 hover:-translate-y-1 transition-all duration-300",
+    TEXT_MAIN: "text-slate-800",
+    TEXT_MUTED: "text-slate-500",
     ICON_BOX: "bg-gradient-to-br from-indigo-500 to-cyan-400 p-2 rounded-xl shadow-lg shadow-indigo-500/25 text-white",
-    BUTTON_Ghost: "hover:bg-white/10 text-slate-300 hover:text-white transition-colors",
+    BUTTON_Ghost: "hover:bg-white/60 text-slate-600 hover:text-slate-900 transition-colors",
 };
 
 const progressFormSchema = z.object({
@@ -66,7 +66,7 @@ function FinishChildBookDialog({ open, onOpenChange, book, onUploadAndFinish, is
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-slate-900/90 backdrop-blur-xl border-white/20 text-slate-100 rounded-3xl shadow-2xl sm:max-w-md">
+            <DialogContent className="bg-white border-slate-200 text-slate-900 rounded-3xl shadow-xl sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold flex items-center gap-2 text-indigo-600">
                         <Sparkles className="w-5 h-5" /> Harika Bir İş Çıkardın!
@@ -155,9 +155,9 @@ function ProgressDialog({ open, onOpenChange, book, onSaveSession }: {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md bg-slate-900/90 backdrop-blur-xl border-white/20 text-slate-100 rounded-2xl shadow-2xl">
+            <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl">
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-bold text-slate-100">İlerleme Gir: {book.title}</DialogTitle>
+                    <DialogTitle className="text-xl font-bold text-slate-900">İlerleme Gir: {book.title}</DialogTitle>
                     <DialogDescription className="text-slate-500">Şu an kitabın kaçıncı sayfasındasın?</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -169,14 +169,14 @@ function ProgressDialog({ open, onOpenChange, book, onSaveSession }: {
                                 <FormItem>
                                     <FormLabel className="text-slate-700 font-bold text-xs uppercase tracking-wider">Sayfa Numarası</FormLabel>
                                     <FormControl>
-                                        <Input type="number" {...field} autoFocus className="bg-slate-800/50 border-white/20 text-slate-100 h-12 rounded-xl focus:border-amber-500 transition-all focus:ring-amber-500" />
+                                        <Input type="number" {...field} autoFocus className="bg-slate-50 border-slate-200 text-slate-900 h-12 rounded-xl focus:border-amber-500 transition-all focus:ring-amber-500" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
                         <DialogFooter className="gap-2">
-                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-slate-400 hover:text-slate-100 hover:bg-white/10">İptal</Button>
+                            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-slate-500 hover:text-slate-900 hover:bg-slate-100">İptal</Button>
                             <Button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-6 font-bold shadow-md">Kaydet</Button>
                         </DialogFooter>
                     </form>
@@ -481,12 +481,12 @@ export default function LibraryPage() {
 
   return (
     <div className={cn("min-h-[100dvh] font-sans pb-24 relative overflow-hidden", themeColors.PAGE_BG, themeColors.TEXT_MAIN)}>
-         {/* Dinamik Premium Koyu/Renkli Background */}
-         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-slate-950">
-            {/* Animated Vibrant Orbs */}
-            <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-600/30 rounded-full blur-[120px] animate-[pulse_10s_ease-in-out_infinite]" />
-            <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-cyan-600/30 rounded-full blur-[120px] animate-[pulse_12s_ease-in-out_infinite_1s]" />
-            <div className="absolute top-[40%] left-[20%] w-[300px] h-[300px] bg-fuchsia-600/20 rounded-full blur-[100px]" />
+         {/* Dinamik Renkli Premium Açık Background */}
+         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-slate-50">
+            {/* Animated Vibrant Light Orbs */}
+            <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-violet-400/30 rounded-full blur-[100px] animate-[pulse_10s_ease-in-out_infinite]" />
+            <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-cyan-400/30 rounded-full blur-[100px] animate-[pulse_12s_ease-in-out_infinite_1s]" />
+            <div className="absolute top-[40%] left-[20%] w-[300px] h-[300px] bg-amber-400/20 rounded-full blur-[80px]" />
         </div>
 
         {/* HEADER */}
@@ -501,7 +501,7 @@ export default function LibraryPage() {
                     </div>
                     <div>
                         <p className={cn("text-xs font-semibold uppercase tracking-wider", themeColors.TEXT_MUTED)}>Eğitim</p>
-                        <h1 className={cn("text-lg font-bold leading-none text-slate-100")}>Kişisel Kütüphane</h1>
+                        <h1 className={cn("text-lg font-bold leading-none text-slate-800")}>Kişisel Kütüphane</h1>
                     </div>
                 </div>
 
@@ -555,39 +555,39 @@ export default function LibraryPage() {
                             <CardTitle className={cn("text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400")}>Kütüphane Özeti</CardTitle>
                         </CardHeader>
                         <CardContent className="grid grid-cols-4 sm:grid-cols-2 gap-2 sm:gap-4 px-3 pb-3 sm:px-6 sm:pb-6">
-                            <div className="bg-slate-800/40 backdrop-blur-md p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/10 shadow-xl flex flex-col items-center justify-center text-center hover:bg-slate-700/60 transition-colors group">
-                                <BookOpen className="h-4 w-4 sm:h-6 sm:w-6 text-amber-400 mb-0.5 sm:mb-1 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)] group-hover:scale-110 transition-transform" />
-                                <p className="text-lg sm:text-2xl font-black text-slate-100 leading-none">{stats.reading}</p>
-                                <p className="text-[9px] sm:text-xs text-slate-400 font-bold uppercase mt-1">Okunuyor</p>
+                            <div className="bg-white/50 backdrop-blur-sm p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/60 shadow-sm flex flex-col items-center justify-center text-center hover:bg-white/70 transition-colors">
+                                <BookOpen className="h-4 w-4 sm:h-6 sm:w-6 text-amber-500 mb-0.5 sm:mb-1 drop-shadow-sm" />
+                                <p className="text-lg sm:text-2xl font-black text-slate-800 leading-none">{stats.reading}</p>
+                                <p className="text-[9px] sm:text-xs text-slate-500 font-bold uppercase mt-1">Okunuyor</p>
                             </div>
-                            <div className="bg-slate-800/40 backdrop-blur-md p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/10 shadow-xl flex flex-col items-center justify-center text-center hover:bg-slate-700/60 transition-colors group">
-                                <BookCheck className="h-4 w-4 sm:h-6 sm:w-6 text-emerald-400 mb-0.5 sm:mb-1 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)] group-hover:scale-110 transition-transform" />
-                                <p className="text-lg sm:text-2xl font-black text-slate-100 leading-none">{stats.finished}</p>
-                                <p className="text-[9px] sm:text-xs text-slate-400 font-bold uppercase mt-1">Bitti</p>
+                            <div className="bg-white/50 backdrop-blur-sm p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/60 shadow-sm flex flex-col items-center justify-center text-center hover:bg-white/70 transition-colors">
+                                <BookCheck className="h-4 w-4 sm:h-6 sm:w-6 text-emerald-500 mb-0.5 sm:mb-1 drop-shadow-sm" />
+                                <p className="text-lg sm:text-2xl font-black text-slate-800 leading-none">{stats.finished}</p>
+                                <p className="text-[9px] sm:text-xs text-slate-500 font-bold uppercase mt-1">Bitti</p>
                             </div>
-                            <div className="bg-slate-800/40 backdrop-blur-md p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/10 shadow-xl flex flex-col items-center justify-center text-center hover:bg-slate-700/60 transition-colors group">
-                                <BookUp className="h-4 w-4 sm:h-6 sm:w-6 text-cyan-400 mb-0.5 sm:mb-1 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)] group-hover:scale-110 transition-transform" />
-                                <p className="text-lg sm:text-2xl font-black text-slate-100 leading-none">{stats.toRead}</p>
-                                <p className="text-[9px] sm:text-xs text-slate-400 font-bold uppercase mt-1">Sırada</p>
+                            <div className="bg-white/50 backdrop-blur-sm p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/60 shadow-sm flex flex-col items-center justify-center text-center hover:bg-white/70 transition-colors">
+                                <BookUp className="h-4 w-4 sm:h-6 sm:w-6 text-blue-500 mb-0.5 sm:mb-1 drop-shadow-sm" />
+                                <p className="text-lg sm:text-2xl font-black text-slate-800 leading-none">{stats.toRead}</p>
+                                <p className="text-[9px] sm:text-xs text-slate-500 font-bold uppercase mt-1">Sırada</p>
                             </div>
-                             <div className="bg-slate-800/40 backdrop-blur-md p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/10 shadow-xl flex flex-col items-center justify-center text-center hover:bg-slate-700/60 transition-colors group">
-                                <BookIcon className="h-4 w-4 sm:h-6 sm:w-6 text-purple-400 mb-0.5 sm:mb-1 drop-shadow-[0_0_8px_rgba(192,132,252,0.8)] group-hover:scale-110 transition-transform" />
-                                <p className="text-lg sm:text-2xl font-black text-slate-100 leading-none">{stats.total}</p>
-                                <p className="text-[9px] sm:text-xs text-slate-400 font-bold uppercase mt-1">Toplam</p>
+                             <div className="bg-white/50 backdrop-blur-sm p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/60 shadow-sm flex flex-col items-center justify-center text-center hover:bg-white/70 transition-colors">
+                                <BookIcon className="h-4 w-4 sm:h-6 sm:w-6 text-purple-500 mb-0.5 sm:mb-1 drop-shadow-sm" />
+                                <p className="text-lg sm:text-2xl font-black text-slate-800 leading-none">{stats.total}</p>
+                                <p className="text-[9px] sm:text-xs text-slate-500 font-bold uppercase mt-1">Toplam</p>
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* Okuma İstatistikleri ve Hedefler (Birleştirilmiş) */}
                     <Card className={cn(themeColors.CARD_BG, "relative overflow-hidden flex flex-col")}>
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
                         <CardHeader className="flex flex-col gap-2 pb-2 pt-3 sm:pt-6 px-3 sm:px-6 relative z-10">
                             <div className="flex flex-row items-center justify-between w-full">
                                 <CardTitle className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400">Performans Özeti</CardTitle>
                                 <Tabs value={readingStatsPeriod} onValueChange={(v) => setReadingStatsPeriod(v as any)}>
-                                    <TabsList className="bg-slate-800/50 border border-white/10 h-7 sm:h-8 p-0.5 shadow-inner">
-                                        <TabsTrigger value="weekly" className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3 data-[state=active]:bg-indigo-500 data-[state=active]:shadow-sm data-[state=active]:text-white text-slate-400 transition-colors rounded-md">Haftalık</TabsTrigger>
-                                        <TabsTrigger value="monthly" className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3 data-[state=active]:bg-indigo-500 data-[state=active]:shadow-sm data-[state=active]:text-white text-slate-400 transition-colors rounded-md">Aylık</TabsTrigger>
+                                    <TabsList className="bg-white/50 border border-white/60 h-7 sm:h-8 p-0.5 shadow-inner">
+                                        <TabsTrigger value="weekly" className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3 data-[state=active]:bg-white/90 data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500 transition-colors">Haftalık</TabsTrigger>
+                                        <TabsTrigger value="monthly" className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3 data-[state=active]:bg-white/90 data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-500 transition-colors">Aylık</TabsTrigger>
                                     </TabsList>
                                 </Tabs>
                             </div>
@@ -601,19 +601,19 @@ export default function LibraryPage() {
                                         {readingGoals?.weekly?.pages ? (
                                             <div>
                                                 <div className="flex justify-between text-[10px] sm:text-xs font-bold mb-1.5">
-                                                    <span className="text-slate-400">Haftalık Sayfa Hedefi</span>
-                                                    <span className="text-amber-400">{weeklyGoalProgress.pagesRead} / {readingGoals.weekly.pages}</span>
+                                                    <span className="text-slate-500">Haftalık Sayfa Hedefi</span>
+                                                    <span className="text-amber-600">{weeklyGoalProgress.pagesRead} / {readingGoals.weekly.pages}</span>
                                                 </div>
-                                                <Progress value={weeklyGoalProgress.pages} className="h-1.5 sm:h-2 bg-slate-800/60 shadow-inner" indicatorClassName="bg-amber-400" />
+                                                <Progress value={weeklyGoalProgress.pages} className="h-1.5 sm:h-2 bg-white/60 shadow-inner" indicatorClassName="bg-amber-500" />
                                             </div>
                                         ) : null}
                                         {readingGoals?.weekly?.books ? (
                                             <div>
                                                 <div className="flex justify-between text-[10px] sm:text-xs font-bold mb-1.5">
-                                                    <span className="text-slate-400">Haftalık Kitap Hedefi</span>
-                                                    <span className="text-orange-400">{weeklyGoalProgress.booksRead} / {readingGoals.weekly.books}</span>
+                                                    <span className="text-slate-500">Haftalık Kitap Hedefi</span>
+                                                    <span className="text-orange-600">{weeklyGoalProgress.booksRead} / {readingGoals.weekly.books}</span>
                                                 </div>
-                                                <Progress value={weeklyGoalProgress.books} className="h-1.5 sm:h-2 bg-slate-800/60 shadow-inner" indicatorClassName="bg-orange-400" />
+                                                <Progress value={weeklyGoalProgress.books} className="h-1.5 sm:h-2 bg-white/60 shadow-inner" indicatorClassName="bg-orange-500" />
                                             </div>
                                         ) : null}
                                     </div>
@@ -624,19 +624,19 @@ export default function LibraryPage() {
                                         {readingGoals?.monthly?.pages ? (
                                             <div>
                                                 <div className="flex justify-between text-[10px] sm:text-xs font-bold mb-1.5">
-                                                    <span className="text-slate-400">Aylık Sayfa Hedefi</span>
-                                                    <span className="text-amber-400">{monthlyGoalProgress.pagesRead} / {readingGoals.monthly.pages}</span>
+                                                    <span className="text-slate-500">Aylık Sayfa Hedefi</span>
+                                                    <span className="text-amber-600">{monthlyGoalProgress.pagesRead} / {readingGoals.monthly.pages}</span>
                                                 </div>
-                                                <Progress value={monthlyGoalProgress.pages} className="h-1.5 sm:h-2 bg-slate-800/60 shadow-inner" indicatorClassName="bg-amber-400" />
+                                                <Progress value={monthlyGoalProgress.pages} className="h-1.5 sm:h-2 bg-white/60 shadow-inner" indicatorClassName="bg-amber-500" />
                                             </div>
                                         ) : null}
                                         {readingGoals?.monthly?.books ? (
                                             <div>
                                                 <div className="flex justify-between text-[10px] sm:text-xs font-bold mb-1.5">
-                                                    <span className="text-slate-400">Aylık Kitap Hedefi</span>
-                                                    <span className="text-orange-400">{monthlyGoalProgress.booksRead} / {readingGoals.monthly.books}</span>
+                                                    <span className="text-slate-500">Aylık Kitap Hedefi</span>
+                                                    <span className="text-orange-600">{monthlyGoalProgress.booksRead} / {readingGoals.monthly.books}</span>
                                                 </div>
-                                                <Progress value={monthlyGoalProgress.books} className="h-1.5 sm:h-2 bg-slate-800/60 shadow-inner" indicatorClassName="bg-orange-400" />
+                                                <Progress value={monthlyGoalProgress.books} className="h-1.5 sm:h-2 bg-white/60 shadow-inner" indicatorClassName="bg-orange-500" />
                                             </div>
                                         ) : null}
                                     </div>
@@ -646,26 +646,26 @@ export default function LibraryPage() {
                             {/* Çizgi / Ayırıcı */}
                             {((readingStatsPeriod === 'weekly' && (readingGoals?.weekly?.pages || readingGoals?.weekly?.books)) || 
                               (readingStatsPeriod === 'monthly' && (readingGoals?.monthly?.pages || readingGoals?.monthly?.books))) && (
-                                <div className="h-px w-full bg-slate-700/50 my-1"></div>
+                                <div className="h-px w-full bg-slate-100 my-1"></div>
                             )}
 
                             {/* Grafik Gezinme ve Grafik */}
                             <div className="flex-1 flex flex-col min-h-0">
                                 {/* Haftalık Gezinme Kontrolleri */}
                                 {readingStatsPeriod === 'weekly' && (
-                                    <div className="flex items-center justify-between bg-slate-800/50 backdrop-blur-sm rounded-lg p-1 px-2 border border-white/10 shadow-sm mb-2 sm:mb-4 mx-2 sm:mx-0">
-                                        <Button variant="ghost" size="sm" onClick={handlePrevWeek} className="h-6 w-6 sm:h-7 sm:w-7 p-0 rounded-full hover:bg-slate-700/80 text-slate-400 hover:text-slate-200 transition-colors">
+                                    <div className="flex items-center justify-between bg-white/50 backdrop-blur-sm rounded-lg p-1 px-2 border border-white/60 shadow-sm mb-2 sm:mb-4 mx-2 sm:mx-0">
+                                        <Button variant="ghost" size="sm" onClick={handlePrevWeek} className="h-6 w-6 sm:h-7 sm:w-7 p-0 rounded-full hover:bg-white/80 text-slate-600 transition-colors">
                                             <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
                                         </Button>
                                         
                                         <div className="flex items-center gap-1.5 sm:gap-2 cursor-pointer" onClick={handleResetDate} title="Bugüne Dön">
-                                            <span className="text-[10px] sm:text-xs font-bold text-slate-300">{readingStatsByPeriod.weekLabel}</span>
+                                            <span className="text-[10px] sm:text-xs font-bold text-slate-700">{readingStatsByPeriod.weekLabel}</span>
                                             {!isSameDay(new Date(), chartReferenceDate) && (
-                                                <span className="text-[8px] sm:text-[9px] bg-indigo-500/30 text-indigo-200 px-1.5 py-0.5 rounded-full font-bold border border-indigo-500/50">Arşiv</span>
+                                                <span className="text-[8px] sm:text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">Arşiv</span>
                                             )}
                                         </div>
 
-                                        <Button variant="ghost" size="sm" onClick={handleNextWeek} className="h-6 w-6 sm:h-7 sm:w-7 p-0 rounded-full hover:bg-slate-700/80 text-slate-400 hover:text-slate-200 transition-colors">
+                                        <Button variant="ghost" size="sm" onClick={handleNextWeek} className="h-6 w-6 sm:h-7 sm:w-7 p-0 rounded-full hover:bg-white/80 text-slate-600 transition-colors">
                                             <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
                                         </Button>
                                     </div>
@@ -692,7 +692,7 @@ export default function LibraryPage() {
                                                     const shortfall = data.dailyGoal ? Math.max(0, data.dailyGoal - data.pagesRead) : 0;
                                                     return (
                                                         <div className="bg-white border border-slate-200 p-2.5 rounded-xl shadow-xl text-xs flex flex-col gap-1.5 min-w-[120px]">
-                                                            <p className="font-bold text-slate-100 border-b border-slate-700/50 pb-1">{data.fullDate || data.month}</p>
+                                                            <p className="font-bold text-slate-800 border-b border-slate-100 pb-1">{data.fullDate || data.month}</p>
                                                             <div className="flex items-center justify-between gap-3">
                                                               <span className="text-slate-500">Okunan:</span>
                                                               <span className="text-amber-600 font-bold">{payload[0].value} syf</span>
@@ -777,8 +777,8 @@ export default function LibraryPage() {
                     {/* Okunanlar */}
                     {readingBooks.length > 0 && (
                         <div className="space-y-4">
-                            <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-                                <BookOpen className="w-5 h-5 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" /> Şu An Okudukların
+                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <BookOpen className="w-5 h-5 text-amber-500" /> Şu An Okudukların
                             </h2>
                             <div className="grid gap-4">
                                 {readingBooks.map(book => (
@@ -798,18 +798,18 @@ export default function LibraryPage() {
                     
                     {/* Sıradakiler */}
                     <div className="space-y-4">
-                        <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-                            <BookUp className="w-5 h-5 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]" /> Sıradakiler
+                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <BookUp className="w-5 h-5 text-blue-500" /> Sıradakiler
                         </h2>
                         {toReadBooks.length > 0 ? (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                                 {toReadBooks.map(book => <BookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary}/>)}
                             </div>
                         ) : (
-                            <div className="p-8 border-2 border-dashed border-white/20 rounded-2xl flex flex-col items-center justify-center text-center bg-slate-900/40 backdrop-blur-sm shadow-sm">
-                                <BookUp className="w-8 h-8 text-slate-500 mb-2" />
-                                <p className="text-sm font-medium text-slate-300">Sırada okunacak kitap bulunmuyor.</p>
-                                <Link href="/library/archive" className="mt-3 text-xs font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 px-3 py-1.5 rounded-full mb-2 border border-amber-500/20">
+                            <div className="p-8 border-2 border-dashed border-white/60 rounded-2xl flex flex-col items-center justify-center text-center bg-white/40 backdrop-blur-sm shadow-sm">
+                                <BookUp className="w-8 h-8 text-slate-300 mb-2" />
+                                <p className="text-sm font-medium text-slate-500">Sırada okunacak kitap bulunmuyor.</p>
+                                <Link href="/library/archive" className="mt-3 text-xs font-bold text-amber-600 hover:text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full mb-2">
                                     Arşivden kitap ekle
                                 </Link>
                             </div>
@@ -820,8 +820,8 @@ export default function LibraryPage() {
                     {finishedBooks.length > 0 && (
                           <div className={cn("p-6 rounded-[2rem] relative overflow-hidden", themeColors.CARD_BG)}>
                              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-green-500"></div>
-                            <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2 mb-4">
-                                <BookCheck className="w-5 h-5 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]" /> Bitirdiklerim
+                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-4">
+                                <BookCheck className="w-5 h-5 text-emerald-500" /> Bitirdiklerim
                             </h2>
                             <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide -mx-2 px-2">
                                 {finishedBooks.map(book => <FinishedBookCard key={book.id} book={book} onUpdateStatus={handleUpdateStatus} onRemove={handleRemoveFromLibrary} onUploadSummary={(book) => setChildBookToFinish(book)} />)}
@@ -876,12 +876,12 @@ export default function LibraryPage() {
          }}
       />
       <Dialog open={isGoalDialogOpen} onOpenChange={setIsGoalDialogOpen}>
-          <DialogContent className="sm:max-w-md bg-slate-900/90 backdrop-blur-xl border-white/20 text-slate-100 rounded-2xl shadow-2xl">
+          <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl">
               <DialogHeader>
                   <DialogTitle>Hedef Belirle</DialogTitle>
                   <DialogDescription className="text-slate-500">{selectedMember?.name} için okuma hedeflerini düzenle.</DialogDescription>
               </DialogHeader>
-              <div className="text-slate-100 [&_label]:text-slate-300 [&_input]:bg-slate-800/50 [&_input]:border-white/20">
+              <div className="text-slate-900 [&_label]:text-slate-700 [&_input]:bg-slate-50 [&_input]:border-slate-200">
                   <SetReadingGoalForm
                       initialGoals={selectedMember?.readingGoals}
                       onSave={handleSaveGoals}
@@ -890,7 +890,7 @@ export default function LibraryPage() {
           </DialogContent>
       </Dialog>
       <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
-          <DialogContent className="sm:max-w-md bg-slate-900/90 backdrop-blur-xl border-white/20 text-slate-100 rounded-2xl shadow-2xl max-h-[80vh] flex flex-col">
+          <DialogContent className="sm:max-w-md bg-white border-slate-200 text-slate-900 rounded-2xl shadow-xl max-h-[80vh] flex flex-col">
               <DialogHeader>
                   <DialogTitle>Okuma Geçmişi</DialogTitle>
                   <DialogDescription className="text-slate-500">{selectedMember?.name} adlı kişinin son okuma kayıtları.</DialogDescription>
@@ -904,7 +904,7 @@ export default function LibraryPage() {
                           return (
                               <div key={session.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50">
                                   <div>
-                                      <p className="text-sm font-bold text-slate-100 line-clamp-1">{book?.title || 'Bilinmeyen Kitap'}</p>
+                                      <p className="text-sm font-bold text-slate-800 line-clamp-1">{book?.title || 'Bilinmeyen Kitap'}</p>
                                       <div className="flex items-center gap-2 mt-1">
                                           <span className="text-xs text-slate-500">{format(parseISO(session.startTime), 'd MMM yyyy HH:mm', { locale: tr })}</span>
                                           <span className="text-xs font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">+{session.pagesRead} Sayfa</span>
@@ -956,10 +956,10 @@ function ReadingBookCard({ book, memberId, onUpdateStatus, onRemove, onViewDetai
             <div className="flex-grow flex flex-col min-w-0 py-0.5">
                 {/* Üst Kısım: Başlık ve Yazar */}
                 <div className="mb-1 cursor-pointer" onClick={onViewDetails}>
-                    <h3 className={cn("font-bold text-sm sm:text-lg leading-tight text-slate-100 group-hover:text-amber-400 transition-colors line-clamp-2")}>
+                    <h3 className={cn("font-bold text-sm sm:text-lg leading-tight text-slate-800 group-hover:text-amber-600 transition-colors line-clamp-2")}>
                         {book.title}
                     </h3>
-                    <p className="text-xs sm:text-sm text-slate-400 truncate mt-0.5">{book.author}</p>
+                    <p className="text-xs sm:text-sm text-slate-500 truncate mt-0.5">{book.author}</p>
                 </div>
                 
                 {/* Alt Kısım: İstatistikler ve Butonlar */}
@@ -983,22 +983,22 @@ function ReadingBookCard({ book, memberId, onUpdateStatus, onRemove, onViewDetai
                         </Link>
 
                         {/* Güncelle Butonu */}
-                         <Button size="icon" variant="outline" className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl border-white/20 text-slate-400 hover:text-slate-100 hover:bg-white/10 shrink-0 bg-transparent" onClick={onOpenProgressDialog}>
+                         <Button size="icon" variant="outline" className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 shrink-0" onClick={onOpenProgressDialog}>
                              <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4"/>
                          </Button>
 
                          {/* Diğer İşlemler Menüsü */}
                          <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl border-white/20 text-slate-400 hover:text-slate-100 hover:bg-white/10 shrink-0 bg-transparent">
+                                <Button variant="outline" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 shrink-0">
                                     <MoreVertical className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="bg-slate-900 border-white/20 text-slate-200 mb-2 shadow-lg" align="end">
-                                <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished', 100)} className="hover:bg-white/10 cursor-pointer h-10 focus:bg-white/10 focus:text-slate-100">
-                                    <BookCheck className="mr-2 h-4 w-4 text-emerald-400"/> Kitabı Bitir
+                            <DropdownMenuContent className="bg-white border-slate-200 text-slate-700 mb-2 shadow-lg" align="end">
+                                <DropdownMenuItem onClick={() => onUpdateStatus(book.id, 'finished', 100)} className="hover:bg-slate-50 cursor-pointer h-10 focus:bg-slate-50">
+                                    <BookCheck className="mr-2 h-4 w-4 text-emerald-500"/> Kitabı Bitir
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-rose-400 focus:text-rose-300 hover:bg-rose-500/10 focus:bg-rose-500/10 cursor-pointer h-10" onClick={() => onRemove(book.id)}>
+                                <DropdownMenuItem className="text-rose-500 focus:text-rose-600 hover:bg-rose-50 focus:bg-rose-50 cursor-pointer h-10" onClick={() => onRemove(book.id)}>
                                     <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -1028,22 +1028,22 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove, onUploadSummary }: {
                     </div>
                     {/* Başlık ve Tarih (Kartın Altında) */}
                     <div className="px-1 text-center">
-                        <p className="font-bold text-xs leading-tight line-clamp-1 text-slate-100 group-hover/book:text-emerald-400 transition-colors" title={book.title}>{book.title}</p>
+                        <p className="font-bold text-xs leading-tight line-clamp-1 text-slate-800 group-hover/book:text-emerald-600 transition-colors" title={book.title}>{book.title}</p>
                         {finishedDate && (
-                            <p className="text-[10px] text-slate-400 flex items-center justify-center gap-1 mt-0.5 font-medium">
-                                <CalendarIcon className="w-3 h-3 text-slate-500" /> {finishedDate}
+                            <p className="text-[10px] text-slate-500 flex items-center justify-center gap-1 mt-0.5 font-medium">
+                                <CalendarIcon className="w-3 h-3 text-slate-400" /> {finishedDate}
                             </p>
                         )}
                     </div>
                 </div>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-xs bg-slate-900/90 backdrop-blur-xl border-white/20 text-slate-100 rounded-3xl shadow-2xl">
+            <DialogContent className="sm:max-w-xs bg-white border-slate-200 text-slate-900 rounded-3xl shadow-xl">
                  <DialogHeader>
                     <div className="mx-auto bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1 rounded-full w-fit mb-2 flex items-center gap-1.5">
                         <Check className="w-3 h-3" />
                         Tamamlanma: {finishedDate}
                     </div>
-                    <DialogTitle className="text-center text-lg text-slate-100">{book.title}</DialogTitle>
+                    <DialogTitle className="text-center text-lg text-slate-800">{book.title}</DialogTitle>
                     <DialogDescription className="text-center text-slate-500">{book.author}</DialogDescription>
                 </DialogHeader>
                 <div className="py-6 flex flex-col items-center gap-4">
@@ -1080,7 +1080,7 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove, onUploadSummary }: {
                                 <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
                             </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-slate-900/90 backdrop-blur-xl border-white/20 text-slate-100">
+                        <AlertDialogContent className="bg-white border-slate-200 text-slate-900">
                             <AlertDialogHeader><AlertDialogTitle>Kitabı Kaldır</AlertDialogTitle><AlertDialogDescription className="text-slate-500">"{book.title}" kitabını kütüphanenizden kaldırmak istediğinize emin misiniz?</AlertDialogDescription></AlertDialogHeader>
                             <AlertDialogFooterComponent><AlertDialogCancel className="bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-600">İptal</AlertDialogCancel><AlertDialogAction onClick={() => {onRemove(book.id); setIsOpen(false);}} className="bg-rose-600 hover:bg-rose-700 text-white">Kaldır</AlertDialogAction></AlertDialogFooterComponent>
                         </AlertDialogContent>
@@ -1108,8 +1108,8 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
                                 <MoreVertical className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-slate-900 border-white/20 text-slate-200 shadow-lg">
-                            <DropdownMenuItem className="text-rose-400 focus:text-rose-300 hover:bg-rose-500/10 focus:bg-rose-500/10 cursor-pointer" onClick={() => onRemove(book.id)}>
+                        <DropdownMenuContent className="bg-white border-slate-200 text-slate-700 shadow-lg">
+                            <DropdownMenuItem className="text-rose-500 focus:text-rose-600 hover:bg-rose-50 cursor-pointer" onClick={() => onRemove(book.id)}>
                                 <Trash2 className="mr-2 h-4 w-4"/> Kütüphaneden Kaldır
                             </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -1118,8 +1118,8 @@ function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatu
             </div>
             
             <div className="px-1">
-                <p className="font-bold text-sm leading-tight line-clamp-2 text-slate-100 mb-0.5 group-hover:text-amber-400 transition-colors" title={book.title}>{book.title}</p>
-                <p className="text-xs text-slate-400 truncate font-medium">{book.author}</p>
+                <p className="font-bold text-sm leading-tight line-clamp-2 text-slate-800 mb-0.5 group-hover:text-amber-600 transition-colors" title={book.title}>{book.title}</p>
+                <p className="text-xs text-slate-500 truncate font-medium">{book.author}</p>
             </div>
         </Card>
     )
