@@ -1,29 +1,22 @@
 "use client";
 
 import * as React from "react";
-import { 
-  Plus, Search, Star, X,
-  Trophy, Target, CheckCircle2, 
-  ListTodo, Flame, LayoutGrid, Zap, Check, Edit, Trash2, MoreHorizontal, ArrowLeft,
-  BookOpen, GraduationCap, Calendar
-} from "lucide-react"; 
-import { useRouter } from "next/navigation"; 
-import { 
-  subDays, isSameDay, startOfDay, format, 
-} from "date-fns";
+import {
+  Plus, Search, X, Trophy, Target,
+  LayoutGrid, Check, Edit, Trash2, MoreHorizontal, ArrowLeft,
+  BookOpen, ChevronDown, Star, Flame
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 
-import { useAuth } from "@/components/auth-provider"; 
-
+import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { NewTaskForm } from "@/components/new-task-form"; 
-
-import { TaskItem } from "@/components/task-item"; 
+import { NewTaskForm } from "@/components/new-task-form";
 import { HabitTrackerCard } from "@/components/habit-tracker-card";
 import { Task, StudyAssignment, MemorizationItem, MemorizationProgress, PrayerProgress } from "@/lib/data";
-import { 
+import {
     onTasksUpdate, updateHabitCompletion, deleteTask,
     onStudyAssignmentsUpdate, updateStudyAssignment,
     onMemorizationItemsUpdate, onMemorizationProgressUpdate, updateMemorizationProgress,
@@ -31,737 +24,295 @@ import {
 } from "@/lib/dataService";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
-// --- TASARIM: Glassmorphism Renk Paleti ---
-const glassColors = {
-    CARD_BG: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm",
-    CARD_HOVER: "hover:bg-slate-50 dark:hover:bg-white/5",
-    TEXT_MAIN: "text-slate-900 dark:text-slate-100",
-    TEXT_MUTED: "text-slate-500 dark:text-slate-400",
-    BUTTON_GLASS: "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white dark:border-white/20",
-    ICON_GRADIENT: "bg-gradient-to-tr from-indigo-500 to-fuchsia-500 p-2 rounded-xl shadow-md",
-    HEADER_BG: "bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-white/5"
-};
-
-const taskColors = [
-    'bg-blue-100 border-blue-300 text-blue-950 dark:bg-blue-500/30 dark:border-blue-400/50 dark:text-blue-100',
-    'bg-emerald-100 border-emerald-300 text-emerald-950 dark:bg-emerald-500/30 dark:border-emerald-400/50 dark:text-emerald-100',
-    'bg-amber-100 border-amber-300 text-amber-950 dark:bg-amber-500/30 dark:border-amber-400/50 dark:text-amber-100',
-    'bg-rose-100 border-rose-300 text-rose-950 dark:bg-rose-500/30 dark:border-rose-400/50 dark:text-rose-100',
-    'bg-violet-100 border-violet-300 text-violet-950 dark:bg-violet-500/30 dark:border-violet-400/50 dark:text-violet-100',
+const COLORS = [
+  { bg: "bg-red-400",    light: "bg-red-50 border-red-200",       dark: "dark:bg-red-500/20 dark:border-red-400/30",      text: "text-red-700 dark:text-red-300" },
+  { bg: "bg-orange-400", light: "bg-orange-50 border-orange-200", dark: "dark:bg-orange-500/20 dark:border-orange-400/30", text: "text-orange-700 dark:text-orange-300" },
+  { bg: "bg-amber-400",  light: "bg-amber-50 border-amber-200",   dark: "dark:bg-amber-500/20 dark:border-amber-400/30",   text: "text-amber-700 dark:text-amber-300" },
+  { bg: "bg-green-400",  light: "bg-green-50 border-green-200",   dark: "dark:bg-green-500/20 dark:border-green-400/30",   text: "text-green-700 dark:text-green-300" },
+  { bg: "bg-teal-400",   light: "bg-teal-50 border-teal-200",     dark: "dark:bg-teal-500/20 dark:border-teal-400/30",     text: "text-teal-700 dark:text-teal-300" },
+  { bg: "bg-blue-400",   light: "bg-blue-50 border-blue-200",     dark: "dark:bg-blue-500/20 dark:border-blue-400/30",     text: "text-blue-700 dark:text-blue-300" },
+  { bg: "bg-indigo-400", light: "bg-indigo-50 border-indigo-200", dark: "dark:bg-indigo-500/20 dark:border-indigo-400/30", text: "text-indigo-700 dark:text-indigo-300" },
+  { bg: "bg-purple-400", light: "bg-purple-50 border-purple-200", dark: "dark:bg-purple-500/20 dark:border-purple-400/30", text: "text-purple-700 dark:text-purple-300" },
+  { bg: "bg-pink-400",   light: "bg-pink-50 border-pink-200",     dark: "dark:bg-pink-500/20 dark:border-pink-400/30",     text: "text-pink-700 dark:text-pink-300" },
 ];
+type C = typeof COLORS[0];
 
+const MC: Record<string, C> = { "Egitim": COLORS[5], "Ezber": COLORS[3], "Namaz": COLORS[2] };
+function gc(m: string): C { return MC[m] || COLORS[6]; }
 
-
-// --- YARDIMCI BİLEŞENLER ---
-const GlassStatCard = ({ icon: Icon, label, value, color }: any) => (
-    <div className={cn("p-2 sm:p-3 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center gap-1 sm:gap-2 text-center", glassColors.CARD_BG)}>
-        <div className={cn("w-6 h-6 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center shadow-sm", color)}>
-            <Icon className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-        </div>
-        <div>
-            <p className={cn("text-[8px] sm:text-[10px] font-bold uppercase tracking-wider leading-none", glassColors.TEXT_MUTED)}>{label}</p>
-            <p className={cn("text-sm sm:text-xl font-black leading-none mt-1", glassColors.TEXT_MAIN)}>{value}</p>
-        </div>
+const TaskRow = ({ task, assignee, color, onEdit, onDelete }: {
+  task: { id: string; title: string; dueDate?: string; isCompleted?: boolean };
+  assignee?: { name: string; color?: string };
+  color: C; onEdit?: () => void; onDelete?: () => void;
+}) => (
+  <div className={cn("flex items-center gap-3 px-3 py-2.5 rounded-2xl border transition-all group",
+    task.isCompleted ? "opacity-50 bg-slate-100 dark:bg-slate-800/50 border-transparent" : cn(color.light, color.dark))}>
+    <div className={cn("w-2 h-2 rounded-full flex-shrink-0", task.isCompleted ? "bg-slate-300" : color.bg)} />
+    <span className={cn("flex-1 text-sm font-semibold truncate", task.isCompleted ? "line-through text-slate-400" : color.text)}>{task.title}</span>
+    <div className="flex items-center gap-1.5 shrink-0">
+      {assignee && <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white" style={{ backgroundColor: assignee.color || "#888" }}>{assignee.name[0]}</span>}
+      {task.dueDate && !task.isCompleted && <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-lg opacity-70", color.text)}>{format(new Date(task.dueDate), "d MMM", { locale: tr })}</span>}
+      {(onEdit || onDelete) && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className={cn("w-6 h-6 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/10", color.text)}><MoreHorizontal className="w-3.5 h-3.5" /></button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="rounded-xl shadow-xl">
+            {onEdit && <DropdownMenuItem onClick={onEdit} className="cursor-pointer rounded-lg"><Edit className="w-4 h-4 mr-2 text-blue-500" /> Duzenle</DropdownMenuItem>}
+            {onDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild><DropdownMenuItem onSelect={e => e.preventDefault()} className="text-rose-600 focus:bg-rose-50 cursor-pointer rounded-lg"><Trash2 className="w-4 h-4 mr-2" /> Sil</DropdownMenuItem></AlertDialogTrigger>
+                <AlertDialogContent className="rounded-3xl">
+                  <AlertDialogHeader><AlertDialogTitle>Emin misin?</AlertDialogTitle><AlertDialogDescription>Bu gorevi silmek uzeresin.</AlertDialogDescription></AlertDialogHeader>
+                  <AlertDialogFooter><AlertDialogCancel className="rounded-xl">Vazgec</AlertDialogCancel><AlertDialogAction onClick={onDelete} className="rounded-xl bg-rose-600 hover:bg-rose-700">Sil</AlertDialogAction></AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
+  </div>
 );
 
-const GlassEmptyState = ({ title, desc, icon: Icon }: { title: string, desc: string, icon: any }) => (
-    <div className={cn("flex flex-col items-center justify-center py-16 px-6 text-center rounded-3xl border-2 border-dashed", glassColors.CARD_BG, "border-slate-200 dark:border-white/10")}>
-        <div className="w-20 h-20 bg-slate-100 dark:bg-white/5 rounded-full flex items-center justify-center mb-4 shadow-inner">
-            <Icon className="w-10 h-10 text-slate-400 dark:text-slate-500" />
-        </div>
-        <h3 className={cn("text-xl font-black", glassColors.TEXT_MAIN)}>{title}</h3>
-        <p className={cn("text-sm mt-2 max-w-[250px] font-medium", glassColors.TEXT_MUTED)}>{desc}</p>
+const ModRow = ({ task, assignee }: { task: any; assignee: any }) => {
+  const [loading, setLoading] = React.useState(false);
+  const c = gc(task.module);
+  const Icon = task.icon;
+  return (
+    <div className={cn("flex items-center gap-3 px-3 py-2.5 rounded-2xl border transition-all", task.isCompleted ? "opacity-50 bg-slate-100 dark:bg-slate-800/50 border-transparent" : cn(c.light, c.dark))}>
+      <button onClick={async () => { setLoading(true); try { await task.onToggle(!task.isCompleted); } finally { setLoading(false); } }} disabled={loading}
+        className={cn("w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all", task.isCompleted ? "border-transparent bg-slate-400" : cn("border-current", c.text, "hover:scale-110"), loading && "opacity-50 cursor-wait")}>
+        {task.isCompleted && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+      </button>
+      <span className={cn("flex-1 text-sm font-semibold truncate", task.isCompleted ? "line-through text-slate-400" : c.text)}>{task.title}</span>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <span className={cn("text-[9px] font-black px-1.5 py-0.5 rounded-lg flex items-center gap-1 bg-white/60 dark:bg-black/20", c.text)}><Icon className="w-2.5 h-2.5" />{task.module}</span>
+        {assignee && <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white" style={{ backgroundColor: assignee.color || "#888" }}>{assignee.name[0]}</span>}
+      </div>
     </div>
-);
-
-const ModuleTaskItem = ({ task, assignee }: { task: any, assignee: any }) => {
-    const Icon = task.icon;
-    const [isLoading, setIsLoading] = React.useState(false);
-
-    const handleToggle = async () => {
-        setIsLoading(true);
-        try {
-            await task.onToggle(!task.isCompleted);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    return (
-        <div className={cn(
-            "group relative flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 border backdrop-blur-md",
-            task.isCompleted 
-                ? "bg-slate-50/50 dark:bg-slate-900/30 border-transparent shadow-none opacity-60" 
-                : cn(task.bgClass || glassColors.CARD_BG, "hover:scale-[1.01] shadow-sm hover:shadow-md")
-        )}>
-            {/* SOL: CHECKBOX & BİLGİ */}
-            <div className="flex-1 flex items-start gap-2 sm:gap-3">
-                <button 
-                    onClick={handleToggle}
-                    disabled={isLoading}
-                    className={cn(
-                        "mt-0.5 w-4 h-4 sm:w-6 sm:h-6 flex-shrink-0 flex items-center justify-center rounded border-2 transition-all duration-300 focus:outline-none",
-                        isLoading ? "opacity-50 cursor-wait" : "hover:scale-110 active:scale-95",
-                        task.isCompleted 
-                            ? "bg-indigo-500 border-indigo-500 text-white shadow-md shadow-indigo-500/30" 
-                            : "border-slate-300 dark:border-slate-600 text-transparent hover:border-indigo-500 dark:hover:border-indigo-400"
-                    )}
-                >
-                    <Check className={cn("w-2.5 h-2.5 sm:w-3 sm:h-3", task.isCompleted ? "scale-100 opacity-100" : "scale-50 opacity-0", "transition-all duration-300")} strokeWidth={4} />
-                </button>
-                
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1 flex-wrap">
-                        <span className={cn(
-                            "inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[8px] sm:text-[9px] font-black uppercase tracking-wider",
-                            task.color
-                        )}>
-                            <Icon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                            {task.module}
-                        </span>
-                    </div>
-                    
-                    <h4 className={cn(
-                        "text-xs sm:text-sm font-bold truncate transition-colors duration-300",
-                        task.isCompleted ? "text-slate-400 dark:text-slate-500 line-through" : glassColors.TEXT_MAIN
-                    )}>
-                        {task.title}
-                    </h4>
-
-                    {task.dueDate && !task.isCompleted && (
-                        <p className={cn("text-[9px] sm:text-[10px] font-medium mt-0.5 sm:mt-1 flex items-center gap-1", glassColors.TEXT_MUTED)}>
-                            <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> 
-                            Son Tarih: <span className={cn("font-bold", "text-amber-600 dark:text-amber-400")}>{new Date(task.dueDate).toLocaleDateString('tr-TR')}</span>
-                        </p>
-                    )}
-                </div>
-
-                {/* SAĞ: ATANAN KİŞİ */}
-                {assignee && (
-                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center ml-6 sm:ml-0 bg-slate-100 dark:bg-slate-800/50 py-0.5 sm:py-1 px-1.5 sm:px-2 rounded-lg sm:rounded-xl border border-slate-200 dark:border-white/5">
-                        <div 
-                            className="w-4 h-4 sm:w-5 sm:h-5 rounded flex items-center justify-center text-[8px] sm:text-[10px] font-black" 
-                            style={{ backgroundColor: assignee.color, color: '#fff' }}
-                        >
-                            {assignee.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="text-[9px] sm:text-xs font-bold text-slate-600 dark:text-slate-300">
-                            {assignee.name}
-                        </span>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+  );
 };
 
-// --- ANA COMPONENT ---
+const CatGroup = ({ emoji, title, color, count, children, open: init = true }: { emoji: string; title: string; color: C; count: number; children: React.ReactNode; open?: boolean }) => {
+  const [open, setOpen] = React.useState(init);
+  return (
+    <div className="rounded-3xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-sm bg-white dark:bg-slate-900">
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+        <div className="flex items-center gap-3">
+          <div className={cn("w-9 h-9 rounded-2xl flex items-center justify-center text-lg shadow-sm", color.bg)}>{emoji}</div>
+          <div><p className="font-black text-sm text-slate-900 dark:text-white">{title}</p><p className="text-xs text-slate-500 font-medium">{count} gorev</p></div>
+        </div>
+        <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform", open ? "rotate-180" : "")} />
+      </button>
+      {open && <div className="px-3 pb-3 space-y-2 border-t border-slate-100 dark:border-white/5 pt-2">{children}</div>}
+    </div>
+  );
+};
+
+type MT = { id: string; title: string; module: string; assigneeId: string; isCompleted: boolean; dueDate?: string; icon: any; onToggle: (c: boolean) => Promise<void> };
+
 export default function TasksPage() {
-  const router = useRouter(); 
+  const router = useRouter();
   const { user, familyMembers } = useAuth();
   const [tasks, setTasks] = React.useState<Task[]>([]);
-  const [studyAssignments, setStudyAssignments] = React.useState<StudyAssignment[]>([]);
-  const [memorizationItems, setMemorizationItems] = React.useState<MemorizationItem[]>([]);
-  const [memorizationProgress, setMemorizationProgress] = React.useState<MemorizationProgress[]>([]);
-  const [prayerProgress, setPrayerProgress] = React.useState<PrayerProgress[]>([]);
-
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
-  const [editingTask, setEditingTask] = React.useState<Task | null>(null);
-  const [activeTab, setActiveTab] = React.useState<'tasks' | 'habits'>('tasks');
-  const [taskFilter, setTaskFilter] = React.useState<'pending' | 'completed'>('pending');
-  const [activeModuleTab, setActiveModuleTab] = React.useState<'Tümü' | 'Eğitim' | 'Ezber' | 'Namaz'>('Tümü');
-  const [selectedMemberId, setSelectedMemberId] = React.useState<string | null>(null);
-  
+  const [sa, setSA] = React.useState<StudyAssignment[]>([]);
+  const [mi, setMI] = React.useState<MemorizationItem[]>([]);
+  const [mp, setMP] = React.useState<MemorizationProgress[]>([]);
+  const [pp, setPP] = React.useState<PrayerProgress[]>([]);
+  const [search, setSearch] = React.useState("");
+  const [formOpen, setFormOpen] = React.useState(false);
+  const [editTask, setEditTask] = React.useState<Task | null>(null);
+  const [tab, setTab] = React.useState<"tasks"|"habits">("tasks");
+  const [filter, setFilter] = React.useState<"pending"|"completed">("pending");
+  const [mid, setMid] = React.useState<string | null>(null);
   const { toast } = useToast();
 
   React.useEffect(() => {
-    const unsubTasks = onTasksUpdate(setTasks);
-    const unsubAssignments = onStudyAssignmentsUpdate(setStudyAssignments);
-    const unsubMemItems = onMemorizationItemsUpdate(setMemorizationItems);
-    const unsubMemProg = onMemorizationProgressUpdate(setMemorizationProgress);
-    const unsubPrayers = onPrayerProgressUpdate(setPrayerProgress);
-
-    return () => {
-        unsubTasks();
-        unsubAssignments();
-        unsubMemItems();
-        unsubMemProg();
-        unsubPrayers();
-    };
+    const u1 = onTasksUpdate(setTasks);
+    const u2 = onStudyAssignmentsUpdate(setSA);
+    const u3 = onMemorizationItemsUpdate(setMI);
+    const u4 = onMemorizationProgressUpdate(setMP);
+    const u5 = onPrayerProgressUpdate(setPP);
+    return () => { u1(); u2(); u3(); u4(); u5(); };
   }, []);
 
-  const handleOpenEditTask = (task: Task) => {
-    setEditingTask(task);
-    setIsFormDialogOpen(true);
-  };
+  const ga = (id: string) => familyMembers.find(m => m.id === id);
+  const todayStr = format(new Date(), "yyyy-MM-dd");
 
-  const handleOpenNewTask = () => {
-    setEditingTask(null);
-    setIsFormDialogOpen(true);
-  };
-  
-  const handleDeleteTask = async (taskId: string) => {
-    try {
-        await deleteTask(taskId);
-        toast({ title: "🗑️ Silindi", description: "Görev listeden uçtu gitti.", variant: 'destructive' });
-    } catch (error) {
-        toast({ title: "Hata", description: "Silinirken bir sorun oluştu.", variant: "destructive"});
-    }
-  }
-  
-  const getAssignee = (assigneeId: string) => familyMembers.find((m) => m.id === assigneeId);
-
-  const handleToggleDay = async (taskId: string, day: Date, isCompleted: boolean) => {
-      try {
-          await updateHabitCompletion(taskId, day, isCompleted);
-      } catch(e) {
-          toast({ title: 'Hata', description: 'İşaretleme başarısız.', variant: 'destructive'});
-      }
-  }
-  
-  const leaderboard = React.useMemo(() => [...familyMembers].sort((a,b) => b.xp - a.xp), [familyMembers]);
-
-type ModuleTask = {
-    id: string;
-    title: string;
-    module: 'Eğitim' | 'Ezber' | 'Namaz';
-    assigneeId: string;
-    isCompleted: boolean;
-    dueDate?: string;
-    icon: any;
-    color: string;
-    bgClass?: string;
-    onToggle: (completed: boolean) => Promise<void>;
-};
-
-  const moduleTasks = React.useMemo(() => {
-      const list: ModuleTask[] = [];
-      const todayStr = format(new Date(), 'yyyy-MM-dd');
-
-      // 1. Eğitim Görevleri
-      studyAssignments.forEach(sa => {
-          if (!sa.studentId) return;
-          if (selectedMemberId && sa.studentId !== selectedMemberId) return; // Kişi filtresi
-          const assignee = getAssignee(sa.studentId);
-          const searchMatch = sa.topic.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                              (assignee?.name.toLowerCase().includes(searchTerm.toLowerCase()));
-          if (!searchMatch) return;
-          list.push({
-              id: `edu-${sa.id}`,
-              title: `${sa.subject} - ${sa.topic}`,
-              module: 'Eğitim',
-              assigneeId: sa.studentId,
-              isCompleted: sa.status === 'completed',
-              dueDate: sa.dueDate,
-              icon: BookOpen,
-              color: 'text-blue-500 bg-blue-500/10 dark:bg-blue-500/20',
-              bgClass: 'bg-blue-100 border-blue-300 text-blue-950 dark:bg-blue-500/30 dark:border-blue-400/50 dark:text-blue-100',
-              onToggle: async (completed) => {
-                  await updateStudyAssignment(sa.id, { status: completed ? 'completed' : 'assigned' });
-              }
-          });
-      });
-
-      // 2. Ezber Görevleri
-      memorizationItems.forEach(mi => {
-          familyMembers.forEach(member => {
-              if (selectedMemberId && member.id !== selectedMemberId) return; // Kişi filtresi
-
-              const prog = memorizationProgress.find(p => p.itemId === mi.id && p.memberId === member.id);
-              if (!prog) return; // Sadece atanmış ezberler görev olarak görünsün
-              
-              const isCompleted = prog.completed;
-              
-              const searchMatch = mi.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                  (member.name.toLowerCase().includes(searchTerm.toLowerCase()));
-              if (!searchMatch) return;
-              
-              list.push({
-                  id: `mem-${mi.id}-${member.id}`,
-                  title: mi.title,
-                  module: 'Ezber',
-                  assigneeId: member.id,
-                  isCompleted,
-                  icon: GraduationCap,
-                  color: 'text-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/20',
-                  bgClass: 'bg-emerald-100 border-emerald-300 text-emerald-950 dark:bg-emerald-500/30 dark:border-emerald-400/50 dark:text-emerald-100',
-                  onToggle: async (completed) => {
-                      await updateMemorizationProgress(mi.id, member.id, completed);
-                  }
-              });
-          });
-      });
-
-      // 3. Namaz Görevleri
-      const PRAYERS = ['Sabah', 'Öğle', 'İkindi', 'Akşam', 'Yatsı'];
-      familyMembers.forEach(member => {
-          // Namaz takibi sadece çocuklar için
-          if (!['Kız Çocuk', 'Erkek Çocuk'].includes(member.role)) return;
-          if (selectedMemberId && member.id !== selectedMemberId) return; // Kişi filtresi
-
-          const pProg = prayerProgress.find(p => p.memberId === member.id);
-          const completions = pProg?.completions?.[todayStr] || [];
-          
-          const searchMatch = "namaz".includes(searchTerm.toLowerCase()) || 
-                              (member.name.toLowerCase().includes(searchTerm.toLowerCase()));
-          
-          if (!searchMatch) return;
-
-          PRAYERS.forEach(prayer => {
-              const isCompleted = completions.includes(prayer);
-              list.push({
-                  id: `prayer-${member.id}-${prayer}`,
-                  title: `${prayer} Namazı`,
-                  module: 'Namaz',
-                  assigneeId: member.id,
-                  isCompleted,
-                  icon: Target,
-                  color: 'text-amber-500 bg-amber-500/10 dark:bg-amber-500/20',
-                  bgClass: 'bg-amber-100 border-amber-300 text-amber-950 dark:bg-amber-500/30 dark:border-amber-400/50 dark:text-amber-100',
-                  onToggle: async (completed) => {
-                      let newCompletions = [...completions];
-                      if (completed && !newCompletions.includes(prayer)) newCompletions.push(prayer);
-                      if (!completed) newCompletions = newCompletions.filter(p => p !== prayer);
-                      
-                      const updatedAll = { ...(pProg?.completions || {}), [todayStr]: newCompletions };
-                      await updatePrayerProgress(member.id, updatedAll);
-                  }
-              });
-          });
-      });
-
-      return list;
-  }, [studyAssignments, memorizationItems, memorizationProgress, prayerProgress, familyMembers, searchTerm, selectedMemberId]);
-
-  const pendingModuleTasks = React.useMemo(() => moduleTasks.filter(t => !t.isCompleted), [moduleTasks]);
-  const completedModuleTasks = React.useMemo(() => moduleTasks.filter(t => t.isCompleted), [moduleTasks]);
-
-  const { pendingTasks, completedTasks, habits, stats } = React.useMemo(() => {
-    const filteredTasks = tasks.filter(task => {
-        if (selectedMemberId && task.assigneeId !== selectedMemberId) return false;
-
-        const searchMatch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            (getAssignee(task.assigneeId)?.name.toLowerCase().includes(searchTerm.toLowerCase()));
-        return searchMatch;
+  const modTasks = React.useMemo((): MT[] => {
+    const list: MT[] = [];
+    const s = search.toLowerCase();
+    sa.forEach(x => {
+      if (!x.studentId || (mid && x.studentId !== mid)) return;
+      const asgn = ga(x.studentId);
+      if (!x.topic.toLowerCase().includes(s) && !asgn?.name.toLowerCase().includes(s)) return;
+      list.push({ id: `edu-${x.id}`, title: `${x.subject} - ${x.topic}`, module: "Egitim", assigneeId: x.studentId, isCompleted: x.status === "completed", dueDate: x.dueDate, icon: BookOpen, onToggle: async c => { await updateStudyAssignment(x.id, { status: c ? "completed" : "assigned" }); } });
     });
+    mi.forEach(item => {
+      familyMembers.forEach(m => {
+        if (mid && m.id !== mid) return;
+        const prog = mp.find(p => p.itemId === item.id && p.memberId === m.id);
+        if (!prog) return;
+        if (!item.title.toLowerCase().includes(s) && !m.name.toLowerCase().includes(s)) return;
+        list.push({ id: `mem-${item.id}-${m.id}`, title: item.title, module: "Ezber", assigneeId: m.id, isCompleted: prog.completed, icon: BookOpen, onToggle: async c => { await updateMemorizationProgress(item.id, m.id, c); } });
+      });
+    });
+    const PS = ["Sabah", "Ogle", "Ikindi", "Aksam", "Yatsi"];
+    familyMembers.forEach(m => {
+      if (!m.role.includes("Cocuk") || (mid && m.id !== mid)) return;
+      if (!"namaz".includes(s) && !m.name.toLowerCase().includes(s)) return;
+      const pdata = pp.find(p => p.memberId === m.id);
+      const comp: string[] = pdata?.completions?.[todayStr] || [];
+      PS.forEach(pr => {
+        list.push({ id: `pr-${m.id}-${pr}`, title: `${pr} Namazi`, module: "Namaz", assigneeId: m.id, isCompleted: comp.includes(pr), icon: Target, onToggle: async c => { const nc = c ? [...comp, pr] : comp.filter((x: string) => x !== pr); await updatePrayerProgress(m.id, todayStr, nc); } });
+      });
+    });
+    return list;
+  }, [sa, mi, mp, pp, familyMembers, search, mid]);
 
-    const pending = filteredTasks.filter(t => !t.isRecurring && !t.completed);
-    const completed = filteredTasks.filter(t => !t.isRecurring && t.completed);
-    const habitList = filteredTasks.filter(t => t.isRecurring);
+  const pMod = modTasks.filter(t => !t.isCompleted);
+  const cMod = modTasks.filter(t => t.isCompleted);
 
-    return {
-        pendingTasks: pending,
-        completedTasks: completed,
-        habits: habitList,
-        stats: {
-            totalPending: pending.length + pendingModuleTasks.length,
-            totalHabits: habitList.length,
-            userXP: selectedMemberId 
-                ? familyMembers.find(m => m.id === selectedMemberId)?.xp || 0 
-                : (user ? familyMembers.find(m => m.id === user.uid)?.xp || 0 : 0)
-        }
-    };
-  }, [tasks, searchTerm, familyMembers, user, pendingModuleTasks.length, selectedMemberId]);
+  const { pt, ct, habits, stats } = React.useMemo(() => {
+    const s = search.toLowerCase();
+    const fil = tasks.filter(t => {
+      if (mid && t.assigneeId !== mid) return false;
+      return t.title.toLowerCase().includes(s) || ga(t.assigneeId)?.name.toLowerCase().includes(s);
+    });
+    const pt = fil.filter(t => !t.isRecurring && !t.completed);
+    const ct = fil.filter(t => !t.isRecurring && t.completed);
+    const habits = fil.filter(t => t.isRecurring);
+    return { pt, ct, habits, stats: { pend: pt.length + pMod.length, habs: habits.length, xp: mid ? familyMembers.find(m => m.id === mid)?.xp || 0 : (user ? familyMembers.find(m => m.id === user.uid)?.xp || 0 : 0) } };
+  }, [tasks, search, familyMembers, user, pMod.length, mid]);
+
+  const todayLabel = format(new Date(), "d MMMM EEEE", { locale: tr });
+  const HC = ["bg-red-50 border-red-200 text-red-900 dark:bg-red-500/20 dark:border-red-400/30 dark:text-red-100","bg-orange-50 border-orange-200 text-orange-900 dark:bg-orange-500/20 dark:border-orange-400/30 dark:text-orange-100","bg-purple-50 border-purple-200 text-purple-900 dark:bg-purple-500/20 dark:border-purple-400/30 dark:text-purple-100","bg-teal-50 border-teal-200 text-teal-900 dark:bg-teal-500/20 dark:border-teal-400/30 dark:text-teal-100","bg-pink-50 border-pink-200 text-pink-900 dark:bg-pink-500/20 dark:border-pink-400/30 dark:text-pink-100"];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans pb-32 md:pb-10 selection:bg-indigo-500/30 relative overflow-hidden transition-colors duration-300">
-      
-      {/* AMBIENT BACKGROUND BLOBS */}
-      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 opacity-40 dark:opacity-100 transition-opacity duration-700">
-          <div className="absolute top-[-5%] left-[60%] w-[600px] h-[600px] bg-indigo-500/20 dark:bg-indigo-600/20 rounded-full blur-[120px]" />
-          <div className="absolute bottom-[10%] left-[-10%] w-[500px] h-[500px] bg-fuchsia-500/10 dark:bg-fuchsia-600/10 rounded-full blur-[100px]" />
-      </div>
-
-      {/* 1. HEADER & SEARCH (DİNAMİK GLASS HEADER) */}
-      <div className={cn("sticky top-0 z-40 py-4 sm:px-6 transition-all duration-300", glassColors.HEADER_BG)}>
-        <div className="max-w-7xl mx-auto px-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => router.back()} 
-                        className={cn("rounded-full mr-1", glassColors.TEXT_MUTED, "hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/10 dark:hover:text-white")}
-                      >
-                          <ArrowLeft className="w-5 h-5" />
-                      </Button>
-                      <div className={glassColors.ICON_GRADIENT}>
-                          <CheckCircle2 className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                          <p className={cn("text-xs font-bold uppercase tracking-wider", glassColors.TEXT_MUTED)}>Planlayıcı</p>
-                          <h1 className={cn("text-xl font-black tracking-tight", glassColors.TEXT_MAIN)}>Görevler</h1>
-                      </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 w-full md:w-auto">
-                      <div className="relative flex-1 md:w-72">
-                          <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4", glassColors.TEXT_MUTED)} />
-                          <Input 
-                            placeholder="Görev veya kişi ara..." 
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className={cn("pl-9 rounded-2xl h-12 font-medium focus-visible:ring-indigo-500/50", glassColors.CARD_BG, glassColors.TEXT_MAIN, "placeholder:text-slate-400 dark:placeholder:text-slate-500")} 
-                          />
-                      </div>
-                      <Button onClick={handleOpenNewTask} className={cn("hidden md:flex rounded-2xl h-12 px-6 font-bold", glassColors.BUTTON_GLASS)}>
-                           <Plus className="w-5 h-5 mr-2" /> Yeni Ekle
-                       </Button>
-                  </div>
-              </div>
-
-              {/* FİLTRELEME: AİLE ÜYELERİ */}
-              <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
-                  <button 
-                      onClick={() => setSelectedMemberId(null)}
-                      className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm whitespace-nowrap",
-                          selectedMemberId === null ? "bg-slate-800 text-white dark:bg-white dark:text-slate-900" : glassColors.BUTTON_GLASS
-                      )}
-                  >
-                      Tümü
-                  </button>
-                  {familyMembers.map(member => (
-                      <button
-                          key={member.id}
-                          onClick={() => setSelectedMemberId(member.id)}
-                          className={cn(
-                              "flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all shadow-sm whitespace-nowrap",
-                              selectedMemberId === member.id ? "bg-slate-800 text-white dark:bg-white dark:text-slate-900 border-transparent ring-2 ring-slate-800 dark:ring-white ring-offset-2 dark:ring-offset-slate-900" : glassColors.BUTTON_GLASS
-                          )}
-                      >
-                          <Avatar className="w-5 h-5 border border-white dark:border-slate-800">
-                              <AvatarImage src={member.avatar} />
-                              <AvatarFallback style={{backgroundColor: member.color}} className="text-white text-[9px] font-bold">
-                                  {member.name.substring(0,2).toUpperCase()}
-                              </AvatarFallback>
-                          </Avatar>
-                          <span className="text-xs font-bold">{member.name}</span>
-                      </button>
-                  ))}
-              </div>
-
-              {/* MOBİL İSTATİSTİKLER (3 Kolon Grid) */}
-              {selectedMemberId && (
-                  <div className="grid grid-cols-3 gap-1.5 mt-3 md:hidden">
-                      <GlassStatCard icon={ListTodo} label="Bekleyen" value={stats.totalPending} color="bg-blue-500 shadow-blue-500/20 text-white" />
-                      <GlassStatCard icon={Target} label="Alışkanlık" value={stats.totalHabits} color="bg-emerald-500 shadow-emerald-500/20 text-white" />
-                      <GlassStatCard icon={Star} label="XP Puanı" value={stats.userXP} color="bg-amber-500 shadow-amber-500/20 text-white" />
-                  </div>
-              )}
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans pb-32 md:pb-10">
+      <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200 dark:border-white/5">
+        <div className="max-w-2xl mx-auto px-4 pt-4 pb-3">
+          <div className="flex items-center gap-3 mb-3">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full w-9 h-9 text-slate-500 hover:bg-slate-100"><ArrowLeft className="w-5 h-5" /></Button>
+            <div className="flex-1">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{todayLabel}</p>
+              <h1 className="text-xl font-black text-slate-900 dark:text-white leading-tight">Gorevlerim</h1>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="px-2.5 py-1.5 rounded-xl bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300 text-xs font-bold">{stats.habs} aliskanlik</span>
+              <span className="px-2.5 py-1.5 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 text-xs font-bold">{stats.xp} XP</span>
+            </div>
           </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 relative z-10">
-        
-        {/* SOL KOLON: ANA İÇERİK */}
-        <div className="lg:col-span-8 space-y-8">
-            
-            {/* TAB SELECTOR (GLASS STYLE) */}
-            <div className={cn("p-1.5 rounded-[1.5rem] flex relative shadow-sm", glassColors.CARD_BG)}>
-                <button 
-                    onClick={() => setActiveTab('tasks')}
-                    className={cn(
-                        "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold transition-all duration-300",
-                        activeTab === 'tasks' ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white" : glassColors.TEXT_MUTED + " hover:text-slate-900 dark:hover:text-slate-200"
-                    )}
-                >
-                    <ListTodo className="w-4 h-4" /> Görevler
-                    {(pendingTasks.length + pendingModuleTasks.length) > 0 && <span className={cn("px-2 py-0.5 rounded-lg text-[10px] font-black", activeTab === 'tasks' ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300" : "bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400")}>{pendingTasks.length + pendingModuleTasks.length}</span>}
-                </button>
-                <button 
-                    onClick={() => setActiveTab('habits')}
-                    className={cn(
-                        "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold transition-all duration-300",
-                        activeTab === 'habits' ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white" : glassColors.TEXT_MUTED + " hover:text-slate-900 dark:hover:text-slate-200"
-                    )}
-                >
-                    <Target className="w-4 h-4" /> Alışkanlıklar
-                </button>
-            </div>
-
-            {/* --- GÖREVLER GÖRÜNÜMÜ --- */}
-            {activeTab === 'tasks' && (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    {/* Alt Filtreler */}
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                        <button onClick={() => setTaskFilter('pending')} className={cn("px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm", taskFilter === 'pending' ? "bg-indigo-600 text-white shadow-indigo-500/20" : glassColors.BUTTON_GLASS)}>
-                            Yapılacaklar ({pendingTasks.length + pendingModuleTasks.length})
-                        </button>
-                        <button onClick={() => setTaskFilter('completed')} className={cn("px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm", taskFilter === 'completed' ? "bg-indigo-600 text-white shadow-indigo-500/20" : glassColors.BUTTON_GLASS)}>
-                            Tamamlananlar ({completedTasks.length + completedModuleTasks.length})
-                        </button>
-                    </div>
-
-                    <div className="space-y-4">
-                        {taskFilter === 'pending' ? (
-                            <>
-                                {pendingTasks.length > 0 ? (
-                                    pendingTasks.map((task, index) => (
-                                        <div key={task.id} className="transform transition-all hover:-translate-y-1">
-                                            <TaskItem 
-                                                task={task} 
-                                                assignee={getAssignee(task.assigneeId)} 
-                                                onEdit={handleOpenEditTask} 
-                                                colorClass={taskColors[index % taskColors.length]} 
-                                                onDelete={() => handleDeleteTask(task.id)}
-                                            />
-                                        </div>
-                                    ))
-                                ) : (
-                                    pendingModuleTasks.length === 0 && <GlassEmptyState title="Süpersin! 🎉" desc="Yapılacak hiç görev kalmadı." icon={Zap} />
-                                )}
-
-                                {pendingModuleTasks.length > 0 && (
-                                    <div className="pt-6">
-                                        <div className="flex flex-col gap-3 mb-4">
-                                            <h3 className="text-lg font-black px-2 flex items-center gap-2">
-                                                <LayoutGrid className="w-5 h-5 text-indigo-500" />
-                                                Diğer Modüllerden
-                                            </h3>
-                                            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 px-2">
-                                                {['Tümü', 'Eğitim', 'Ezber', 'Namaz'].map(tab => (
-                                                    <button 
-                                                        key={tab}
-                                                        onClick={() => setActiveModuleTab(tab as any)}
-                                                        className={cn(
-                                                            "px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all shadow-sm whitespace-nowrap", 
-                                                            activeModuleTab === tab ? "bg-slate-800 text-white dark:bg-white dark:text-slate-900" : glassColors.BUTTON_GLASS
-                                                        )}
-                                                    >
-                                                        {tab}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-3">
-                                            {pendingModuleTasks
-                                                .filter(mt => activeModuleTab === 'Tümü' || mt.module === activeModuleTab)
-                                                .map(mt => (
-                                                    <ModuleTaskItem key={mt.id} task={mt} assignee={getAssignee(mt.assigneeId)} />
-                                                ))}
-                                            {pendingModuleTasks.filter(mt => activeModuleTab === 'Tümü' || mt.module === activeModuleTab).length === 0 && (
-                                                <p className={cn("text-xs font-medium px-2", glassColors.TEXT_MUTED)}>Bu kategoride bekleyen görev yok.</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </>
-                        ) : (
-                            <>
-                                {completedTasks.length > 0 ? (
-                                    completedTasks.map((task) => (
-                                        <div key={task.id} className="opacity-70 hover:opacity-100 transition-opacity">
-                                            <TaskItem 
-                                                task={task} 
-                                                assignee={getAssignee(task.assigneeId)} 
-                                                onEdit={handleOpenEditTask} 
-                                                onDelete={() => handleDeleteTask(task.id)}
-                                            />
-                                        </div>
-                                    ))
-                                ) : (
-                                    completedModuleTasks.length === 0 && <GlassEmptyState title="Henüz biten yok" desc="Tamamlanan görevler burada görünür." icon={ListTodo} />
-                                )}
-
-                                {completedModuleTasks.length > 0 && (
-                                    <div className="pt-6">
-                                        <div className="flex flex-col gap-3 mb-4 opacity-70">
-                                            <h3 className="text-lg font-black px-2 flex items-center gap-2">
-                                                <LayoutGrid className="w-5 h-5" />
-                                                Diğer Modüllerden
-                                            </h3>
-                                            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 px-2">
-                                                {['Tümü', 'Eğitim', 'Ezber', 'Namaz'].map(tab => (
-                                                    <button 
-                                                        key={tab}
-                                                        onClick={() => setActiveModuleTab(tab as any)}
-                                                        className={cn(
-                                                            "px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all shadow-sm whitespace-nowrap", 
-                                                            activeModuleTab === tab ? "bg-slate-800 text-white dark:bg-white dark:text-slate-900" : glassColors.BUTTON_GLASS
-                                                        )}
-                                                    >
-                                                        {tab}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-3">
-                                            {completedModuleTasks
-                                                .filter(mt => activeModuleTab === 'Tümü' || mt.module === activeModuleTab)
-                                                .map(mt => (
-                                                    <div key={mt.id} className="opacity-70 hover:opacity-100 transition-opacity">
-                                                        <ModuleTaskItem task={mt} assignee={getAssignee(mt.assigneeId)} />
-                                                    </div>
-                                                ))}
-                                            {completedModuleTasks.filter(mt => activeModuleTab === 'Tümü' || mt.module === activeModuleTab).length === 0 && (
-                                                <p className={cn("text-xs font-medium px-2", glassColors.TEXT_MUTED)}>Bu kategoride tamamlanmış görev yok.</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* --- ALIŞKANLIKLAR GÖRÜNÜMÜ --- */}
-            {activeTab === 'habits' && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                     {habits.length > 0 ? (
-                        habits.map((habit, index) => (
-                            <HabitTrackerCard
-                                key={habit.id}
-                                task={habit} 
-                                assignee={familyMembers.find(m => m.id === habit.assigneeId)} 
-                                onToggleDay={(day, isCompleted) => handleToggleDay(habit.id, day, isCompleted)}
-                                onEdit={() => handleOpenEditTask(habit)}
-                                onDelete={() => handleDeleteTask(habit.id)}
-                                colorClass={taskColors[index % taskColors.length]}
-                            />
-                        ))
-                    ) : (
-                        <GlassEmptyState title="Alışkanlık Edin" desc="Zinciri kırmadan devam edeceğin hedefler ekle." icon={Flame} />
-                    )}
-                </div>
-            )}
+          <div className="relative mb-3">
+            <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 hidden" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input placeholder="Gorev ara..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 rounded-2xl h-10 bg-slate-100 dark:bg-slate-800 border-transparent focus-visible:ring-2 focus-visible:ring-indigo-400 text-sm" />
+            {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>}
+          </div>
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <button onClick={() => setMid(null)} className={cn("px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap", mid === null ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300")}>Tumu</button>
+            {familyMembers.map(m => (
+              <button key={m.id} onClick={() => setMid(m.id)} className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap", mid === m.id ? "text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300")} style={mid === m.id ? { backgroundColor: m.color } : {}}>
+                <span className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white" style={{ backgroundColor: m.color }}>{m.name[0]}</span>
+                {m.name}
+              </button>
+            ))}
+          </div>
         </div>
-
-        {/* SAĞ KOLON: LİDERLİK & İSTATİSTİK */}
-        <aside className="lg:col-span-4 space-y-8">
-            
-            {/* Desktop Stats */}
-            <div className="hidden md:flex flex-col gap-4">
-                 <GlassStatCard icon={ListTodo} label="Bekleyen" value={stats.totalPending} color="bg-blue-500 text-white shadow-lg shadow-blue-500/20" />
-                 <GlassStatCard icon={Star} label="XP Puanın" value={stats.userXP} color="bg-amber-500 text-white shadow-lg shadow-amber-500/20" />
-            </div>
-
-            {/* LEADERBOARD CARD */}
-            <div className={cn("rounded-[2rem] shadow-sm overflow-hidden sticky top-32", glassColors.CARD_BG)}>
-                <div className="p-6 border-b border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900/50">
-                    <div className="flex items-center gap-2 mb-1.5">
-                        <Trophy className="w-6 h-6 text-amber-500" />
-                        <h3 className={cn("text-lg font-black text-slate-900 dark:text-white")}>Liderlik Tablosu</h3>
-                    </div>
-                    <p className={cn("text-sm font-medium", glassColors.TEXT_MUTED)}>En çok XP kazanan üyeler.</p>
-                </div>
-                
-                <ScrollArea className="max-h-[450px]">
-                    <div className="p-3 space-y-2">
-                        {leaderboard.map((member, index) => (
-                            <div key={member.id} className={cn("flex items-center gap-4 p-4 rounded-[1.5rem] transition-colors border border-transparent", glassColors.CARD_HOVER)}>
-                                <div className={cn(
-                                    "w-10 h-10 flex items-center justify-center font-black rounded-full text-base shadow-sm border",
-                                    index === 0 ? "bg-amber-100 text-amber-600 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30" :
-                                    index === 1 ? "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-500/20 dark:text-slate-300 dark:border-slate-500/30" :
-                                    index === 2 ? "bg-orange-100 text-orange-600 border-orange-200 dark:bg-orange-500/20 dark:text-orange-300 dark:border-orange-500/30" : 
-                                    "bg-slate-50 text-slate-400 border-slate-100 dark:bg-white/5 dark:text-slate-500 dark:border-white/5"
-                                )}>
-                                    {index + 1}
-                                </div>
-                                
-                                <Avatar className="w-12 h-12 border-2 border-white dark:border-slate-800 shadow-sm">
-                                    <AvatarImage src={member.avatar} />
-                                    <AvatarFallback style={{backgroundColor: member.color}} className="text-white font-bold text-lg">
-                                        {member.name[0].toUpperCase()}
-                                    </AvatarFallback>
-                                </Avatar>
-
-                                <div className="flex-1 min-w-0">
-                                    <p className={cn("font-bold text-base truncate", glassColors.TEXT_MAIN)}>{member.name}</p>
-                                    <p className={cn("text-xs font-medium", glassColors.TEXT_MUTED)}>Seviye {member.level}</p>
-                                </div>
-                                
-                                <div className="text-right">
-                                    <span className={cn("block font-black text-lg text-amber-500")}>{member.xp.toLocaleString()}</span>
-                                    <span className={cn("text-[10px] font-bold uppercase", glassColors.TEXT_MUTED)}>XP</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </ScrollArea>
-            </div>
-
-            <div className="bg-indigo-600 rounded-[2rem] p-8 text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden hidden md:block">
-                 <div className="relative z-10">
-                     <p className="font-black text-2xl mb-2">"Zinciri Kırma!"</p>
-                     <p className="text-indigo-100 font-medium opacity-90 leading-relaxed">Her gün yapılan küçük bir adım, yarın büyük bir başarıya dönüşür.</p>
-                 </div>
-                 <Flame className="absolute -bottom-8 -right-8 w-32 h-32 text-indigo-400 opacity-30 rotate-12" />
-            </div>
-        </aside>
+        <div className="max-w-2xl mx-auto px-4">
+          <div className="flex gap-1 border-b border-slate-200 dark:border-white/10">
+            {[{key:"tasks",lbl:"Gorevler",cnt:pt.length+pMod.length,em:"✅"},{key:"habits",lbl:"Aliskanliklar",cnt:habits.length,em:"🔥"}].map(t => (
+              <button key={t.key} onClick={() => setTab(t.key as "tasks"|"habits")} className={cn("flex items-center gap-2 px-4 py-3 text-sm font-bold transition-all border-b-2 -mb-[2px]", tab === t.key ? "border-indigo-500 text-indigo-600 dark:text-indigo-400" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}>
+                <span>{t.em}</span>{t.lbl}
+                {t.cnt > 0 && <span className={cn("px-1.5 py-0.5 rounded-lg text-[10px] font-black", tab === t.key ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300" : "bg-slate-100 dark:bg-slate-800 text-slate-500")}>{t.cnt}</span>}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* FAB: MOBİL BUTON */}
-      <button 
-        onClick={handleOpenNewTask}
-        className="fixed bottom-24 right-6 md:hidden z-50 w-16 h-16 bg-indigo-600 text-white rounded-[2rem] shadow-xl shadow-indigo-500/30 flex items-center justify-center active:scale-95 transition-transform"
-      >
-        <Plus className="w-8 h-8" />
-      </button>
-
-      {/* FORM SHEET — Mobilde alttan açılan native sheet, masaüstünde ortalı modal */}
-      {isFormDialogOpen && (
-        <div className="fixed inset-x-0 top-0 bottom-16 sm:inset-0 z-[60] flex items-end sm:items-center justify-center">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
-            onClick={() => setIsFormDialogOpen(false)}
-          />
-
-          {/* Sheet / Modal */}
-          <div className={cn(
-            "relative w-full sm:max-w-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100",
-            "flex flex-col overflow-hidden",
-            "animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-400 ease-out",
-            // Mobile: full-width bottom sheet with top-rounded corners
-            "rounded-t-[2.5rem] sm:rounded-[2rem]",
-            // Mobile: sheet height adapts to available space above nav, desktop: auto
-            "max-h-full sm:max-h-[90vh] sm:shadow-2xl",
-          )}>
-            {/* Sürükleme çubuğu – sadece mobilde görünür */}
-            <div className="flex justify-center pt-4 pb-1 sm:hidden">
-              <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
+      <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
+        {tab === "tasks" && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex gap-2">
+              {[{key:"pending",lbl:"Yapilacaklar",cnt:pt.length+pMod.length,em:"📋"},{key:"completed",lbl:"Tamamlananlar",cnt:ct.length+cMod.length,em:"✅"}].map(f => (
+                <button key={f.key} onClick={() => setFilter(f.key as "pending"|"completed")} className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-bold transition-all", filter === f.key ? "bg-indigo-600 text-white shadow-md" : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10")}>
+                  <span>{f.em}</span>{f.lbl}<span className={cn("px-1.5 py-0.5 rounded-md text-[10px] font-black", filter === f.key ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500")}>{f.cnt}</span>
+                </button>
+              ))}
             </div>
+            {filter === "pending" ? (
+              <>
+                {pt.length > 0 && <CatGroup emoji="📌" title="Kisisel Gorevler" color={COLORS[6]} count={pt.length}>{pt.map((t,i)=><TaskRow key={t.id} task={{...t,isCompleted:t.completed}} assignee={ga(t.assigneeId)} color={COLORS[i%COLORS.length]} onEdit={()=>{setEditTask(t);setFormOpen(true);}} onDelete={async()=>{try{await deleteTask(t.id);toast({title:"Silindi"});}catch{toast({title:"Hata",variant:"destructive"});}}} />)}</CatGroup>}
+                {pMod.filter(t=>t.module==="Egitim").length>0&&<CatGroup emoji="📚" title="Egitim" color={MC["Egitim"]} count={pMod.filter(t=>t.module==="Egitim").length}>{pMod.filter(t=>t.module==="Egitim").map(mt=><ModRow key={mt.id} task={mt} assignee={ga(mt.assigneeId)} />)}</CatGroup>}
+                {pMod.filter(t=>t.module==="Ezber").length>0&&<CatGroup emoji="🧠" title="Ezber" color={MC["Ezber"]} count={pMod.filter(t=>t.module==="Ezber").length}>{pMod.filter(t=>t.module==="Ezber").map(mt=><ModRow key={mt.id} task={mt} assignee={ga(mt.assigneeId)} />)}</CatGroup>}
+                {pMod.filter(t=>t.module==="Namaz").length>0&&<CatGroup emoji="🕌" title="Namaz" color={MC["Namaz"]} count={pMod.filter(t=>t.module==="Namaz").length}>{pMod.filter(t=>t.module==="Namaz").map(mt=><ModRow key={mt.id} task={mt} assignee={ga(mt.assigneeId)} />)}</CatGroup>}
+                {pt.length===0&&pMod.length===0&&<div className="text-center py-20"><div className="text-6xl mb-4">🎉</div><p className="text-xl font-black">Supersin!</p><p className="text-sm text-slate-500 mt-2">Yapilacak hic gorev kalmadi.</p></div>}
+              </>
+            ) : (
+              <>
+                {ct.length>0&&<CatGroup emoji="✅" title="Tamamlananlar" color={COLORS[3]} count={ct.length} open={false}>{ct.map((t,i)=><TaskRow key={t.id} task={{...t,isCompleted:true}} assignee={ga(t.assigneeId)} color={COLORS[i%COLORS.length]} onEdit={()=>{setEditTask(t);setFormOpen(true);}} onDelete={async()=>{try{await deleteTask(t.id);toast({title:"Silindi"});}catch{toast({title:"Hata",variant:"destructive"});}}} />)}</CatGroup>}
+                {cMod.length>0&&<CatGroup emoji="📖" title="Diger Tamamlananlar" color={COLORS[4]} count={cMod.length} open={false}>{cMod.map(mt=><ModRow key={mt.id} task={mt} assignee={ga(mt.assigneeId)} />)}</CatGroup>}
+                {ct.length===0&&cMod.length===0&&<div className="text-center py-20"><div className="text-6xl mb-4">💤</div><p className="text-xl font-black">Henuz biten yok</p><p className="text-sm text-slate-500 mt-2">Tamamlananlar burada gorunur.</p></div>}
+              </>
+            )}
+          </div>
+        )}
 
-            {/* Başlık */}
+        {tab === "habits" && (
+          <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {habits.length > 0 ? habits.map((h,i) => (
+              <HabitTrackerCard key={h.id} task={h} assignee={ga(h.assigneeId)}
+                onToggleDay={(day,ic)=>updateHabitCompletion(h.id,day,ic).catch(()=>toast({title:"Hata",variant:"destructive"}))}
+                onEdit={()=>{setEditTask(h);setFormOpen(true);}}
+                onDelete={async()=>{try{await deleteTask(h.id);}catch{toast({title:"Hata",variant:"destructive"});}}}
+                colorClass={HC[i%HC.length]} />
+            )) : <div className="text-center py-20"><div className="text-6xl mb-4">🔥</div><p className="text-xl font-black">Aliskanlik Edin</p><p className="text-sm text-slate-500 mt-2">Zinciri kirmadan devam edecek hedefler ekle.</p></div>}
+          </div>
+        )}
+
+        <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-white/5 flex items-center gap-3">
+            <Trophy className="w-5 h-5 text-amber-500" />
+            <h3 className="font-black text-slate-900 dark:text-white">Liderlik Tablosu</h3>
+          </div>
+          <div className="p-3 space-y-1">
+            {[...familyMembers].sort((a,b)=>b.xp-a.xp).map((m,i)=>(
+              <div key={m.id} className="flex items-center gap-3 px-3 py-2.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                <span className={cn("w-7 h-7 rounded-full flex items-center justify-center font-black text-xs", i===0?"bg-amber-400 text-white":i===1?"bg-slate-300 text-slate-700":i===2?"bg-orange-300 text-white":"bg-slate-100 dark:bg-slate-800 text-slate-500")}>{i+1}</span>
+                <Avatar className="w-8 h-8 border-2 border-white dark:border-slate-700">
+                  <AvatarImage src={m.avatar} />
+                  <AvatarFallback style={{backgroundColor:m.color}} className="text-white text-xs font-bold">{m.name[0]}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0"><p className="font-bold text-sm truncate text-slate-900 dark:text-white">{m.name}</p><p className="text-[10px] text-slate-400 font-medium">Seviye {m.level}</p></div>
+                <span className="font-black text-sm text-amber-500">⭐ {m.xp.toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <button onClick={()=>{setEditTask(null);setFormOpen(true);}} className="fixed bottom-24 right-5 md:bottom-8 z-50 w-14 h-14 bg-indigo-600 text-white rounded-[1.5rem] shadow-xl shadow-indigo-500/30 flex items-center justify-center active:scale-95 transition-all hover:bg-indigo-700 hover:scale-105"><Plus className="w-7 h-7" /></button>
+
+      {formOpen && (
+        <div className="fixed inset-x-0 top-0 bottom-16 sm:inset-0 z-[60] flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={()=>setFormOpen(false)} />
+          <div className={cn("relative w-full sm:max-w-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 flex flex-col overflow-hidden","animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-300","rounded-t-[2.5rem] sm:rounded-[2rem] max-h-full sm:max-h-[90vh] sm:shadow-2xl")}>
+            <div className="flex justify-center pt-4 pb-1 sm:hidden"><div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600" /></div>
             <div className="flex items-center justify-between px-6 pt-4 pb-4 sm:pt-6 border-b border-slate-100 dark:border-white/5">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                  {editingTask ? <LayoutGrid className="w-5 h-5 text-white" /> : <Target className="w-5 h-5 text-white" />}
-                </div>
-                <div>
-                  <h2 className="text-xl font-black tracking-tight">
-                    {editingTask ? 'Görevi Düzenle' : 'Yeni Görev'}
-                  </h2>
-                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
-                    {editingTask ? 'Mevcut görevi güncelle' : 'Aile için yeni bir hedef ekle'}
-                  </p>
-                </div>
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 flex items-center justify-center shadow-lg">{editTask?<LayoutGrid className="w-5 h-5 text-white"/>:<Target className="w-5 h-5 text-white"/>}</div>
+                <div><h2 className="text-xl font-black">{editTask?"Gorevi Duzenle":"Yeni Gorev"}</h2><p className="text-xs text-slate-500 mt-0.5">{editTask?"Mevcut gorevi guncelle":"Aile icin yeni hedef ekle"}</p></div>
               </div>
-              <button
-                onClick={() => setIsFormDialogOpen(false)}
-                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-colors text-slate-500 dark:text-slate-400"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <button onClick={()=>setFormOpen(false)} className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X className="w-4 h-4" /></button>
             </div>
-
-            {/* Form içeriği */}
             <div className="overflow-y-auto flex-1 px-6 py-4 overscroll-contain">
-              <NewTaskForm 
-                familyMembers={familyMembers}
-                onTaskProcessed={() => setIsFormDialogOpen(false)}
-                taskToEdit={editingTask}
-              />
+              <NewTaskForm familyMembers={familyMembers} onTaskProcessed={()=>setFormOpen(false)} taskToEdit={editTask} />
             </div>
           </div>
         </div>
