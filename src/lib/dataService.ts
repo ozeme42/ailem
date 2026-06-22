@@ -549,6 +549,23 @@ export const updateTopics = async (topics: string[]) => {
     if (familyId) await setDoc(doc(db, 'familyManagement', familyId), { educationTopics: topics }, { merge: true });
 };
 
+export const onCurriculumMapUpdate = (callback: (map: Record<string, string[]>) => void) => {
+    const auth = getAuth();
+    return onAuthStateChanged(auth, (user) => {
+        if (!user) return callback({});
+        return onSnapshot(doc(db, 'users', user.uid), async (userDoc) => {
+            const familyId = userDoc.data()?.familyId;
+            if (familyId) return onSnapshot(doc(db, 'familyManagement', familyId), (doc) => callback(doc.exists() ? doc.data().educationCurriculumMap || {} : {}));
+            else callback({});
+        });
+    });
+};
+
+export const updateCurriculumMap = async (map: Record<string, string[]>) => {
+    const familyId = await getCurrentFamilyId();
+    if (familyId) await setDoc(doc(db, 'familyManagement', familyId), { educationCurriculumMap: map }, { merge: true });
+};
+
 // --- MEMORIZATION ---
 export const onMemorizationItemsUpdate = (cb: (s: MemorizationItem[]) => void) => onFamilyDataUpdate<MemorizationItem>('memorizationItems', cb);
 export const onMemorizationProgressUpdate = (cb: (s: MemorizationProgress[]) => void) => onFamilyDataUpdate<MemorizationProgress>('memorizationProgress', cb);
