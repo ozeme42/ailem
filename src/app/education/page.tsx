@@ -784,13 +784,11 @@ export default function EducationPage() {
                     const dayTasks = pendingTasks.filter(t => {
                       const cTime = new Date(currentDay).setHours(0,0,0,0);
                       const sTime = new Date(t.startDateObj).setHours(0,0,0,0);
-                      const eTime = new Date(t.dueDateObj).setHours(0,0,0,0);
-                      const isBetween = cTime >= sTime && cTime <= eTime;
 
                       if (isDayToday) {
-                        return isBetween || (isPast(t.dueDateObj) && !isToday(t.dueDateObj));
+                        return sTime <= cTime;
                       }
-                      return isBetween;
+                      return sTime === cTime;
                     });
 
                     return (
