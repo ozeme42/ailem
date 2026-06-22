@@ -5,12 +5,12 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Test, QuickTestQuestion, EvaluationStatus } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, GraduationCap } from "lucide-react";
+import { ArrowLeft, Loader2, GraduationCap, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { doc, getDocs, collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { updateTest, checkAndAwardBadges } from "@/lib/dataService";
+import { updateTest, checkAndAwardBadges, deleteTest } from "@/lib/dataService";
 import { useAuth } from "@/components/auth-provider";
 
 // --- İZOLE MODÜLLER ---
@@ -189,6 +189,19 @@ export default function UnifiedTestPage() {
         }
     };
 
+    const handleDelete = async () => {
+        if (window.confirm("Bu sınavı/testi tamamen silmek istediğinize emin misiniz? Bu işlem geri alınamaz!")) {
+            try {
+                await deleteTest(test.id, (test as any).fileUrl);
+                toast({ title: "Başarılı", description: "Sınav/Test başarıyla silindi." });
+                router.push('/education');
+            } catch (e) {
+                console.error("Delete failed:", e);
+                toast({ title: "Hata", description: "Silinirken bir hata oluştu.", variant: "destructive" });
+            }
+        }
+    };
+
     if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-950"><Loader2 className="w-12 h-12 animate-spin text-indigo-600" /></div>;
     if (!test) return <div className="flex flex-col items-center justify-center h-screen space-y-4"><h1>Ödev Bulunamadı</h1><Link href="/education"><Button>Geri Dön</Button></Link></div>;
 
@@ -204,7 +217,12 @@ export default function UnifiedTestPage() {
                             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">Sınav Analizi</p>
                         </div>
                     </div>
-                    <Badge className="bg-emerald-600 px-4 py-1 rounded-full font-black text-white">BİTTİ</Badge>
+                    <div className="flex items-center gap-3">
+                        <Button variant="ghost" size="icon" onClick={handleDelete} className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">
+                            <Trash2 className="w-4 h-4" />
+                        </Button>
+                        <Badge className="bg-emerald-600 px-4 py-1 rounded-full font-black text-white">BİTTİ</Badge>
+                    </div>
                 </header>
                 <main className="max-w-7xl mx-auto w-full flex-1">
                     {test.sourceType === 'exam' ? (
@@ -259,7 +277,10 @@ export default function UnifiedTestPage() {
                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">{test.subject}</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                    <Button variant="ghost" size="icon" onClick={handleDelete} className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">
+                        <Trash2 className="w-4 h-4" />
+                    </Button>
                     {test.status === 'Atandı' && <TestTimer durationMinutes={test.questionCount * 2} />}
                     {test.status === 'Değerlendirme Bekliyor' && <Badge className="bg-amber-600 px-4 py-1 rounded-full font-black text-white">DEĞERLENDİRİLİYOR</Badge>}
                 </div>
