@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { 
-    onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics, 
+    onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics, onCurriculumMapUpdate, updateCurriculumMap, 
     onTestsUpdate, onBankQuestionsUpdate, onTrackedBooksUpdate 
 } from "@/lib/dataService";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,7 @@ export function SubjectsClient() {
     // Master Lists
     const [allSubjects, setAllSubjects] = React.useState<string[]>([]);
     const [allTopics, setAllTopics] = React.useState<string[]>([]);
+    const [curriculumMap, setCurriculumMap] = React.useState<Record<string, string[]>>({});
     
     // Data lists for Sync & Hierarchy
     const [tests, setTests] = React.useState<any[]>([]);
@@ -78,6 +79,7 @@ export function SubjectsClient() {
         if (!familyId) return;
         const unsubS = onSubjectsUpdate(setAllSubjects);
         const unsubT = onTopicsUpdate(setAllTopics);
+        const unsubC = onCurriculumMapUpdate(setCurriculumMap);
         const unsubTests = onTestsUpdate(setTests);
         const unsubBank = onBankQuestionsUpdate(setBankQuestions);
         const unsubBooks = onTrackedBooksUpdate((books) => {
@@ -85,7 +87,7 @@ export function SubjectsClient() {
             setLoading(false);
         });
         
-        return () => { unsubS(); unsubT(); unsubTests(); unsubBank(); unsubBooks(); };
+        return () => { unsubS(); unsubT(); unsubTests(); unsubBank(); unsubBooks(); unsubC(); };
     }, [familyId]);
 
     // HİYERARŞİ HARİTASI
@@ -117,13 +119,18 @@ export function SubjectsClient() {
         });
 
         // Ekranda hemen eşleşmiş göstermek için session bazlı yerel linkleri ekle
+        Object.entries(curriculumMap).forEach(([subj, topics]) => {
+            if (!map.has(subj)) map.set(subj, new Set());
+            topics.forEach(t => map.get(subj)!.add(t));
+        });
+
         localLinks.forEach(link => {
             if (!map.has(link.subject)) map.set(link.subject, new Set());
             map.get(link.subject)!.add(link.topic);
         });
 
         return map;
-    }, [allSubjects, tests, bankQuestions, trackedBooks, localLinks]);
+    }, [allSubjects, tests, bankQuestions, trackedBooks, localLinks, curriculumMap]);
 
     // AUTO-SYNC LOGIC
     React.useEffect(() => {
@@ -225,12 +232,19 @@ export function SubjectsClient() {
                 
                 await updateTopics([...allTopics, ...uniqueNewTopics]);
                 
-                // Seçili ders varsa anında o derse bağla
+                
+                // Seçili ders varsa anında o derse bağla ve kalıcı olarak kaydet
                 if (selectedSubject) {
                     const newLinks = uniqueNewTopics.map(t => ({ subject: selectedSubject, topic: t }));
                     setLocalLinks(prev => [...prev, ...newLinks]);
-                    // Not: Veritabanı yapınız salt "Dinamik Eşleşme" üzerine kurulu olduğundan
-                    // kalıcı eşleştirme istiyorsanız buraya özel bir backend update fonksiyonu ekleyebilirsiniz.
+                    
+                    // Kalıcı veritabanı kaydı
+                    const currentMapped = curriculumMap[selectedSubject] || [];
+                    const updatedMap = {
+                        ...curriculumMap,
+                        [selectedSubject]: [...new Set([...currentMapped, ...uniqueNewTopics])]
+                    };
+                    await updateCurriculumMap(updatedMap);
                 }
 
                 toast({ title: "Konular Eklendi ✅", description: `${uniqueNewTopics.length} adet yeni konu eklendi.` });

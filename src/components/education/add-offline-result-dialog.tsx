@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, X, Save, FileText, CheckCircle2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Student, Test } from "@/lib/data";
-import { addTest, onSubjectsUpdate, onTopicsUpdate, onTestsUpdate, onBankQuestionsUpdate } from "@/lib/dataService";
+import { addTest, onSubjectsUpdate, onTopicsUpdate, onTestsUpdate, onBankQuestionsUpdate, onCurriculumMapUpdate } from "@/lib/dataService";
 import { cn } from "@/lib/utils";
 
 import { TrackedBook, StudyPlan } from "@/lib/data";
@@ -39,6 +39,7 @@ export function AddOfflineResultDialog({ students, trackedBooks, studyPlans, onR
 
   const [globalSubjects, setGlobalSubjects] = React.useState<string[]>([]);
   const [globalTopics, setGlobalTopics] = React.useState<string[]>([]);
+  const [curriculumMap, setCurriculumMap] = React.useState<Record<string, string[]>>({});
 
   const [tests, setTests] = React.useState<any[]>([]);
   const [bankQuestions, setBankQuestions] = React.useState<any[]>([]);
@@ -46,7 +47,8 @@ export function AddOfflineResultDialog({ students, trackedBooks, studyPlans, onR
   React.useEffect(() => {
     const unsubTests = onTestsUpdate(setTests);
     const unsubBank = onBankQuestionsUpdate(setBankQuestions);
-    return () => { unsubTests(); unsubBank(); };
+    const unsubC = onCurriculumMapUpdate(setCurriculumMap);
+    return () => { unsubTests(); unsubBank(); unsubC(); };
   }, []);
 
 
@@ -105,6 +107,11 @@ export function AddOfflineResultDialog({ students, trackedBooks, studyPlans, onR
         }
     });
 
+    Object.entries(curriculumMap).forEach(([subj, topics]) => {
+        if (!map.has(subj)) map.set(subj, new Set());
+        topics.forEach(t => map.get(subj)!.add(t));
+    });
+
     trackedBooks.forEach(b => {
         (b.subjects || []).forEach((s: any) => {
             if (!map.has(s.name)) map.set(s.name, new Set());
@@ -113,7 +120,7 @@ export function AddOfflineResultDialog({ students, trackedBooks, studyPlans, onR
     });
 
     return map;
-  }, [globalSubjects, tests, bankQuestions, trackedBooks]);
+  }, [globalSubjects, tests, bankQuestions, trackedBooks, curriculumMap]);
 
 
   const availableSubjects = Array.from(new Set([
