@@ -4,7 +4,8 @@ import * as React from "react";
 import { 
   Plus, Search, Star, X,
   Trophy, Target, CheckCircle2, 
-  ListTodo, Flame, LayoutGrid, Zap, Check, Edit, Trash2, MoreHorizontal, ArrowLeft
+  ListTodo, Flame, LayoutGrid, Zap, Check, Edit, Trash2, MoreHorizontal, ArrowLeft,
+  BookOpen, GraduationCap, Calendar
 } from "lucide-react"; 
 import { useRouter } from "next/navigation"; 
 import { 
@@ -20,8 +21,13 @@ import { Badge } from "@/components/ui/badge";
 import { NewTaskForm } from "@/components/new-task-form"; 
 
 import { TaskItem } from "@/components/task-item"; 
-import { Task } from "@/lib/data";
-import { onTasksUpdate, updateHabitCompletion, deleteTask } from "@/lib/dataService";
+import { Task, StudyAssignment, MemorizationItem, MemorizationProgress, PrayerProgress } from "@/lib/data";
+import { 
+    onTasksUpdate, updateHabitCompletion, deleteTask,
+    onStudyAssignmentsUpdate, updateStudyAssignment,
+    onMemorizationItemsUpdate, onMemorizationProgressUpdate, updateMemorizationProgress,
+    onPrayerProgressUpdate, updatePrayerProgress
+} from "@/lib/dataService";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -211,11 +217,95 @@ const GlassEmptyState = ({ title, desc, icon: Icon }: { title: string, desc: str
     </div>
 );
 
+const ModuleTaskItem = ({ task, assignee }: { task: any, assignee: any }) => {
+    const Icon = task.icon;
+    const [isLoading, setIsLoading] = React.useState(false);
+
+    const handleToggle = async () => {
+        setIsLoading(true);
+        try {
+            await task.onToggle(!task.isCompleted);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className={cn(
+            "group relative flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-3xl transition-all duration-300 border backdrop-blur-md",
+            task.isCompleted 
+                ? "bg-slate-50/50 dark:bg-slate-900/30 border-transparent shadow-none" 
+                : glassColors.CARD_BG + " hover:shadow-lg dark:hover:shadow-indigo-500/10 hover:border-indigo-200 dark:hover:border-indigo-500/30"
+        )}>
+            {/* SOL: CHECKBOX & BİLGİ */}
+            <div className="flex-1 flex items-start gap-4">
+                <button 
+                    onClick={handleToggle}
+                    disabled={isLoading}
+                    className={cn(
+                        "mt-1 w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all duration-300 focus:outline-none",
+                        isLoading ? "opacity-50 cursor-wait" : "hover:scale-110 active:scale-95",
+                        task.isCompleted 
+                            ? "bg-indigo-500 border-indigo-500 text-white shadow-md shadow-indigo-500/30" 
+                            : "border-slate-300 dark:border-slate-600 text-transparent hover:border-indigo-500 dark:hover:border-indigo-400"
+                    )}
+                >
+                    <Check className={cn("w-4 h-4", task.isCompleted ? "scale-100 opacity-100" : "scale-50 opacity-0", "transition-all duration-300")} strokeWidth={4} />
+                </button>
+                
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className={cn(
+                            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider",
+                            task.color
+                        )}>
+                            <Icon className="w-3.5 h-3.5" />
+                            {task.module}
+                        </span>
+                    </div>
+                    
+                    <h4 className={cn(
+                        "text-base font-bold truncate transition-colors duration-300",
+                        task.isCompleted ? "text-slate-400 dark:text-slate-500 line-through" : glassColors.TEXT_MAIN
+                    )}>
+                        {task.title}
+                    </h4>
+
+                    {task.dueDate && !task.isCompleted && (
+                        <p className={cn("text-xs font-medium mt-1.5 flex items-center gap-1", glassColors.TEXT_MUTED)}>
+                            <Calendar className="w-3.5 h-3.5" /> 
+                            Son Tarih: <span className={cn("font-bold", "text-amber-600 dark:text-amber-400")}>{new Date(task.dueDate).toLocaleDateString('tr-TR')}</span>
+                        </p>
+                    )}
+                </div>
+            </div>
+
+            {/* SAĞ: ATANAN KİŞİ */}
+            {assignee && (
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center ml-11 sm:ml-0 bg-slate-100 dark:bg-slate-800/50 py-1.5 px-3 rounded-xl border border-slate-200 dark:border-white/5">
+                    <Avatar className="w-6 h-6 border-2 border-white dark:border-slate-800 shadow-sm">
+                        <AvatarImage src={assignee.avatar} />
+                        <AvatarFallback style={{backgroundColor: assignee.color}} className="text-white text-[10px] font-bold">
+                            {assignee.name.substring(0,2).toUpperCase()}
+                        </AvatarFallback>
+                    </Avatar>
+                    <span className={cn("text-xs font-bold truncate max-w-[80px]", glassColors.TEXT_MAIN)}>{assignee.name}</span>
+                </div>
+            )}
+        </div>
+    );
+};
+
 // --- ANA COMPONENT ---
 export default function TasksPage() {
   const router = useRouter(); 
   const { user, familyMembers } = useAuth();
   const [tasks, setTasks] = React.useState<Task[]>([]);
+  const [studyAssignments, setStudyAssignments] = React.useState<StudyAssignment[]>([]);
+  const [memorizationItems, setMemorizationItems] = React.useState<MemorizationItem[]>([]);
+  const [memorizationProgress, setMemorizationProgress] = React.useState<MemorizationProgress[]>([]);
+  const [prayerProgress, setPrayerProgress] = React.useState<PrayerProgress[]>([]);
+
   const [searchTerm, setSearchTerm] = React.useState("");
   const [isFormDialogOpen, setIsFormDialogOpen] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState<Task | null>(null);
@@ -225,10 +315,19 @@ export default function TasksPage() {
   const { toast } = useToast();
 
   React.useEffect(() => {
-    const unsubscribe = onTasksUpdate((updatedTasks) => {
-      setTasks(updatedTasks);
-    });
-    return () => unsubscribe();
+    const unsubTasks = onTasksUpdate(setTasks);
+    const unsubAssignments = onStudyAssignmentsUpdate(setStudyAssignments);
+    const unsubMemItems = onMemorizationItemsUpdate(setMemorizationItems);
+    const unsubMemProg = onMemorizationProgressUpdate(setMemorizationProgress);
+    const unsubPrayers = onPrayerProgressUpdate(setPrayerProgress);
+
+    return () => {
+        unsubTasks();
+        unsubAssignments();
+        unsubMemItems();
+        unsubMemProg();
+        unsubPrayers();
+    };
   }, []);
 
   const handleOpenEditTask = (task: Task) => {
@@ -262,6 +361,108 @@ export default function TasksPage() {
   
   const leaderboard = React.useMemo(() => [...familyMembers].sort((a,b) => b.xp - a.xp), [familyMembers]);
 
+type ModuleTask = {
+    id: string;
+    title: string;
+    module: 'Eğitim' | 'Ezber' | 'Namaz';
+    assigneeId: string;
+    isCompleted: boolean;
+    dueDate?: string;
+    icon: any;
+    color: string;
+    onToggle: (completed: boolean) => Promise<void>;
+};
+
+  const moduleTasks = React.useMemo(() => {
+      const list: ModuleTask[] = [];
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+
+      // 1. Eğitim Görevleri
+      studyAssignments.forEach(sa => {
+          if (!sa.studentId) return;
+          const assignee = getAssignee(sa.studentId);
+          const searchMatch = sa.topic.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                              (assignee?.name.toLowerCase().includes(searchTerm.toLowerCase()));
+          if (!searchMatch) return;
+          list.push({
+              id: `edu-${sa.id}`,
+              title: `${sa.subject} - ${sa.topic}`,
+              module: 'Eğitim',
+              assigneeId: sa.studentId,
+              isCompleted: sa.status === 'completed',
+              dueDate: sa.dueDate,
+              icon: BookOpen,
+              color: 'text-blue-500 bg-blue-500/10 dark:bg-blue-500/20',
+              onToggle: async (completed) => {
+                  await updateStudyAssignment(sa.id, { status: completed ? 'completed' : 'assigned' });
+              }
+          });
+      });
+
+      // 2. Ezber Görevleri
+      memorizationItems.forEach(mi => {
+          familyMembers.forEach(member => {
+              const prog = memorizationProgress.find(p => p.itemId === mi.id && p.memberId === member.id);
+              const isCompleted = prog ? prog.completed : false;
+              
+              const searchMatch = mi.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                  (member.name.toLowerCase().includes(searchTerm.toLowerCase()));
+              if (!searchMatch) return;
+              
+              list.push({
+                  id: `mem-${mi.id}-${member.id}`,
+                  title: mi.title,
+                  module: 'Ezber',
+                  assigneeId: member.id,
+                  isCompleted,
+                  icon: GraduationCap,
+                  color: 'text-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/20',
+                  onToggle: async (completed) => {
+                      await updateMemorizationProgress(mi.id, member.id, completed);
+                  }
+              });
+          });
+      });
+
+      // 3. Namaz Görevleri
+      const PRAYERS = ['Sabah', 'Öğle', 'İkindi', 'Akşam', 'Yatsı'];
+      familyMembers.forEach(member => {
+          const pProg = prayerProgress.find(p => p.memberId === member.id);
+          const completions = pProg?.completions?.[todayStr] || [];
+          
+          const searchMatch = "namaz".includes(searchTerm.toLowerCase()) || 
+                              (member.name.toLowerCase().includes(searchTerm.toLowerCase()));
+          
+          if (!searchMatch) return;
+
+          PRAYERS.forEach(prayer => {
+              const isCompleted = completions.includes(prayer);
+              list.push({
+                  id: `prayer-${member.id}-${prayer}`,
+                  title: `${prayer} Namazı`,
+                  module: 'Namaz',
+                  assigneeId: member.id,
+                  isCompleted,
+                  icon: Target,
+                  color: 'text-amber-500 bg-amber-500/10 dark:bg-amber-500/20',
+                  onToggle: async (completed) => {
+                      let newCompletions = [...completions];
+                      if (completed && !newCompletions.includes(prayer)) newCompletions.push(prayer);
+                      if (!completed) newCompletions = newCompletions.filter(p => p !== prayer);
+                      
+                      const updatedAll = { ...(pProg?.completions || {}), [todayStr]: newCompletions };
+                      await updatePrayerProgress(member.id, updatedAll);
+                  }
+              });
+          });
+      });
+
+      return list;
+  }, [studyAssignments, memorizationItems, memorizationProgress, prayerProgress, familyMembers, searchTerm]);
+
+  const pendingModuleTasks = React.useMemo(() => moduleTasks.filter(t => !t.isCompleted), [moduleTasks]);
+  const completedModuleTasks = React.useMemo(() => moduleTasks.filter(t => t.isCompleted), [moduleTasks]);
+
   const { pendingTasks, completedTasks, habits, stats } = React.useMemo(() => {
     const filteredTasks = tasks.filter(task => {
         const searchMatch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -278,12 +479,12 @@ export default function TasksPage() {
         completedTasks: completed,
         habits: habitList,
         stats: {
-            totalPending: pending.length,
+            totalPending: pending.length + pendingModuleTasks.length,
             totalHabits: habitList.length,
             userXP: user ? familyMembers.find(m => m.id === user.uid)?.xp || 0 : 0
         }
     };
-  }, [tasks, searchTerm, familyMembers, user]);
+  }, [tasks, searchTerm, familyMembers, user, pendingModuleTasks.length]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans pb-32 md:pb-10 selection:bg-indigo-500/30 relative overflow-hidden transition-colors duration-300">
@@ -384,36 +585,70 @@ export default function TasksPage() {
 
                     <div className="space-y-4">
                         {taskFilter === 'pending' ? (
-                            pendingTasks.length > 0 ? (
-                                pendingTasks.map((task, index) => (
-                                    <div key={task.id} className="transform transition-all hover:-translate-y-1">
-                                        <TaskItem 
-                                            task={task} 
-                                            assignee={getAssignee(task.assigneeId)} 
-                                            onEdit={handleOpenEditTask} 
-                                            colorClass={taskColors[index % taskColors.length]} 
-                                            onDelete={() => handleDeleteTask(task.id)}
-                                        />
+                            <>
+                                {pendingTasks.length > 0 ? (
+                                    pendingTasks.map((task, index) => (
+                                        <div key={task.id} className="transform transition-all hover:-translate-y-1">
+                                            <TaskItem 
+                                                task={task} 
+                                                assignee={getAssignee(task.assigneeId)} 
+                                                onEdit={handleOpenEditTask} 
+                                                colorClass={taskColors[index % taskColors.length]} 
+                                                onDelete={() => handleDeleteTask(task.id)}
+                                            />
+                                        </div>
+                                    ))
+                                ) : (
+                                    pendingModuleTasks.length === 0 && <GlassEmptyState title="Süpersin! 🎉" desc="Yapılacak hiç görev kalmadı." icon={Zap} />
+                                )}
+
+                                {pendingModuleTasks.length > 0 && (
+                                    <div className="pt-6">
+                                        <h3 className="text-lg font-black mb-4 px-2 flex items-center gap-2">
+                                            <LayoutGrid className="w-5 h-5 text-indigo-500" />
+                                            Diğer Modüllerden
+                                        </h3>
+                                        <div className="space-y-4">
+                                            {pendingModuleTasks.map(mt => (
+                                                <ModuleTaskItem key={mt.id} task={mt} assignee={getAssignee(mt.assigneeId)} />
+                                            ))}
+                                        </div>
                                     </div>
-                                ))
-                            ) : (
-                                <GlassEmptyState title="Süpersin! 🎉" desc="Yapılacak hiç görev kalmadı." icon={Zap} />
-                            )
+                                )}
+                            </>
                         ) : (
-                            completedTasks.length > 0 ? (
-                                completedTasks.map((task) => (
-                                    <div key={task.id} className="opacity-70 hover:opacity-100 transition-opacity">
-                                        <TaskItem 
-                                            task={task} 
-                                            assignee={getAssignee(task.assigneeId)} 
-                                            onEdit={handleOpenEditTask} 
-                                            onDelete={() => handleDeleteTask(task.id)}
-                                        />
+                            <>
+                                {completedTasks.length > 0 ? (
+                                    completedTasks.map((task) => (
+                                        <div key={task.id} className="opacity-70 hover:opacity-100 transition-opacity">
+                                            <TaskItem 
+                                                task={task} 
+                                                assignee={getAssignee(task.assigneeId)} 
+                                                onEdit={handleOpenEditTask} 
+                                                onDelete={() => handleDeleteTask(task.id)}
+                                            />
+                                        </div>
+                                    ))
+                                ) : (
+                                    completedModuleTasks.length === 0 && <GlassEmptyState title="Henüz biten yok" desc="Tamamlanan görevler burada görünür." icon={ListTodo} />
+                                )}
+
+                                {completedModuleTasks.length > 0 && (
+                                    <div className="pt-6">
+                                        <h3 className="text-lg font-black mb-4 px-2 flex items-center gap-2 opacity-70">
+                                            <LayoutGrid className="w-5 h-5" />
+                                            Diğer Modüllerden
+                                        </h3>
+                                        <div className="space-y-4">
+                                            {completedModuleTasks.map(mt => (
+                                                <div key={mt.id} className="opacity-70 hover:opacity-100 transition-opacity">
+                                                    <ModuleTaskItem task={mt} assignee={getAssignee(mt.assigneeId)} />
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                ))
-                            ) : (
-                                <GlassEmptyState title="Henüz biten yok" desc="Tamamlanan görevler burada görünür." icon={ListTodo} />
-                            )
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
