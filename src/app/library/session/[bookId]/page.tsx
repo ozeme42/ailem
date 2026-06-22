@@ -176,6 +176,19 @@ export default function ReadingSessionPage() {
         }
     }, [selectedSoundId, ambientSounds, timerRunning]);
 
+    // Dakika dolunca flip sayacını artır (erken return'lardan ÖNCE olmalı — Rules of Hooks)
+    React.useEffect(() => {
+        const currentMinutes = Math.floor(elapsedTime / 60);
+        if (mode === 'stopwatch' && timerRunning && currentMinutes > prevMinutesRef.current) {
+            setFlipCount(prev => prev + 1);
+            prevMinutesRef.current = currentMinutes;
+        }
+        if (mode !== 'stopwatch') {
+            setFlipCount(0);
+            prevMinutesRef.current = 0;
+        }
+    }, [elapsedTime, mode, timerRunning]);
+
     const handleSaveSession = async () => {
         if (!user || !familyId || !memberId || !book) {
             toast({ title: "Hata", description: "Kullanıcı bilgileri eksik.", variant: "destructive" });
@@ -235,18 +248,7 @@ export default function ReadingSessionPage() {
         fillPercent = (remaining / targetSeconds) * 100;
     }
 
-    // Dakika dolunca flip sayacını artır
-    React.useEffect(() => {
-        const currentMinutes = Math.floor(elapsedTime / 60);
-        if (mode === 'stopwatch' && timerRunning && currentMinutes > prevMinutesRef.current) {
-            setFlipCount(prev => prev + 1);
-            prevMinutesRef.current = currentMinutes;
-        }
-        if (mode !== 'stopwatch') {
-            setFlipCount(0);
-            prevMinutesRef.current = 0;
-        }
-    }, [elapsedTime, mode, timerRunning]);
+
 
     // --- GERÇEKÇİ KUM SAATİ (SVG HOURGLASS) ---
     const HourglassTimer = ({ className, isFocus = false }: { className?: string, isFocus?: boolean }) => {
