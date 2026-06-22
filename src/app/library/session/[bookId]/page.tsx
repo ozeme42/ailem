@@ -83,11 +83,10 @@ interface HourglassTimerProps {
     isFlowing: boolean;
     isOvertime: boolean;
     flipCount: number;
-    displaySeconds: number;
-    timerRunning: boolean;
+    isFlipped: boolean;
 }
 
-function HourglassTimer({ className, isFocus = false, topSandPct, bottomSandPct, isFlowing, isOvertime, flipCount, displaySeconds, timerRunning }: HourglassTimerProps) {
+function HourglassTimer({ className, isFocus = false, topSandPct, bottomSandPct, isFlowing, isOvertime, flipCount, isFlipped }: HourglassTimerProps) {
     const sandColor  = isOvertime ? "#ef4444" : (isFocus ? "#10b981" : "#6366f1");
     const sandColor2 = isOvertime ? "#f87171" : (isFocus ? "#34d399" : "#06b6d4");
     const rotation   = flipCount * 180;
@@ -194,19 +193,27 @@ function HourglassTimer({ className, isFocus = false, topSandPct, bottomSandPct,
                 {/* Boyun */}
                 <rect x={midX-neckW/2} y={neckY-2} width={neckW} height={4} fill={sandColor} rx="2" opacity="0.7" />
 
-                {/* Kum akışı */}
+                {/* Kum akışı — isFlipped iken tanecikler SVG'de yukarıya akar (ekranda aşağıya görünür) */}
                 {isFlowing && (
                     <>
+                        {/* Akış çizgisi: dolmakta olan hazneye doğru */}
                         <motion.rect
-                            x={midX-1} y={neckY+2} width={2}
-                            height={bottomSandTopY > neckY+14 ? bottomSandTopY-neckY-14 : 28}
+                            x={midX-1}
+                            y={isFlipped ? topSandTopY : neckY+2}
+                            width={2}
+                            height={isFlipped
+                                ? (neckY - topSandTopY > 14 ? neckY - topSandTopY - 14 : 28)
+                                : (bottomSandTopY > neckY+14 ? bottomSandTopY-neckY-14 : 28)}
                             rx={1} fill={sandColor2} opacity={0.55}
                             animate={{ opacity: [0.35, 0.65, 0.35] }}
                             transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
                         />
+                        {/* Kum taneleri — dolmakta olan hazneye doğru animate edilir */}
                         {SAND_PARTICLES.map((p, i) => {
-                            const startY = neckY + 4;
-                            const endY   = bottomSandTopY > neckY+20 ? bottomSandTopY-4 : neckY+60;
+                            const startY = neckY + (isFlipped ? -4 : 4);
+                            const endY   = isFlipped
+                                ? (topSandTopY < neckY-20 ? topSandTopY+4 : neckY-60)   // SVG yukarı
+                                : (bottomSandTopY > neckY+20 ? bottomSandTopY-4 : neckY+60); // SVG aşağı
                             return (
                                 <motion.circle
                                     key={i} cx={midX+p.dx} r={p.size}
@@ -217,12 +224,23 @@ function HourglassTimer({ className, isFocus = false, topSandPct, bottomSandPct,
                                 />
                             );
                         })}
-                        {bottomSandPct > 1 && (
-                            <motion.ellipse cx={midX} cy={bottomSandTopY} rx={6} ry={2}
-                                fill={sandColor2} fillOpacity={0.4}
-                                animate={{ rx: [4, 8, 4], fillOpacity: [0.2, 0.5, 0.2] }}
-                                transition={{ repeat: Infinity, duration: 0.6, ease: "easeInOut" }}
-                            />
+                        {/* Çarptığı yerde yayılma parlaması */}
+                        {isFlipped ? (
+                            topSandPct > 1 && (
+                                <motion.ellipse cx={midX} cy={topSandTopY} rx={6} ry={2}
+                                    fill={sandColor2} fillOpacity={0.4}
+                                    animate={{ rx: [4, 8, 4], fillOpacity: [0.2, 0.5, 0.2] }}
+                                    transition={{ repeat: Infinity, duration: 0.6, ease: "easeInOut" }}
+                                />
+                            )
+                        ) : (
+                            bottomSandPct > 1 && (
+                                <motion.ellipse cx={midX} cy={bottomSandTopY} rx={6} ry={2}
+                                    fill={sandColor2} fillOpacity={0.4}
+                                    animate={{ rx: [4, 8, 4], fillOpacity: [0.2, 0.5, 0.2] }}
+                                    transition={{ repeat: Infinity, duration: 0.6, ease: "easeInOut" }}
+                                />
+                            )
                         )}
                     </>
                 )}
@@ -232,22 +250,6 @@ function HourglassTimer({ className, isFocus = false, topSandPct, bottomSandPct,
                 <rect x="4" y="3" width={W-8} height={6}      rx="4" fill="white" fillOpacity="0.5" />
                 <rect x="2" y={H-rimH} width={W-4} height={rimH-2} rx="8" fill="url(#hg-rimGrad)" />
                 <rect x="4" y={H-10}   width={W-8} height={6}      rx="4" fill="white" fillOpacity="0.3" />
-
-                {/* Zaman metni — dönmenin tersini uygula ki okunabilir kalsın */}
-                <motion.g animate={{ rotate: -rotation, originX: `${midX}px`, originY: `${neckY}px` }}
-                    style={{ transformOrigin: `${midX}px ${neckY}px` }}
-                    transition={{ type: "spring", stiffness: 60, damping: 18, mass: 1.2 }}>
-                    <text x={midX} y={neckY-14} textAnchor="middle" dominantBaseline="middle"
-                        fontSize="36" fontWeight="900" fontFamily="monospace" fill="white"
-                        style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.5))" }}>
-                        {formatDuration(displaySeconds)}
-                    </text>
-                    <text x={midX} y={neckY+22} textAnchor="middle" dominantBaseline="middle"
-                        fontSize="9" fontWeight="700" fontFamily="sans-serif" letterSpacing="2"
-                        fill="white" fillOpacity="0.8" style={{ textTransform: "uppercase" }}>
-                        {isOvertime ? "SÜRE DOLDU" : (timerRunning ? "AKIŞTA" : "DURAKLATIİLDI")}
-                    </text>
-                </motion.g>
             </motion.svg>
         </div>
     );
@@ -436,13 +438,27 @@ export default function ReadingSessionPage() {
         fillPercent = (remaining / targetSeconds) * 100;
     }
 
-    const topSandPct    = mode === 'timer' ? fillPercent : (100 - ((elapsedTime % 60) / 60) * 100);
-    const bottomSandPct = mode === 'timer' ? (100 - fillPercent) : ((elapsedTime % 60) / 60) * 100;
-    const isFlowing     = timerRunning && !isOvertime;
+    const isFlipped     = flipCount % 2 === 1;
+    const minuteFraction = (elapsedTime % 60) / 60;
 
-    const hourglassProps = { topSandPct, bottomSandPct, isFlowing, isOvertime, flipCount, displaySeconds, timerRunning };
+    // Kum miktarları: dönük değilse üst hazne boşalır; dönükse (odd flip) SVG'de üst hazne dolar
+    let topSandPct: number;
+    let bottomSandPct: number;
+    if (mode === 'timer') {
+        topSandPct    = fillPercent;
+        bottomSandPct = 100 - fillPercent;
+    } else if (!isFlipped) {
+        // Normal: SVG üst hazne boşalır (100→0), alt hazne dolar (0→100)
+        topSandPct    = 100 - minuteFraction * 100;
+        bottomSandPct = minuteFraction * 100;
+    } else {
+        // Ters döndü: SVG alt hazne boşalır, üst hazne dolar
+        topSandPct    = minuteFraction * 100;
+        bottomSandPct = 100 - minuteFraction * 100;
+    }
+    const isFlowing = timerRunning && !isOvertime;
 
-
+    const hourglassProps = { topSandPct, bottomSandPct, isFlowing, isOvertime, flipCount, isFlipped };
 
     return (
         <div className="relative min-h-[100dvh] w-full bg-slate-50 selection:bg-indigo-500/20 overflow-hidden flex flex-col">
@@ -478,7 +494,17 @@ export default function ReadingSessionPage() {
 
                         {/* Dev Odak Küresi */}
                         <div className="relative flex flex-col items-center justify-center gap-12 w-full max-w-md z-40">
-                             <HourglassTimer className="w-[200px] h-[300px] sm:w-[250px] sm:h-[350px]" isFocus={true} {...hourglassProps} />
+                             <div className="flex flex-col items-center gap-3">
+                                 <HourglassTimer className="w-[200px] h-[300px] sm:w-[250px] sm:h-[350px]" isFocus={true} {...hourglassProps} />
+                                 <div className="flex flex-col items-center gap-1">
+                                     <span className={cn("text-5xl sm:text-6xl font-black tracking-tighter tabular-nums text-white drop-shadow-lg", isOvertime && "text-red-300 animate-pulse")}>
+                                         {formatDuration(displaySeconds)}
+                                     </span>
+                                     <span className="text-xs font-bold uppercase tracking-widest text-white/70">
+                                         {isOvertime ? "SÜRE DOLDU" : (timerRunning ? "Akışta" : "Duraklatıldı")}
+                                     </span>
+                                 </div>
+                             </div>
                              
                              {/* Oynat/Duraklat (Görünmezden parlayan buton) */}
                              <Button
@@ -585,7 +611,17 @@ export default function ReadingSessionPage() {
                 {/* ORTA BÖLÜM: ZAMANLAYICI & KONTROLLER */}
                 <main className="flex-1 flex flex-col items-center justify-center p-4 relative">
                      {/* Cam Küre Zamanlayıcı */}
-                     <HourglassTimer className="w-[180px] h-[280px] sm:w-[220px] sm:h-[320px] mb-8" {...hourglassProps} />
+                     <div className="flex flex-col items-center gap-2 mb-2">
+                         <HourglassTimer className="w-[180px] h-[280px] sm:w-[220px] sm:h-[320px]" {...hourglassProps} />
+                         <div className="flex flex-col items-center gap-0.5">
+                             <span className={cn("text-4xl sm:text-5xl font-black tracking-tighter tabular-nums bg-gradient-to-br from-indigo-600 to-cyan-500 bg-clip-text text-transparent drop-shadow", isOvertime && "from-red-500 to-orange-400 animate-pulse")}>
+                                 {formatDuration(displaySeconds)}
+                             </span>
+                             <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                 {isOvertime ? "SÜRE DOLDU" : (timerRunning ? "Akışta" : "Duraklatıldı")}
+                             </span>
+                         </div>
+                     </div>
 
                      {/* Orta Kontroller (Ses, Oynat, Genişlet, Sıfırla) */}
                      <div className="flex items-center gap-4 sm:gap-6 bg-white/40 backdrop-blur-xl border border-white/60 rounded-full px-6 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
