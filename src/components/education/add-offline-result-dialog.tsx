@@ -95,9 +95,8 @@ export function AddOfflineResultDialog({ students, trackedBooks, studyPlans, onR
 
 
   const availableSubjects = Array.from(new Set([
-    ...(globalSubjects || []),
-    ...Array.from(hierarchyMap.keys()),
-    "Türkçe", "Matematik", "Fen Bilimleri", "Sosyal Bilgiler", "İngilizce", "Din Kültürü", "Diğer"
+      ...globalSubjects,
+      ...Object.keys(curriculumMap)
   ])).filter(Boolean).sort();
 
   const availableTopics = singleSubject 
