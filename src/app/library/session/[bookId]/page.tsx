@@ -232,87 +232,270 @@ export default function ReadingSessionPage() {
         fillPercent = (remaining / targetSeconds) * 100;
     }
 
-    // --- KUM SAATİ (HOURGLASS) ZAMANLAYICI ---
+    // --- GERÇEKÇİ KUM SAATİ (SVG HOURGLASS) ---
     const HourglassTimer = ({ className, isFocus = false }: { className?: string, isFocus?: boolean }) => {
-        // Zaman moduna göre doluluk yüzdesini hesaplayalım.
-        // Geri sayım (timer) modunda: fillPercent (0-100) mevcut sürenin yüzdesidir. Yukarıdaki kum azalır, aşağıdaki artar.
-        // Kronometre (stopwatch) modunda: Her dakikada %0'dan %100'e çıkar. Sonra kum saati döner.
-        
-        const flipRotation = mode === 'stopwatch' ? Math.floor(elapsedTime / 60) * 180 : 0;
-        const displayPercent = mode === 'timer' ? fillPercent : ((elapsedTime % 60) / 60) * 100;
+        // timer modunda: üstteki kum (topSand) = fillPercent (azalır), alttaki kum (bottomSand) = 100 - fillPercent (artar)
+        // stopwatch modunda: her dakika başı topSand sıfırlanır ve dolar
+        const topSandPct = mode === 'timer' ? fillPercent : (100 - ((elapsedTime % 60) / 60) * 100);
+        const bottomSandPct = mode === 'timer' ? (100 - fillPercent) : ((elapsedTime % 60) / 60) * 100;
+        const sandColor = isOvertime ? "#ef4444" : (isFocus ? "#10b981" : "#6366f1");
+        const sandColor2 = isOvertime ? "#f87171" : (isFocus ? "#34d399" : "#06b6d4");
+        const isFlowing = timerRunning && !isOvertime;
+
+        // SVG kum saati geometrisi
+        const W = 160;  // genişlik
+        const H = 300;  // yükseklik
+        const midX = W / 2;
+        const neckW = 8;   // boyun genişliği
+        const rimH = 18;   // üst/alt kenar yüksekliği
+
+        // Üst hazne: (rimH'dan neckY'ye kadar trapezoid)
+        const neckY = H / 2;
+        // Üst hazne iç alanı (rimH → neckY)
+        const topInnerH = neckY - rimH;
+        // topSandPct bazında üst kumun yüksekliği (alttan başlıyor)
+        const topSandH = (topSandPct / 100) * topInnerH;
+        // Kum yüzeyi Y koordinatı (üst hazne, alttan topSandH kadar dolu)
+        const topSandTopY = neckY - topSandH;
+        // O Y'de (üst hazne) iç genişlik: lineer interpolasyon
+        const topWidthAtY = (y: number) => {
+            // rimH'da (W - 16), neckY'de neckW
+            const t = (y - rimH) / topInnerH;
+            return (W - 16) * (1 - t) + neckW * t;
+        };
+        const topSandTopW = topWidthAtY(Math.max(rimH, topSandTopY));
+
+        // Alt hazne iç alanı (neckY → H - rimH)
+        const bottomInnerH = (H - rimH) - neckY;
+        const bottomSandH = (bottomSandPct / 100) * bottomInnerH;
+        // Alt kumun üst Y'si (alttan bottomSandH kadar dolu)
+        const bottomSandTopY = (H - rimH) - bottomSandH;
+        const bottomWidthAtY = (y: number) => {
+            const t = (y - neckY) / bottomInnerH;
+            return neckW * (1 - t) + (W - 16) * t;
+        };
+        const bottomSandTopW = bottomWidthAtY(Math.min(H - rimH, bottomSandTopY));
 
         return (
-            <motion.div 
-                className={cn("relative flex flex-col items-center justify-center", className)}
-                animate={{ rotate: flipRotation }}
-                transition={{ type: "spring", stiffness: 30, damping: 15 }}
-            >
-                {/* Dış Cam Çerçeve (Cam tüp etkisi) */}
-                <div className={cn("absolute inset-0 z-20 pointer-events-none rounded-[3rem]", 
-                     isFocus ? "border-0 shadow-none" : "border-[6px] border-white/30 bg-white/5 backdrop-blur-sm shadow-[0_0_50px_rgba(0,0,0,0.1)]",
-                     isOvertime && !isFocus ? "border-red-500/50 shadow-[0_0_50px_rgba(239,68,68,0.3)]" : "")}>
-                     {/* Cam İçi Gölgelendirme (3D) */}
-                     <div className="absolute inset-0 rounded-[3rem] shadow-[inset_0_-10px_30px_rgba(0,0,0,0.1),inset_0_10px_20px_rgba(255,255,255,0.4)] z-20"></div>
-                     {/* Cam parlaması */}
-                     <div className="absolute top-[5%] left-[10%] w-[10%] h-[40%] bg-white/40 rounded-full blur-[6px] z-20 pointer-events-none"></div>
-                </div>
+            <div className={cn("relative flex flex-col items-center justify-center select-none", className)}>
+                {/* Dış parlama efekti */}
+                <div
+                    className="absolute inset-0 rounded-full blur-[60px] opacity-30 pointer-events-none"
+                    style={{ background: `radial-gradient(circle, ${sandColor2}88, transparent 70%)` }}
+                />
 
-                <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden rounded-[2.5rem] py-2">
-                    
-                    {/* ÜST HAZNE */}
-                    <div className="relative w-[80%] flex-1 flex flex-col justify-end items-center overflow-hidden drop-shadow-md" style={{ clipPath: 'polygon(0 0, 100% 0, 60% 100%, 40% 100%)' }}>
-                        <motion.div 
-                            className={cn("w-full transition-colors duration-1000 blur-[1px]", isOvertime ? "bg-red-500" : (isFocus ? "bg-emerald-500/80" : "bg-gradient-to-b from-indigo-500 to-cyan-400"))}
-                            initial={false}
-                            animate={{ height: mode === 'timer' ? `${displayPercent}%` : `${100 - displayPercent}%` }}
-                            transition={{ type: "tween", duration: 1, ease: "linear" }}
+                {/* Ana SVG Kum Saati */}
+                <svg
+                    viewBox={`0 0 ${W} ${H}`}
+                    className="w-full h-full drop-shadow-2xl"
+                    style={{ filter: "drop-shadow(0 8px 32px rgba(99,102,241,0.25))" }}
+                >
+                    <defs>
+                        {/* Kum gradyanı */}
+                        <linearGradient id="sandGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={sandColor2} />
+                            <stop offset="100%" stopColor={sandColor} />
+                        </linearGradient>
+                        {/* Cam gövde gradyanı */}
+                        <linearGradient id="glassBody" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor="white" stopOpacity="0.25" />
+                            <stop offset="40%" stopColor="white" stopOpacity="0.05" />
+                            <stop offset="100%" stopColor="white" stopOpacity="0.15" />
+                        </linearGradient>
+                        {/* Kenar metal gradyanı */}
+                        <linearGradient id="rimGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#e2e8f0" />
+                            <stop offset="50%" stopColor="#94a3b8" />
+                            <stop offset="100%" stopColor="#cbd5e1" />
+                        </linearGradient>
+                        {/* Cam yansıması */}
+                        <linearGradient id="glassShine" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor="white" stopOpacity="0.6" />
+                            <stop offset="100%" stopColor="white" stopOpacity="0" />
+                        </linearGradient>
+                        <clipPath id="topChamber">
+                            <polygon points={`${8},${rimH} ${W - 8},${rimH} ${midX + neckW / 2},${neckY} ${midX - neckW / 2},${neckY}`} />
+                        </clipPath>
+                        <clipPath id="bottomChamber">
+                            <polygon points={`${midX - neckW / 2},${neckY} ${midX + neckW / 2},${neckY} ${W - 8},${H - rimH} ${8},${H - rimH}`} />
+                        </clipPath>
+                    </defs>
+
+                    {/* === ÜST HAZNE KUM === */}
+                    {topSandPct > 0 && (
+                        <polygon
+                            clipPath="url(#topChamber)"
+                            points={`
+                                ${midX - topSandTopW / 2},${topSandTopY}
+                                ${midX + topSandTopW / 2},${topSandTopY}
+                                ${midX + neckW / 2},${neckY}
+                                ${midX - neckW / 2},${neckY}
+                            `}
+                            fill="url(#sandGrad)"
+                            opacity="0.92"
                         />
-                    </div>
-                    
-                    {/* KUM AKIŞI (Ortadaki ince bağlantı) */}
-                    <div className="relative w-full h-4 flex justify-center items-center my-1 z-10">
-                        <AnimatePresence>
-                            {timerRunning && !isOvertime && (
-                                <motion.div 
-                                    className={cn("absolute w-1 rounded-full", isFocus ? "bg-emerald-400" : "bg-cyan-400")}
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: "400%", opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    transition={{ duration: 0.3 }}
-                                    style={{ boxShadow: "0 0 10px rgba(34, 211, 238, 0.8)" }}
-                                />
-                            )}
-                        </AnimatePresence>
-                    </div>
-
-                    {/* ALT HAZNE */}
-                    <div className="relative w-[80%] flex-1 flex flex-col justify-end items-center overflow-hidden drop-shadow-md" style={{ clipPath: 'polygon(40% 0, 60% 0, 100% 100%, 0 100%)' }}>
-                        <motion.div 
-                            className={cn("w-full transition-colors duration-1000 blur-[1px]", isOvertime ? "bg-red-500" : (isFocus ? "bg-emerald-500/80" : "bg-gradient-to-t from-indigo-500 to-cyan-400"))}
-                            initial={false}
-                            animate={{ height: mode === 'timer' ? `${100 - displayPercent}%` : `${displayPercent}%` }}
-                            transition={{ type: "tween", duration: 1, ease: "linear" }}
+                    )}
+                    {/* Üst kumun üst yüzey parlak çizgisi */}
+                    {topSandPct > 1 && (
+                        <line
+                            x1={midX - topSandTopW / 2 + 2}
+                            y1={topSandTopY + 1}
+                            x2={midX + topSandTopW / 2 - 2}
+                            y2={topSandTopY + 1}
+                            stroke="white"
+                            strokeWidth="2"
+                            strokeOpacity="0.4"
+                            strokeLinecap="round"
                         />
-                    </div>
+                    )}
 
-                    {/* METİN İÇERİĞİ (Ters Dönmeyi Engellemek İçin Zıt Yönde Döndürülür) */}
-                    <motion.div 
-                        className="absolute inset-0 z-30 flex flex-col items-center justify-center drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)]"
-                        animate={{ rotate: -flipRotation }}
-                        transition={{ type: "spring", stiffness: 30, damping: 15 }}
+                    {/* === ALT HAZNE KUM === */}
+                    {bottomSandPct > 0 && (
+                        <polygon
+                            clipPath="url(#bottomChamber)"
+                            points={`
+                                ${midX - bottomSandTopW / 2},${bottomSandTopY}
+                                ${midX + bottomSandTopW / 2},${bottomSandTopY}
+                                ${W - 8},${H - rimH}
+                                ${8},${H - rimH}
+                            `}
+                            fill="url(#sandGrad)"
+                            opacity="0.92"
+                        />
+                    )}
+                    {/* Alt kumun üst yüzey parlak çizgisi */}
+                    {bottomSandPct > 1 && (
+                        <line
+                            x1={midX - bottomSandTopW / 2 + 2}
+                            y1={bottomSandTopY + 1}
+                            x2={midX + bottomSandTopW / 2 - 2}
+                            y2={bottomSandTopY + 1}
+                            stroke="white"
+                            strokeWidth="2"
+                            strokeOpacity="0.35"
+                            strokeLinecap="round"
+                        />
+                    )}
+
+                    {/* === CAM GÖVDE (üstte) === */}
+                    <polygon
+                        points={`${8},${rimH} ${W - 8},${rimH} ${midX + neckW / 2},${neckY} ${midX - neckW / 2},${neckY}`}
+                        fill="url(#glassBody)"
+                        stroke="white"
+                        strokeWidth="1.5"
+                        strokeOpacity="0.4"
+                    />
+                    {/* === CAM GÖVDE (altta) === */}
+                    <polygon
+                        points={`${midX - neckW / 2},${neckY} ${midX + neckW / 2},${neckY} ${W - 8},${H - rimH} ${8},${H - rimH}`}
+                        fill="url(#glassBody)"
+                        stroke="white"
+                        strokeWidth="1.5"
+                        strokeOpacity="0.4"
+                    />
+
+                    {/* Sol cam yansıma şeridi (üst) */}
+                    <polygon
+                        points={`${10},${rimH + 4} ${10 + 12},${rimH + 4} ${midX - neckW / 2 - 2},${neckY - 8} ${midX - neckW / 2 - 14},${neckY - 8}`}
+                        fill="url(#glassShine)"
+                        opacity="0.5"
+                    />
+
+                    {/* === BOYUN (Dar bağlantı) === */}
+                    <rect
+                        x={midX - neckW / 2}
+                        y={neckY - 2}
+                        width={neckW}
+                        height={4}
+                        fill={sandColor}
+                        rx="2"
+                        opacity="0.7"
+                    />
+
+                    {/* === KUM AKIŞ DAMLASI (boyundan dökülen kum) === */}
+                    {isFlowing && (
+                        <>
+                            {/* Ana akış çizgisi */}
+                            <motion.line
+                                x1={midX}
+                                y1={neckY + 2}
+                                x2={midX}
+                                y2={bottomSandTopY > neckY + 10 ? bottomSandTopY - 2 : neckY + 30}
+                                stroke={sandColor2}
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                opacity="0.85"
+                                animate={{ opacity: [0.6, 1, 0.6], strokeWidth: [2, 3, 2] }}
+                                transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                            />
+                            {/* Kum tanesi 1 */}
+                            <motion.circle
+                                cx={midX - 1}
+                                cy={neckY + 10}
+                                r={2.5}
+                                fill={sandColor2}
+                                animate={{ cy: [neckY + 10, neckY + 40, neckY + 10], opacity: [1, 0, 1] }}
+                                transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+                            />
+                            {/* Kum tanesi 2 */}
+                            <motion.circle
+                                cx={midX + 1.5}
+                                cy={neckY + 25}
+                                r={2}
+                                fill={sandColor}
+                                animate={{ cy: [neckY + 20, neckY + 50, neckY + 20], opacity: [1, 0, 1] }}
+                                transition={{ repeat: Infinity, duration: 0.8, ease: "linear", delay: 0.25 }}
+                            />
+                            {/* Kum tanesi 3 */}
+                            <motion.circle
+                                cx={midX - 0.5}
+                                cy={neckY + 38}
+                                r={1.5}
+                                fill={sandColor2}
+                                animate={{ cy: [neckY + 35, neckY + 60, neckY + 35], opacity: [1, 0, 1] }}
+                                transition={{ repeat: Infinity, duration: 0.8, ease: "linear", delay: 0.5 }}
+                            />
+                        </>
+                    )}
+
+                    {/* === ÜST METALİK KENAR === */}
+                    <rect x="2" y="2" width={W - 4} height={rimH - 2} rx="8" fill="url(#rimGrad)" />
+                    <rect x="4" y="3" width={W - 8} height={6} rx="4" fill="white" fillOpacity="0.5" />
+                    {/* === ALT METALİK KENAR === */}
+                    <rect x="2" y={H - rimH} width={W - 4} height={rimH - 2} rx="8" fill="url(#rimGrad)" />
+                    <rect x="4" y={H - 10} width={W - 8} height={6} rx="4" fill="white" fillOpacity="0.3" />
+
+                    {/* === ZAMAN METNİ === */}
+                    <text
+                        x={midX}
+                        y={neckY - 16}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        fontSize="36"
+                        fontWeight="900"
+                        fontFamily="monospace"
+                        fill="white"
+                        style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.5))" }}
                     >
-                        <span className={cn("text-5xl sm:text-6xl lg:text-7xl font-black tracking-tighter tabular-nums text-white", isOvertime && "text-red-100 animate-pulse")}>
-                            {formatDuration(displaySeconds)}
-                        </span>
-                        <div className="flex items-center gap-2 mt-1 bg-black/10 px-3 py-1 rounded-full backdrop-blur-md">
-                             {isFocus && <Clock className="w-3 h-3 text-white/80" />}
-                             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-white/90">
-                                 {isOvertime ? "Süre Doldu" : (timerRunning ? "Akışta" : "Duraklatıldı")}
-                             </span>
-                        </div>
-                    </motion.div>
-                </div>
-            </motion.div>
+                        {formatDuration(displaySeconds)}
+                    </text>
+                    <text
+                        x={midX}
+                        y={neckY + 22}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        fontSize="9"
+                        fontWeight="700"
+                        fontFamily="sans-serif"
+                        letterSpacing="2"
+                        fill="white"
+                        fillOpacity="0.8"
+                        style={{ textTransform: "uppercase" }}
+                    >
+                        {isOvertime ? "SÜRE DOLDU" : (timerRunning ? "AKIŞTA" : "DURAKLATILDI")}
+                    </text>
+                </svg>
+            </div>
         );
     };
 
