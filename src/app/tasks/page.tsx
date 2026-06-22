@@ -312,6 +312,7 @@ export default function TasksPage() {
   const [activeTab, setActiveTab] = React.useState<'tasks' | 'habits'>('tasks');
   const [taskFilter, setTaskFilter] = React.useState<'pending' | 'completed'>('pending');
   const [activeModuleTab, setActiveModuleTab] = React.useState<'Tümü' | 'Eğitim' | 'Ezber' | 'Namaz'>('Tümü');
+  const [selectedMemberId, setSelectedMemberId] = React.useState<string | null>(null);
   
   const { toast } = useToast();
 
@@ -381,6 +382,7 @@ type ModuleTask = {
       // 1. Eğitim Görevleri
       studyAssignments.forEach(sa => {
           if (!sa.studentId) return;
+          if (selectedMemberId && sa.studentId !== selectedMemberId) return; // Kişi filtresi
           const assignee = getAssignee(sa.studentId);
           const searchMatch = sa.topic.toLowerCase().includes(searchTerm.toLowerCase()) || 
                               (assignee?.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -403,6 +405,8 @@ type ModuleTask = {
       // 2. Ezber Görevleri
       memorizationItems.forEach(mi => {
           familyMembers.forEach(member => {
+              if (selectedMemberId && member.id !== selectedMemberId) return; // Kişi filtresi
+
               const prog = memorizationProgress.find(p => p.itemId === mi.id && p.memberId === member.id);
               if (!prog) return; // Sadece atanmış ezberler görev olarak görünsün
               
@@ -432,6 +436,7 @@ type ModuleTask = {
       familyMembers.forEach(member => {
           // Namaz takibi sadece çocuklar için
           if (!['Kız Çocuk', 'Erkek Çocuk'].includes(member.role)) return;
+          if (selectedMemberId && member.id !== selectedMemberId) return; // Kişi filtresi
 
           const pProg = prayerProgress.find(p => p.memberId === member.id);
           const completions = pProg?.completions?.[todayStr] || [];
@@ -471,6 +476,8 @@ type ModuleTask = {
 
   const { pendingTasks, completedTasks, habits, stats } = React.useMemo(() => {
     const filteredTasks = tasks.filter(task => {
+        if (selectedMemberId && task.assigneeId !== selectedMemberId) return false;
+
         const searchMatch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             (getAssignee(task.assigneeId)?.name.toLowerCase().includes(searchTerm.toLowerCase()));
         return searchMatch;
@@ -537,6 +544,37 @@ type ModuleTask = {
                            <Plus className="w-5 h-5 mr-2" /> Yeni Ekle
                        </Button>
                   </div>
+              </div>
+
+              {/* FİLTRELEME: AİLE ÜYELERİ */}
+              <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
+                  <button 
+                      onClick={() => setSelectedMemberId(null)}
+                      className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm whitespace-nowrap",
+                          selectedMemberId === null ? "bg-slate-800 text-white dark:bg-white dark:text-slate-900" : glassColors.BUTTON_GLASS
+                      )}
+                  >
+                      Tümü
+                  </button>
+                  {familyMembers.map(member => (
+                      <button
+                          key={member.id}
+                          onClick={() => setSelectedMemberId(member.id)}
+                          className={cn(
+                              "flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all shadow-sm whitespace-nowrap",
+                              selectedMemberId === member.id ? "bg-slate-800 text-white dark:bg-white dark:text-slate-900 border-transparent ring-2 ring-slate-800 dark:ring-white ring-offset-2 dark:ring-offset-slate-900" : glassColors.BUTTON_GLASS
+                          )}
+                      >
+                          <Avatar className="w-5 h-5 border border-white dark:border-slate-800">
+                              <AvatarImage src={member.avatar} />
+                              <AvatarFallback style={{backgroundColor: member.color}} className="text-white text-[9px] font-bold">
+                                  {member.name.substring(0,2).toUpperCase()}
+                              </AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs font-bold">{member.name}</span>
+                      </button>
+                  ))}
               </div>
 
               {/* MOBİL İSTATİSTİKLER (3 Kolon Grid) */}
