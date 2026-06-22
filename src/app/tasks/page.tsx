@@ -429,6 +429,9 @@ type ModuleTask = {
       // 3. Namaz Görevleri
       const PRAYERS = ['Sabah', 'Öğle', 'İkindi', 'Akşam', 'Yatsı'];
       familyMembers.forEach(member => {
+          // Namaz takibi sadece çocuklar için
+          if (!['Kız Çocuk', 'Erkek Çocuk'].includes(member.role)) return;
+
           const pProg = prayerProgress.find(p => p.memberId === member.id);
           const completions = pProg?.completions?.[todayStr] || [];
           
