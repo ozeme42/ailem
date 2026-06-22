@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Trash2, Banknote, Landmark, CreditCard, BarChart2, ArrowUpRight, ArrowDownLeft, Calendar as CalendarIcon, ArrowLeft, ShoppingCart, Utensils, Bus, FileText, Gamepad2, HeartPulse, Shirt, GraduationCap, DollarSign, Briefcase, PlusCircle, CircleEllipsis, Printer } from "lucide-react";
+import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Trash2, Banknote, Landmark, CreditCard, BarChart2, ArrowUpRight, ArrowDownLeft, Calendar as CalendarIcon, ArrowLeft, ShoppingCart, Utensils, Bus, FileText, Gamepad2, HeartPulse, Shirt, GraduationCap, DollarSign, Briefcase, PlusCircle, CircleEllipsis, Printer, Check } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -457,149 +457,92 @@ export function BudgetClient() {
     }, [allTransactions]);
 
     return (
-        <div className={cn("min-h-[100dvh] font-sans pb-[calc(100px+env(safe-area-inset-bottom))] relative bg-indigo-50/50 dark:bg-[#0a0a14] transition-colors duration-500", themeClasses.TEXT_MAIN)}>
+        <div className="min-h-[100dvh] font-sans pb-[calc(100px+env(safe-area-inset-bottom))] relative bg-slate-50 dark:bg-[#0a0a14] transition-colors duration-500">
             
-            {/* AMBIENT BACKGROUND */}
-            <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 opacity-80 dark:opacity-40 print:hidden">
-                <div className="absolute top-[-5%] left-[-10%] w-[350px] h-[350px] md:w-[600px] md:h-[600px] bg-indigo-400/50 dark:bg-indigo-600/40 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" />
-                <div className="absolute bottom-[10%] right-[-10%] w-[300px] h-[300px] md:w-[500px] md:h-[500px] bg-fuchsia-400/50 dark:bg-fuchsia-600/40 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{animationDelay: '2s'}} />
-                <div className="absolute top-[40%] left-[20%] w-[250px] h-[250px] md:w-[400px] md:h-[400px] bg-rose-400/40 dark:bg-rose-600/40 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{animationDelay: '4s'}} />
-            </div>
-
-            {/* MOBİL HEADER (APP BAR) */}
-            <header className={cn("sticky top-0 z-40 w-full pt-[env(safe-area-inset-top)] transition-all duration-300", themeClasses.HEADER_BG)}>
-                <div className="flex items-center justify-between px-2 h-12 md:h-14 max-w-2xl mx-auto relative">
-                    <Button variant="ghost" size="icon" onClick={() => router.back()} className={cn("text-[#007AFF] dark:text-[#0A84FF] hover:bg-transparent active:opacity-50")}>
-                        <ChevronLeft className="w-7 h-7" />
+            {/* HERO ALANI (FinPlan Tarzı Koyu Gradyan) */}
+            <div className="bg-gradient-to-b from-indigo-950 via-indigo-900 to-slate-900 dark:from-black dark:to-[#0a0a14] text-white pt-[calc(env(safe-area-inset-top)+20px)] pb-12 px-4 rounded-b-[40px] relative z-10 overflow-hidden shadow-[0_10px_40px_rgb(0,0,0,0.2)]">
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                    <div className="absolute top-[-20%] left-[-10%] w-[300px] h-[300px] bg-indigo-500/20 rounded-full blur-[80px]" />
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[250px] h-[250px] bg-purple-500/20 rounded-full blur-[80px]" />
+                </div>
+                
+                <div className="flex justify-between items-center mb-6 relative z-10 max-w-2xl mx-auto">
+                    <Button variant="ghost" size="icon" onClick={() => router.back()} className="text-white hover:bg-white/10 rounded-full">
+                        <ArrowLeft className="w-6 h-6" />
                     </Button>
-                    
-                    <h1 className="text-[17px] font-semibold tracking-tight absolute left-1/2 -translate-x-1/2">
-                        Bütçe Takibi
-                    </h1>
-
-                    <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => window.print()} className="text-[#007AFF] dark:text-[#0A84FF] hover:bg-transparent active:opacity-50 print:hidden">
+                    <h1 className="text-[17px] font-bold tracking-wide">Bütçe Takibi</h1>
+                    <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => window.print()} className="text-white hover:bg-white/10 rounded-full print:hidden">
                             <Printer className="w-5 h-5" />
                         </Button>
                         <Link href="/budget/stats" className="print:hidden">
-                            <Button variant="ghost" size="icon" className="text-[#007AFF] dark:text-[#0A84FF] hover:bg-transparent active:opacity-50">
-                                <BarChart2 className="w-6 h-6" />
+                            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full">
+                                <BarChart2 className="w-5 h-5" />
                             </Button>
                         </Link>
                     </div>
                 </div>
-            </header>
 
-            <div className="max-w-2xl mx-auto px-4 pt-4 relative z-10 space-y-5">
-                
-                {/* --- BENTO GRID ÖZET ALANI (CANLI & VIBRANT) --- */}
-                <div className="grid grid-cols-2 gap-3 mb-2 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <div className="col-span-2 relative overflow-hidden rounded-[32px] p-7 shadow-[0_20px_40px_-15px_rgba(99,102,241,0.5)] border border-white/20">
-                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-fuchsia-600 z-0" />
-                        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/20 rounded-full blur-[40px] pointer-events-none mix-blend-overlay" />
-                        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-black/20 rounded-full blur-[40px] pointer-events-none mix-blend-overlay" />
-                        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-soft-light pointer-events-none" />
-                        
-                        <div className="relative z-10">
-                            <p className="text-white/80 text-[13px] font-bold uppercase tracking-widest mb-1.5 drop-shadow-sm">{labelTotal}</p>
-                            <div className="flex items-end justify-between">
-                                <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-md">
-                                    {headerTotal.toLocaleString('tr-TR')} ₺
-                                </h2>
-                                <div className="bg-white/20 p-2.5 rounded-2xl shadow-sm border border-white/20 backdrop-blur-md">
-                                    {headerTotal >= 0 ? <TrendingUp className="h-6 w-6 text-white drop-shadow" /> : <TrendingDown className="h-6 w-6 text-white drop-shadow" />}
-                                </div>
-                            </div>
+                <div className="text-center relative z-10 mb-8 max-w-2xl mx-auto">
+                    <p className="text-indigo-200/80 text-xs font-bold uppercase tracking-widest mb-1">{labelTotal}</p>
+                    <h2 className="text-5xl font-black tracking-tighter flex items-center justify-center gap-1">
+                        {headerTotal.toLocaleString('tr-TR')} <span className="text-3xl text-indigo-300 font-bold">₺</span>
+                    </h2>
+                </div>
+
+                <div className="flex justify-between gap-3 relative z-10 max-w-2xl mx-auto">
+                    <div className="flex-1 bg-white/10 backdrop-blur-md rounded-3xl p-3 sm:p-4 border border-white/10 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                            <ArrowDownLeft className="w-5 h-5 text-emerald-400" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">{labelIncome}</p>
+                            <p className="text-lg sm:text-xl font-bold text-white truncate">{headerIncome.toLocaleString('tr-TR')} ₺</p>
                         </div>
                     </div>
-                    
-                    <div className="relative overflow-hidden rounded-[24px] p-5 shadow-[0_10px_30px_-10px_rgba(16,185,129,0.4)] border border-white/20">
-                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-600 z-0" />
-                        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/20 rounded-full blur-[20px] pointer-events-none mix-blend-overlay" />
-                        <div className="relative z-10 flex flex-col justify-between h-full">
-                            <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center border border-white/30 backdrop-blur-sm">
-                                    <ArrowDownLeft className="h-4 w-4 text-white drop-shadow-sm" />
-                                </div>
-                                <p className="text-white/90 text-[11px] font-bold uppercase tracking-wider">{labelIncome}</p>
-                            </div>
-                            <p className="text-[20px] font-bold text-white tracking-tight drop-shadow-sm">{headerIncome.toLocaleString('tr-TR')} ₺</p>
+                    <div className="flex-1 bg-white/10 backdrop-blur-md rounded-3xl p-3 sm:p-4 border border-white/10 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-rose-500/20 flex items-center justify-center shrink-0">
+                            <ArrowUpRight className="w-5 h-5 text-rose-400" />
                         </div>
-                    </div>
-
-                    <div className="relative overflow-hidden rounded-[24px] p-5 shadow-[0_10px_30px_-10px_rgba(244,63,94,0.4)] border border-white/20">
-                        <div className="absolute inset-0 bg-gradient-to-br from-rose-500 to-pink-600 z-0" />
-                        <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/20 rounded-full blur-[20px] pointer-events-none mix-blend-overlay" />
-                        <div className="relative z-10 flex flex-col justify-between h-full">
-                            <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center border border-white/30 backdrop-blur-sm">
-                                    <ArrowUpRight className="h-4 w-4 text-white drop-shadow-sm" />
-                                </div>
-                                <p className="text-white/90 text-[11px] font-bold uppercase tracking-wider">{labelExpense}</p>
-                            </div>
-                            <p className="text-[20px] font-bold text-white tracking-tight drop-shadow-sm">{headerExpense.toLocaleString('tr-TR')} ₺</p>
+                        <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">{labelExpense}</p>
+                            <p className="text-lg sm:text-xl font-bold text-white truncate">{headerExpense.toLocaleString('tr-TR')} ₺</p>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {/* BÜTÇE LİMİTLERİ (Aylık) */}
-                {limitedCategories.length > 0 && (
-                    <div className="px-1 mt-4 mb-2 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-150 fill-mode-both">
-                        <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3 ml-2">Bütçe Limitleri</h3>
-                        <div className="space-y-2">
-                            {limitedCategories.map(cat => (
-                                <div key={cat.id} className="relative overflow-hidden bg-white/60 dark:bg-[#1C1C1E]/60 backdrop-blur-md p-3.5 rounded-[20px] shadow-sm border border-white/40 dark:border-white/5">
-                                    <div className="flex justify-between items-center mb-2 relative z-10">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg shadow-inner">
-                                                {cat.icon}
-                                            </div>
-                                            <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{cat.name}</span>
-                                        </div>
-                                        <div className="text-right">
-                                            <span className="text-[12px] font-black text-slate-800 dark:text-slate-200 block">{cat.spent.toLocaleString('tr-TR')} ₺</span>
-                                            <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">/ {cat.limit!.toLocaleString('tr-TR')} ₺</span>
-                                        </div>
-                                    </div>
-                                    <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden relative z-10">
-                                        <div 
-                                            className={cn("h-full rounded-full transition-all duration-1000 ease-out", cat.percent >= 90 ? "bg-gradient-to-r from-rose-400 to-rose-600" : cat.percent >= 75 ? "bg-gradient-to-r from-orange-400 to-orange-500" : "bg-gradient-to-r from-indigo-400 to-indigo-600")}
-                                            style={{ width: `${cat.percent}%` }}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* --- SEGMENTED CONTROL (IOS TARZI SEKMELER) --- */}
-                <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-1.5 rounded-[24px] flex w-full mb-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-white/50 dark:border-white/10 relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 fill-mode-both">
+            {/* TABS (FinPlan tarzı modern ikonlu) */}
+            <div className="px-4 -mt-6 relative z-20 max-w-2xl mx-auto">
+                <div className="bg-white dark:bg-slate-900 rounded-[24px] p-1.5 flex shadow-lg border border-slate-100 dark:border-slate-800">
                     <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
-                        <TabsList className="bg-transparent w-full grid grid-cols-4 p-0 h-[42px] gap-1.5 print:hidden">
-                            <TabsTrigger value="day" className="rounded-[18px] h-full text-[13px] font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
-                                Günlük
+                        <TabsList className="bg-transparent w-full flex p-0 h-[50px] gap-1">
+                            <TabsTrigger value="day" className="flex-1 rounded-[18px] h-full flex flex-col items-center justify-center gap-0.5 text-[10px] sm:text-xs font-bold data-[state=active]:bg-indigo-50 dark:data-[state=active]:bg-indigo-900/30 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                                <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" /> Günlük
                             </TabsTrigger>
-                            <TabsTrigger value="month" className="rounded-[18px] h-full text-[13px] font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
-                                Aylık
+                            <TabsTrigger value="month" className="flex-1 rounded-[18px] h-full flex flex-col items-center justify-center gap-0.5 text-[10px] sm:text-xs font-bold data-[state=active]:bg-indigo-50 dark:data-[state=active]:bg-indigo-900/30 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                                <BarChart2 className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" /> Aylık
                             </TabsTrigger>
-                            <TabsTrigger value="bills" className="rounded-[18px] h-full text-[13px] font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
-                                Faturalar
+                            <TabsTrigger value="bills" className="flex-1 rounded-[18px] h-full flex flex-col items-center justify-center gap-0.5 text-[10px] sm:text-xs font-bold data-[state=active]:bg-indigo-50 dark:data-[state=active]:bg-indigo-900/30 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                                <FileText className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" /> Faturalar
                             </TabsTrigger>
-                            <TabsTrigger value="accounts" className="rounded-[18px] h-full text-[13px] font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
-                                Hesaplar
+                            <TabsTrigger value="accounts" className="flex-1 rounded-[18px] h-full flex flex-col items-center justify-center gap-0.5 text-[10px] sm:text-xs font-bold data-[state=active]:bg-indigo-50 dark:data-[state=active]:bg-indigo-900/30 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                                <Wallet className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" /> Hesaplar
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
                 </div>
+            </div>
 
+            <div className="max-w-2xl mx-auto pt-6 relative z-10 space-y-6">
+                
                 {/* TARİH SEÇİCİ (Günlük/Aylık sekmelerinde) */}
                 {(mainTab === 'day' || mainTab === 'month') && (
-                    <div className="flex items-center justify-between px-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-[#007AFF]" onClick={() => handleNavDate('prev')}><ChevronLeft className="h-5 w-5"/></Button>
+                    <div className="flex items-center justify-between px-4">
+                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 dark:text-indigo-400" onClick={() => handleNavDate('prev')}><ChevronLeft className="h-5 w-5"/></Button>
                         <Popover>
                             <PopoverTrigger asChild>
-                                <Button variant="ghost" className="h-8 text-[15px] font-semibold text-[#1C1C1E] dark:text-white hover:bg-transparent px-2">
+                                <Button variant="ghost" className="h-10 text-[16px] font-bold text-slate-800 dark:text-white hover:bg-transparent px-4">
                                     {format(currentDate, dateDisplayFormat, { locale: tr })}
                                 </Button>
                             </PopoverTrigger>
@@ -612,77 +555,64 @@ export function BudgetClient() {
                                 />
                             </PopoverContent>
                         </Popover>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-[#007AFF]" onClick={() => handleNavDate('next')}><ChevronRight className="h-5 w-5"/></Button>
+                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 dark:text-indigo-400" onClick={() => handleNavDate('next')}><ChevronRight className="h-5 w-5"/></Button>
+                    </div>
+                )}
+
+                {/* BÜTÇE LİMİTLERİ (Progress Barlar - Sadece Günlük/Aylık'ta gösterilir) */}
+                {limitedCategories.length > 0 && (mainTab === 'day' || mainTab === 'month') && (
+                    <div className="px-4">
+                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">Bütçe Durumu</h3>
+                        <div className="space-y-4 bg-white dark:bg-slate-900 rounded-[24px] p-5 shadow-sm border border-slate-100 dark:border-slate-800">
+                            {limitedCategories.map(cat => (
+                                <div key={cat.id} className="relative">
+                                    <div className="flex justify-between items-end mb-2">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg shadow-sm">
+                                                {cat.icon}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{cat.name}</p>
+                                                <p className="text-[11px] font-bold text-slate-400">{cat.percent}% kullanıldı</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm font-black text-slate-800 dark:text-slate-200">{cat.spent.toLocaleString('tr-TR')} ₺</p>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Limit: {cat.limit!.toLocaleString('tr-TR')} ₺</p>
+                                        </div>
+                                    </div>
+                                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                        <div 
+                                            className={cn("h-full rounded-full transition-all duration-1000", cat.percent >= 90 ? "bg-rose-500" : cat.percent >= 75 ? "bg-orange-500" : "bg-indigo-500")}
+                                            style={{ width: `${cat.percent}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
 
                 {/* --- İÇERİK ALANI --- */}
-                <div className="space-y-4 sm:space-y-6 pb-6">
+                <div className="pb-24">
                     
-                    {/* GÜNLÜK GÖRÜNÜM - IOS Gruplu Liste */}
-                    {mainTab === 'day' && dailyGroups.map((group, groupIdx) => (
-                        <div key={group.dateISO} className="animate-in fade-in slide-in-from-bottom-10 duration-700 fill-mode-both" style={{ animationDelay: `${400 + groupIdx * 100}ms` }}>
-                            <h3 className="px-3 mb-2.5 text-[12px] font-bold text-slate-500 uppercase tracking-widest flex justify-between items-center">
-                                <span className="bg-white/50 dark:bg-slate-800/50 px-3 py-1 rounded-full backdrop-blur-sm border border-white/20">{group.date}</span>
-                                <span className="normal-case flex gap-2">
-                                    {group.dayTotalIncome > 0 && <span className="text-emerald-600 dark:text-emerald-400 font-black">+{group.dayTotalIncome.toLocaleString('tr-TR')}₺</span>}
-                                    {group.dayTotalExpense > 0 && <span className="text-rose-600 dark:text-rose-400 font-black">-{group.dayTotalExpense.toLocaleString('tr-TR')}₺</span>}
-                                </span>
-                            </h3>
-                            <div className="space-y-2">
-                                {group.transactions.map((tx, index) => {
-                                    const account = accounts.find(a => a.id === tx.accountId);
-                                    const dynamicCategory = categories.find(c => c.name === tx.category);
-                                    let config = categoryConfig[tx.category];
-                                    if (!config) {
-                                        config = tx.type === 'income' 
-                                            ? { color: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400', icon: PlusCircle }
-                                            : { color: 'bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400', icon: CircleEllipsis };
-                                    }
-                                    const CategoryIcon = config.icon;
-                                    const bgClass = config.color.split(' ').find(c => c.startsWith('bg-')) || 'bg-slate-100';
-                                    const textClass = config.color.split(' ').find(c => c.startsWith('text-')) || 'text-slate-800';
-
-                                    return (
-                                        <div key={tx.id} className="relative group">
-                                            <div 
-                                                className={cn("flex items-center justify-between px-4 py-3.5 rounded-[24px] active:scale-[0.98] transition-all cursor-pointer shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-white/60 dark:border-white/5 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl hover:bg-white dark:hover:bg-slate-800")} 
-                                                onClick={() => openTransactionForm(tx)}
-                                            >
-                                                <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                                                    <div className={cn("h-12 w-12 shrink-0 rounded-[18px] flex items-center justify-center font-bold text-xl shadow-sm bg-white dark:bg-slate-800 border border-white/50 dark:border-white/10", textClass)}>
-                                                        {dynamicCategory ? <span className="text-2xl">{dynamicCategory.icon}</span> : <CategoryIcon className="w-6 h-6" />}
-                                                    </div>
-                                                    <div className="min-w-0 pr-2">
-                                                        <p className="text-[16px] font-bold text-slate-800 dark:text-white leading-tight flex items-center gap-2">
-                                                            <span className="truncate block">
-                                                                {tx.category}
-                                                                {tx.description && <span className="text-slate-500 dark:text-slate-400 font-medium text-[14px] ml-1">({tx.description})</span>}
-                                                            </span>
-                                                        </p>
-                                                        <p className="text-[12px] text-slate-500 font-semibold mt-0.5 truncate">{account?.name || 'Hesap Yok'}</p>
-                                                    </div>
-                                                </div>
-                                                <p className={cn("font-black text-[17px] shrink-0 tracking-tight", tx.type === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400')}>
-                                                    {tx.type === 'expense' ? '-' : '+'}{tx.amount.toLocaleString('tr-TR')} ₺
-                                                </p>
-                                            </div>
+                    {/* GÜNLÜK GÖRÜNÜM - İşlem Listesi */}
+                    {mainTab === 'day' && dailyGroups.length > 0 && (
+                        <div className="space-y-6 px-4">
+                            {dailyGroups.map((group, groupIdx) => (
+                                <div key={group.dateISO} className="animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${groupIdx * 100}ms` }}>
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">{group.date}</h3>
+                                        <div className="flex gap-2">
+                                            {group.dayTotalIncome > 0 && <span className="text-[11px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded-full font-bold">+{group.dayTotalIncome.toLocaleString('tr-TR')} ₺</span>}
+                                            {group.dayTotalExpense > 0 && <span className="text-[11px] bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 px-2 py-0.5 rounded-full font-bold">-{group.dayTotalExpense.toLocaleString('tr-TR')} ₺</span>}
                                         </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    ))}
-
-                    {/* AYLIK GÖRÜNÜM */}
-                    {mainTab === 'month' && (
-                        <div className="px-4 sm:px-5 space-y-4 sm:space-y-6">
-                            {/* Sabit Giderler Kartı */}
-                            {recurringExpenses.length > 0 && (
-                                <div>
-                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">Sabit Giderler (Abonelikler)</h3>
-                                    <div className="overflow-hidden rounded-[24px] bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-white/5 shadow-sm p-2 sm:p-3 space-y-2">
-                                        {recurringExpenses.map((tx, index) => {
+                                    </div>
+                                    
+                                    <div className="bg-white dark:bg-slate-900 rounded-[24px] shadow-sm border border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800/50">
+                                        {group.transactions.map((tx) => {
+                                            const account = accounts.find(a => a.id === tx.accountId);
+                                            const dynamicCategory = categories.find(c => c.name === tx.category);
                                             let config = categoryConfig[tx.category];
                                             if (!config) {
                                                 config = tx.type === 'income' 
@@ -694,26 +624,79 @@ export function BudgetClient() {
                                             const textClass = config.color.split(' ').find(c => c.startsWith('text-')) || 'text-slate-800';
 
                                             return (
-                                                <div key={tx.id} className="relative group">
-                                                    <div className={cn("flex items-center justify-between p-3 sm:p-4 rounded-[18px] sm:rounded-2xl border border-white/60 dark:border-white/5 shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-white/80 dark:bg-slate-900/60 hover:bg-white dark:hover:bg-slate-800 transition-all")}>
-                                                        <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
-                                                            <div className={cn("h-8 w-8 sm:h-12 sm:w-12 shrink-0 rounded-[10px] sm:rounded-2xl flex items-center justify-center font-bold text-base sm:text-xl shadow-sm bg-white dark:bg-slate-700", textClass)}>
-                                                                <CategoryIcon className="w-4 h-4 sm:w-6 sm:h-6" />
-                                                            </div>
-                                                            <div className="min-w-0 pr-2">
-                                                                <p className="text-[12px] sm:text-[15px] font-bold text-slate-800 dark:text-white leading-tight flex items-center gap-1.5 sm:gap-2">
-                                                                    <span className="truncate block">
-                                                                        {tx.category}
-                                                                        {tx.description && <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px] sm:text-[13px] ml-1.5">({tx.description})</span>}
-                                                                    </span>
-                                                                </p>
-                                                                <p className="text-[9px] sm:text-[11px] text-slate-500 mt-0.5 uppercase tracking-wider font-semibold truncate">Her Ay</p>
-                                                            </div>
+                                                <div 
+                                                    key={tx.id} 
+                                                    className="flex items-center justify-between p-4 active:bg-slate-50 dark:active:bg-white/5 transition-colors cursor-pointer first:rounded-t-[24px] last:rounded-b-[24px]"
+                                                    onClick={() => openTransactionForm(tx)}
+                                                >
+                                                    <div className="flex items-center gap-3.5 min-w-0">
+                                                        <div className={cn("w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-sm border border-black/5 dark:border-white/5", bgClass, textClass)}>
+                                                            {dynamicCategory ? <span className="text-2xl">{dynamicCategory.icon}</span> : <CategoryIcon className="w-5 h-5" />}
                                                         </div>
-                                                        <p className={cn("font-bold text-[13px] sm:text-[15px] shrink-0 text-rose-600 dark:text-rose-400")}>
-                                                            -{tx.amount.toLocaleString('tr-TR')} ₺
-                                                        </p>
+                                                        <div className="min-w-0">
+                                                            <p className="text-[15px] font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">
+                                                                {tx.category}
+                                                            </p>
+                                                            <p className="text-[12px] text-slate-500 font-semibold truncate mt-0.5">
+                                                                {account?.name || 'Hesap Yok'}
+                                                                {tx.description && <span className="font-medium"> • {tx.description}</span>}
+                                                            </p>
+                                                        </div>
                                                     </div>
+                                                    <p className={cn("font-black text-[16px] shrink-0", tx.type === 'expense' ? 'text-slate-800 dark:text-slate-200' : 'text-emerald-500')}>
+                                                        {tx.type === 'expense' ? '-' : '+'}{tx.amount.toLocaleString('tr-TR')} ₺
+                                                    </p>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {mainTab === 'day' && dailyGroups.length === 0 && (
+                        <div className="text-center py-20 px-4 text-slate-500">
+                            <Wallet className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                            <p className="font-bold">İşlem Yok</p>
+                            <p className="text-sm mt-1">Bu ay hiç işlem kaydetmediniz.</p>
+                        </div>
+                    )}
+
+                    {/* AYLIK GÖRÜNÜM */}
+                    {mainTab === 'month' && (
+                        <div className="px-4 space-y-6">
+                            {/* Sabit Giderler Kartı */}
+                            {recurringExpenses.length > 0 && (
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">Sabit Giderler</h3>
+                                    <div className="bg-white dark:bg-slate-900 rounded-[24px] shadow-sm border border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800/50">
+                                        {recurringExpenses.map((tx) => {
+                                            let config = categoryConfig[tx.category];
+                                            if (!config) {
+                                                config = tx.type === 'income' 
+                                                    ? { color: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400', icon: PlusCircle }
+                                                    : { color: 'bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400', icon: CircleEllipsis };
+                                            }
+                                            const CategoryIcon = config.icon;
+                                            const bgClass = config.color.split(' ').find(c => c.startsWith('bg-')) || 'bg-slate-100';
+                                            const textClass = config.color.split(' ').find(c => c.startsWith('text-')) || 'text-slate-800';
+
+                                            return (
+                                                <div key={tx.id} className="flex items-center justify-between p-4 first:rounded-t-[24px] last:rounded-b-[24px]">
+                                                    <div className="flex items-center gap-3.5 min-w-0">
+                                                        <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", bgClass, textClass)}>
+                                                            <CategoryIcon className="w-5 h-5" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-[14px] font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">
+                                                                {tx.category} {tx.description && <span className="font-medium text-slate-500">({tx.description})</span>}
+                                                            </p>
+                                                            <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Her Ay</p>
+                                                        </div>
+                                                    </div>
+                                                    <p className={cn("font-black text-[15px] shrink-0 text-rose-500")}>
+                                                        -{tx.amount.toLocaleString('tr-TR')} ₺
+                                                    </p>
                                                 </div>
                                             )
                                         })}
@@ -722,198 +705,195 @@ export function BudgetClient() {
                             )}
 
                             <div>
-                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Aylık Özet</h3>
-                                <div className="overflow-hidden rounded-[24px] bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-white/5 shadow-sm">
-                            {monthlySummaries.map((summary, index) => {
-                                const isLast = index === monthlySummaries.length - 1;
-                                return (
-                                    <Accordion type="single" collapsible key={summary.monthKey} className="w-full">
-                                        <AccordionItem value={summary.monthKey} className="border-0 relative">
-                                            <AccordionTrigger className="px-4 py-3.5 hover:no-underline active:bg-black/5 dark:active:bg-white/5">
-                                                <div className="flex items-center justify-between w-full">
-                                                    <span className="text-[16px] font-medium capitalize text-[#1C1C1E] dark:text-white">{summary.month}</span>
-                                                    <div className="text-right pr-2">
-                                                        <p className={cn("font-medium text-[16px]", summary.total >= 0 ? "text-[#34C759]" : "text-[#FF1E1E]")}>
-                                                            {summary.total >= 0 ? '+' : ''}{summary.total.toLocaleString('tr-TR')} ₺
-                                                        </p>
+                                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">Aylık Özet</h3>
+                                <div className="bg-white dark:bg-slate-900 rounded-[24px] shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/50">
+                                    {monthlySummaries.map((summary) => (
+                                        <Accordion type="single" collapsible key={summary.monthKey} className="w-full">
+                                            <AccordionItem value={summary.monthKey} className="border-0">
+                                                <AccordionTrigger className="px-5 py-4 hover:no-underline active:bg-slate-50 dark:active:bg-white/5">
+                                                    <div className="flex items-center justify-between w-full">
+                                                        <span className="text-[15px] font-bold capitalize text-slate-800 dark:text-slate-200">{summary.month}</span>
+                                                        <div className="text-right pr-2">
+                                                            <p className={cn("font-black text-[15px]", summary.total >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                                                                {summary.total >= 0 ? '+' : ''}{summary.total.toLocaleString('tr-TR')} ₺
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="px-4 pb-4">
-                                                <div className="flex gap-3 mt-1">
-                                                    <div className="flex-1 bg-[#34C759]/10 rounded-xl p-3 text-center">
-                                                        <p className="text-[11px] font-semibold text-[#34C759] uppercase mb-1">Gelir</p>
-                                                        <p className="font-bold text-[#34C759]">{summary.income.toLocaleString()} ₺</p>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="px-5 pb-5">
+                                                    <div className="flex gap-3">
+                                                        <div className="flex-1 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl p-4 text-center border border-emerald-100 dark:border-emerald-800/30">
+                                                            <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider mb-1">Gelir</p>
+                                                            <p className="font-black text-emerald-600 text-lg">{summary.income.toLocaleString()} ₺</p>
+                                                        </div>
+                                                        <div className="flex-1 bg-rose-50 dark:bg-rose-900/10 rounded-2xl p-4 text-center border border-rose-100 dark:border-rose-800/30">
+                                                            <p className="text-[11px] font-bold text-rose-600 uppercase tracking-wider mb-1">Gider</p>
+                                                            <p className="font-black text-rose-600 text-lg">{summary.expense.toLocaleString()} ₺</p>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex-1 bg-[#FF3B30]/10 rounded-xl p-3 text-center">
-                                                        <p className="text-[11px] font-semibold text-[#FF3B30] uppercase mb-1">Gider</p>
-                                                        <p className="font-bold text-[#FF3B30]">{summary.expense.toLocaleString()} ₺</p>
-                                                    </div>
-                                                </div>
-                                            </AccordionContent>
-                                            {!isLast && <div className="absolute bottom-0 right-0 left-4 h-[0.5px] bg-[#C6C6C8] dark:bg-[#38383A]" />}
-                                        </AccordionItem>
-                                    </Accordion>
-                                )
-                            })}
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        </Accordion>
+                                    ))}
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* HESAPLAR GÖRÜNÜMÜ */}
+                    {/* HESAPLAR GÖRÜNÜMÜ - Yatay Kartlar */}
                     {mainTab === 'accounts' && (
-                        <div className="space-y-6">
+                        <div className="space-y-8 pl-4">
                             {/* Varlıklar */}
                             <div>
-                                <h3 className="px-4 mb-2 text-[13px] font-medium text-[#8E8E93] uppercase tracking-wide flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#34C759]" /> Varlıklar
-                                </h3>
-                                <div className="overflow-hidden rounded-[24px] bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-white/5 shadow-sm">
-                                    {accountStats.assets.map((account, index) => {
-                                        const isLast = index === accountStats.assets.length - 1;
+                                <div className="flex justify-between items-center pr-4 mb-3">
+                                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Varlıklar</h3>
+                                    <button onClick={() => openAccountForm(null, 'bank')} className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center hover:bg-emerald-200 transition-colors">
+                                        <Plus className="w-5 h-5"/>
+                                    </button>
+                                </div>
+                                <div className="flex flex-col gap-4 pb-4 pr-4">
+                                    {accountStats.assets.map((account) => {
+                                        const Icon = accountIcons[account.type] || Wallet;
                                         return (
-                                            <div key={account.id} className="relative">
-                                                <div className="flex items-center justify-between p-3.5 active:bg-black/5 dark:active:bg-white/5 cursor-pointer" onClick={() => openAccountForm(account)}>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-10 w-10 rounded-full bg-[#34C759]/10 text-[#34C759] flex items-center justify-center">
-                                                            {React.createElement(accountIcons[account.type] || Wallet, { className: "h-5 w-5" })}
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-[16px] font-medium text-[#1C1C1E] dark:text-white leading-tight">{account.name}</p>
-                                                            <p className="text-[13px] text-[#8E8E93] mt-0.5 capitalize">{account.type === 'bank' ? 'Banka Hesabı' : 'Nakit'}</p>
+                                            <div key={account.id} onClick={() => openAccountForm(account)} className="w-full rounded-2xl sm:rounded-[32px] p-4 sm:p-6 text-white bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg relative overflow-hidden cursor-pointer active:scale-95 transition-transform border border-white/20">
+                                                <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-6 p-4 opacity-10">
+                                                    <Icon className="w-24 h-24 sm:w-32 sm:h-32" />
+                                                </div>
+                                                <div className="relative z-10 flex items-center justify-between sm:block">
+                                                    <div>
+                                                        <div className="flex items-center gap-3 sm:block">
+                                                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center sm:mb-6 backdrop-blur-md shadow-sm">
+                                                                <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                                                            </div>
+                                                            <div className="sm:mt-0">
+                                                                <p className="text-emerald-100 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest mb-0.5 sm:mb-1">{account.type === 'bank' ? 'Banka Hesabı' : 'Nakit'}</p>
+                                                                <p className="text-base sm:text-lg font-bold mb-0 sm:mb-1 truncate">{account.name}</p>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <p className="font-medium text-[16px] text-[#1C1C1E] dark:text-white">{account.balance.toLocaleString()} ₺</p>
+                                                    <p className="text-2xl sm:text-3xl font-black sm:mt-2 tracking-tight text-right sm:text-left">{account.balance.toLocaleString()} ₺</p>
                                                 </div>
-                                                {!isLast && <div className="absolute bottom-0 right-0 left-[60px] h-[0.5px] bg-[#C6C6C8] dark:bg-[#38383A]" />}
                                             </div>
                                         )
                                     })}
-                                    {/* Ekle Butonu */}
-                                    <div className="relative">
-                                        <div className="absolute top-0 right-0 left-[60px] h-[0.5px] bg-[#C6C6C8] dark:bg-[#38383A]" />
-                                        <button className="w-full p-3.5 flex items-center gap-3 active:bg-black/5 dark:active:bg-white/5 text-[#007AFF] text-[16px]" onClick={() => openAccountForm(null, 'bank')}>
-                                            <Plus className="h-5 w-5 ml-2.5" /> Yeni Varlık Ekle
-                                        </button>
-                                    </div>
+                                    {accountStats.assets.length === 0 && (
+                                        <div className="w-full rounded-2xl sm:rounded-[32px] p-4 sm:p-6 border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-500 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800" onClick={() => openAccountForm(null, 'bank')}>
+                                            <Plus className="w-6 h-6 sm:w-8 sm:h-8 mb-2 opacity-50" />
+                                            <p className="font-bold text-sm sm:text-base">Hesap Ekle</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Borçlar */}
                             <div>
-                                <h3 className="px-4 mb-2 text-[13px] font-medium text-[#8E8E93] uppercase tracking-wide flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#FF3B30]" /> Borçlar
-                                </h3>
-                                <div className="overflow-hidden rounded-[24px] bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-white/5 shadow-sm">
-                                    {accountStats.debts.map((account, index) => {
-                                        const isLast = index === accountStats.debts.length - 1;
+                                <div className="flex justify-between items-center pr-4 mb-3">
+                                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Borçlar & Kartlar</h3>
+                                    <button onClick={() => openAccountForm(null, 'credit-card')} className="w-8 h-8 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center hover:bg-rose-200 transition-colors">
+                                        <Plus className="w-5 h-5"/>
+                                    </button>
+                                </div>
+                                <div className="flex flex-col gap-4 pb-4 pr-4">
+                                    {accountStats.debts.map((account) => {
+                                        const Icon = accountIcons[account.type] || Wallet;
                                         return (
-                                            <div key={account.id} className="relative">
-                                                <div className="flex items-center justify-between p-3.5 active:bg-black/5 dark:active:bg-white/5 cursor-pointer" onClick={() => openAccountForm(account)}>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-10 w-10 rounded-full bg-[#FF3B30]/10 text-[#FF3B30] flex items-center justify-center">
-                                                            {React.createElement(accountIcons[account.type] || Wallet, { className: "h-5 w-5" })}
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-[16px] font-medium text-[#1C1C1E] dark:text-white leading-tight">{account.name}</p>
-                                                            <p className="text-[13px] text-[#8E8E93] mt-0.5 capitalize">
-                                                                {account.type === 'credit-card' ? 'Kredi Kartı' : (account.type === 'debt' ? 'Borç' : 'Diğer')}
-                                                            </p>
+                                            <div key={account.id} onClick={() => openAccountForm(account)} className="w-full rounded-2xl sm:rounded-[32px] p-4 sm:p-6 text-white bg-gradient-to-br from-rose-500 to-pink-600 shadow-lg relative overflow-hidden cursor-pointer active:scale-95 transition-transform border border-white/20">
+                                                <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-6 p-4 opacity-10">
+                                                    <Icon className="w-24 h-24 sm:w-32 sm:h-32" />
+                                                </div>
+                                                <div className="relative z-10 flex items-center justify-between sm:block">
+                                                    <div>
+                                                        <div className="flex items-center gap-3 sm:block">
+                                                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center sm:mb-6 backdrop-blur-md shadow-sm">
+                                                                <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                                                            </div>
+                                                            <div className="sm:mt-0">
+                                                                <p className="text-rose-100 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest mb-0.5 sm:mb-1">{account.type === 'credit-card' ? 'Kredi Kartı' : 'Borç'}</p>
+                                                                <p className="text-base sm:text-lg font-bold mb-0 sm:mb-1 truncate">{account.name}</p>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <p className="font-medium text-[16px] text-[#FF3B30]">{account.balance.toLocaleString()} ₺</p>
+                                                    <p className="text-2xl sm:text-3xl font-black sm:mt-2 tracking-tight text-right sm:text-left">{account.balance.toLocaleString()} ₺</p>
                                                 </div>
-                                                {!isLast && <div className="absolute bottom-0 right-0 left-[60px] h-[0.5px] bg-[#C6C6C8] dark:bg-[#38383A]" />}
                                             </div>
                                         )
                                     })}
-                                    {/* Ekle Butonu */}
-                                    <div className="relative">
-                                        <div className="absolute top-0 right-0 left-[60px] h-[0.5px] bg-[#C6C6C8] dark:bg-[#38383A]" />
-                                        <button className="w-full p-3.5 flex items-center gap-3 active:bg-black/5 dark:active:bg-white/5 text-[#007AFF] text-[16px]" onClick={() => openAccountForm(null, 'credit-card')}>
-                                            <Plus className="h-5 w-5 ml-2.5" /> Yeni Borç/Kart Ekle
-                                        </button>
-                                    </div>
+                                    {accountStats.debts.length === 0 && (
+                                        <div className="w-full rounded-2xl sm:rounded-[32px] p-4 sm:p-6 border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-500 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800" onClick={() => openAccountForm(null, 'credit-card')}>
+                                            <Plus className="w-6 h-6 sm:w-8 sm:h-8 mb-2 opacity-50" />
+                                            <p className="font-bold text-sm sm:text-base">Kart/Borç Ekle</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     )}
-                    {/* FATURALAR GÖRÜNÜMÜ */}
+
+                    {/* FATURALAR GÖRÜNÜMÜ - Kart Grid */}
                     {mainTab === 'bills' && (
-                        <div className="space-y-6">
-                            {/* Ödenmemiş Faturalar */}
+                        <div className="px-4 space-y-8">
+                            {/* Bekleyenler */}
                             <div>
-                                <h3 className="px-4 mb-2 text-[13px] font-medium text-[#8E8E93] uppercase tracking-wide flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#FF3B30]" /> Ödenmeyi Bekleyenler
-                                </h3>
-                                <div className="overflow-hidden rounded-[24px] bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-white/5 shadow-sm">
-                                    {bills.filter(b => !b.isPaid).sort((a,b) => a.dueDate.localeCompare(b.dueDate)).map((bill, index, arr) => {
-                                        const isLast = index === arr.length - 1;
+                                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">Ödenmeyi Bekleyenler</h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {bills.filter(b => !b.isPaid).sort((a,b) => a.dueDate.localeCompare(b.dueDate)).map(bill => {
                                         const isOverdue = new Date(bill.dueDate) < new Date();
                                         return (
-                                            <div key={bill.id} className="relative">
-                                                <div className="flex items-center justify-between p-3.5">
-                                                    <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={() => openBillForm(bill)}>
-                                                        <div className={cn("h-10 w-10 rounded-full flex items-center justify-center shadow-sm", isOverdue ? "bg-rose-100 text-rose-600" : "bg-orange-100 text-orange-600")}>
-                                                            <FileText className="h-5 w-5" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-[16px] font-medium text-[#1C1C1E] dark:text-white leading-tight">{bill.title}</p>
-                                                            <p className={cn("text-[13px] mt-0.5", isOverdue ? "text-rose-500 font-bold" : "text-[#8E8E93]")}>
-                                                                Son: {format(parseISO(bill.dueDate), 'd MMM yyyy', {locale: tr})}
-                                                            </p>
-                                                        </div>
+                                            <div key={bill.id} className="bg-white dark:bg-slate-900 p-5 rounded-[28px] shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-between relative overflow-hidden group">
+                                                {isOverdue && <div className="absolute top-0 right-0 w-full h-1 bg-rose-500" />}
+                                                <div className="mb-4" onClick={() => openBillForm(bill)}>
+                                                    <div className={cn("w-12 h-12 rounded-full flex items-center justify-center mb-3 shadow-sm", isOverdue ? "bg-rose-100 text-rose-600" : "bg-orange-100 text-orange-500")}>
+                                                        <FileText className="w-6 h-6" />
                                                     </div>
-                                                    <div className="flex flex-col items-end gap-2 ml-2">
-                                                        <p className="font-bold text-[16px] text-[#1C1C1E] dark:text-white">{bill.amount.toLocaleString()} ₺</p>
-                                                        <Button size="sm" className="h-7 text-[11px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-3 uppercase tracking-wider font-bold" onClick={() => setPayingBill(bill)}>Öde</Button>
-                                                    </div>
+                                                    <p className="font-bold text-slate-800 dark:text-slate-200 text-[15px] leading-tight mb-1">{bill.title}</p>
+                                                    <p className={cn("text-[11px] font-bold uppercase tracking-wider", isOverdue ? "text-rose-500" : "text-slate-400")}>
+                                                        Son: {format(parseISO(bill.dueDate), 'd MMM', {locale: tr})}
+                                                    </p>
                                                 </div>
-                                                {!isLast && <div className="absolute bottom-0 right-0 left-[60px] h-[0.5px] bg-[#C6C6C8] dark:bg-[#38383A]" />}
+                                                <div className="flex items-end justify-between mt-auto">
+                                                    <p className="font-black text-xl text-slate-900 dark:text-white tracking-tight">{bill.amount.toLocaleString()} ₺</p>
+                                                    <button onClick={() => setPayingBill(bill)} className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-colors active:scale-95 shadow-sm">
+                                                        <Check className="w-5 h-5" />
+                                                    </button>
+                                                </div>
                                             </div>
-                                        )
+                                        );
                                     })}
-                                    {bills.filter(b => !b.isPaid).length === 0 && (
-                                        <div className="p-6 text-center text-slate-500 text-sm">Bekleyen fatura yok. Harika! 🎉</div>
-                                    )}
                                 </div>
+                                {bills.filter(b => !b.isPaid).length === 0 && (
+                                    <div className="text-center py-10 bg-emerald-50 dark:bg-emerald-900/10 rounded-[28px] border border-emerald-100 dark:border-emerald-800/30">
+                                        <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-800/50 text-emerald-500 flex items-center justify-center mx-auto mb-3">
+                                            <Check className="w-8 h-8" />
+                                        </div>
+                                        <p className="font-bold text-emerald-700 dark:text-emerald-400">Bekleyen fatura yok!</p>
+                                        <p className="text-xs text-emerald-600/70 mt-1">Her şey yolunda.</p>
+                                    </div>
+                                )}
                             </div>
                             
                             {/* Ödenmiş Faturalar */}
                             <div>
-                                <div className="flex items-center justify-between pr-4">
-                                    <h3 className="px-4 mb-2 text-[13px] font-medium text-[#8E8E93] uppercase tracking-wide flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-[#34C759]" /> Ödenmiş Faturalar
-                                    </h3>
-                                    <Button variant="ghost" size="sm" className="text-indigo-600 font-bold mb-2 h-7 text-xs px-3 rounded-full bg-indigo-50 hover:bg-indigo-100" onClick={() => setIsBillArchiveOpen(true)}>
-                                        Arşivi / Analizi Gör
-                                    </Button>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Ödenmiş Faturalar</h3>
+                                    <button onClick={() => setIsBillArchiveOpen(true)} className="text-indigo-600 text-xs font-bold uppercase tracking-wider bg-indigo-50 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors">
+                                        Arşivi Gör
+                                    </button>
                                 </div>
-                                <div className="overflow-hidden rounded-[24px] bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-white/5 shadow-sm">
-                                    {bills.filter(b => b.isPaid).sort((a,b) => (b.paidDate || "").localeCompare(a.paidDate || "")).reverse().slice(0, 10).map((bill, index, arr) => {
-                                        const isLast = index === arr.length - 1;
-                                        return (
-                                            <div key={bill.id} className="relative">
-                                                <div className="flex items-center justify-between p-3.5 opacity-70 cursor-pointer" onClick={() => openBillForm(bill)}>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-10 w-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                                                            <FileText className="h-5 w-5" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-[16px] font-medium text-[#1C1C1E] dark:text-white leading-tight line-through decoration-slate-400">{bill.title}</p>
-                                                            <p className="text-[13px] text-[#8E8E93] mt-0.5">Ödendi: {bill.paidDate ? format(parseISO(bill.paidDate), 'd MMM yyyy', {locale: tr}) : '-'}</p>
-                                                        </div>
-                                                    </div>
-                                                    <p className="font-medium text-[16px] text-slate-500">{bill.amount.toLocaleString()} ₺</p>
+                                <div className="bg-white dark:bg-slate-900 rounded-[24px] shadow-sm border border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800/50">
+                                    {bills.filter(b => b.isPaid).sort((a,b) => (b.paidDate || "").localeCompare(a.paidDate || "")).reverse().slice(0, 5).map(bill => (
+                                        <div key={bill.id} className="flex items-center justify-between p-4 opacity-70 hover:opacity-100 transition-opacity cursor-pointer first:rounded-t-[24px] last:rounded-b-[24px]" onClick={() => openBillForm(bill)}>
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center">
+                                                    <FileText className="w-5 h-5" />
                                                 </div>
-                                                {!isLast && <div className="absolute bottom-0 right-0 left-[60px] h-[0.5px] bg-[#C6C6C8] dark:bg-[#38383A]" />}
+                                                <div>
+                                                    <p className="text-[14px] font-bold text-slate-800 dark:text-slate-200 line-through decoration-slate-400">{bill.title}</p>
+                                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Ödendi: {bill.paidDate ? format(parseISO(bill.paidDate), 'd MMM', {locale: tr}) : '-'}</p>
+                                                </div>
                                             </div>
-                                        )
-                                    })}
-                                    {bills.filter(b => b.isPaid).length === 0 && (
-                                        <div className="p-6 text-center text-slate-500 text-sm">Henüz ödenmiş fatura yok.</div>
-                                    )}
+                                            <p className="font-bold text-[15px] text-slate-500">{bill.amount.toLocaleString()} ₺</p>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -921,23 +901,23 @@ export function BudgetClient() {
                 </div>
             </div>
 
-            {/* YENİ İŞLEM EKLE BUTONU (FLOATING) */}
-            <div className="fixed bottom-[110px] right-6 z-40 print:hidden">
+            {/* YENİ İŞLEM EKLE BUTONU (FAB - FinPlan Tarzı Büyük ve Belirgin) */}
+            <div className="fixed bottom-24 right-6 z-40 print:hidden">
                 <Button 
-                    className="h-16 w-16 rounded-full shadow-[0_8px_30px_rgb(79,70,229,0.4)] hover:shadow-[0_8px_40px_rgb(79,70,229,0.6)] hover:-translate-y-1 bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 border border-white/30 active:scale-90 transition-all duration-300 p-0 flex items-center justify-center backdrop-blur-xl group"
+                    className="h-16 w-16 rounded-full shadow-[0_10px_30px_rgb(79,70,229,0.5)] bg-indigo-600 hover:bg-indigo-700 hover:-translate-y-1 active:scale-95 transition-all duration-300 p-0 flex items-center justify-center group"
                     onClick={() => {
                         if (mainTab === 'accounts') openAccountForm(null, 'bank');
                         else if (mainTab === 'bills') openBillForm(null);
                         else openTransactionForm(null);
                     }}
                 >
-                    <Plus className="h-8 w-8 text-white drop-shadow-md group-hover:rotate-90 transition-transform duration-300" />
+                    <Plus className="h-8 w-8 text-white group-hover:rotate-90 transition-transform duration-300" />
                 </Button>
             </div>
 
             {/* --- Dialoglar (Modallar) --- */}
             <Dialog open={isAccountFormOpen} onOpenChange={(open) => { if (!open) setEditingAccount(null); setIsAccountFormOpen(open); }}>
-                <DialogContent className="sm:max-w-md rounded-[24px] bg-white dark:bg-[#1C1C1E] border-0 shadow-2xl p-0 overflow-hidden text-[#1C1C1E] dark:text-white">
+                <DialogContent className="sm:max-w-md rounded-[32px] bg-white dark:bg-[#1C1C1E] border border-white/20 dark:border-white/10 shadow-2xl p-0 overflow-hidden text-[#1C1C1E] dark:text-white">
                     <DialogTitle className="sr-only">Hesap Formu</DialogTitle>
                     <div className="p-6">
                         <NewAccountForm 
@@ -946,9 +926,8 @@ export function BudgetClient() {
                             initialData={editingAccount} 
                             initialType={initialAccountType}
                         />
-                        {/* Silme Butonu (Sadece düzenlemede gösterilir) */}
                         {editingAccount && (
-                             <Button variant="destructive" className="w-full mt-4 rounded-xl" onClick={() => {handleDeleteAccount(editingAccount.id); setIsAccountFormOpen(false);}}>
+                             <Button variant="destructive" className="w-full mt-4 rounded-2xl h-12 font-bold" onClick={() => {handleDeleteAccount(editingAccount.id); setIsAccountFormOpen(false);}}>
                                 Hesabı Sil
                              </Button>
                         )}
@@ -976,21 +955,23 @@ export function BudgetClient() {
                             onAddNewAccount={() => { setIsTransactionFormOpen(false); setIsAccountFormOpen(true); }} 
                         />
                         {editingTransaction && (
-                             <Button variant="destructive" className="w-full mt-4 rounded-xl" onClick={() => {handleDeleteTransaction(editingTransaction.id); setIsTransactionFormOpen(false);}}>
-                                İşlemi Sil
-                             </Button>
+                             <div className="px-4 pb-4">
+                                <Button variant="destructive" className="w-full rounded-2xl h-12 font-bold" onClick={() => {handleDeleteTransaction(editingTransaction.id); setIsTransactionFormOpen(false);}}>
+                                    İşlemi Sil
+                                </Button>
+                             </div>
                         )}
                     </div>
                 </DialogContent>
             </Dialog>
 
             <Dialog open={isBillFormOpen} onOpenChange={(open) => { if (!open) setEditingBill(null); setIsBillFormOpen(open); }}>
-                <DialogContent className="sm:max-w-md rounded-[24px] bg-white dark:bg-[#1C1C1E] border-0 shadow-2xl p-0 overflow-hidden text-[#1C1C1E] dark:text-white">
+                <DialogContent className="sm:max-w-md rounded-[32px] bg-white dark:bg-[#1C1C1E] border border-white/20 dark:border-white/10 shadow-2xl p-0 overflow-hidden text-[#1C1C1E] dark:text-white">
                     <DialogTitle className="sr-only">Fatura Formu</DialogTitle>
                     <div className="p-6">
                         <NewBillForm onSubmit={handleBillSubmit} initialData={editingBill} />
                         {editingBill && (
-                             <Button variant="destructive" className="w-full mt-4 rounded-xl" onClick={() => {handleDeleteBill(editingBill.id); setIsBillFormOpen(false);}}>
+                             <Button variant="destructive" className="w-full mt-4 rounded-2xl h-12 font-bold" onClick={() => {handleDeleteBill(editingBill.id); setIsBillFormOpen(false);}}>
                                 Faturayı Sil
                              </Button>
                         )}
@@ -1000,30 +981,30 @@ export function BudgetClient() {
 
             {/* PAY BILL MODAL */}
             <Dialog open={!!payingBill} onOpenChange={(open) => { if (!open) setPayingBill(null); }}>
-                <DialogContent className="sm:max-w-md rounded-[24px] bg-white dark:bg-[#1C1C1E] border-0 shadow-2xl p-6 text-[#1C1C1E] dark:text-white">
+                <DialogContent className="sm:max-w-md rounded-[32px] bg-white dark:bg-[#1C1C1E] border border-white/20 shadow-2xl p-6 text-[#1C1C1E] dark:text-white">
                     <div className="space-y-4">
                         <DialogTitle className="text-xl font-bold text-center">Faturayı Öde</DialogTitle>
-                        <div className="text-center p-4 bg-slate-50 dark:bg-white/5 rounded-2xl">
-                            <p className="text-sm text-slate-500">{payingBill?.title}</p>
-                            <p className="text-3xl font-black text-rose-600 mt-1">{payingBill?.amount.toLocaleString()} ₺</p>
+                        <div className="text-center p-6 bg-slate-50 dark:bg-white/5 rounded-[24px]">
+                            <p className="text-sm font-bold text-slate-500">{payingBill?.title}</p>
+                            <p className="text-4xl font-black text-rose-600 mt-2">{payingBill?.amount.toLocaleString()} ₺</p>
                         </div>
-                        <div className="space-y-2 mt-4">
+                        <div className="space-y-3 mt-6">
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Hangi hesaptan ödenecek?</label>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-2 gap-3">
                                 {accounts.map(acc => {
                                     const Icon = accountIcons[acc.type] || Banknote;
                                     const isSelected = paymentAccountId === acc.id;
                                     return (
-                                        <div key={acc.id} onClick={() => setPaymentAccountId(acc.id)} className={cn("relative cursor-pointer flex items-center gap-2 p-3 rounded-xl border transition-all", isSelected ? "bg-indigo-50 border-indigo-500 text-indigo-700" : "bg-slate-50 border-slate-200 text-slate-700 hover:border-indigo-400")}>
-                                            <Icon className="h-4 w-4 shrink-0"/>
-                                            <span className="text-xs font-semibold truncate">{acc.name}</span>
+                                        <div key={acc.id} onClick={() => setPaymentAccountId(acc.id)} className={cn("relative cursor-pointer flex items-center gap-3 p-4 rounded-[20px] border-2 transition-all", isSelected ? "bg-indigo-50 border-indigo-500 text-indigo-700 shadow-md" : "bg-white border-slate-100 text-slate-700 hover:border-indigo-300 hover:bg-indigo-50/50")}>
+                                            <Icon className="h-5 w-5 shrink-0"/>
+                                            <span className="text-sm font-bold truncate">{acc.name}</span>
                                         </div>
                                     )
                                 })}
                             </div>
                         </div>
                         <Button 
-                            className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl mt-4 text-lg font-bold"
+                            className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[20px] mt-6 text-lg font-bold shadow-md"
                             onClick={handlePayBill}
                             disabled={!paymentAccountId}
                         >
@@ -1035,7 +1016,7 @@ export function BudgetClient() {
 
             {/* BILL ARCHIVE MODAL */}
             <Dialog open={isBillArchiveOpen} onOpenChange={setIsBillArchiveOpen}>
-                <DialogContent className="sm:max-w-xl rounded-[24px] bg-white dark:bg-[#1C1C1E] border-0 shadow-2xl p-6 text-[#1C1C1E] dark:text-white max-h-[85vh] overflow-y-auto w-[95%]">
+                <DialogContent className="sm:max-w-xl rounded-[32px] bg-white dark:bg-[#1C1C1E] border border-white/20 shadow-2xl p-6 text-[#1C1C1E] dark:text-white max-h-[85vh] overflow-y-auto w-[95%]">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-black text-center mb-2">Fatura Arşivi ve Analizi</DialogTitle>
                     </DialogHeader>
@@ -1071,7 +1052,7 @@ export function BudgetClient() {
                                     <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#94a3b8'}} tickFormatter={(value) => `₺${value}`} width={40} />
                                     <RechartsTooltip 
                                         contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 4px 14px 0 rgba(0,0,0,0.1)'}} 
-                                        formatter={(value: number) => [`${value.toLocaleString()} ₺`, billArchiveFilter]}
+                                        formatter={(value) => [`${value.toLocaleString()} ₺`, billArchiveFilter]}
                                     />
                                     <Line 
                                         type="monotone" 
@@ -1092,12 +1073,12 @@ export function BudgetClient() {
                         <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Geçmiş Faturalar Listesi</h4>
                         <div className="space-y-2">
                             {bills.filter(b => b.isPaid && (billArchiveFilter === 'Tümü' || b.title === billArchiveFilter)).sort((a,b) => (b.paidDate || "").localeCompare(a.paidDate || "")).reverse().map(bill => (
-                                <div key={bill.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-100 dark:border-white/5">
+                                <div key={bill.id} className="flex justify-between items-center p-4 bg-slate-50 dark:bg-white/5 rounded-[20px] border border-slate-100 dark:border-white/5">
                                     <div>
-                                        <p className="font-bold text-sm">{bill.title}</p>
-                                        <p className="text-xs text-slate-500">{bill.paidDate ? format(parseISO(bill.paidDate), 'd MMMM yyyy', {locale: tr}) : '-'}</p>
+                                        <p className="font-bold text-[15px]">{bill.title}</p>
+                                        <p className="text-[12px] font-medium text-slate-500">{bill.paidDate ? format(parseISO(bill.paidDate), 'd MMMM yyyy', {locale: tr}) : '-'}</p>
                                     </div>
-                                    <p className="font-black text-slate-700 dark:text-slate-200">{bill.amount.toLocaleString()} ₺</p>
+                                    <p className="font-black text-lg text-slate-700 dark:text-slate-200">{bill.amount.toLocaleString()} ₺</p>
                                 </div>
                             ))}
                             {bills.filter(b => b.isPaid && (billArchiveFilter === 'Tümü' || b.title === billArchiveFilter)).length === 0 && (
