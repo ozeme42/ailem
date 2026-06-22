@@ -196,13 +196,13 @@ HabitTrackerCard.displayName = 'HabitTrackerCard';
 
 // --- YARDIMCI BİLEŞENLER ---
 const GlassStatCard = ({ icon: Icon, label, value, color }: any) => (
-    <div className={cn("p-3 rounded-2xl flex flex-col items-center justify-center gap-2 text-center", glassColors.CARD_BG)}>
-        <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shadow-sm", color)}>
-            <Icon className="w-4 h-4 text-white" />
+    <div className={cn("p-2 sm:p-3 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center gap-1 sm:gap-2 text-center", glassColors.CARD_BG)}>
+        <div className={cn("w-6 h-6 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center shadow-sm", color)}>
+            <Icon className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
         </div>
         <div>
-            <p className={cn("text-[10px] font-bold uppercase tracking-wider leading-none", glassColors.TEXT_MUTED)}>{label}</p>
-            <p className={cn("text-xl font-black leading-none mt-1", glassColors.TEXT_MAIN)}>{value}</p>
+            <p className={cn("text-[8px] sm:text-[10px] font-bold uppercase tracking-wider leading-none", glassColors.TEXT_MUTED)}>{label}</p>
+            <p className={cn("text-sm sm:text-xl font-black leading-none mt-1", glassColors.TEXT_MAIN)}>{value}</p>
         </div>
     </div>
 );
@@ -494,7 +494,9 @@ type ModuleTask = {
         stats: {
             totalPending: pending.length + pendingModuleTasks.length,
             totalHabits: habitList.length,
-            userXP: user ? familyMembers.find(m => m.id === user.uid)?.xp || 0 : 0
+            userXP: selectedMemberId 
+                ? familyMembers.find(m => m.id === selectedMemberId)?.xp || 0 
+                : (user ? familyMembers.find(m => m.id === user.uid)?.xp || 0 : 0)
         }
     };
   }, [tasks, searchTerm, familyMembers, user, pendingModuleTasks.length, selectedMemberId]);
@@ -578,11 +580,13 @@ type ModuleTask = {
               </div>
 
               {/* MOBİL İSTATİSTİKLER (3 Kolon Grid) */}
-              <div className="grid grid-cols-3 gap-2 mt-4 md:hidden">
-                  <GlassStatCard icon={ListTodo} label="Bekleyen" value={stats.totalPending} color="bg-blue-500 shadow-blue-500/20 text-white" />
-                  <GlassStatCard icon={Target} label="Alışkanlık" value={stats.totalHabits} color="bg-emerald-500 shadow-emerald-500/20 text-white" />
-                  <GlassStatCard icon={Star} label="XP Puanın" value={stats.userXP} color="bg-amber-500 shadow-amber-500/20 text-white" />
-              </div>
+              {selectedMemberId && (
+                  <div className="grid grid-cols-3 gap-1.5 mt-3 md:hidden">
+                      <GlassStatCard icon={ListTodo} label="Bekleyen" value={stats.totalPending} color="bg-blue-500 shadow-blue-500/20 text-white" />
+                      <GlassStatCard icon={Target} label="Alışkanlık" value={stats.totalHabits} color="bg-emerald-500 shadow-emerald-500/20 text-white" />
+                      <GlassStatCard icon={Star} label="XP Puanı" value={stats.userXP} color="bg-amber-500 shadow-amber-500/20 text-white" />
+                  </div>
+              )}
           </div>
       </div>
 
