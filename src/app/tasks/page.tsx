@@ -232,18 +232,18 @@ const ModuleTaskItem = ({ task, assignee }: { task: any, assignee: any }) => {
 
     return (
         <div className={cn(
-            "group relative flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 border backdrop-blur-md",
+            "group relative flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 border backdrop-blur-md",
             task.isCompleted 
                 ? "bg-slate-50/50 dark:bg-slate-900/30 border-transparent shadow-none" 
                 : glassColors.CARD_BG + " hover:shadow-lg dark:hover:shadow-indigo-500/10 hover:border-indigo-200 dark:hover:border-indigo-500/30"
         )}>
             {/* SOL: CHECKBOX & BİLGİ */}
-            <div className="flex-1 flex items-start gap-2.5 sm:gap-3">
+            <div className="flex-1 flex items-start gap-2 sm:gap-3">
                 <button 
                     onClick={handleToggle}
                     disabled={isLoading}
                     className={cn(
-                        "mt-0.5 w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all duration-300 focus:outline-none",
+                        "mt-0.5 w-4 h-4 sm:w-6 sm:h-6 flex-shrink-0 flex items-center justify-center rounded border-2 transition-all duration-300 focus:outline-none",
                         isLoading ? "opacity-50 cursor-wait" : "hover:scale-110 active:scale-95",
                         task.isCompleted 
                             ? "bg-indigo-500 border-indigo-500 text-white shadow-md shadow-indigo-500/30" 
@@ -254,7 +254,7 @@ const ModuleTaskItem = ({ task, assignee }: { task: any, assignee: any }) => {
                 </button>
                 
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1 flex-wrap">
                         <span className={cn(
                             "inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[8px] sm:text-[9px] font-black uppercase tracking-wider",
                             task.color
@@ -278,20 +278,22 @@ const ModuleTaskItem = ({ task, assignee }: { task: any, assignee: any }) => {
                         </p>
                     )}
                 </div>
-            </div>
 
-            {/* SAĞ: ATANAN KİŞİ */}
-            {assignee && (
-                <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center ml-8 sm:ml-0 bg-slate-100 dark:bg-slate-800/50 py-1 px-2 rounded-lg sm:rounded-xl border border-slate-200 dark:border-white/5">
-                    <Avatar className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white dark:border-slate-800 shadow-sm">
-                        <AvatarImage src={assignee.avatar} />
-                        <AvatarFallback style={{backgroundColor: assignee.color}} className="text-white text-[8px] sm:text-[9px] font-bold">
-                            {assignee.name.substring(0,2).toUpperCase()}
-                        </AvatarFallback>
-                    </Avatar>
-                    <span className={cn("text-[9px] sm:text-[10px] font-bold truncate max-w-[60px] sm:max-w-[70px]", glassColors.TEXT_MAIN)}>{assignee.name}</span>
-                </div>
-            )}
+                {/* SAĞ: ATANAN KİŞİ */}
+                {assignee && (
+                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center ml-6 sm:ml-0 bg-slate-100 dark:bg-slate-800/50 py-0.5 sm:py-1 px-1.5 sm:px-2 rounded-lg sm:rounded-xl border border-slate-200 dark:border-white/5">
+                        <div 
+                            className="w-4 h-4 sm:w-5 sm:h-5 rounded flex items-center justify-center text-[8px] sm:text-[10px] font-black" 
+                            style={{ backgroundColor: assignee.color, color: '#fff' }}
+                        >
+                            {assignee.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-[9px] sm:text-xs font-bold text-slate-600 dark:text-slate-300">
+                            {assignee.name}
+                        </span>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
@@ -605,7 +607,7 @@ type ModuleTask = {
                     )}
                 >
                     <ListTodo className="w-4 h-4" /> Görevler
-                    {pendingTasks.length > 0 && <span className={cn("px-2 py-0.5 rounded-lg text-[10px] font-black", activeTab === 'tasks' ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300" : "bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400")}>{pendingTasks.length}</span>}
+                    {(pendingTasks.length + pendingModuleTasks.length) > 0 && <span className={cn("px-2 py-0.5 rounded-lg text-[10px] font-black", activeTab === 'tasks' ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300" : "bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400")}>{pendingTasks.length + pendingModuleTasks.length}</span>}
                 </button>
                 <button 
                     onClick={() => setActiveTab('habits')}
@@ -624,10 +626,10 @@ type ModuleTask = {
                     {/* Alt Filtreler */}
                     <div className="flex items-center gap-2 overflow-x-auto pb-1">
                         <button onClick={() => setTaskFilter('pending')} className={cn("px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm", taskFilter === 'pending' ? "bg-indigo-600 text-white shadow-indigo-500/20" : glassColors.BUTTON_GLASS)}>
-                            Yapılacaklar ({pendingTasks.length})
+                            Yapılacaklar ({pendingTasks.length + pendingModuleTasks.length})
                         </button>
                         <button onClick={() => setTaskFilter('completed')} className={cn("px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm", taskFilter === 'completed' ? "bg-indigo-600 text-white shadow-indigo-500/20" : glassColors.BUTTON_GLASS)}>
-                            Tamamlananlar ({completedTasks.length})
+                            Tamamlananlar ({completedTasks.length + completedModuleTasks.length})
                         </button>
                     </div>
 

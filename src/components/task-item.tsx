@@ -103,38 +103,38 @@ export function TaskItem({ task, assignee, onEdit, colorClass, onDelete }: TaskI
               ? 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-white/5 opacity-60 hover:opacity-100 shadow-none' 
               : cn('hover:shadow-lg', colorClass || 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 shadow-sm')
         )}>
-        <CardContent className="p-3 sm:p-5 flex items-center gap-2.5 sm:gap-4">
+        <CardContent className="p-2 sm:p-5 flex items-center gap-2 sm:gap-4">
           <GripVertical className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400 cursor-grab shrink-0 hidden sm:block" />
           <Checkbox
             id={`task-${task.id}`}
             checked={isCompleted}
             onCheckedChange={handleCompletion}
-            className="h-5 w-5 sm:h-6 sm:w-6 shrink-0 rounded-lg border-2 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+            className="h-4 w-4 sm:h-6 sm:w-6 shrink-0 rounded border-2 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
           />
           <div className="flex-grow min-w-0">
             <label
               htmlFor={`task-${task.id}`}
               className={cn(
-                  "font-bold text-sm sm:text-base transition-colors cursor-pointer block truncate", 
+                  "font-bold text-xs sm:text-base transition-colors cursor-pointer block truncate", 
                   isCompleted && !task.isRecurring ? 'line-through text-slate-500 dark:text-slate-500' : 'text-slate-900 dark:text-slate-100'
               )}
             >
               {task.title}
             </label>
-            <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 mt-0.5 sm:mt-1 text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">
+            <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 mt-0 sm:mt-1 text-[9px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">
                 <p>{task.dueDate}</p>
-                {task.isRecurring && <Repeat className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                {task.isRecurring && <Repeat className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5" />}
                 
                 {(subtasks && subtasks.length > 0) && (
                     <div className="flex items-center gap-1.5 sm:gap-2">
-                        <Progress value={subtaskProgress} className="h-1 sm:h-1.5 w-12 sm:w-16 bg-black/10 dark:bg-white/10" />
-                        <span className="text-[9px] sm:text-[10px] font-bold">{completedSubtasks}/{subtasks.length}</span>
+                        <Progress value={subtaskProgress} className="h-1 sm:h-1.5 w-10 sm:w-16 bg-black/10 dark:bg-white/10" />
+                        <span className="text-[8px] sm:text-[10px] font-bold">{completedSubtasks}/{subtasks.length}</span>
                     </div>
                 )}
                 {task.isRecurring && task.totalOccurrences && (
                     <div className="flex items-center gap-1.5 sm:gap-2">
-                        <Progress value={occurrenceProgress} className="h-1 sm:h-1.5 w-12 sm:w-16 bg-black/10 dark:bg-white/10" />
-                        <span className="text-[9px] sm:text-[10px] font-bold">{completedOccurrences}/{task.totalOccurrences}</span>
+                        <Progress value={occurrenceProgress} className="h-1 sm:h-1.5 w-10 sm:w-16 bg-black/10 dark:bg-white/10" />
+                        <span className="text-[8px] sm:text-[10px] font-bold">{completedOccurrences}/{task.totalOccurrences}</span>
                     </div>
                 )}
             </div>
@@ -143,11 +143,11 @@ export function TaskItem({ task, assignee, onEdit, colorClass, onDelete }: TaskI
           <div className="hidden sm:flex items-center gap-2 shrink-0">
             {(task.recurrenceType === 'daily' || task.recurrenceType === 'weekly') && task.streak && task.streak > 1 && (
                 <Badge variant="outline" className="border-orange-200 bg-orange-100 text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/20 dark:text-orange-400 rounded-full font-bold">
-                    <Flame className="w-3 sm:w-3.5 h-3 sm:h-3.5 mr-1"/> {task.streak} Seri
+                    <Flame className="w-2.5 sm:w-3.5 h-2.5 sm:h-3.5 mr-1"/> {task.streak} Seri
                 </Badge>
             )}
-            <Badge variant="secondary" className="flex items-center gap-1 sm:gap-1.5 py-0.5 sm:py-1 px-2 sm:px-3 text-xs sm:text-sm bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 rounded-full">
-                <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-amber-500 text-amber-500" />
+            <Badge variant="secondary" className="flex items-center gap-1 sm:gap-1.5 py-0 sm:py-1 px-1.5 sm:px-3 text-[10px] sm:text-sm bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 rounded-full">
+                <Star className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5 fill-amber-500 text-amber-500" />
                 <span className="font-black">{task.points}</span>
             </Badge>
           </div>
@@ -155,7 +155,7 @@ export function TaskItem({ task, assignee, onEdit, colorClass, onDelete }: TaskI
           <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             {assignee && (
                 <div 
-                    className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center text-xs sm:text-sm font-black shadow-sm" 
+                    className="w-6 h-6 sm:w-9 sm:h-9 rounded-md sm:rounded-xl flex items-center justify-center text-[10px] sm:text-sm font-black shadow-sm" 
                     style={{ backgroundColor: assignee.color, color: '#fff' }}
                 >
                     {assignee.name.charAt(0).toUpperCase()}
