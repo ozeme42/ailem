@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, X, Save, FileText, CheckCircle2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Student, Test } from "@/lib/data";
-import { addTest } from "@/lib/dataService";
+import { addTest, onSubjectsUpdate, onTopicsUpdate, onTestsUpdate, onBankQuestionsUpdate } from "@/lib/dataService";
 import { cn } from "@/lib/utils";
 
 import { TrackedBook, StudyPlan } from "@/lib/data";
@@ -37,6 +37,26 @@ export function AddOfflineResultDialog({ students, trackedBooks, studyPlans, onR
   const [mode, setMode] = React.useState<"single" | "exam">("single");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+  const [globalSubjects, setGlobalSubjects] = React.useState<string[]>([]);
+  const [globalTopics, setGlobalTopics] = React.useState<string[]>([]);
+
+  const [tests, setTests] = React.useState<any[]>([]);
+  const [bankQuestions, setBankQuestions] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    const unsubTests = onTestsUpdate(setTests);
+    const unsubBank = onBankQuestionsUpdate(setBankQuestions);
+    return () => { unsubTests(); unsubBank(); };
+  }, []);
+
+
+  React.useEffect(() => {
+    const unsubS = onSubjectsUpdate(setGlobalSubjects);
+    const unsubT = onTopicsUpdate(setGlobalTopics);
+    return () => { unsubS(); unsubT(); };
+  }, []);
+
+
   // Single Test State
   const [singleSubject, setSingleSubject] = React.useState("");
   const [singleTitle, setSingleTitle] = React.useState("");
@@ -57,22 +77,59 @@ export function AddOfflineResultDialog({ students, trackedBooks, studyPlans, onR
   ]);
 
   
-  const allSubjects = [
-    ...trackedBooks.flatMap(b => b.subjects || []),
-    ...studyPlans.flatMap(p => p.subjects || [])
-  ];
   
+  
+  const hierarchyMap = React.useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    globalSubjects.forEach(s => map.set(s, new Set()));
+
+    const getCategoryName = (test: any): string => {
+        if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
+        if (test.sourceType === 'mistake') return 'Yanlışlarım';
+        return test.subject || 'Diğer';
+    };
+
+    tests.forEach(t => {
+        const subj = getCategoryName(t);
+        const topic = t.topicId || t.topic || t._topicName;
+        if (subj && topic && topic !== 'Genel' && subj !== 'Diğer') {
+            if (!map.has(subj)) map.set(subj, new Set());
+            map.get(subj)!.add(topic);
+        }
+    });
+
+    bankQuestions.forEach(q => {
+        if (q.subject && q.topic && q.topic !== 'Genel') {
+            if (!map.has(q.subject)) map.set(q.subject, new Set());
+            map.get(q.subject)!.add(q.topic);
+        }
+    });
+
+    trackedBooks.forEach(b => {
+        (b.subjects || []).forEach((s: any) => {
+            if (!map.has(s.name)) map.set(s.name, new Set());
+            (s.topics || []).forEach((t: any) => map.get(s.name)!.add(t.name));
+        });
+    });
+
+    return map;
+  }, [globalSubjects, tests, bankQuestions, trackedBooks]);
+
+
   const availableSubjects = Array.from(new Set([
-    ...allSubjects.map(s => s.name),
+    ...(globalSubjects || []),
+    ...Array.from(hierarchyMap.keys()),
     "Türkçe", "Matematik", "Fen Bilimleri", "Sosyal Bilgiler", "İngilizce", "Din Kültürü", "Diğer"
   ])).filter(Boolean).sort();
 
   const availableTopics = singleSubject 
     ? Array.from(new Set([
-        ...allSubjects.filter(s => s.name === singleSubject).flatMap(s => s.topics || []).map(t => typeof t === 'string' ? t : t.name),
+        ...Array.from(hierarchyMap.get(singleSubject) || new Set<string>()).filter(t => globalTopics.includes(t)),
         "Genel"
-      ])).filter(Boolean).sort()
+      ])).filter(Boolean).sort((a,b) => a.localeCompare(b, 'tr'))
     : ["Genel"];
+
+
 
 
   const handleOpenChange = (open: boolean) => {
