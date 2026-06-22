@@ -71,12 +71,8 @@ export function AddOfflineResultDialog({ students, trackedBooks, studyPlans, onR
   // Exam State
   const [examName, setExamName] = React.useState("");
   const [examDate, setExamDate] = React.useState(new Date().toISOString().split('T')[0]);
-  const [examSubjects, setExamSubjects] = React.useState<ExamSubjectRow[]>([
-    { id: Math.random().toString(36).substring(7), subjectName: "Türkçe", correct: 0, incorrect: 0, blank: 0 },
-    { id: Math.random().toString(36).substring(7), subjectName: "Matematik", correct: 0, incorrect: 0, blank: 0 },
-    { id: Math.random().toString(36).substring(7), subjectName: "Fen Bilimleri", correct: 0, incorrect: 0, blank: 0 },
-    { id: Math.random().toString(36).substring(7), subjectName: "Sosyal Bilgiler", correct: 0, incorrect: 0, blank: 0 }
-  ]);
+  const [examSubjects, setExamSubjects] = React.useState<ExamSubjectRow[]>([]);
+  const [hasAutoFilled, setHasAutoFilled] = React.useState(false);
 
   
   
@@ -98,6 +94,19 @@ export function AddOfflineResultDialog({ students, trackedBooks, studyPlans, onR
       ...globalSubjects,
       ...Object.keys(curriculumMap)
   ])).filter(Boolean).sort();
+
+  React.useEffect(() => {
+    if (!hasAutoFilled && availableSubjects.length > 0) {
+      setExamSubjects(availableSubjects.map((s: string) => ({
+        id: Math.random().toString(36).substring(7),
+        subjectName: s,
+        correct: 0,
+        incorrect: 0,
+        blank: 0
+      })));
+      setHasAutoFilled(true);
+    }
+  }, [availableSubjects, hasAutoFilled]);
 
   const availableTopics = singleSubject 
     ? Array.from(new Set([
