@@ -51,7 +51,7 @@ function translateType(type: string) {
     const map: Record<string, string> = {
         json: 'Yazılı Test', exam: 'Deneme Sınavı', bank: 'Soru Bankası',
         quick: 'Hızlı Test', mistake: 'Yanlış Havuzu', trackedBook: 'Kitap Takibi',
-        html: 'HTML Test'
+        html: 'HTML Test', pdf: 'PDF Test', offline: 'Fiziksel / Harici'
     };
     return map[type] || type;
 }

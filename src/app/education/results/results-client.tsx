@@ -52,6 +52,7 @@ const translateType = (type: string) => {
         case 'trackedBook': return 'Kitap Takibi';
         case 'html': return 'HTML Test';
         case 'pdf': return 'PDF Test';
+        case 'offline': return 'Fiziksel / Harici';
         default: return type;
     }
 };

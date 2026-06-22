@@ -85,7 +85,7 @@ const getCategoryName = (test: Test): string => {
 function translateType(type: string) {
   const map: Record<string, string> = {
     exam: 'Deneme', bank: 'Soru Bankası', json: 'Yazılı',
-    trackedBook: 'Kitap', html: 'HTML', pdf: 'PDF', quick: 'Hızlı', mistake: 'Yanlış Havuzu'
+    trackedBook: 'Kitap', html: 'HTML', pdf: 'PDF', quick: 'Hızlı', mistake: 'Yanlış Havuzu', offline: 'Fiziksel / Harici'
   };
   return map[type] || type;
 }
