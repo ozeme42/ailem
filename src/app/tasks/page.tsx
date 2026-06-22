@@ -469,7 +469,7 @@ type ModuleTask = {
       });
 
       return list;
-  }, [studyAssignments, memorizationItems, memorizationProgress, prayerProgress, familyMembers, searchTerm]);
+  }, [studyAssignments, memorizationItems, memorizationProgress, prayerProgress, familyMembers, searchTerm, selectedMemberId]);
 
   const pendingModuleTasks = React.useMemo(() => moduleTasks.filter(t => !t.isCompleted), [moduleTasks]);
   const completedModuleTasks = React.useMemo(() => moduleTasks.filter(t => t.isCompleted), [moduleTasks]);
@@ -497,7 +497,7 @@ type ModuleTask = {
             userXP: user ? familyMembers.find(m => m.id === user.uid)?.xp || 0 : 0
         }
     };
-  }, [tasks, searchTerm, familyMembers, user, pendingModuleTasks.length]);
+  }, [tasks, searchTerm, familyMembers, user, pendingModuleTasks.length, selectedMemberId]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans pb-32 md:pb-10 selection:bg-indigo-500/30 relative overflow-hidden transition-colors duration-300">
