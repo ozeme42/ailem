@@ -243,7 +243,7 @@ export default function ReadingSessionPage() {
 
         return (
             <motion.div 
-                className={cn("relative flex flex-col items-center justify-center transition-all duration-700", className)}
+                className={cn("relative flex flex-col items-center justify-center", className)}
                 animate={{ rotate: flipRotation }}
                 transition={{ type: "spring", stiffness: 30, damping: 15 }}
             >
