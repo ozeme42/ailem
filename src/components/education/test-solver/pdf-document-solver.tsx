@@ -280,17 +280,18 @@ export function PdfDocumentSolver({ test, studentAnswers, onAnswer, onFinish, is
             )}
 
             <div className={cn(
-                "transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] bg-slate-100 dark:bg-slate-950/50",
+                "transition-all duration-500 bg-white dark:bg-slate-950 flex flex-col",
                 isFullScreen 
-                    ? "fixed inset-2 md:inset-4 lg:inset-8 z-50 rounded-[2rem] md:rounded-[3rem] shadow-2xl shadow-indigo-500/20 border border-slate-200/50 dark:border-slate-800/50 overflow-hidden flex flex-col md:flex-row"
-                    : "relative w-full rounded-[2rem] md:rounded-[3rem] shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col md:flex-row h-[75vh] md:h-[80vh] min-h-[600px]"
+                    ? "fixed inset-0 z-[60]" 
+                    : "relative w-full rounded-[2.5rem] shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden h-[75vh] md:h-[80vh] min-h-[600px]"
             )} ref={containerRef}>
                 
-                {/* Sol Panel: PDF Görüntüleyici */}
-                <div 
-                  className="flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all relative min-h-0"
-                  style={isSplitScreenMobile ? { height: `${splitHeightPercent}%` } : { flex: 1 }}
-                >
+                <div className={cn("flex-1 flex overflow-hidden relative", isSplitScreenMobile ? "flex-col" : "flex-col md:flex-row")}>
+                    {/* Sol Panel: PDF Görüntüleyici */}
+                    <div 
+                      className="flex flex-col bg-white dark:bg-slate-900 md:border-r border-slate-200 dark:border-slate-800 transition-all relative min-h-0"
+                      style={isSplitScreenMobile ? { height: `${splitHeightPercent}%` } : { flex: 1 }}
+                    >
                     {/* Toolbar */}
                     <div className="h-14 md:h-16 px-3 md:px-6 shrink-0 flex flex-wrap items-center justify-between border-b border-slate-200/50 dark:border-slate-800/50 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md">
                         <div className="flex items-center gap-3 w-full md:w-auto">
@@ -310,7 +311,7 @@ export function PdfDocumentSolver({ test, studentAnswers, onAnswer, onFinish, is
                                 <Button variant="ghost" size="icon" className="md:hidden h-10 w-10 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800" onClick={() => setIsOpticalOpenMobile(true)}>
                                     <LayoutGrid className="w-5 h-5 text-indigo-500" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 hidden md:flex" onClick={() => setIsFullScreen(!isFullScreen)}>
+                                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 flex" onClick={() => setIsFullScreen(!isFullScreen)}>
                                     {isFullScreen ? <Minimize2 className="w-5 h-5 text-slate-500" /> : <Maximize2 className="w-5 h-5 text-slate-500" />}
                                 </Button>
                             </div>
@@ -319,7 +320,7 @@ export function PdfDocumentSolver({ test, studentAnswers, onAnswer, onFinish, is
 
                     {/* Content */}
                     <div 
-                        className={cn("flex-1 overflow-y-auto relative custom-scrollbar", isDrawingMode ? "overflow-hidden" : "")} 
+                        className="flex-1 overflow-y-auto relative custom-scrollbar" 
                         ref={pdfContainerRef}
                     >
                         {test.fileUrl ? (
@@ -392,11 +393,12 @@ export function PdfDocumentSolver({ test, studentAnswers, onAnswer, onFinish, is
                 <div 
                     className={cn(
                         "bg-white dark:bg-slate-900 flex flex-col min-h-0", 
-                        isSplitScreenMobile ? "lg:border-l lg:border-slate-200 lg:w-80" : "hidden lg:flex lg:border-l lg:border-slate-200 lg:w-80"
+                        isSplitScreenMobile ? "lg:border-l lg:border-slate-200 lg:w-80 border-t" : "hidden lg:flex lg:border-l lg:border-slate-200 lg:w-80"
                     )}
                     style={isSplitScreenMobile ? { height: `calc(${100 - splitHeightPercent}% - 16px)` } : {}}
                 >
                     {renderOpticalForm()}
+                </div>
                 </div>
             </div>
 
