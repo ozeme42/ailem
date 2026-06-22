@@ -85,42 +85,13 @@ export function AddOfflineResultDialog({ students, trackedBooks, studyPlans, onR
     const map = new Map<string, Set<string>>();
     globalSubjects.forEach(s => map.set(s, new Set()));
 
-    const getCategoryName = (test: any): string => {
-        if (test.sourceType === 'exam') return 'Genel Deneme Sınavları';
-        if (test.sourceType === 'mistake') return 'Yanlışlarım';
-        return test.subject || 'Diğer';
-    };
-
-    (tests || []).forEach(t => {
-        const subj = getCategoryName(t);
-        const topic = t.topicId || t.topic || t._topicName;
-        if (subj && topic && topic !== 'Genel' && subj !== 'Diğer') {
-            if (!map.has(subj)) map.set(subj, new Set());
-            map.get(subj)!.add(topic);
-        }
-    });
-
-    (bankQuestions || []).forEach(q => {
-        if (q.subject && q.topic && q.topic !== 'Genel') {
-            if (!map.has(q.subject)) map.set(q.subject, new Set());
-            map.get(q.subject)!.add(q.topic);
-        }
-    });
-
     Object.entries(curriculumMap).forEach(([subj, topics]) => {
         if (!map.has(subj)) map.set(subj, new Set());
         topics.forEach(t => map.get(subj)!.add(t));
     });
 
-    (trackedBooks || []).forEach(b => {
-        (b.subjects || []).forEach((s: any) => {
-            if (!map.has(s.name)) map.set(s.name, new Set());
-            (s.topics || []).forEach((t: any) => map.get(s.name)!.add(t.name));
-        });
-    });
-
     return map;
-  }, [globalSubjects, tests, bankQuestions, trackedBooks, curriculumMap]);
+  }, [globalSubjects, curriculumMap]);
 
 
   const availableSubjects = Array.from(new Set([

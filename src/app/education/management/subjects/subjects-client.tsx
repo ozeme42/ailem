@@ -4,9 +4,17 @@ import * as React from "react";
 import Link from "next/link";
 import { 
     ArrowLeft, BookOpen, Plus, Search, Trash2, Edit, X, 
-    Check, Loader2, AlertCircle, ListTree, Target, Sparkles, HelpCircle,
+    Check, Loader2, Target, HelpCircle, MoveRight,
     FolderOpen, ListPlus
 } from "lucide-react";
+import { 
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuLabel,
+    DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/components/auth-provider";
 import { 
     onSubjectsUpdate, onTopicsUpdate, updateSubjects, updateTopics, onCurriculumMapUpdate, updateCurriculumMap, 
@@ -90,52 +98,81 @@ export function SubjectsClient() {
         return () => { unsubS(); unsubT(); unsubTests(); unsubBank(); unsubBooks(); unsubC(); };
     }, [familyId]);
 
-    // HİYERARŞİ HARİTASI
+    // HİYERARŞİ HARİTASI (SADECE curriculumMap VE localLinks KULLANACAK)
     const hierarchyMap = React.useMemo(() => {
         const map = new Map<string, Set<string>>();
         allSubjects.forEach(s => map.set(s, new Set()));
 
-        tests.forEach(t => {
-            const subj = getCategoryName(t);
-            const topic = t.topicId || t.topic || t._topicName;
-            if (subj && topic && topic !== 'Genel' && subj !== 'Diğer') {
-                if (!map.has(subj)) map.set(subj, new Set());
-                map.get(subj)!.add(topic);
-            }
-        });
-
-        bankQuestions.forEach(q => {
-            if (q.subject && q.topic && q.topic !== 'Genel') {
-                if (!map.has(q.subject)) map.set(q.subject, new Set());
-                map.get(q.subject)!.add(q.topic);
-            }
-        });
-
-        trackedBooks.forEach(b => {
-            (b.subjects || []).forEach((s: any) => {
-                if (!map.has(s.name)) map.set(s.name, new Set());
-                (s.topics || []).forEach((t: any) => map.get(s.name)!.add(t.name));
-            });
-        });
-
-        // Ekranda hemen eşleşmiş göstermek için session bazlı yerel linkleri ekle
         Object.entries(curriculumMap).forEach(([subj, topics]) => {
             if (!map.has(subj)) map.set(subj, new Set());
             topics.forEach(t => map.get(subj)!.add(t));
         });
 
+        // Ekranda hemen eşleşmiş göstermek için session bazlı yerel linkleri ekle
         localLinks.forEach(link => {
             if (!map.has(link.subject)) map.set(link.subject, new Set());
             map.get(link.subject)!.add(link.topic);
         });
 
         return map;
-    }, [allSubjects, tests, bankQuestions, trackedBooks, localLinks, curriculumMap]);
+    }, [allSubjects, localLinks, curriculumMap]);
 
-    // AUTO-SYNC LOGIC
+    // MIGRATION VE AUTO-SYNC LOGIC
     React.useEffect(() => {
         if (loading || allSubjects.length === 0) return;
 
+        // 1. Yetim (Ağaçta olmayan) konuları bul
+        const treeTopics = new Set<string>();
+        allSubjects.forEach(s => {
+            Array.from(hierarchyMap.get(s) || new Set<string>()).forEach(t => treeTopics.add(t));
+        });
+
+        // 2. Geçmiş Testler ve Kitaplardan Dinamik Eşleşmeleri Çek ve Kalıcı Haritaya Yaz (MIGRATION)
+        let hasMapChanges = false;
+        const updatedMap = { ...curriculumMap };
+        const isTopicPermanentlyMapped = (topic: string) => Object.values(curriculumMap).some(topics => topics.includes(topic));
+
+        const oldMap = new Map<string, Set<string>>();
+        tests.forEach(t => {
+            const subj = getCategoryName(t);
+            const topic = t.topicId || t.topic || t._topicName;
+            if (subj && topic && topic !== 'Genel' && subj !== 'Diğer') {
+                if (!oldMap.has(subj)) oldMap.set(subj, new Set());
+                oldMap.get(subj)!.add(topic);
+            }
+        });
+
+        bankQuestions.forEach(q => {
+            if (q.subject && q.topic && q.topic !== 'Genel') {
+                if (!oldMap.has(q.subject)) oldMap.set(q.subject, new Set());
+                oldMap.get(q.subject)!.add(q.topic);
+            }
+        });
+
+        trackedBooks.forEach(b => {
+            (b.subjects || []).forEach((s: any) => {
+                if (!oldMap.has(s.name)) oldMap.set(s.name, new Set());
+                (s.topics || []).forEach((t: any) => oldMap.get(s.name)!.add(t.name));
+            });
+        });
+
+        oldMap.forEach((topics, subj) => {
+            topics.forEach(t => {
+                if (!isTopicPermanentlyMapped(t) && allSubjects.includes(subj)) {
+                    if (!updatedMap[subj]) updatedMap[subj] = [];
+                    if (!updatedMap[subj].includes(t)) {
+                        updatedMap[subj].push(t);
+                        hasMapChanges = true;
+                    }
+                }
+            });
+        });
+
+        if (hasMapChanges) {
+            updateCurriculumMap(updatedMap).catch(console.error);
+        }
+
+        // 3. Mevcut Auto-Sync
         const syncCurriculum = async () => {
             const usedSubjects = new Set<string>();
             const usedTopics = new Set<string>();
@@ -173,7 +210,7 @@ export function SubjectsClient() {
         };
 
         syncCurriculum();
-    }, [tests, bankQuestions, trackedBooks, loading, allSubjects, allTopics, toast]);
+    }, [tests, bankQuestions, trackedBooks, loading, allSubjects, allTopics, toast, curriculumMap]);
 
     const filteredGroupedTopics = React.useMemo(() => {
         const result: { subject: string, topics: string[], isOrphan?: boolean }[] = [];
@@ -298,6 +335,14 @@ export function SubjectsClient() {
                 const newList = allSubjects.map(s => s === original ? normalizedCurrent : s);
                 await updateSubjects(newList);
                 
+                // Curriculum map'teki subject ismini de guncelle
+                const updatedMap = { ...curriculumMap };
+                if (updatedMap[original]) {
+                    updatedMap[normalizedCurrent] = updatedMap[original];
+                    delete updatedMap[original];
+                    await updateCurriculumMap(updatedMap);
+                }
+
                 // LocalLink'leri de güncelle
                 setLocalLinks(prev => prev.map(l => l.subject === original ? { ...l, subject: normalizedCurrent } : l));
                 
@@ -309,6 +354,13 @@ export function SubjectsClient() {
                 const newList = allTopics.map(t => t === original ? normalizedCurrent : t);
                 await updateTopics(newList);
                 
+                // Curriculum map'teki topic ismini de guncelle
+                const updatedMap = { ...curriculumMap };
+                Object.keys(updatedMap).forEach(subj => {
+                    updatedMap[subj] = updatedMap[subj].map(topic => topic === original ? normalizedCurrent : topic);
+                });
+                await updateCurriculumMap(updatedMap);
+
                 // LocalLink'leri de güncelle
                 setLocalLinks(prev => prev.map(l => l.topic === original ? { ...l, topic: normalizedCurrent } : l));
                 
@@ -326,15 +378,55 @@ export function SubjectsClient() {
                 const newList = allSubjects.filter(s => s !== name);
                 await updateSubjects(newList);
                 setLocalLinks(prev => prev.filter(l => l.subject !== name));
+                
+                const updatedMap = { ...curriculumMap };
+                delete updatedMap[name];
+                await updateCurriculumMap(updatedMap);
+
                 toast({ title: "Ders Silindi 🗑️" });
             } else {
                 const newList = allTopics.filter(t => t !== name);
                 await updateTopics(newList);
                 setLocalLinks(prev => prev.filter(l => l.topic !== name));
+                
+                const updatedMap = { ...curriculumMap };
+                Object.keys(updatedMap).forEach(subj => {
+                    updatedMap[subj] = updatedMap[subj].filter(topic => topic !== name);
+                });
+                await updateCurriculumMap(updatedMap);
+
                 toast({ title: "Konu Silindi 🗑️" });
             }
         } catch (e) {
             toast({ title: "Hata", variant: "destructive" });
+        }
+    };
+
+    const handleMoveTopic = async (topic: string, newSubject: string, oldSubject: string) => {
+        try {
+            const updatedMap = { ...curriculumMap };
+            
+            // Eski dersten çıkar
+            if (oldSubject !== "Kategorisiz / Serbest Konular" && updatedMap[oldSubject]) {
+                updatedMap[oldSubject] = updatedMap[oldSubject].filter(t => t !== topic);
+            }
+            
+            // Yeni derse ekle
+            if (!updatedMap[newSubject]) updatedMap[newSubject] = [];
+            if (!updatedMap[newSubject].includes(topic)) {
+                updatedMap[newSubject].push(topic);
+            }
+
+            // Local links güncelle
+            setLocalLinks(prev => [
+                ...prev.filter(l => l.topic !== topic),
+                { subject: newSubject, topic: topic }
+            ]);
+
+            await updateCurriculumMap(updatedMap);
+            toast({ title: "Konu Taşındı 🚚", description: `'${topic}' konusu '${newSubject}' dersine taşındı.` });
+        } catch (e) {
+            toast({ title: "Hata", description: "Konu taşınamadı.", variant: "destructive" });
         }
     };
 
@@ -357,7 +449,7 @@ export function SubjectsClient() {
                             </Button>
                         </Link>
                         <div className={themeColors.ICON_BOX}>
-                            <ListTree className="w-6 h-6 text-white" />
+                            <Target className="w-6 h-6 text-white" />
                         </div>
                         <div>
                             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 leading-none">Müfredat Yönetimi</h1>
@@ -502,18 +594,35 @@ export function SubjectsClient() {
 
                                                             <div className="flex items-center gap-1 shrink-0 ml-2">
                                                                 {editingItem?.type === 'topic' && editingItem.original === topic ? (
-                                                                    <>
+                                                                    <div className="flex items-center gap-1">
                                                                         <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-500 hover:bg-emerald-50" onClick={handleUpdateItem}><Check className="h-3.5 w-3.5" /></Button>
                                                                         <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:bg-slate-100" onClick={() => setEditingItem(null)}><X className="h-3.5 w-3.5" /></Button>
-                                                                    </>
+                                                                    </div>
                                                                 ) : (
-                                                                    <>
-                                                                        <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 opacity-0 group-hover/topic:opacity-100 transition-opacity" onClick={() => setEditingItem({ type: 'topic', original: topic, current: topic })}>
+                                                                    <div className="flex items-center gap-1 opacity-0 group-hover/topic:opacity-100 transition-opacity">
+                                                                        <DropdownMenu>
+                                                                            <DropdownMenuTrigger asChild>
+                                                                                <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50">
+                                                                                    <MoveRight className="h-3.5 w-3.5" />
+                                                                                </Button>
+                                                                            </DropdownMenuTrigger>
+                                                                            <DropdownMenuContent align="end" className="w-48 rounded-xl max-h-64 overflow-y-auto">
+                                                                                <DropdownMenuLabel className="text-xs">Farklı Derse Taşı</DropdownMenuLabel>
+                                                                                <DropdownMenuSeparator />
+                                                                                {allSubjects.filter(s => s !== group.subject).map(subj => (
+                                                                                    <DropdownMenuItem key={subj} onClick={() => handleMoveTopic(topic, subj, group.subject)} className="text-xs font-medium cursor-pointer">
+                                                                                        {subj}
+                                                                                    </DropdownMenuItem>
+                                                                                ))}
+                                                                            </DropdownMenuContent>
+                                                                        </DropdownMenu>
+
+                                                                        <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50" onClick={() => setEditingItem({ type: 'topic', original: topic, current: topic })}>
                                                                             <Edit className="h-3.5 w-3.5" />
                                                                         </Button>
                                                                         <AlertDialog>
                                                                             <AlertDialogTrigger asChild>
-                                                                                <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-rose-600 hover:bg-white dark:hover:bg-slate-800 opacity-0 group-hover/topic:opacity-100 transition-opacity">
+                                                                                <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-rose-600 hover:bg-rose-100/50">
                                                                                     <Trash2 className="h-3.5 w-3.5" />
                                                                                 </Button>
                                                                             </AlertDialogTrigger>
@@ -521,7 +630,7 @@ export function SubjectsClient() {
                                                                                 <AlertDialogHeader>
                                                                                     <AlertDialogTitle>Konuyu Sil</AlertDialogTitle>
                                                                                     <AlertDialogDescription>
-                                                                                        "{topic}" konusunu silmek istediğinizden emin misiniz? (Mevcut test sonuçları etkilenmez).
+                                                                                        "{topic}" konusunu silmek istediğinizden emin misiniz? Bu işlem konuyu müfredattan tamamen kaldırır.
                                                                                     </AlertDialogDescription>
                                                                                 </AlertDialogHeader>
                                                                                 <AlertDialogFooter>
@@ -530,7 +639,7 @@ export function SubjectsClient() {
                                                                                 </AlertDialogFooter>
                                                                             </AlertDialogContent>
                                                                         </AlertDialog>
-                                                                    </>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         </div>
