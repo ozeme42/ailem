@@ -50,6 +50,7 @@ export default function MemorizationPage() {
     
     const [selectedMember, setSelectedMember] = React.useState<FamilyMember | null>(null);
     const [activeTab, setActiveTab] = useState<'personal' | 'library'>('personal');
+    const [personalTab, setPersonalTab] = useState<'pending' | 'completed'>('pending');
     const [searchQuery, setSearchQuery] = useState("");
 
     const { toast } = useToast();
@@ -318,23 +319,65 @@ export default function MemorizationPage() {
 
                 {/* TAB CONTENT */}
                 {activeTab === 'personal' && (
-                    <div className="space-y-3 pb-8">
-                        {personalItems.length === 0 ? (
-                            <EmptyState message="Listeniz şu an boş. Kütüphane sekmesinden ezberlemek istediğiniz duaları ekleyebilirsiniz." />
-                        ) : (
-                            personalItems.map(item => {
-                                const isCompleted = memberProgressMap.get(`${item.id}_${selectedMember?.id}`) || false;
-                                return (
-                                    <ListItemCard 
-                                        key={item.id} 
-                                        item={item} 
-                                        isCompleted={isCompleted} 
-                                        onToggle={() => handleToggleCompletion(item.id, !isCompleted)}
-                                        onRemove={() => handleRemoveFromMember(item.id, selectedMember!.id)}
-                                        mode="personal"
-                                    />
-                                );
-                            })
+                    <div className="space-y-4 pb-8">
+                        {/* SUB-TABS */}
+                        <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl w-full max-w-sm mx-auto shadow-sm">
+                            <button 
+                                onClick={() => setPersonalTab('pending')}
+                                className={cn(
+                                    "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all",
+                                    personalTab === 'pending' ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm" : "text-slate-500 dark:text-slate-400"
+                                )}
+                            >
+                                Bekleyenler
+                            </button>
+                            <button 
+                                onClick={() => setPersonalTab('completed')}
+                                className={cn(
+                                    "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all",
+                                    personalTab === 'completed' ? "bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm" : "text-slate-500 dark:text-slate-400"
+                                )}
+                            >
+                                Ezberlenenler
+                            </button>
+                        </div>
+
+                        {personalTab === 'pending' && (
+                            <div className="space-y-3">
+                                {personalItems.filter(item => !memberProgressMap.get(`${item.id}_${selectedMember?.id}`)).length === 0 ? (
+                                    <EmptyState message="Bekleyen ezberiniz bulunmuyor. Kütüphane sekmesinden yeni ezberler ekleyebilirsiniz." />
+                                ) : (
+                                    personalItems.filter(item => !memberProgressMap.get(`${item.id}_${selectedMember?.id}`)).map(item => (
+                                        <ListItemCard 
+                                            key={item.id} 
+                                            item={item} 
+                                            isCompleted={false} 
+                                            onToggle={() => handleToggleCompletion(item.id, true)}
+                                            onRemove={() => handleRemoveFromMember(item.id, selectedMember!.id)}
+                                            mode="personal"
+                                        />
+                                    ))
+                                )}
+                            </div>
+                        )}
+
+                        {personalTab === 'completed' && (
+                            <div className="space-y-3">
+                                {personalItems.filter(item => memberProgressMap.get(`${item.id}_${selectedMember?.id}`)).length === 0 ? (
+                                    <EmptyState message="Henüz tamamladığınız bir ezber bulunmuyor." />
+                                ) : (
+                                    personalItems.filter(item => memberProgressMap.get(`${item.id}_${selectedMember?.id}`)).map(item => (
+                                        <ListItemCard 
+                                            key={item.id} 
+                                            item={item} 
+                                            isCompleted={true} 
+                                            onToggle={() => handleToggleCompletion(item.id, false)}
+                                            onRemove={() => handleRemoveFromMember(item.id, selectedMember!.id)}
+                                            mode="personal"
+                                        />
+                                    ))
+                                )}
+                            </div>
                         )}
                     </div>
                 )}
