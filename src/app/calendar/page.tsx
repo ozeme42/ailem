@@ -540,7 +540,7 @@ export default function CalendarPage() {
                                                 {event.category && (
                                                     <Badge variant="outline" className="text-[9px] px-1 py-0 shadow-none bg-slate-50">{event.category}</Badge>
                                                 )}
-                                                {event.reminderMinutes && event.reminderMinutes > 0 && (
+                                                {(event.reminderMinutes || 0) > 0 && (
                                                     <Badge variant="outline" className="text-[9px] px-1 py-0 shadow-none bg-amber-50 text-amber-700 border-amber-200">🔔 Hatırlatıcı</Badge>
                                                 )}
                                             </div>
