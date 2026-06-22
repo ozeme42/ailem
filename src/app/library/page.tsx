@@ -31,16 +31,16 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell, PieCha
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { useRouter } from "next/navigation";
 
-// --- TASARIM DEĞİŞKENLERİ (AÇIK TEMA) ---
+// --- TASARIM DEĞİŞKENLERİ (PREMIUM AÇIK TEMA) ---
 const themeColors = {
-    PAGE_BG: "bg-slate-50", // Sayfa arka planı
-    HEADER_BG: "bg-white/80 backdrop-blur-lg border-b border-slate-200", // Header
-    CARD_BG: "bg-white border border-slate-200 shadow-sm", // Kartlar
-    CARD_HOVER: "hover:shadow-md transition-all duration-300",
-    TEXT_MAIN: "text-slate-900",
+    PAGE_BG: "bg-[#FAFAFA]", // Sayfa arka planı
+    HEADER_BG: "bg-white/70 backdrop-blur-xl border-b border-white/50 shadow-sm", // Header
+    CARD_BG: "bg-white/80 backdrop-blur-xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)]", // Kartlar
+    CARD_HOVER: "hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-300",
+    TEXT_MAIN: "text-slate-800",
     TEXT_MUTED: "text-slate-500",
-    ICON_BOX: "bg-gradient-to-br from-amber-500 to-orange-600 p-2 rounded-xl shadow-md text-white",
-    BUTTON_Ghost: "hover:bg-slate-100 text-slate-600 hover:text-slate-900",
+    ICON_BOX: "bg-gradient-to-br from-amber-400 to-orange-500 p-2 rounded-xl shadow-lg shadow-amber-500/20 text-white",
+    BUTTON_Ghost: "hover:bg-slate-100/80 text-slate-600 hover:text-slate-900 transition-colors",
 };
 
 const progressFormSchema = z.object({
@@ -481,10 +481,12 @@ export default function LibraryPage() {
 
   return (
     <div className={cn("min-h-[100dvh] font-sans pb-24 relative overflow-hidden", themeColors.PAGE_BG, themeColors.TEXT_MAIN)}>
-         {/* Minimalist Background (Açık Tema İçin) */}
-         <div className="fixed inset-0 z-0 pointer-events-none opacity-40">
-            <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-amber-100/60 rounded-full blur-[120px]" />
-            <div className="absolute bottom-[20%] left-[-5%] w-[400px] h-[400px] bg-orange-100/60 rounded-full blur-[100px]" />
+         {/* Dinamik Premium Background */}
+         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-[#FAFAFA]">
+            {/* Animated Gradient Orbs */}
+            <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-gradient-to-br from-amber-200/40 to-orange-200/40 rounded-full blur-[100px] animate-[pulse_10s_ease-in-out_infinite]" />
+            <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-gradient-to-tr from-blue-200/40 to-indigo-200/40 rounded-full blur-[100px] animate-[pulse_12s_ease-in-out_infinite_1s]" />
+            <div className="absolute top-[40%] left-[20%] w-[300px] h-[300px] bg-gradient-to-br from-rose-200/30 to-pink-200/30 rounded-full blur-[80px]" />
         </div>
 
         {/* HEADER */}
@@ -931,7 +933,7 @@ function ReadingBookCard({ book, memberId, onUpdateStatus, onRemove, onViewDetai
     const pagesRead = book.pageCount ? Math.round((book.progress || 0) / 100 * book.pageCount) : 0;
     
     return (
-        <div className={cn("p-3 sm:p-4 rounded-2xl flex flex-row gap-3 sm:gap-5 transition-all group relative overflow-hidden bg-white border border-slate-200 shadow-sm hover:shadow-md")}>
+        <div className={cn("p-3 sm:p-4 rounded-2xl flex flex-row gap-3 sm:gap-5 group relative overflow-hidden", themeColors.CARD_BG, themeColors.CARD_HOVER)}>
              {/* Progress Bar Background */}
              <div className="absolute bottom-0 left-0 h-1 bg-amber-100 w-full">
                  <div className="h-full bg-amber-500 transition-all duration-1000" style={{ width: `${book.progress || 0}%` }}></div>
@@ -1092,7 +1094,7 @@ function FinishedBookCard({ book, onUpdateStatus, onRemove, onUploadSummary }: {
 function BookCard({ book, onUpdateStatus, onRemove }: { book: any, onUpdateStatus: (bookId: string, status: 'reading' | 'finished', progress?: number) => void, onRemove: (bookId: string) => void }) {
     return (
         <Card className={cn("overflow-hidden flex flex-col group text-center transition-all relative p-0 border-0 bg-transparent h-full shadow-none")}>
-            <div className="relative aspect-[2/3] rounded-xl overflow-hidden shadow-md mb-3 group-hover:-translate-y-1 transition-transform duration-300">
+            <div className="relative aspect-[2/3] rounded-xl overflow-hidden shadow-md group-hover:shadow-xl group-hover:shadow-indigo-500/10 mb-3 group-hover:-translate-y-1.5 transition-all duration-300">
                  <Image src={book.image} alt={book.title} width={150} height={225} className="w-full h-full object-cover" data-ai-hint="book cover"/>
                  
                  {/* Hover Overlay */}
