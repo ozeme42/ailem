@@ -933,66 +933,65 @@ function ReadingBookCard({ book, memberId, onUpdateStatus, onRemove, onViewDetai
     const pagesRead = book.pageCount ? Math.round((book.progress || 0) / 100 * book.pageCount) : 0;
     
     return (
-        <div className={cn("p-4 rounded-2xl flex flex-col sm:flex-row gap-4 sm:gap-5 transition-all group relative overflow-hidden bg-white border border-slate-200 shadow-sm hover:shadow-md")}>
+        <div className={cn("p-3 sm:p-4 rounded-2xl flex flex-row gap-3 sm:gap-5 transition-all group relative overflow-hidden bg-white border border-slate-200 shadow-sm hover:shadow-md")}>
              {/* Progress Bar Background */}
              <div className="absolute bottom-0 left-0 h-1 bg-amber-100 w-full">
                  <div className="h-full bg-amber-500 transition-all duration-1000" style={{ width: `${book.progress || 0}%` }}></div>
              </div>
 
             {/* Kitap Resmi */}
-            <div className="relative shrink-0 mx-auto sm:mx-0">
+            <div className="relative shrink-0">
                 <Image 
                     src={book.image} 
                     alt={book.title} 
                     width={100} 
                     height={150} 
-                    className="w-24 sm:w-28 h-auto rounded-lg aspect-[2/3] object-cover shadow-md cursor-pointer hover:scale-105 transition-transform" 
+                    className="w-20 sm:w-28 h-auto rounded-lg aspect-[2/3] object-cover shadow-md cursor-pointer hover:scale-105 transition-transform" 
                     onClick={onViewDetails}
                     data-ai-hint="book cover"
                 />
             </div>
 
             {/* İçerik Alanı */}
-            <div className="flex-grow flex flex-col min-w-0 py-1">
+            <div className="flex-grow flex flex-col min-w-0 py-0.5">
                 {/* Üst Kısım: Başlık ve Yazar */}
-                <div className="mb-2 cursor-pointer" onClick={onViewDetails}>
-                    <h3 className={cn("font-bold text-lg leading-tight text-slate-800 group-hover:text-amber-600 transition-colors line-clamp-2")}>
+                <div className="mb-1 cursor-pointer" onClick={onViewDetails}>
+                    <h3 className={cn("font-bold text-sm sm:text-lg leading-tight text-slate-800 group-hover:text-amber-600 transition-colors line-clamp-2")}>
                         {book.title}
                     </h3>
-                    <p className="text-sm text-slate-500 truncate mt-1">{book.author}</p>
+                    <p className="text-xs sm:text-sm text-slate-500 truncate mt-0.5">{book.author}</p>
                 </div>
                 
                 {/* Alt Kısım: İstatistikler ve Butonlar */}
-                <div className="mt-auto pt-2 space-y-3">
+                <div className="mt-auto space-y-2">
                     
                     {/* İlerleme Bilgisi */}
                     <div>
-                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">İlerleme</p>
                          <div className="flex items-baseline gap-1">
-                             <span className="text-2xl font-black text-amber-500">{book.progress || 0}%</span>
-                             <span className="text-sm text-slate-400 font-medium">({pagesRead} / {book.pageCount || '?'} syf)</span>
+                             <span className="text-xl sm:text-2xl font-black text-amber-500 leading-none">{book.progress || 0}%</span>
+                             <span className="text-[10px] sm:text-sm text-slate-400 font-medium">({pagesRead}/{book.pageCount || '?'} syf)</span>
                          </div>
                     </div>
 
                     {/* Aksiyon Butonları Grubu */}
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-nowrap items-center gap-1.5 sm:gap-2">
                          {/* Oynat / Devam Et */}
-                         <Link href={`/library/session/${book.id}?memberId=${memberId}`} className="flex-1 sm:flex-none">
-                            <Button className="w-full sm:w-auto rounded-xl bg-amber-600 hover:bg-amber-700 text-white shadow-md h-10 px-4">
-                                <Play className="h-4 w-4 fill-current mr-2"/> Oku
+                         <Link href={`/library/session/${book.id}?memberId=${memberId}`} className="flex-1">
+                            <Button className="w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white shadow-md h-8 sm:h-10 px-2 sm:px-4 text-xs sm:text-sm font-bold">
+                                <Play className="h-3 w-3 sm:h-4 sm:w-4 fill-current mr-1.5 sm:mr-2"/> Oku
                             </Button>
                         </Link>
 
                         {/* Güncelle Butonu */}
-                         <Button size="icon" variant="outline" className="h-10 w-10 rounded-xl border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50" onClick={onOpenProgressDialog}>
-                             <Edit className="w-4 h-4"/>
+                         <Button size="icon" variant="outline" className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 shrink-0" onClick={onOpenProgressDialog}>
+                             <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4"/>
                          </Button>
 
                          {/* Diğer İşlemler Menüsü */}
                          <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50">
-                                    <MoreVertical className="h-4 w-4" />
+                                <Button variant="outline" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 shrink-0">
+                                    <MoreVertical className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="bg-white border-slate-200 text-slate-700 mb-2 shadow-lg" align="end">
