@@ -97,30 +97,30 @@ const HabitTrackerCard = React.forwardRef<HTMLDivElement, HabitTrackerCardProps>
   }, [task.completedDates]);
 
   return (
-    <div ref={ref} className={cn("rounded-2xl p-4 transition-all duration-300 relative overflow-hidden", glassColors.CARD_BG, glassColors.CARD_HOVER)}>
-      <div className={cn("absolute left-0 top-0 bottom-0 w-1.5 opacity-60", colorClass?.split(' ')[0] || "bg-indigo-500")} />
+    <div ref={ref} className={cn("rounded-xl sm:rounded-2xl p-3 sm:p-4 transition-all duration-300 relative overflow-hidden", glassColors.CARD_BG, glassColors.CARD_HOVER)}>
+      <div className={cn("absolute left-0 top-0 bottom-0 w-1 sm:w-1.5 opacity-60", colorClass?.split(' ')[0] || "bg-indigo-500")} />
       
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pl-2">
-        <div className="flex items-start gap-3 flex-1">
-            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 shadow-sm", "bg-fuchsia-100 text-fuchsia-600 border border-fuchsia-200 dark:bg-fuchsia-600/30 dark:text-fuchsia-300 dark:border-fuchsia-500/30")}>
-                <Flame className={cn("w-5 h-5", currentStreak > 2 ? "fill-current animate-pulse text-fuchsia-500 dark:text-fuchsia-400" : "")} />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pl-1 sm:pl-2">
+        <div className="flex items-start gap-2.5 sm:gap-3 flex-1">
+            <div className={cn("w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 sm:mt-1 shadow-sm", "bg-fuchsia-100 text-fuchsia-600 border border-fuchsia-200 dark:bg-fuchsia-600/30 dark:text-fuchsia-300 dark:border-fuchsia-500/30")}>
+                <Flame className={cn("w-4 h-4 sm:w-5 sm:h-5", currentStreak > 2 ? "fill-current animate-pulse text-fuchsia-500 dark:text-fuchsia-400" : "")} />
             </div>
             
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                    <h4 className={cn("font-bold truncate text-base", glassColors.TEXT_MAIN)}>{task.title}</h4>
+                    <h4 className={cn("font-bold truncate text-sm sm:text-base", glassColors.TEXT_MAIN)}>{task.title}</h4>
                     {currentStreak > 0 && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-600/30 dark:text-orange-300 dark:border-orange-500/30 flex items-center gap-1 shadow-sm">
+                        <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-600/30 dark:text-orange-300 dark:border-orange-500/30 flex items-center gap-1 shadow-sm">
                              🔥 {currentStreak} Gün
                         </span>
                     )}
                 </div>
                 
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
                     {assignee && (
-                        <div className={cn("flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium shadow-sm", "bg-slate-100 border-slate-200 text-slate-700 dark:bg-white/5 dark:border-white/10 dark:text-slate-300")}>
+                        <div className={cn("flex items-center gap-1.5 text-[10px] sm:text-xs px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-medium shadow-sm", "bg-slate-100 border-slate-200 text-slate-700 dark:bg-white/5 dark:border-white/10 dark:text-slate-300")}>
                             <span 
-                                className="w-2 h-2 rounded-full" 
+                                className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" 
                                 style={{backgroundColor: assignee.color || '#ccc'}} 
                             />
                             {assignee.name}
@@ -130,27 +130,27 @@ const HabitTrackerCard = React.forwardRef<HTMLDivElement, HabitTrackerCardProps>
             </div>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto">
+        <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-3 w-full sm:w-auto mt-2 sm:mt-0">
              {days.map((day) => {
                  const completed = isDayCompleted(day);
                  const isTodayDate = isSameDay(day, new Date());
                  
                  return (
-                     <div key={day.toISOString()} className="flex flex-col items-center gap-1.5">
-                         <span className={cn("text-[10px] font-bold uppercase", glassColors.TEXT_MUTED)}>
+                     <div key={day.toISOString()} className="flex flex-col items-center gap-1 sm:gap-1.5">
+                         <span className={cn("text-[8px] sm:text-[10px] font-bold uppercase", glassColors.TEXT_MUTED)}>
                              {format(day, 'EEE', { locale: tr }).slice(0, 1)}
                          </span>
                          <button
                             onClick={() => onToggleDay(day, !completed)}
                             className={cn(
-                                "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 border-2",
+                                "w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-300 border-2",
                                 completed 
                                     ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20 scale-110" 
                                     : "bg-slate-100 border-slate-200 text-transparent hover:border-emerald-300 hover:bg-slate-50 dark:bg-white/5 dark:border-white/10 dark:hover:border-emerald-500/50 dark:hover:bg-white/10",
                                 isTodayDate && !completed && "ring-2 ring-offset-2 ring-emerald-500/50 border-emerald-400 dark:ring-offset-slate-900"
                             )}
                          >
-                             <Check className={cn("w-4 h-4 stroke-[3]", completed ? "opacity-100" : "opacity-0")} /> 
+                             <Check className={cn("w-3 h-3 sm:w-4 sm:h-4 stroke-[3]", completed ? "opacity-100" : "opacity-0")} /> 
                          </button>
                      </div>
                  )
