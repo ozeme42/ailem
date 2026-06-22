@@ -654,11 +654,37 @@ export default function LibraryPage() {
                                             ))}
                                              <LabelList 
                                                 dataKey="pagesRead" 
-                                                position="top" 
-                                                offset={8} 
-                                                className="fill-slate-500 font-bold" 
-                                                fontSize={10} 
-                                                formatter={(value: any) => value > 0 ? value : ""}
+                                                content={(props: any) => {
+                                                    const { x, y, width, value, index } = props;
+                                                    if (value === undefined || value === null) return null;
+                                                    
+                                                    const isWeekly = readingStatsPeriod === 'weekly';
+                                                    const entry = isWeekly ? readingStatsByPeriod.weeklyChartData[index] : readingStatsByPeriod.monthlyPageData[index];
+                                                    const dailyGoal = (entry as any).dailyGoal;
+                                                    
+                                                    if (!isWeekly || !dailyGoal || dailyGoal <= 0) {
+                                                        if (value > 0) {
+                                                            return <text x={x + width / 2} y={y - 8} fill="#64748b" textAnchor="middle" fontSize={10} fontWeight="bold">{value}</text>;
+                                                        }
+                                                        return null;
+                                                    }
+
+                                                    const isMet = value >= dailyGoal;
+                                                    const shortfall = dailyGoal - value;
+                                                    
+                                                    if (isMet) {
+                                                        return <text x={x + width / 2} y={y - 8} fill="#10b981" textAnchor="middle" fontSize={10} fontWeight="bold">{value} ✓</text>;
+                                                    } else if (value > 0) {
+                                                        return (
+                                                            <g>
+                                                                <text x={x + width / 2} y={y - 18} fill="#64748b" textAnchor="middle" fontSize={10} fontWeight="bold">{value}</text>
+                                                                <text x={x + width / 2} y={y - 6} fill="#ef4444" textAnchor="middle" fontSize={9} fontWeight="bold">-{shortfall}</text>
+                                                            </g>
+                                                        );
+                                                    } else {
+                                                        return <text x={x + width / 2} y={y - 6} fill="#ef4444" textAnchor="middle" fontSize={9} fontWeight="bold">-{shortfall}</text>;
+                                                    }
+                                                }}
                                             />
                                         </Bar>
                                     </BarChart>
