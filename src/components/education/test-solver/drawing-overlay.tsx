@@ -66,9 +66,17 @@ export const DrawingOverlay = React.forwardRef<DrawingOverlayRef, DrawingOverlay
 
         React.useEffect(() => {
             initCanvas();
-            const handleResize = () => initCanvas();
-            window.addEventListener('resize', handleResize);
-            return () => window.removeEventListener('resize', handleResize);
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            const parent = canvas.parentElement;
+            if (!parent) return;
+
+            const observer = new ResizeObserver(() => {
+                initCanvas();
+            });
+            observer.observe(parent);
+
+            return () => observer.disconnect();
         }, [initCanvas]);
 
         React.useEffect(() => {

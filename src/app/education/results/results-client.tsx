@@ -51,6 +51,7 @@ const translateType = (type: string) => {
         case 'mistake': return 'Yanlış Havuzu';
         case 'trackedBook': return 'Kitap Takibi';
         case 'html': return 'HTML Test';
+        case 'pdf': return 'PDF Test';
         default: return type;
     }
 };

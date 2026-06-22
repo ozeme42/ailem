@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Plus, ArrowLeft, ListChecks, ShoppingCart, Trash2, MoreVertical, CheckCircle2, Search, Sparkles, Home, Cake, Notebook, Edit, Check, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, ArrowLeft, ListChecks, ShoppingCart, Trash2, MoreVertical, CheckCircle2, Search, Sparkles, Home, Cake, Notebook, Edit, Check, ChevronUp, ChevronDown, Mic } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -310,7 +310,9 @@ export default function ShoppingPage() {
   const [newItemName, setNewItemName] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     const unsubShopping = onShoppingListsUpdate((lists) => {
@@ -353,6 +355,46 @@ export default function ShoppingPage() {
     setSuggestions([...filteredHistory, ...filteredDefaults]);
   }, [newItemName, historicalItems]);
 
+
+  const toggleVoiceInput = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (isListening && recognitionRef.current) {
+        recognitionRef.current.stop();
+        setIsListening(false);
+        return;
+    }
+
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        toast({ title: "Desteklenmiyor", description: "Tarayıcınız sesli girişi desteklemiyor.", variant: 'destructive' });
+        return;
+    }
+    
+    // @ts-ignore
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    
+    recognition.lang = 'tr-TR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    const baseText = newItemName ? newItemName + ' ' : '';
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onresult = (event: any) => {
+        let transcript = '';
+        for (let i = 0; i < event.results.length; ++i) {
+            transcript += event.results[i][0].transcript;
+        }
+        setNewItemName(baseText + transcript);
+        if (inputRef.current) inputRef.current.focus();
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    
+    recognition.start();
+  };
 
   const handleCreateOrUpdateList = async (data: CreateListFormData) => {
     try {
@@ -542,9 +584,9 @@ export default function ShoppingPage() {
                                             </h3>
                                         )}
                                         <div className="grid gap-2 md:gap-3 w-full">
-                                        {items.map((item) => (
+                                        {items.map((item, index) => (
                                             <div 
-                                                key={item.id} 
+                                                key={`${item.id}-${index}`} 
                                                 onClick={() => toggleItemCheck(selectedList.id, item)} 
                                                 className={cn(
                                                     "group flex items-center gap-3 py-3 px-4 rounded-[1rem] md:rounded-[1.25rem] transition-all cursor-pointer w-full active:scale-[0.99]",
@@ -617,8 +659,8 @@ export default function ShoppingPage() {
                             </div>
                         ) : (
                             <div className="space-y-2 md:space-y-3 w-full mt-2">
-                                {boughtItems.map((item) => (
-                                    <div key={item.id} className="flex items-center gap-3 py-2.5 px-4 group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl md:rounded-2xl hover:border-slate-300 dark:hover:border-slate-700 transition-all active:scale-[0.99]">
+                                {boughtItems.map((item, index) => (
+                                    <div key={`${item.id}-${index}`} className="flex items-center gap-3 py-2.5 px-4 group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl md:rounded-2xl hover:border-slate-300 dark:hover:border-slate-700 transition-all active:scale-[0.99]">
                                         <div 
                                             className="h-6 w-6 rounded-full flex items-center justify-center cursor-pointer bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800 flex-shrink-0 active:scale-90 transition-transform"
                                             onClick={() => moveItemToPendingList(selectedList.id, item)}
@@ -659,14 +701,23 @@ export default function ShoppingPage() {
                                     value={newItemName}
                                     onChange={(e) => setNewItemName(e.target.value)}
                                     placeholder="2kg domates, süt..."
-                                    className="pl-4 pr-10 h-12 md:h-14 rounded-2xl text-sm md:text-base bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all shadow-inner"
+                                    className="pl-4 pr-20 h-12 md:h-14 rounded-2xl text-sm md:text-base bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all shadow-inner"
                                     autoComplete="off"
                                 />
-                                {isAiProcessing && (
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                    <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        onClick={toggleVoiceInput} 
+                                        className={cn("h-8 w-8 md:h-10 md:w-10 rounded-xl transition-all", isListening ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 animate-pulse" : "text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30")}
+                                    >
+                                        <Mic className="h-4 w-4 md:h-5 md:w-5" />
+                                    </Button>
+                                    {isAiProcessing && (
                                         <Sparkles className="h-5 w-5 text-indigo-500 animate-pulse" />
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
                             <Button type="submit" size="icon" className="h-12 w-12 md:h-14 md:w-14 shrink-0 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 shadow-md text-white active:scale-95 transition-transform" disabled={!newItemName.trim() || isAiProcessing}>
                                 <Plus className="h-5 w-5 md:h-6 md:w-6" />

@@ -72,7 +72,7 @@ const categoryThemeColors: { [key: string]: { text: string, bg: string, border: 
     'Diğer': { text: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-400/10', border: 'border-slate-200 dark:border-slate-400/20' },
 };
 
-type TestTypeFilter = 'all' | 'bank' | 'trackedBook' | 'exam' | 'json';
+type TestTypeFilter = 'all' | 'bank' | 'trackedBook' | 'exam' | 'json' | 'html' | 'pdf';
 type ViewMode = 'grid' | 'list';
 type SortKey = 'title' | '_date' | 'status' | 'score' | 'studentId' | 'questionCount'; 
 type PaginationState = { [key in 'all' | 'pending' | 'completed']: number };
@@ -251,7 +251,7 @@ export default function AllTestsPage() {
                                 <TabsTrigger value="completed" className="rounded-lg text-xs">Biten</TabsTrigger>
                             </TabsList>
                             <div className="flex items-center gap-3 w-full lg:w-auto justify-end">
-                                <Tabs value={activeTestType} onValueChange={(v) => setActiveTestType(v as TestTypeFilter)}><TabsList className="h-9 p-1 bg-slate-100 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800"><TabsTrigger value="all" className="text-[11px] h-7 px-2.5 rounded-md">Tümü</TabsTrigger><TabsTrigger value="bank" className="text-[11px] h-7 px-2.5 rounded-md">Soru</TabsTrigger><TabsTrigger value="trackedBook" className="text-[11px] h-7 px-2.5 rounded-md">Kitap</TabsTrigger><TabsTrigger value="exam" className="text-[11px] h-7 px-2.5 rounded-md">Deneme</TabsTrigger><TabsTrigger value="json" className="text-[11px] h-7 px-2.5 rounded-md">Yazılı</TabsTrigger></TabsList></Tabs>
+                                <Tabs value={activeTestType} onValueChange={(v) => setActiveTestType(v as TestTypeFilter)}><TabsList className="h-9 p-1 bg-slate-100 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800"><TabsTrigger value="all" className="text-[11px] h-7 px-2.5 rounded-md">Tümü</TabsTrigger><TabsTrigger value="bank" className="text-[11px] h-7 px-2.5 rounded-md">Soru</TabsTrigger><TabsTrigger value="trackedBook" className="text-[11px] h-7 px-2.5 rounded-md">Kitap</TabsTrigger><TabsTrigger value="exam" className="text-[11px] h-7 px-2.5 rounded-md">Deneme</TabsTrigger><TabsTrigger value="json" className="text-[11px] h-7 px-2.5 rounded-md">Yazılı</TabsTrigger><TabsTrigger value="html" className="text-[11px] h-7 px-2.5 rounded-md">HTML</TabsTrigger><TabsTrigger value="pdf" className="text-[11px] h-7 px-2.5 rounded-md">PDF</TabsTrigger></TabsList></Tabs>
                                 <div className="flex bg-slate-100 dark:bg-slate-950/50 p-1 rounded-lg border border-slate-200 dark:border-slate-800">
                                     <Button size="sm" variant="ghost" onClick={() => setViewMode('grid')} className={cn("h-7 w-8 p-0", viewMode === 'grid' ? 'bg-slate-700 text-white' : 'text-slate-500 dark:text-slate-600 dark:text-slate-400')}><LayoutGrid className="w-4 h-4" /></Button>
                                     <Button size="sm" variant="ghost" onClick={() => setViewMode('list')} className={cn("h-7 w-8 p-0", viewMode === 'list' ? 'bg-slate-700 text-white' : 'text-slate-500 dark:text-slate-600 dark:text-slate-400')}><List className="w-4 h-4" /></Button>

@@ -290,6 +290,7 @@ export default function EducationManagementPage() {
               <ToolCard href="/education/management/practice-exams"   icon={ClipboardList}label="Denemeler"     theme={toolTheme.orange} />
               <ToolCard href="/education/management/json-tests"       icon={FileJson}     label="Yazılılar"     theme={toolTheme.purple} />
               <ToolCard href="/education/management/html-tests"       icon={Code}         label="HTML Test"     theme={toolTheme.blue}   />
+              <ToolCard href="/education/management/pdf-tests"        icon={FileText}     label="PDF Test"      theme={toolTheme.indigo} />
               <ToolCard href="/education/management/summaries"        icon={ScrollText}   label="Özetler"       theme={toolTheme.emerald} />
             </div>
           </div>

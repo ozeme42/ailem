@@ -85,7 +85,7 @@ const getCategoryName = (test: Test): string => {
 function translateType(type: string) {
   const map: Record<string, string> = {
     exam: 'Deneme', bank: 'Soru Bankası', json: 'Yazılı',
-    trackedBook: 'Kitap', html: 'HTML', quick: 'Hızlı', mistake: 'Yanlış Havuzu'
+    trackedBook: 'Kitap', html: 'HTML', pdf: 'PDF', quick: 'Hızlı', mistake: 'Yanlış Havuzu'
   };
   return map[type] || type;
 }
@@ -556,7 +556,7 @@ export function StatsClient() {
   };
 
   const typeBreakdown = React.useMemo(() => {
-    const types = ['exam', 'bank', 'json', 'trackedBook', 'html', 'quick', 'mistake'];
+    const types = ['exam', 'bank', 'json', 'trackedBook', 'html', 'pdf', 'quick', 'mistake'];
     return types.map((type, idx) => {
       const tt = processedData.filter(t => t.sourceType === type);
       return tt.length > 0 ? { name: translateType(type), value: tt.reduce((a, t) => a + t._totalQ, 0), fill: CHART_PALETTE[idx % CHART_PALETTE.length] } : null;

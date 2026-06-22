@@ -435,8 +435,9 @@ export interface Test {
   dueDate: string;
   status: 'Atandı' | 'Değerlendirme Bekliyor' | 'Sonuçlandı' | 'Tekrar Çözülüyor';
   isArchived: boolean;
-  sourceType: 'bank' | 'quick' | 'exam' | 'mistake' | 'trackedBook' | 'json' | 'html';
+  sourceType: 'bank' | 'quick' | 'exam' | 'mistake' | 'trackedBook' | 'json' | 'html' | 'pdf';
   sourceId?: string;
+  fileUrl?: string;
   gradingType?: GradingType;
   score?: number;
   correctAnswers?: number;

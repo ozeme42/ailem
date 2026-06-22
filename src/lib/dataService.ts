@@ -235,6 +235,12 @@ export const uploadImageToStorage = async (file: File, path: string): Promise<st
     return await getDownloadURL(storageRef);
 };
 
+export const uploadFileToStorage = async (file: File, path: string): Promise<string> => {
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    return await getDownloadURL(storageRef);
+};
+
 // --- VIDEOS ---
 export const onVideosUpdate = (callback: (videos: Video[]) => void, runOnce = false) => onFamilyDataUpdate<Video>('videos', callback, runOnce);
 export const addVideo = async (data: Omit<Video, 'id' | 'familyId' | 'createdAt'>) => {
