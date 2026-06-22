@@ -95,6 +95,9 @@ export default function ReadingSessionPage() {
     
     const [selectedSoundId, setSelectedSoundId] = React.useState<string | null>(null);
     const [isFocusMode, setIsFocusMode] = React.useState(false);
+    // Kronometre modunda dakika dolunca kum saatini ters çevirmek için
+    const [flipCount, setFlipCount] = React.useState(0);
+    const prevMinutesRef = React.useRef(0);
 
     const audioRef = React.useRef<HTMLAudioElement | null>(null);
     const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -232,6 +235,19 @@ export default function ReadingSessionPage() {
         fillPercent = (remaining / targetSeconds) * 100;
     }
 
+    // Dakika dolunca flip sayacını artır
+    React.useEffect(() => {
+        const currentMinutes = Math.floor(elapsedTime / 60);
+        if (mode === 'stopwatch' && timerRunning && currentMinutes > prevMinutesRef.current) {
+            setFlipCount(prev => prev + 1);
+            prevMinutesRef.current = currentMinutes;
+        }
+        if (mode !== 'stopwatch') {
+            setFlipCount(0);
+            prevMinutesRef.current = 0;
+        }
+    }, [elapsedTime, mode, timerRunning]);
+
     // --- GERÇEKÇİ KUM SAATİ (SVG HOURGLASS) ---
     const HourglassTimer = ({ className, isFocus = false }: { className?: string, isFocus?: boolean }) => {
         // timer modunda: üstteki kum (topSand) = fillPercent (azalır), alttaki kum (bottomSand) = 100 - fillPercent (artar)
@@ -241,6 +257,7 @@ export default function ReadingSessionPage() {
         const sandColor = isOvertime ? "#ef4444" : (isFocus ? "#10b981" : "#6366f1");
         const sandColor2 = isOvertime ? "#f87171" : (isFocus ? "#34d399" : "#06b6d4");
         const isFlowing = timerRunning && !isOvertime;
+        const rotation = flipCount * 180;
 
         // SVG kum saati geometrisi
         const W = 160;  // genişlik
@@ -276,6 +293,18 @@ export default function ReadingSessionPage() {
         };
         const bottomSandTopW = bottomWidthAtY(Math.min(H - rimH, bottomSandTopY));
 
+        // Kum taneleri için sabit pozisyon ve timing verileri (render başına yeniden hesaplanmasın)
+        const SAND_PARTICLES = [
+            { dx: -1.5, delay: 0,    size: 2.5, dur: 0.7  },
+            { dx:  1.2, delay: 0.12, size: 2.0, dur: 0.75 },
+            { dx: -0.5, delay: 0.24, size: 1.8, dur: 0.65 },
+            { dx:  1.8, delay: 0.36, size: 2.2, dur: 0.8  },
+            { dx: -2.0, delay: 0.08, size: 1.5, dur: 0.72 },
+            { dx:  0.5, delay: 0.45, size: 2.8, dur: 0.68 },
+            { dx: -1.0, delay: 0.55, size: 1.6, dur: 0.78 },
+            { dx:  2.2, delay: 0.18, size: 2.0, dur: 0.73 },
+        ];
+
         return (
             <div className={cn("relative flex flex-col items-center justify-center select-none", className)}>
                 {/* Dış parlama efekti */}
@@ -285,10 +314,12 @@ export default function ReadingSessionPage() {
                 />
 
                 {/* Ana SVG Kum Saati */}
-                <svg
+                <motion.svg
                     viewBox={`0 0 ${W} ${H}`}
                     className="w-full h-full drop-shadow-2xl"
                     style={{ filter: "drop-shadow(0 8px 32px rgba(99,102,241,0.25))" }}
+                    animate={{ rotate: rotation }}
+                    transition={{ type: "spring", stiffness: 60, damping: 18, mass: 1.2 }}
                 >
                     <defs>
                         {/* Kum gradyanı */}
@@ -412,49 +443,60 @@ export default function ReadingSessionPage() {
                         opacity="0.7"
                     />
 
-                    {/* === KUM AKIŞ DAMLASI (boyundan dökülen kum) === */}
+                    {/* === KUM AKIŞI — Gerçekçi tanecikler === */}
                     {isFlowing && (
                         <>
-                            {/* Ana akış çizgisi */}
-                            <motion.line
-                                x1={midX}
-                                y1={neckY + 2}
-                                x2={midX}
-                                y2={bottomSandTopY > neckY + 10 ? bottomSandTopY - 2 : neckY + 30}
-                                stroke={sandColor2}
-                                strokeWidth="3"
-                                strokeLinecap="round"
-                                opacity="0.85"
-                                animate={{ opacity: [0.6, 1, 0.6], strokeWidth: [2, 3, 2] }}
-                                transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                            />
-                            {/* Kum tanesi 1 */}
-                            <motion.circle
-                                cx={midX - 1}
-                                cy={neckY + 10}
-                                r={2.5}
+                            {/* İnce akış çizgisi (kum hattı) */}
+                            <motion.rect
+                                x={midX - 1}
+                                y={neckY + 2}
+                                width={2}
+                                height={bottomSandTopY > neckY + 14 ? bottomSandTopY - neckY - 14 : 28}
+                                rx={1}
                                 fill={sandColor2}
-                                animate={{ cy: [neckY + 10, neckY + 40, neckY + 10], opacity: [1, 0, 1] }}
-                                transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+                                opacity={0.55}
+                                animate={{ opacity: [0.35, 0.65, 0.35] }}
+                                transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
                             />
-                            {/* Kum tanesi 2 */}
-                            <motion.circle
-                                cx={midX + 1.5}
-                                cy={neckY + 25}
-                                r={2}
-                                fill={sandColor}
-                                animate={{ cy: [neckY + 20, neckY + 50, neckY + 20], opacity: [1, 0, 1] }}
-                                transition={{ repeat: Infinity, duration: 0.8, ease: "linear", delay: 0.25 }}
-                            />
-                            {/* Kum tanesi 3 */}
-                            <motion.circle
-                                cx={midX - 0.5}
-                                cy={neckY + 38}
-                                r={1.5}
-                                fill={sandColor2}
-                                animate={{ cy: [neckY + 35, neckY + 60, neckY + 35], opacity: [1, 0, 1] }}
-                                transition={{ repeat: Infinity, duration: 0.8, ease: "linear", delay: 0.5 }}
-                            />
+                            {/* Kum taneleri — 8 tane, farklı x/boyut/hız */}
+                            {SAND_PARTICLES.map((p, i) => {
+                                const startY = neckY + 4;
+                                const endY   = bottomSandTopY > neckY + 20 ? bottomSandTopY - 4 : neckY + 60;
+                                return (
+                                    <motion.circle
+                                        key={i}
+                                        cx={midX + p.dx}
+                                        r={p.size}
+                                        fill={i % 2 === 0 ? sandColor2 : sandColor}
+                                        fillOpacity={0.9}
+                                        animate={{
+                                            cy:      [startY, endY, startY],
+                                            opacity: [0.9, 0.6, 0],
+                                            r:       [p.size, p.size * 0.7, p.size]
+                                        }}
+                                        transition={{
+                                            repeat:   Infinity,
+                                            duration: p.dur,
+                                            ease:     "linear",
+                                            delay:    p.delay
+                                        }}
+                                        initial={{ cy: startY }}
+                                    />
+                                );
+                            })}
+                            {/* Alt birikim — dökülen kumun çarptığı yerde hafif parıltı */}
+                            {bottomSandPct > 1 && (
+                                <motion.ellipse
+                                    cx={midX}
+                                    cy={bottomSandTopY}
+                                    rx={6}
+                                    ry={2}
+                                    fill={sandColor2}
+                                    fillOpacity={0.4}
+                                    animate={{ rx: [4, 8, 4], fillOpacity: [0.2, 0.5, 0.2] }}
+                                    transition={{ repeat: Infinity, duration: 0.6, ease: "easeInOut" }}
+                                />
+                            )}
                         </>
                     )}
 
@@ -494,7 +536,7 @@ export default function ReadingSessionPage() {
                     >
                         {isOvertime ? "SÜRE DOLDU" : (timerRunning ? "AKIŞTA" : "DURAKLATILDI")}
                     </text>
-                </svg>
+                </motion.svg>
             </div>
         );
     };
