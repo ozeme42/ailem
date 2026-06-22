@@ -132,22 +132,30 @@ export function ResultsClient() {
             
             // --- GÜÇLÜ TARİH PARSING ---
             let sortableDate = 0;
-            if (test.updatedAt) {
-                sortableDate = new Date(test.updatedAt).getTime();
-            } else {
-                try {
-                    const parsed = parse(test.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-                    sortableDate = parsed.getTime();
-                } catch (e) {
-                    sortableDate = new Date(test.assignedDate).getTime() || 0;
-                }
-            }
-            
             let dateDisplay = "Değerlendirilmedi";
+
             if (test.updatedAt) {
-                dateDisplay = format(parseISO(test.updatedAt), 'dd.MM.yyyy HH:mm', { locale: tr });
+                const updatedTime = new Date(test.updatedAt).getTime();
+                if (!isNaN(updatedTime)) {
+                    sortableDate = updatedTime;
+                    dateDisplay = format(new Date(test.updatedAt), 'dd.MM.yyyy HH:mm', { locale: tr });
+                }
             } else if (test.assignedDate) {
-                dateDisplay = test.assignedDate;
+                const time = new Date(test.assignedDate).getTime();
+                if (!isNaN(time)) {
+                    sortableDate = time;
+                    dateDisplay = format(new Date(test.assignedDate), 'dd.MM.yyyy', { locale: tr });
+                } else {
+                    try {
+                        const parsed = parse(test.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
+                        if (!isNaN(parsed.getTime())) {
+                            sortableDate = parsed.getTime();
+                        }
+                        dateDisplay = test.assignedDate;
+                    } catch (e) {
+                        dateDisplay = test.assignedDate;
+                    }
+                }
             }
 
             return {
