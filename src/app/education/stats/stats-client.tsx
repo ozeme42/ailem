@@ -54,6 +54,8 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { PerformanceGoals } from "@/components/education/performance-goals";
+import { ProgressAnalyzer } from "@/components/education/progress-analyzer";
+import { WeakTopics } from "@/components/education/weak-topics";
 import type { Test, PerformanceGoal, PerformanceGoalType, PerformanceGoalPeriod, Goal, GoalSection } from "@/lib/data";
 
 // --- RENK SİSTEMİ ---
@@ -188,12 +190,12 @@ const KpiCard = ({ icon: Icon, value, label, sub, color, trend }: {
   icon: any; value: string | number; label: string; sub?: string; color: string; trend?: number;
 }) => (
   <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-    className="relative rounded-2xl p-4 sm:p-5 bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden group h-full">
+    className="relative rounded-2xl p-2.5 sm:p-4 bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden group h-full flex flex-col justify-center">
     <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
       style={{ background: `radial-gradient(160px at 10% 20%, ${color}18, transparent)` }} />
-    <div className="flex items-start justify-between mb-2 sm:mb-4">
-      <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}18` }}>
-        <Icon className="w-4 h-4 sm:w-5 sm:h-5" style={{ color }} />
+    <div className="flex items-start justify-between mb-1.5 sm:mb-3">
+      <div className="w-6 h-6 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}18` }}>
+        <Icon className="w-3 h-3 sm:w-4 sm:h-4" style={{ color }} />
       </div>
       {trend !== undefined && (
         <span className={cn("text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-0.5",
@@ -205,9 +207,9 @@ const KpiCard = ({ icon: Icon, value, label, sub, color, trend }: {
         </span>
       )}
     </div>
-    <p className="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none truncate">{value}</p>
-    <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1 sm:mt-2 uppercase tracking-wider truncate">{label}</p>
-    {sub && <p className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5 sm:mt-1 truncate">{sub}</p>}
+    <p className="text-lg sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none truncate">{value}</p>
+    <p className="text-[9px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1 sm:mt-1.5 uppercase tracking-wider truncate">{label}</p>
+    {sub && <p className="text-[8px] sm:text-[10px] text-slate-400 mt-0.5 truncate">{sub}</p>}
   </motion.div>
 );
 
@@ -823,18 +825,19 @@ export function StatsClient() {
 
         {/* TABS MENU */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 h-auto grid grid-cols-3 lg:flex lg:flex-wrap gap-1.5 w-full shadow-sm">
+          <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 h-auto grid grid-cols-2 sm:grid-cols-4 lg:flex lg:flex-wrap gap-1.5 w-full shadow-sm">
             {[
               { id: 'overview',    label: 'Genel Bakış', icon: Activity },
               { id: 'analysis',    label: 'Analizler',   icon: Search },
               { id: 'progress',    label: 'Yetenek & Hedef', icon: Target },
+              { id: 'pivot',       label: 'Pivot / Gelişim', icon: BarChart3 },
             ].map(tab => (
               <TabsTrigger key={tab.id} value={tab.id} className={cn(
-                'flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all w-full lg:w-auto',
+                'flex items-center justify-center gap-1 sm:gap-2 px-1 sm:px-4 py-1.5 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-bold transition-all w-full lg:w-auto',
                 'data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-indigo-500/30',
                 'data-[state=inactive]:text-slate-500 data-[state=inactive]:hover:bg-slate-50 dark:data-[state=inactive]:hover:bg-slate-800 data-[state=inactive]:hover:text-slate-700 dark:data-[state=inactive]:hover:text-slate-300'
               )}>
-                <tab.icon className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{tab.label}</span>
+                <tab.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> <span className="truncate">{tab.label}</span>
               </TabsTrigger>
             ))}
           </TabsList>
@@ -854,16 +857,16 @@ export function StatsClient() {
                 
                 {/* YAPAY ZEKA VE AKILLI İÇGÖRÜLER */}
                 {kpis.testCount > 0 && (
-                  <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 rounded-2xl p-5 sm:p-6 text-white shadow-lg shadow-indigo-500/20 flex flex-col md:flex-row items-center gap-6 relative overflow-hidden">
+                  <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 rounded-xl sm:rounded-2xl p-3 sm:p-6 text-white shadow-lg shadow-indigo-500/20 flex flex-col md:flex-row items-center gap-3 sm:gap-6 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-                    <div className="w-14 h-14 shrink-0 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
-                        <Sparkles className="w-7 h-7 text-white" />
+                    <div className="w-10 h-10 sm:w-14 sm:h-14 shrink-0 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 hidden sm:flex">
+                        <Sparkles className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
                     </div>
-                    <div className="flex-1 text-center md:text-left z-10">
-                        <h3 className="text-lg sm:text-xl font-black mb-1.5 flex items-center justify-center md:justify-start gap-2">
-                            Akıllı Asistan Özeti
+                    <div className="flex-1 text-center md:text-left z-10 w-full">
+                        <h3 className="text-sm sm:text-xl font-black mb-1 sm:mb-1.5 flex items-center justify-center md:justify-start gap-1 sm:gap-2">
+                            <Sparkles className="w-4 h-4 sm:hidden" /> Akıllı Asistan Özeti
                         </h3>
-                        <p className="text-indigo-50 text-sm font-medium leading-relaxed">
+                        <p className="text-indigo-50 text-[11px] sm:text-sm font-medium leading-relaxed sm:leading-relaxed">
                             {kpis.successRate > 75 
                                 ? `Harika gidiyorsun! Toplam ${kpis.testCount} testte %${kpis.successRate.toFixed(0)} genel başarı yakaladın. En güçlü yanlarını korumaya devam et.`
                                 : kpis.successRate > 50
@@ -872,20 +875,20 @@ export function StatsClient() {
                         </p>
                     </div>
                     <div className="shrink-0 w-full md:w-auto z-10">
-                        <Button variant="secondary" className="w-full bg-white text-indigo-600 hover:bg-slate-50 font-black rounded-xl h-11" onClick={() => setActiveTab('skill-tree')}>
-                            Yetenek Ağacını Keşfet <ChevronRight className="w-4 h-4 ml-1" />
+                        <Button variant="secondary" className="w-full bg-white text-indigo-600 hover:bg-slate-50 font-black rounded-lg sm:rounded-xl h-8 sm:h-11 text-xs sm:text-sm" onClick={() => setActiveTab('progress')}>
+                            Yetenek Ağacını Keşfet <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
                         </Button>
                     </div>
                   </div>
                 )}
 
-                <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-                  <KpiCard icon={BarChart3}  value={kpis.totalQ}                      label="Toplam Soru"  color={C.INDIGO}  />
+                <section className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
+                  <KpiCard icon={BarChart3}  value={kpis.totalQ}                      label="Soru"  color={C.INDIGO}  />
                   <KpiCard icon={Check}      value={kpis.totalC}                      label="Doğru"        color={C.EMERALD} />
                   <KpiCard icon={Calculator} value={kpis.totalNet.toFixed(1)}         label="Net"          color={C.PURPLE}  />
                   <KpiCard icon={Percent}    value={`%${kpis.successRate.toFixed(0)}`} label="Başarı"      color={C.CYAN}    />
-                  <KpiCard icon={Layers}     value={kpis.testCount}                   label="Sınav/Test"   color={C.AMBER}   />
-                  <KpiCard icon={Flame}      value={streakData.current}               label="Gün Serisi"   sub={`En uzun: ${streakData.longest} gün`} color={C.ROSE} />
+                  <KpiCard icon={Layers}     value={kpis.testCount}                   label="Test"   color={C.AMBER}   />
+                  <KpiCard icon={Flame}      value={streakData.current}               label="Seri"   sub={`Rekor: ${streakData.longest}`} color={C.ROSE} />
                 </section>
 
                 {/* AKTİF HEDEFLER ÖZETİ */}
@@ -906,9 +909,12 @@ export function StatsClient() {
                   </div>
                 )}
 
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-6">
+                {/* ZAYIF KONULAR / FIRSAT SKORU */}
+                <WeakTopics data={processedData} />
+
+                <div className="bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-4 sm:p-6">
                   <SectionHeader icon={Activity} title="Gelişim Eğrisi" desc="Soru hacmi ve başarı oranı trendi" color={C.INDIGO} />
-                  <div className="h-[300px]">
+                  <div className="h-[200px] sm:h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={timeSeriesData} margin={{ top: 20, right: 10, left: -15, bottom: 0 }}>
                         <defs>
@@ -933,9 +939,9 @@ export function StatsClient() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-6">
+                  <div className="bg-white dark:bg-slate-900 rounded-xl sm:rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-4 sm:p-6">
                     <SectionHeader icon={BarChart3} title="Soru Profili" desc="Ders bazında D/Y/B dağılımı" color={C.ORANGE} />
-                    <div className="h-[260px]">
+                    <div className="h-[200px] sm:h-[260px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={subjectComparisonData.slice(0, 7)} margin={{ top: 10, right: 0, left: -15, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148,163,184,0.12)" />
@@ -1487,6 +1493,11 @@ export function StatsClient() {
                     </Accordion>
                 </div>
               
+                </TabsContent>
+
+                {/* 4. PİVOT & GELİŞİM */}
+                <TabsContent value="pivot" className="space-y-6 mt-6">
+                  <ProgressAnalyzer data={processedData} />
                 </TabsContent>
             </motion.div>
 </AnimatePresence>

@@ -20,6 +20,7 @@ import { JSONWizardSolver } from "@/components/education/test-solver/json-wizard
 import { ExamOpticalSolver } from "@/components/education/test-solver/exam-optical-solver";
 import { HTMLDocumentSolver } from "@/components/education/test-solver/html-document-solver";
 import { PdfDocumentSolver } from "@/components/education/test-solver/pdf-document-solver";
+import { PdfEvaluationScreen } from "@/components/education/test-solver/pdf-evaluation-screen";
 import { TrackedBookSolver } from "@/components/education/test-solver/tracked-book-solver";
 import { EvaluationScreen } from "@/components/education/test-solver/evaluation-screen";
 import { TrackedBookEvaluationScreen } from "@/components/education/test-solver/tracked-book-evaluation-screen";
@@ -218,9 +219,11 @@ export default function UnifiedTestPage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Button variant="ghost" size="icon" onClick={handleDelete} className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">
-                            <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {test.sourceType === 'offline' && (
+                            <Button variant="ghost" size="icon" onClick={handleDelete} className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">
+                                <Trash2 className="w-4 h-4" />
+                            </Button>
+                        )}
                         <Badge className="bg-emerald-600 px-4 py-1 rounded-full font-black text-white">BİTTİ</Badge>
                     </div>
                 </header>
@@ -278,9 +281,11 @@ export default function UnifiedTestPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" onClick={handleDelete} className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">
-                        <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {test.sourceType === 'offline' && (
+                        <Button variant="ghost" size="icon" onClick={handleDelete} className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">
+                            <Trash2 className="w-4 h-4" />
+                        </Button>
+                    )}
                     {test.status === 'Atandı' && <TestTimer durationMinutes={test.questionCount * 2} />}
                     {test.status === 'Değerlendirme Bekliyor' && <Badge className="bg-amber-600 px-4 py-1 rounded-full font-black text-white">DEĞERLENDİRİLİYOR</Badge>}
                 </div>
@@ -293,6 +298,15 @@ export default function UnifiedTestPage() {
                             <TrackedBookEvaluationScreen
                                 test={test}
                                 questions={questions}
+                                evaluations={evaluations}
+                                feedbacks={feedbacks}
+                                onEvaluate={(q, s) => setEvaluations(prev => ({...prev, [q]: s}))}
+                                onFeedback={(q, f) => setFeedbacks(prev => ({...prev, [q]: f}))}
+                                onFinish={handleFinishTest}
+                            />
+                        ) : test.sourceType === 'pdf' ? (
+                            <PdfEvaluationScreen
+                                test={test}
                                 evaluations={evaluations}
                                 feedbacks={feedbacks}
                                 onEvaluate={(q, s) => setEvaluations(prev => ({...prev, [q]: s}))}
@@ -323,7 +337,7 @@ export default function UnifiedTestPage() {
                         {test.sourceType === 'exam' && <ExamOpticalSolver test={test} studentAnswers={studentAnswers} onAnswer={handleAnswerUpdate} onFinish={handleFinishTest} />}
                         {test.sourceType === 'json' && <JSONWizardSolver test={test} questions={questions} studentAnswers={studentAnswers} onAnswer={handleAnswerUpdate} onFinish={handleFinishTest} />}
                         {test.sourceType === 'html' && <HTMLDocumentSolver test={test} studentAnswers={studentAnswers} onAnswer={handleAnswerUpdate} onFinish={handleFinishTest} />}
-                        {test.sourceType === 'pdf' && <PdfDocumentSolver test={test} studentAnswers={studentAnswers} onAnswer={handleAnswerUpdate} onFinish={handleFinishTest} />}
+                        {test.sourceType === 'pdf' && <PdfDocumentSolver test={test} studentAnswers={studentAnswers} studentTextAnswers={studentTextAnswers} onAnswer={handleAnswerUpdate} onTextAnswer={(q,a) => handleAnswerUpdate(q,a,true)} onFinish={handleFinishTest} />}
                         {test.sourceType === 'trackedBook' && <TrackedBookSolver test={test} studentAnswers={studentAnswers} studentTextAnswers={studentTextAnswers} onAnswer={handleAnswerUpdate} onFinish={handleFinishTest} />}
                         {(test.sourceType === 'bank' || test.sourceType === 'quick' || test.sourceType === 'mistake') && (
                             test.openEnded ? <OpenEndedWizardSolver test={test} questions={questions} studentTextAnswers={studentTextAnswers} onAnswer={(q,a) => handleAnswerUpdate(q,a,true)} onFinish={handleFinishTest} /> : <MCQWizardSolver test={test} questions={questions} studentAnswers={studentAnswers} onAnswer={handleAnswerUpdate} onFinish={handleFinishTest} />

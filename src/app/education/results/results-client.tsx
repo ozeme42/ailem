@@ -3,12 +3,12 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { 
-    ArrowLeft, ListTree, Search, Filter, ChevronRight, 
-    ChevronLeft, Download, FileSpreadsheet, LayoutGrid, 
-    GraduationCap, BookOpen, Clock, CheckCircle2, XCircle, 
+import {
+    ArrowLeft, ListTree, Search, Filter, ChevronRight,
+    ChevronLeft, FileSpreadsheet, LayoutGrid,
+    GraduationCap, BookOpen, Clock, CheckCircle2, XCircle,
     MinusCircle, Calculator, User, ArrowUpDown, X, RotateCcw,
-    BarChart3
+    BarChart3, ChevronUp, ChevronDown, SlidersHorizontal
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { onTestsUpdate, onTrackedBooksUpdate, onPracticeExamsUpdate, updateTest } from "@/lib/dataService";
@@ -19,71 +19,110 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getCategoryName } from "@/app/education/page";
-import { format, parseISO, parse } from "date-fns";
+import { format, parse } from "date-fns";
 import { tr } from 'date-fns/locale';
-import { 
-    DropdownMenu, 
-    DropdownMenuContent, 
-    DropdownMenuItem, 
-    DropdownMenuTrigger 
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// --- DESIGN SYSTEM ---
-const themeColors = {
-    HEADER_BG: "bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800/50 sticky top-0 z-40",
-    CARD_BG: "bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md",
-    ICON_BOX: "bg-gradient-to-br from-indigo-500 to-blue-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20 text-white",
-    TABLE_HEADER: "bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-widest font-black h-12 whitespace-nowrap cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none",
-    TABLE_ROW: "hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-colors border-b border-slate-100 dark:border-slate-800/50 last:border-0 cursor-pointer",
-    FILTER_SELECT: "w-full sm:w-[160px] h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs",
-};
+const ITEMS_PER_PAGE = 30;
 
-const ITEMS_PER_PAGE = 25;
-
-// Helper to translate source types
 const translateType = (type: string) => {
     switch (type) {
-        case 'json': return 'Yazılı Test';
-        case 'exam': return 'Deneme Sınavı';
+        case 'json': return 'Yazılı';
+        case 'exam': return 'Deneme';
         case 'bank': return 'Soru Bankası';
-        case 'quick': return 'Hızlı Test';
+        case 'quick': return 'Hızlı';
         case 'mistake': return 'Yanlış Havuzu';
-        case 'trackedBook': return 'Kitap Takibi';
-        case 'html': return 'HTML Test';
-        case 'pdf': return 'PDF Test';
-        case 'offline': return 'Fiziksel / Harici';
+        case 'trackedBook': return 'Kitap';
+        case 'html': return 'HTML';
+        case 'pdf': return 'PDF';
+        case 'offline': return 'Fiziksel';
         default: return type;
     }
 };
+
+const typeColor = (type: string) => {
+    switch (type) {
+        case 'exam': return 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-200 dark:border-violet-800';
+        case 'bank': return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800';
+        case 'quick': return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800';
+        case 'mistake': return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800';
+        case 'trackedBook': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800';
+        default: return 'bg-slate-100 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700';
+    }
+};
+
+const SortIcon = ({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) => (
+    <span className={cn("ml-1 inline-flex flex-col", active ? "text-indigo-500" : "text-slate-300 dark:text-slate-600")}>
+        <ChevronUp className={cn("w-2.5 h-2.5 -mb-0.5", active && dir === 'asc' ? "text-indigo-500" : "")} />
+        <ChevronDown className={cn("w-2.5 h-2.5", active && dir === 'desc' ? "text-indigo-500" : "")} />
+    </span>
+);
+
+// ── Active Filter Chip ──────────────────────────────────────────────
+const FilterChip = ({ label, value, onRemove }: { label: string; value: string; onRemove: () => void }) => (
+    <span className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+        <span className="text-indigo-400 dark:text-indigo-500 font-normal">{label}:</span>
+        {value}
+        <button
+            onClick={onRemove}
+            className="ml-0.5 w-4 h-4 rounded-full flex items-center justify-center hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors"
+        >
+            <X className="w-2.5 h-2.5" />
+        </button>
+    </span>
+);
 
 export function ResultsClient() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const studentIdParam = searchParams.get('studentId');
     const { familyId, familyMembers } = useAuth();
-    
+
     const [tests, setTests] = React.useState<Test[]>([]);
     const [practiceExams, setPracticeExams] = React.useState<PracticeExam[]>([]);
     const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [selectedStudent, setSelectedStudent] = React.useState<FamilyMember | null>(null);
-    
+
+    // ── Filter state ────────────────────────────────────────────────
     const [searchTerm, setSearchTerm] = React.useState("");
     const [filterSubject, setFilterSubject] = React.useState("all");
     const [filterTopic, setFilterTopic] = React.useState("all");
     const [filterType, setFilterType] = React.useState("all");
     const [filterSubType, setFilterSubType] = React.useState("all");
     const [filterReviewStatus, setFilterReviewStatus] = React.useState("all");
-    
-    const [currentPage, setCurrentPage] = React.useState(1);
-    const [sortConfig, setSortConfig] = React.useState<{ key: keyof Test | '_date' | '_net' | '_successRate' | '_subjectName' | '_topicName' | 'title', direction: 'asc' | 'desc' }>({ key: '_date', direction: 'desc' });
+    const [filterPanelOpen, setFilterPanelOpen] = React.useState(false);
 
-    // Initial student selection
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const [sortConfig, setSortConfig] = React.useState<{
+        key: keyof Test | '_date' | '_net' | '_successRate' | '_subjectName' | '_topicName' | 'title';
+        direction: 'asc' | 'desc';
+    }>({ key: '_date', direction: 'desc' });
+
+    const searchRef = React.useRef<HTMLInputElement>(null);
+
+    // ── Keyboard shortcut: Cmd/Ctrl+K focuses search ────────────────
+    React.useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                searchRef.current?.focus();
+            }
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, []);
+
     React.useEffect(() => {
         if (familyMembers.length > 0 && !selectedStudent) {
-            const initial = studentIdParam 
-                ? familyMembers.find(m => m.id === studentIdParam) 
+            const initial = studentIdParam
+                ? familyMembers.find(m => m.id === studentIdParam)
                 : familyMembers.find(m => m.role.includes('Çocuk')) || familyMembers[0];
             setSelectedStudent(initial || familyMembers[0]);
         }
@@ -100,9 +139,8 @@ export function ResultsClient() {
         return () => { unsubTests(); unsubBooks(); unsubExams(); };
     }, [familyId, selectedStudent]);
 
-    // Data Processing
     const enrichedData = React.useMemo(() => {
-        const allTopics = trackedBooks.flatMap(b => (b.subjects || []).flatMap(s => (s.topics || []).map(t => ({...t, subjectName: s.name}))));
+        const allTopics = trackedBooks.flatMap(b => (b.subjects || []).flatMap(s => (s.topics || []).map(t => ({ ...t, subjectName: s.name }))));
 
         return tests.map(test => {
             const subjectName = getCategoryName(test);
@@ -115,7 +153,6 @@ export function ResultsClient() {
 
             let subTypeName = "Genel";
             if (test.sourceType === 'trackedBook' || test.sourceType === 'bank') {
-                // Sınav adı "Kitap Adı - Test Adı" şeklinde kaydedildiği için kitap adını buradan çekebiliriz.
                 subTypeName = test.title.split(' - ')[0] || "Genel";
             } else if (test.sourceType === 'exam' && test.sourceId) {
                 const exam = practiceExams.find(e => e.id === test.sourceId);
@@ -127,35 +164,30 @@ export function ResultsClient() {
             const incorrect = test.incorrectAnswers || 0;
             const empty = test.emptyAnswers || 0;
             const totalQuestions = correct + incorrect + empty;
-            
+
             const net = isCompleted ? (correct - (incorrect / 3)) : 0;
             const successRate = isCompleted && totalQuestions > 0 ? Math.max(0, (net / totalQuestions) * 100) : 0;
-            
-            // --- GÜÇLÜ TARİH PARSING ---
+
             let sortableDate = 0;
-            let dateDisplay = "Değerlendirilmedi";
+            let dateDisplay = "—";
 
             if (test.updatedAt) {
                 const updatedTime = new Date(test.updatedAt).getTime();
                 if (!isNaN(updatedTime)) {
                     sortableDate = updatedTime;
-                    dateDisplay = format(new Date(test.updatedAt), 'dd.MM.yyyy HH:mm', { locale: tr });
+                    dateDisplay = format(new Date(test.updatedAt), 'dd.MM.yy HH:mm', { locale: tr });
                 }
             } else if (test.assignedDate) {
                 const time = new Date(test.assignedDate).getTime();
                 if (!isNaN(time)) {
                     sortableDate = time;
-                    dateDisplay = format(new Date(test.assignedDate), 'dd.MM.yyyy', { locale: tr });
+                    dateDisplay = format(new Date(test.assignedDate), 'dd.MM.yy', { locale: tr });
                 } else {
                     try {
                         const parsed = parse(test.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-                        if (!isNaN(parsed.getTime())) {
-                            sortableDate = parsed.getTime();
-                        }
+                        if (!isNaN(parsed.getTime())) sortableDate = parsed.getTime();
                         dateDisplay = test.assignedDate;
-                    } catch (e) {
-                        dateDisplay = test.assignedDate;
-                    }
+                    } catch { dateDisplay = test.assignedDate; }
                 }
             }
 
@@ -171,34 +203,23 @@ export function ResultsClient() {
                 _translatedType: translateType(test.sourceType)
             };
         });
-    }, [tests, trackedBooks]);
+    }, [tests, trackedBooks, practiceExams]);
 
-    // Filter Options
     const { subjectOptions, topicOptions, typeOptions, subTypeOptions, stats } = React.useMemo(() => {
         const subjects = Array.from(new Set(enrichedData.map(d => d._subjectName))).sort();
-        
-        const filteredForTopics = filterSubject === 'all' 
-            ? enrichedData 
-            : enrichedData.filter(d => d._subjectName === filterSubject);
-            
+        const filteredForTopics = filterSubject === 'all' ? enrichedData : enrichedData.filter(d => d._subjectName === filterSubject);
         const topics = Array.from(new Set(filteredForTopics.map(d => d._topicName))).sort();
-        
         const types = Array.from(new Set(enrichedData.map(d => d.sourceType))).sort();
-        
-        const filteredForSubTypes = filterType === 'all'
-            ? enrichedData
-            : enrichedData.filter(d => d.sourceType === filterType);
+        const filteredForSubTypes = filterType === 'all' ? enrichedData : enrichedData.filter(d => d.sourceType === filterType);
         const subTypes = Array.from(new Set(filteredForSubTypes.map(d => d._subTypeName))).filter(s => s !== 'Genel').sort();
-        
-        const getCount = (key: string, val: any) => enrichedData.filter(d => (d as any)[key] === val).length;
-        
+
         const stats = {
             total: enrichedData.length,
             reviewed: enrichedData.filter(d => d.mistakesReviewed).length,
             unreviewed: enrichedData.filter(d => !d.mistakesReviewed).length,
-            subjects: Object.fromEntries(subjects.map(s => [s, getCount('_subjectName', s)])),
+            subjects: Object.fromEntries(subjects.map(s => [s, enrichedData.filter(d => d._subjectName === s).length])),
             topics: Object.fromEntries(topics.map(t => [t, filteredForTopics.filter(d => d._topicName === t).length])),
-            types: Object.fromEntries(types.map(t => [t, getCount('sourceType', t)])),
+            types: Object.fromEntries(types.map(t => [t, enrichedData.filter(d => d.sourceType === t).length])),
             subTypes: Object.fromEntries(subTypes.map(s => [s, filteredForSubTypes.filter(d => d._subTypeName === s).length]))
         };
 
@@ -211,46 +232,27 @@ export function ResultsClient() {
         };
     }, [enrichedData, filterSubject, filterType]);
 
-    React.useEffect(() => {
-        setFilterTopic("all");
-    }, [filterSubject]);
-
-    React.useEffect(() => {
-        setFilterSubType("all");
-    }, [filterType]);
+    React.useEffect(() => { setFilterTopic("all"); }, [filterSubject]);
+    React.useEffect(() => { setFilterSubType("all"); }, [filterType]);
 
     const filteredAndSortedData = React.useMemo(() => {
         let data = enrichedData.filter(item => {
-            const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                item._subjectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                item._topicName.toLowerCase().includes(searchTerm.toLowerCase());
-            
+            const q = searchTerm.toLowerCase();
+            const matchesSearch = !q || item.title.toLowerCase().includes(q) || item._subjectName.toLowerCase().includes(q) || item._topicName.toLowerCase().includes(q);
             const matchesSubject = filterSubject === 'all' || item._subjectName === filterSubject;
             const matchesTopic = filterTopic === 'all' || item._topicName === filterTopic;
             const matchesType = filterType === 'all' || item.sourceType === filterType;
             const matchesSubType = filterSubType === 'all' || item._subTypeName === filterSubType;
-            const matchesReview = filterReviewStatus === 'all' 
-                ? true 
-                : filterReviewStatus === 'reviewed' 
-                    ? item.mistakesReviewed 
-                    : !item.mistakesReviewed;
-
+            const matchesReview = filterReviewStatus === 'all' ? true : filterReviewStatus === 'reviewed' ? item.mistakesReviewed : !item.mistakesReviewed;
             return matchesSearch && matchesSubject && matchesTopic && matchesType && matchesSubType && matchesReview;
         });
 
         data.sort((a: any, b: any) => {
-            const valA = a[sortConfig.key];
-            const valB = b[sortConfig.key];
-
+            const valA = a[sortConfig.key], valB = b[sortConfig.key];
             if (valA === valB) return 0;
-            if (valA === null || valA === undefined) return 1;
-            if (valB === null || valB === undefined) return -1;
-
-            if (sortConfig.direction === 'asc') {
-                return valA > valB ? 1 : -1;
-            } else {
-                return valA < valB ? 1 : -1;
-            }
+            if (valA == null) return 1;
+            if (valB == null) return -1;
+            return sortConfig.direction === 'asc' ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
         });
 
         return data;
@@ -264,288 +266,465 @@ export function ResultsClient() {
     const totalPages = Math.ceil(filteredAndSortedData.length / ITEMS_PER_PAGE);
 
     const handleToggleReview = async (id: string, currentStatus?: boolean) => {
-        try {
-            await updateTest(id, { mistakesReviewed: !currentStatus });
-        } catch (error) {
-            console.error("Error updating review status:", error);
-        }
+        try { await updateTest(id, { mistakesReviewed: !currentStatus }); }
+        catch (error) { console.error(error); }
     };
 
     const handleSort = (key: any) => {
-        setSortConfig(prev => ({
-            key,
-            direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
-        }));
+        setSortConfig(prev => ({ key, direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc' }));
+        setCurrentPage(1);
     };
 
     const handleDownloadCSV = () => {
-        const headers = ["Ders", "Konu", "Tür", "Sınav Adı", "Tarih", "Doğru", "Yanlış", "Boş", "Net", "Başarı (%)"];
+        const headers = ["Ders", "Konu", "Tür", "Sınav Adı", "Tarih", "D", "Y", "B", "Net", "Başarı"];
         const rows = filteredAndSortedData.map(d => [
-            `"${d._subjectName}"`,
-            `"${d._topicName}"`,
-            `"${d._translatedType}"`,
-            `"${d.title.replace(/"/g, '""')}"`,
-            `"${d._dateStr}"`,
-            d.correctAnswers || 0,
-            d.incorrectAnswers || 0,
-            d.emptyAnswers || 0,
-            d._net.toFixed(2),
-            `"%${d._successRate.toFixed(1)}"`
+            `"${d._subjectName}"`, `"${d._topicName}"`, `"${d._translatedType}"`,
+            `"${d.title.replace(/"/g, '""')}"`, `"${d._dateStr}"`,
+            d.correctAnswers || 0, d.incorrectAnswers || 0, d.emptyAnswers || 0,
+            d._net.toFixed(2), `"%${d._successRate.toFixed(1)}"`
         ]);
-        const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `sonuclar-${selectedStudent?.name || 'ogrenci'}.csv`;
-        link.click();
+        const a = document.createElement('a');
+        a.href = url; a.download = `sonuclar-${selectedStudent?.name || 'ogrenci'}.csv`; a.click();
     };
 
     const clearFilters = () => {
-        setSearchTerm("");
-        setFilterSubject("all");
-        setFilterTopic("all");
-        setFilterType("all");
-        setFilterSubType("all");
-        setFilterReviewStatus("all");
+        setSearchTerm(""); setFilterSubject("all"); setFilterTopic("all");
+        setFilterType("all"); setFilterSubType("all"); setFilterReviewStatus("all");
         setSortConfig({ key: '_date', direction: 'desc' });
+        setCurrentPage(1);
     };
 
+    const hasActiveFilters = filterSubject !== 'all' || filterTopic !== 'all' || filterType !== 'all' || filterSubType !== 'all' || filterReviewStatus !== 'all' || !!searchTerm;
+
+    // Count how many dropdown filters are active (excluding search)
+    const activeFilterCount = [filterSubject, filterTopic, filterType, filterSubType, filterReviewStatus].filter(f => f !== 'all').length;
+
+    const TH = ({ label, sortKey, center }: { label: string; sortKey?: string; center?: boolean }) => (
+        <TableHead
+            onClick={sortKey ? () => handleSort(sortKey) : undefined}
+            className={cn(
+                "h-9 text-[10px] uppercase tracking-widest font-black text-slate-400 dark:text-slate-500 whitespace-nowrap select-none bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800",
+                sortKey && "cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors",
+                center ? "text-center" : ""
+            )}
+        >
+            <div className={cn("flex items-center gap-0.5 px-3", center && "justify-center")}>
+                {label}
+                {sortKey && <SortIcon active={sortConfig.key === sortKey} dir={sortConfig.direction} />}
+            </div>
+        </TableHead>
+    );
+
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans flex flex-col">
-            <header className={themeColors.HEADER_BG}>
-                <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500" onClick={() => router.back()}>
-                            <ArrowLeft className="h-6 w-6" />
-                        </Button>
-                        <div className={themeColors.ICON_BOX}>
-                            <ListTree className="w-6 h-6 text-white" />
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col">
+
+            {/* ── HEADER ── */}
+            <header className="bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800/60 sticky top-0 z-40">
+                <div className="max-w-screen-2xl mx-auto px-4 md:px-6 h-14 flex items-center gap-3">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0" onClick={() => router.back()}>
+                        <ArrowLeft className="h-4 w-4" />
+                    </Button>
+
+                    <div className="flex items-center gap-2.5 mr-auto">
+                        <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-1.5 rounded-lg shadow-md shadow-indigo-500/20 shrink-0">
+                            <ListTree className="w-4 h-4 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 leading-none">Sınav Raporlarım</h1>
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Detaylı başarı analizi ve geçmiş</p>
+                            <h1 className="text-sm font-black tracking-tight text-slate-900 dark:text-slate-100 leading-none">Sınav Raporları</h1>
+                            <p className="text-[10px] text-slate-400 mt-0.5 leading-none">
+                                {loading ? "Yükleniyor..." : `${filteredAndSortedData.length} / ${stats.total} sonuç`}
+                            </p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                         {selectedStudent && (
-                            <Link href={`/education/stats?studentId=${selectedStudent.id}`}>
-                                <Button variant="outline" className="rounded-xl h-10 font-bold border-indigo-200 text-indigo-600 bg-indigo-50/50 hover:bg-indigo-600 hover:text-white transition-all">
-                                    <BarChart3 className="mr-2 h-4 w-4" /> Grafiksel Analiz
-                                </Button>
-                            </Link>
-                        )}
-                        <div className="hidden sm:flex items-center gap-2 ml-4">
-                            {familyMembers.filter(m => m.role.includes('Çocuk')).map(member => (
-                                <button key={member.id} onClick={() => { setSelectedStudent(member); setCurrentPage(1); }} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all border shrink-0", selectedStudent?.id === member.id ? "bg-indigo-600 text-white border-indigo-500 shadow-md" : "bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800")}>
-                                    {member.name}
-                                </button>
-                            ))}
-                        </div>
-                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="sm:hidden rounded-full"><User className="w-5 h-5"/></Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900">
-                                {familyMembers.filter(m => m.role.includes('Çocuk')).map(member => (
-                                    <DropdownMenuItem key={member.id} onClick={() => setSelectedStudent(member)}>{member.name}</DropdownMenuItem>
-                                ))}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                    {/* Student switcher */}
+                    <div className="hidden sm:flex items-center gap-1.5">
+                        {familyMembers.filter(m => m.role.includes('Çocuk')).map(member => (
+                            <button
+                                key={member.id}
+                                onClick={() => { setSelectedStudent(member); setCurrentPage(1); }}
+                                className={cn(
+                                    "px-3 py-1 rounded-md text-xs font-bold transition-all border",
+                                    selectedStudent?.id === member.id
+                                        ? "bg-indigo-600 text-white border-indigo-500 shadow-sm"
+                                        : "bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800 hover:border-indigo-300"
+                                )}
+                            >
+                                {member.name}
+                            </button>
+                        ))}
                     </div>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="sm:hidden h-8 w-8 rounded-lg"><User className="w-4 h-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900">
+                            {familyMembers.filter(m => m.role.includes('Çocuk')).map(member => (
+                                <DropdownMenuItem key={member.id} onClick={() => setSelectedStudent(member)}>{member.name}</DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {selectedStudent && (
+                        <Link href={`/education/stats?studentId=${selectedStudent.id}`}>
+                            <Button size="sm" variant="outline" className="h-8 rounded-lg text-xs font-bold border-indigo-200 text-indigo-600 bg-indigo-50/50 hover:bg-indigo-600 hover:text-white transition-all shrink-0">
+                                <BarChart3 className="mr-1.5 h-3.5 w-3.5" /> Grafik
+                            </Button>
+                        </Link>
+                    )}
+
+                    <Button size="sm" variant="outline" onClick={handleDownloadCSV} className="h-8 rounded-lg text-xs font-bold border-emerald-200 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-600 hover:text-white transition-all shrink-0">
+                        <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5" /> CSV
+                    </Button>
                 </div>
             </header>
 
-            <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 space-y-6">
-                
-                {/* Filters & Actions Panel */}
-                <div className={cn("rounded-[2rem] p-5 md:p-8 flex flex-col gap-6", themeColors.CARD_BG)}>
-                    <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-                        <div className="relative w-full lg:max-w-md">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                            <Input placeholder="Sınav adı ara..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-12 h-14 rounded-2xl bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 focus:bg-white dark:focus:bg-slate-900 transition-all text-sm font-medium" />
+            {/* ── SEARCH + FILTER BAR ── */}
+            <div className="bg-white dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800/60 sticky top-14 z-30">
+                <div className="max-w-screen-2xl mx-auto px-4 md:px-6 py-2.5">
+
+                    {/* Top row: search + filter toggle + clear */}
+                    <div className="flex items-center gap-2">
+                        {/* Search with keyboard hint */}
+                        <div className="relative flex-1 max-w-sm">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                            <input
+                                ref={searchRef}
+                                type="text"
+                                placeholder="Sınav, ders veya konu ara..."
+                                value={searchTerm}
+                                onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                                className="pl-8 pr-20 h-9 w-full rounded-lg text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
+                            />
+                            {searchTerm ? (
+                                <button
+                                    onClick={() => { setSearchTerm(""); setCurrentPage(1); }}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            ) : (
+                                <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 pointer-events-none">
+                                    ⌘K
+                                </kbd>
+                            )}
                         </div>
-                        <div className="flex flex-wrap gap-3 w-full lg:w-auto justify-end">
-                            <Button variant="outline" className="rounded-2xl h-14 px-6 font-bold border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" onClick={handleDownloadCSV}>
-                                <FileSpreadsheet className="mr-2 h-5 w-5 text-emerald-500" /> CSV Olarak İndir
-                            </Button>
-                        </div>
-                    </div>
 
-                    <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800/60">
-                        <div className="flex items-center gap-2 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-4">
-                            <Filter className="w-4 h-4" /> Filtreler
-                        </div>
+                        {/* Filter toggle button */}
+                        <button
+                            onClick={() => setFilterPanelOpen(p => !p)}
+                            className={cn(
+                                "h-9 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition-all",
+                                filterPanelOpen || activeFilterCount > 0
+                                    ? "bg-indigo-600 text-white border-indigo-500 shadow-sm"
+                                    : "bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-indigo-300 hover:text-indigo-600"
+                            )}
+                        >
+                            <SlidersHorizontal className="w-3.5 h-3.5" />
+                            <span>Filtrele</span>
+                            {activeFilterCount > 0 && (
+                                <span className="ml-0.5 w-4 h-4 rounded-full bg-white/25 text-white text-[10px] font-black flex items-center justify-center">
+                                    {activeFilterCount}
+                                </span>
+                            )}
+                        </button>
 
-                        <Select value={filterSubject} onValueChange={setFilterSubject}>
-                            <SelectTrigger className={cn(themeColors.FILTER_SELECT, "h-12 rounded-xl")}>
-                                <SelectValue placeholder="Ders Seçin" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white dark:bg-slate-900 rounded-xl">
-                                <SelectItem value="all" className="font-bold">Tüm Dersler ({stats.total})</SelectItem>
-                                {subjectOptions.map(s => <SelectItem key={s} value={s}>{s} ({stats.subjects[s]})</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-
-                        <Select value={filterTopic} onValueChange={setFilterTopic}>
-                            <SelectTrigger className={cn(themeColors.FILTER_SELECT, "h-12 rounded-xl")}>
-                                <SelectValue placeholder="Konu Seçin" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white dark:bg-slate-900 rounded-xl">
-                                <SelectItem value="all" className="font-bold">Tüm Konular ({filterSubject === 'all' ? stats.total : stats.subjects[filterSubject]})</SelectItem>
-                                {topicOptions.map(t => <SelectItem key={t} value={t}>{t} ({stats.topics[t]})</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-
-                        <Select value={filterType} onValueChange={setFilterType}>
-                            <SelectTrigger className={cn(themeColors.FILTER_SELECT, "h-12 rounded-xl")}>
-                                <SelectValue placeholder="Sınav Türü" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white dark:bg-slate-900 rounded-xl">
-                                <SelectItem value="all" className="font-bold">Tüm Türler ({stats.total})</SelectItem>
-                                {typeOptions.map(t => <SelectItem key={t.value} value={t.value}>{t.label} ({stats.types[t.value]})</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-
-                        {subTypeOptions.length > 0 && (
-                            <Select value={filterSubType} onValueChange={setFilterSubType}>
-                                <SelectTrigger className={cn(themeColors.FILTER_SELECT, "h-12 rounded-xl")}>
-                                    <SelectValue placeholder="Alt Kategori" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white dark:bg-slate-900 rounded-xl">
-                                    <SelectItem value="all" className="font-bold">Tüm Alt Kategoriler ({filterType === 'all' ? stats.total : stats.types[filterType]})</SelectItem>
-                                    {subTypeOptions.map(t => <SelectItem key={t} value={t}>{t} ({stats.subTypes[t]})</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        )}
-
-                        <Select value={filterReviewStatus} onValueChange={setFilterReviewStatus}>
-                            <SelectTrigger className={cn(themeColors.FILTER_SELECT, "h-12 rounded-xl")}>
-                                <SelectValue placeholder="İnceleme Durumu" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white dark:bg-slate-900 rounded-xl">
-                                <SelectItem value="all" className="font-bold">Tümü ({stats.total})</SelectItem>
-                                <SelectItem value="reviewed" className="font-bold">İncelendi ({stats.reviewed})</SelectItem>
-                                <SelectItem value="unreviewed" className="font-bold">İncelenmedi ({stats.unreviewed})</SelectItem>
-                            </SelectContent>
-                        </Select>
-
-                        {(filterSubject !== 'all' || filterTopic !== 'all' || filterType !== 'all' || filterSubType !== 'all' || filterReviewStatus !== 'all' || searchTerm) && (
-                            <Button variant="ghost" onClick={clearFilters} className="h-12 px-5 ml-auto text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl font-bold transition-colors">
-                                <RotateCcw className="mr-2 w-4 h-4" /> Temizle
-                            </Button>
+                        {/* Clear all — only visible when filters are active */}
+                        {hasActiveFilters && (
+                            <button
+                                onClick={clearFilters}
+                                className="h-9 px-3 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-rose-200 dark:border-rose-900 flex items-center gap-1.5 transition-colors"
+                            >
+                                <RotateCcw className="w-3 h-3" />
+                                <span className="hidden sm:inline">Sıfırla</span>
+                            </button>
                         )}
                     </div>
+
+                    {/* Expandable filter panel */}
+                    {filterPanelOpen && (
+                        <div className="mt-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-wrap gap-2">
+                            {/* Ders */}
+                            <div className="flex flex-col gap-1">
+                                <span className="text-[10px] uppercase tracking-widest font-black text-slate-400">Ders</span>
+                                <Select value={filterSubject} onValueChange={v => { setFilterSubject(v); setCurrentPage(1); }}>
+                                    <SelectTrigger className="h-8 w-[160px] rounded-lg text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 font-medium">
+                                        <SelectValue placeholder="Tüm Dersler" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white dark:bg-slate-900 rounded-xl text-xs">
+                                        <SelectItem value="all" className="font-bold text-xs">Tüm Dersler ({stats.total})</SelectItem>
+                                        {subjectOptions.map(s => (
+                                            <SelectItem key={s} value={s} className="text-xs">{s} ({stats.subjects[s]})</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Konu */}
+                            <div className="flex flex-col gap-1">
+                                <span className="text-[10px] uppercase tracking-widest font-black text-slate-400">Konu</span>
+                                <Select value={filterTopic} onValueChange={v => { setFilterTopic(v); setCurrentPage(1); }}>
+                                    <SelectTrigger className="h-8 w-[160px] rounded-lg text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 font-medium">
+                                        <SelectValue placeholder="Tüm Konular" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white dark:bg-slate-900 rounded-xl text-xs">
+                                        <SelectItem value="all" className="font-bold text-xs">Tüm Konular</SelectItem>
+                                        {topicOptions.map(t => (
+                                            <SelectItem key={t} value={t} className="text-xs">{t} ({stats.topics[t]})</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Tür */}
+                            <div className="flex flex-col gap-1">
+                                <span className="text-[10px] uppercase tracking-widest font-black text-slate-400">Tür</span>
+                                <Select value={filterType} onValueChange={v => { setFilterType(v); setCurrentPage(1); }}>
+                                    <SelectTrigger className="h-8 w-[140px] rounded-lg text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 font-medium">
+                                        <SelectValue placeholder="Tüm Türler" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white dark:bg-slate-900 rounded-xl text-xs">
+                                        <SelectItem value="all" className="font-bold text-xs">Tüm Türler ({stats.total})</SelectItem>
+                                        {typeOptions.map(t => (
+                                            <SelectItem key={t.value} value={t.value} className="text-xs">{t.label} ({stats.types[t.value]})</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Alt Kategori */}
+                            {subTypeOptions.length > 0 && (
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[10px] uppercase tracking-widest font-black text-slate-400">Alt Kategori</span>
+                                    <Select value={filterSubType} onValueChange={v => { setFilterSubType(v); setCurrentPage(1); }}>
+                                        <SelectTrigger className="h-8 w-[150px] rounded-lg text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 font-medium">
+                                            <SelectValue placeholder="Tümü" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white dark:bg-slate-900 rounded-xl text-xs">
+                                            <SelectItem value="all" className="font-bold text-xs">Tümü</SelectItem>
+                                            {subTypeOptions.map(t => (
+                                                <SelectItem key={t} value={t} className="text-xs">{t} ({stats.subTypes[t]})</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+
+                            {/* İnceleme Durumu */}
+                            <div className="flex flex-col gap-1">
+                                <span className="text-[10px] uppercase tracking-widest font-black text-slate-400">İnceleme</span>
+                                <Select value={filterReviewStatus} onValueChange={v => { setFilterReviewStatus(v); setCurrentPage(1); }}>
+                                    <SelectTrigger className="h-8 w-[150px] rounded-lg text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 font-medium">
+                                        <SelectValue placeholder="Tümü" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white dark:bg-slate-900 rounded-xl text-xs">
+                                        <SelectItem value="all" className="font-bold text-xs">Tümü ({stats.total})</SelectItem>
+                                        <SelectItem value="reviewed" className="text-xs">✓ İncelendi ({stats.reviewed})</SelectItem>
+                                        <SelectItem value="unreviewed" className="text-xs">— İncelenmedi ({stats.unreviewed})</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Active filter chips (always visible when filters are on, panel closed or open) */}
+                    {activeFilterCount > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                            {filterSubject !== 'all' && (
+                                <FilterChip label="Ders" value={filterSubject} onRemove={() => { setFilterSubject('all'); setCurrentPage(1); }} />
+                            )}
+                            {filterTopic !== 'all' && (
+                                <FilterChip label="Konu" value={filterTopic} onRemove={() => { setFilterTopic('all'); setCurrentPage(1); }} />
+                            )}
+                            {filterType !== 'all' && (
+                                <FilterChip label="Tür" value={translateType(filterType)} onRemove={() => { setFilterType('all'); setCurrentPage(1); }} />
+                            )}
+                            {filterSubType !== 'all' && (
+                                <FilterChip label="Alt" value={filterSubType} onRemove={() => { setFilterSubType('all'); setCurrentPage(1); }} />
+                            )}
+                            {filterReviewStatus !== 'all' && (
+                                <FilterChip
+                                    label="İnceleme"
+                                    value={filterReviewStatus === 'reviewed' ? 'İncelendi' : 'İncelenmedi'}
+                                    onRemove={() => { setFilterReviewStatus('all'); setCurrentPage(1); }}
+                                />
+                            )}
+                        </div>
+                    )}
                 </div>
+            </div>
 
-                {/* Table View */}
-                <div className={cn("rounded-[2rem] overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900")}>
+            {/* ── TABLE ── */}
+            <main className="flex-1 max-w-screen-2xl mx-auto w-full px-4 md:px-6 py-4">
+                <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
                     <div className="overflow-x-auto">
                         <Table>
                             <TableHeader>
-                                <TableRow className="hover:bg-transparent border-b border-slate-200 dark:border-slate-800">
-                                    <TableHead onClick={() => handleSort('_subjectName')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-6">Ders {sortConfig.key === '_subjectName' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
-                                    <TableHead onClick={() => handleSort('_topicName')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-6">Konu {sortConfig.key === '_topicName' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
-                                    <TableHead className={themeColors.TABLE_HEADER}><div className="px-6">Tür</div></TableHead>
-                                    <TableHead className={themeColors.TABLE_HEADER}><div className="px-6">Alt Kategori</div></TableHead>
-                                    <TableHead onClick={() => handleSort('title')} className={cn(themeColors.TABLE_HEADER, "min-w-[200px]")}><div className="flex items-center px-6">Sınav Adı {sortConfig.key === 'title' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
-                                    <TableHead onClick={() => handleSort('_date')} className={themeColors.TABLE_HEADER}><div className="flex items-center px-6">Tarih {sortConfig.key === '_date' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
-                                    <TableHead className={cn(themeColors.TABLE_HEADER, "text-center")}>D</TableHead>
-                                    <TableHead className={cn(themeColors.TABLE_HEADER, "text-center")}>Y</TableHead>
-                                    <TableHead className={cn(themeColors.TABLE_HEADER, "text-center")}>B</TableHead>
-                                    <TableHead onClick={() => handleSort('_net')} className={cn(themeColors.TABLE_HEADER, "text-center text-indigo-600 dark:text-indigo-400")}><div className="flex items-center justify-center">Net {sortConfig.key === '_net' && <ArrowUpDown className="ml-1 w-3 h-3 text-indigo-500"/>}</div></TableHead>
-                                    <TableHead onClick={() => handleSort('_successRate')} className={cn(themeColors.TABLE_HEADER, "text-center text-emerald-600 dark:text-emerald-500")}><div className="flex items-center justify-center">Başarı {sortConfig.key === '_successRate' && <ArrowUpDown className="ml-1 w-3 h-3 text-emerald-500"/>}</div></TableHead>
-                                    <TableHead className={cn(themeColors.TABLE_HEADER, "text-center")}><div className="px-6">İnceleme</div></TableHead>
+                                <TableRow className="hover:bg-transparent border-0">
+                                    <TH label="Ders" sortKey="_subjectName" />
+                                    <TH label="Konu" sortKey="_topicName" />
+                                    <TH label="Tür" />
+                                    <TH label="Sınav Adı" sortKey="title" />
+                                    <TH label="Alt Kategori" />
+                                    <TH label="Tarih" sortKey="_date" />
+                                    <TH label="D" center />
+                                    <TH label="Y" center />
+                                    <TH label="B" center />
+                                    <TH label="Net" sortKey="_net" center />
+                                    <TH label="Başarı" sortKey="_successRate" center />
+                                    <TH label="İnceleme" center />
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {paginatedData.map((test) => (
-                                    <TableRow key={test.id} className={cn(themeColors.TABLE_ROW, "group h-20")} onClick={() => router.push(`/education/${test.id}`)}>
-                                        <TableCell className="px-6 py-4 font-black text-slate-800 dark:text-slate-200">{test._subjectName}</TableCell>
-                                        <TableCell className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400">{test._topicName}</TableCell>
-                                        <TableCell className="px-6 py-4">
-                                            <Badge variant="outline" className="text-[10px] uppercase font-black px-2 py-1 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+                                {paginatedData.map((test, idx) => (
+                                    <TableRow
+                                        key={test.id}
+                                        onClick={() => router.push(`/education/${test.id}`)}
+                                        className={cn(
+                                            "h-11 cursor-pointer border-b border-slate-50 dark:border-slate-800/50 last:border-0 transition-colors group",
+                                            idx % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-slate-50/50 dark:bg-slate-900/40",
+                                            "hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30"
+                                        )}
+                                    >
+                                        <TableCell className="px-3 py-2 font-bold text-xs text-slate-800 dark:text-slate-200 whitespace-nowrap">{test._subjectName}</TableCell>
+                                        <TableCell className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400 max-w-[120px] truncate">{test._topicName}</TableCell>
+                                        <TableCell className="px-3 py-2">
+                                            <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border", typeColor(test.sourceType))}>
                                                 {test._translatedType}
-                                            </Badge>
+                                            </span>
                                         </TableCell>
-                                        <TableCell className="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[150px]">
-                                            {test._subTypeName !== 'Genel' ? test._subTypeName : '-'}
+                                        <TableCell className="px-3 py-2 font-semibold text-xs text-indigo-700 dark:text-indigo-400 group-hover:text-indigo-600 max-w-[220px] truncate transition-colors">{test.title}</TableCell>
+                                        <TableCell className="px-3 py-2 text-xs text-slate-400 truncate max-w-[120px]">
+                                            {test._subTypeName !== 'Genel' ? test._subTypeName : <span className="text-slate-300 dark:text-slate-700">—</span>}
                                         </TableCell>
-                                        <TableCell className="px-6 py-4 font-black text-sm text-indigo-700 dark:text-indigo-400 truncate max-w-[250px] group-hover:text-indigo-600 transition-colors">{test.title}</TableCell>
-                                        <TableCell className="px-6 py-4 text-xs text-slate-500 dark:text-slate-400 font-mono whitespace-nowrap font-medium">{test._dateStr}</TableCell>
-                                        
-                                        <TableCell className="px-6 py-4 text-center font-black text-emerald-600 dark:text-emerald-500 bg-emerald-50/30 dark:bg-emerald-900/10">{test.status === 'Sonuçlandı' ? test.correctAnswers : '-'}</TableCell>
-                                        <TableCell className="px-6 py-4 text-center font-black text-rose-600 dark:text-rose-500 bg-rose-50/30 dark:bg-rose-900/10">{test.status === 'Sonuçlandı' ? test.incorrectAnswers : '-'}</TableCell>
-                                        <TableCell className="px-6 py-4 text-center font-black text-slate-400 bg-slate-50/30 dark:bg-slate-900/10">{test.status === 'Sonuçlandı' ? test.emptyAnswers : '-'}</TableCell>
-                                        
-                                        <TableCell className="px-6 py-4 text-center">
+                                        <TableCell className="px-3 py-2 text-[11px] text-slate-400 font-mono whitespace-nowrap">{test._dateStr}</TableCell>
+
+                                        <TableCell className="px-3 py-2 text-center text-xs font-black text-emerald-600 dark:text-emerald-500">
+                                            {test.status === 'Sonuçlandı' ? test.correctAnswers ?? 0 : <span className="text-slate-300 dark:text-slate-600">—</span>}
+                                        </TableCell>
+                                        <TableCell className="px-3 py-2 text-center text-xs font-black text-rose-500 dark:text-rose-400">
+                                            {test.status === 'Sonuçlandı' ? test.incorrectAnswers ?? 0 : <span className="text-slate-300 dark:text-slate-600">—</span>}
+                                        </TableCell>
+                                        <TableCell className="px-3 py-2 text-center text-xs font-black text-slate-400">
+                                            {test.status === 'Sonuçlandı' ? test.emptyAnswers ?? 0 : <span className="text-slate-300 dark:text-slate-600">—</span>}
+                                        </TableCell>
+
+                                        <TableCell className="px-3 py-2 text-center">
                                             {test.status === 'Sonuçlandı' ? (
-                                                <div className="mx-auto w-fit bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-xl text-indigo-700 dark:text-indigo-300 font-black text-sm border border-indigo-100 dark:border-indigo-800 shadow-sm">
+                                                <span className="inline-block bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded-md text-indigo-700 dark:text-indigo-300 font-black text-xs border border-indigo-100 dark:border-indigo-900">
                                                     {test._net.toFixed(2)}
-                                                </div>
+                                                </span>
                                             ) : (
-                                                <Badge variant="outline" className="animate-pulse bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 text-[10px] font-bold px-2 py-1">Değerlendirme</Badge>
+                                                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900 animate-pulse">Bekliyor</span>
                                             )}
                                         </TableCell>
 
-                                        <TableCell className="px-6 py-4 text-center">
+                                        <TableCell className="px-3 py-2 text-center">
                                             {test.status === 'Sonuçlandı' ? (
-                                                <div className={cn(
-                                                    "mx-auto w-fit px-3 py-1.5 rounded-xl font-black text-sm border shadow-sm",
-                                                    test._successRate >= 75 ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800" :
-                                                    test._successRate >= 50 ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800" :
-                                                    "bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800"
+                                                <span className={cn(
+                                                    "inline-block px-2 py-0.5 rounded-md font-black text-xs border",
+                                                    test._successRate >= 75
+                                                        ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900"
+                                                        : test._successRate >= 50
+                                                        ? "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-900"
+                                                        : "bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900"
                                                 )}>
                                                     %{test._successRate.toFixed(1)}
-                                                </div>
-                                            ) : (
-                                                <span className="text-slate-400 font-bold">-</span>
-                                            )}
+                                                </span>
+                                            ) : <span className="text-slate-300 dark:text-slate-700 text-xs">—</span>}
                                         </TableCell>
-                                        <TableCell className="px-6 py-4 text-center">
+
+                                        <TableCell className="px-3 py-2 text-center" onClick={e => e.stopPropagation()}>
                                             {test.status === 'Sonuçlandı' && (
-                                                <Button 
-                                                    variant={test.mistakesReviewed ? "outline" : "default"} 
-                                                    size="sm" 
-                                                    onClick={(e) => { e.stopPropagation(); handleToggleReview(test.id, test.mistakesReviewed); }}
-                                                    className={cn("h-8 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all", test.mistakesReviewed ? "border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700" : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-500/20")}
+                                                <button
+                                                    onClick={() => handleToggleReview(test.id, test.mistakesReviewed)}
+                                                    className={cn(
+                                                        "h-6 px-2.5 rounded text-[10px] font-bold uppercase tracking-wide transition-all border",
+                                                        test.mistakesReviewed
+                                                            ? "border-emerald-200 dark:border-emerald-900 text-emerald-600 dark:text-emerald-500 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100"
+                                                            : "bg-indigo-600 hover:bg-indigo-500 text-white border-transparent shadow-sm shadow-indigo-500/20"
+                                                    )}
                                                 >
-                                                    {test.mistakesReviewed ? "İncelendi ✓" : "Kontrol Et"}
-                                                </Button>
+                                                    {test.mistakesReviewed ? "✓ İncelendi" : "Kontrol Et"}
+                                                </button>
                                             )}
                                         </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
                         </Table>
-                        {filteredAndSortedData.length === 0 && (
-                            <div className="py-20 flex flex-col items-center justify-center text-center">
-                                <Calculator className="h-12 w-12 text-slate-200 mb-4" />
-                                <h3 className="font-bold text-slate-400">Aradığınız kriterlere uygun sonuç bulunamadı.</h3>
+
+                        {filteredAndSortedData.length === 0 && !loading && (
+                            <div className="py-16 flex flex-col items-center gap-3 text-center">
+                                <Calculator className="h-10 w-10 text-slate-200 dark:text-slate-700" />
+                                <p className="text-sm font-semibold text-slate-400">Kriterlere uygun sonuç bulunamadı.</p>
+                                {hasActiveFilters && (
+                                    <button onClick={clearFilters} className="text-xs text-indigo-500 hover:underline font-bold">Filtreleri sıfırla</button>
+                                )}
                             </div>
                         )}
                     </div>
-                </div>
 
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                    <div className="flex items-center justify-center gap-4 py-8">
-                        <Button variant="ghost" className="rounded-xl h-11" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}>
-                            <ChevronLeft className="mr-2 h-5 w-5" /> Önceki
-                        </Button>
-                        <div className="flex items-center gap-2 overflow-x-auto max-w-[200px] sm:max-w-none scrollbar-hide">
-                            {Array.from({ length: totalPages }).map((_, i) => (
-                                <button key={i} onClick={() => setCurrentPage(i + 1)} className={cn("w-10 h-10 shrink-0 rounded-xl font-bold transition-all", currentPage === i + 1 ? "bg-indigo-600 text-white shadow-lg" : "hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500")}>
-                                    {i + 1}
+                    {/* ── PAGINATION ── */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
+                            <span className="text-xs text-slate-400 font-medium">
+                                {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedData.length)} / {filteredAndSortedData.length}
+                            </span>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="h-7 w-7 rounded-md flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
                                 </button>
-                            ))}
+                                {Array.from({ length: Math.min(totalPages, 9) }, (_, i) => {
+                                    let page: number;
+                                    if (totalPages <= 9) {
+                                        page = i + 1;
+                                    } else if (currentPage <= 5) {
+                                        page = i < 7 ? i + 1 : i === 7 ? -1 : totalPages;
+                                    } else if (currentPage >= totalPages - 4) {
+                                        page = i === 0 ? 1 : i === 1 ? -1 : totalPages - (8 - i);
+                                    } else {
+                                        const mid = [1, -1, currentPage - 1, currentPage, currentPage + 1, -2, totalPages];
+                                        page = mid[i] ?? -3;
+                                    }
+
+                                    if (page < 0) return (
+                                        <span key={i} className="h-7 w-7 flex items-center justify-center text-xs text-slate-400 select-none">…</span>
+                                    );
+                                    return (
+                                        <button
+                                            key={i}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={cn(
+                                                "h-7 w-7 rounded-md text-xs font-bold transition-all",
+                                                currentPage === page
+                                                    ? "bg-indigo-600 text-white shadow-sm"
+                                                    : "text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800"
+                                            )}
+                                        >
+                                            {page}
+                                        </button>
+                                    );
+                                })}
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="h-7 w-7 rounded-md flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
                         </div>
-                        <Button variant="ghost" className="rounded-xl h-11" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages}>
-                            Sonraki <ChevronRight className="ml-2 h-5 w-5" />
-                        </Button>
-                    </div>
-                )}
+                    )}
+                </div>
             </main>
         </div>
     );

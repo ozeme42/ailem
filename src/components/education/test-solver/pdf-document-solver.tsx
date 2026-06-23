@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Maximize2, Minimize2, CheckCircle2, LayoutGrid, X, ChevronRight, Check, AlertCircle, SplitSquareVertical, GripHorizontal, Pen, Eraser, Trash2, Hand, ChevronUp, ChevronDown, ZoomIn, ZoomOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import { DrawingOverlay, DrawingOverlayRef } from "./drawing-overlay";
 import { DrawingToolbar } from "./shared-components";
 
@@ -23,7 +24,9 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 interface PdfDocumentSolverProps {
     test: Test;
     studentAnswers: AnswerKey;
+    studentTextAnswers?: { [key: string]: string };
     onAnswer: (qNum: string, answer: string) => void;
+    onTextAnswer?: (qNum: string, answer: string) => void;
     onFinish: () => void;
     isReviewMode?: boolean;
 }
@@ -84,7 +87,7 @@ function LazyPdfPage({ index, containerWidth, pdfScale, isDrawingMode, drawingTo
     );
 }
 
-export function PdfDocumentSolver({ test, studentAnswers, onAnswer, onFinish, isReviewMode = false }: PdfDocumentSolverProps) {
+export function PdfDocumentSolver({ test, studentAnswers, studentTextAnswers = {}, onAnswer, onTextAnswer, onFinish, isReviewMode = false }: PdfDocumentSolverProps) {
     const [isFullScreen, setIsFullScreen] = React.useState(false);
     const [isOpticalOpenMobile, setIsOpticalOpenMobile] = React.useState(false);
     const [isSplitScreenMobile, setIsSplitScreenMobile] = React.useState(false);
@@ -252,16 +255,81 @@ export function PdfDocumentSolver({ test, studentAnswers, onAnswer, onFinish, is
     
     const renderOpticalForm = () => (
         <div className="flex flex-col h-full bg-white dark:bg-slate-900 w-full overflow-hidden">
-             <div className={cn("p-4 border-b flex justify-between items-center shrink-0", isReviewMode ? "bg-indigo-600 text-white" : "bg-slate-50 dark:bg-slate-950")}>
-                <h3 className="font-black text-sm uppercase">OPTİK {isReviewMode ? "SONUÇ" : "FORM"}</h3>
+            <div className={cn("p-4 border-b flex justify-between items-center shrink-0", isReviewMode ? "bg-indigo-600 text-white" : "bg-slate-50 dark:bg-slate-950")}>
+                <h3 className="font-black text-sm uppercase">{test.openEnded ? "AÇIK UÇLU CEVAPLAR" : (isReviewMode ? "OPTİK SONUÇ" : "OPTİK FORM")}</h3>
                 <Badge className={isReviewMode ? "bg-white/20" : "bg-indigo-600"}>
-                    {isReviewMode ? `%${test.score?.toFixed(0)}` : `${Object.keys(studentAnswers).length} / ${test.questionCount}`}
+                    {isReviewMode ? (test.openEnded ? "Sonuçlar" : `%${test.score?.toFixed(0)}`) : `${test.openEnded ? Object.keys(studentTextAnswers).length : Object.keys(studentAnswers).length} / ${test.questionCount}`}
                 </Badge>
             </div>
+            {isReviewMode && test.openEnded && (
+                <div className="bg-indigo-700 text-white px-4 py-3 flex gap-2 text-xs font-bold border-b border-indigo-500/50 shadow-inner shrink-0">
+                    <div className="flex flex-col flex-1 bg-white/10 rounded-lg p-2 items-center justify-center">
+                        <span className="text-white/60 text-[10px] uppercase mb-0.5 tracking-wider">Başarı</span>
+                        <span className="text-xl leading-none mt-1">%{((Object.values(test.studentTextAnswersEvaluation || {}).filter(e => e === 'correct').length / (test.questionCount || 1)) * 100).toFixed(0)}</span>
+                    </div>
+                    <div className="flex flex-col flex-1 bg-emerald-500/20 rounded-lg p-2 items-center justify-center border border-emerald-500/20">
+                        <span className="text-emerald-200 text-[10px] uppercase mb-0.5 tracking-wider">Doğru</span>
+                        <span className="text-emerald-50 text-xl leading-none mt-1">{Object.values(test.studentTextAnswersEvaluation || {}).filter(e => e === 'correct').length}</span>
+                    </div>
+                    <div className="flex flex-col flex-1 bg-rose-500/20 rounded-lg p-2 items-center justify-center border border-rose-500/20">
+                        <span className="text-rose-200 text-[10px] uppercase mb-0.5 tracking-wider">Yanlış</span>
+                        <span className="text-rose-50 text-xl leading-none mt-1">{Object.values(test.studentTextAnswersEvaluation || {}).filter(e => e === 'incorrect').length}</span>
+                    </div>
+                    <div className="flex flex-col flex-1 bg-slate-500/30 rounded-lg p-2 items-center justify-center border border-slate-400/20">
+                        <span className="text-slate-300 text-[10px] uppercase mb-0.5 tracking-wider">Boş</span>
+                        <span className="text-slate-50 text-xl leading-none mt-1">{Object.values(test.studentTextAnswersEvaluation || {}).filter(e => e === 'empty').length}</span>
+                    </div>
+                </div>
+            )}
             <ScrollArea className="flex-1">
                 <div className="p-4 space-y-4">
                     {Array.from({ length: qCount }).map((_, i) => {
                         const qNum = (i + 1).toString();
+                        
+                        if (test.openEnded) {
+                            const textAns = studentTextAnswers[qNum] || "";
+                            const isEvalCorrect = test.studentTextAnswersEvaluation?.[qNum] === 'correct';
+                            const isEvalWrong = test.studentTextAnswersEvaluation?.[qNum] === 'incorrect';
+                            const isEvalEmpty = test.studentTextAnswersEvaluation?.[qNum] === 'empty';
+
+                            return (
+                                <div key={qNum} className={cn(
+                                    "flex flex-col gap-2 p-3 rounded-lg border transition-colors",
+                                    isReviewMode ? (
+                                        isEvalCorrect ? "bg-emerald-500/10 border-emerald-500/20" :
+                                        isEvalWrong ? "bg-rose-500/10 border-rose-500/20" :
+                                        "bg-slate-100/50 border-slate-200"
+                                    ) : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                                )}>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-black text-slate-500">Soru {qNum}</span>
+                                        {isReviewMode && test.studentTextAnswersEvaluation?.[qNum] && (
+                                            <Badge variant="outline" className={cn(
+                                                "text-[10px]",
+                                                isEvalCorrect ? "text-emerald-600 border-emerald-600" :
+                                                isEvalWrong ? "text-rose-600 border-rose-600" :
+                                                "text-slate-500 border-slate-300"
+                                            )}>
+                                                {isEvalCorrect ? "Doğru" : isEvalWrong ? "Yanlış" : "Boş"}
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    <Textarea 
+                                        value={textAns}
+                                        onChange={(e) => onTextAnswer && onTextAnswer(qNum, e.target.value)}
+                                        disabled={isReviewMode}
+                                        placeholder="Cevabınızı buraya yazın..."
+                                        className="min-h-[80px] text-sm resize-none bg-transparent"
+                                    />
+                                    {isReviewMode && test.studentTextAnswersFeedback?.[qNum] && (
+                                        <div className="text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 p-2 rounded-md mt-1">
+                                            <strong>Geri Bildirim:</strong> {test.studentTextAnswersFeedback[qNum]}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }
+
                         const currentAns = studentAnswers[qNum] || "";
                         const correctAns = test.answerKey?.[qNum];
                         const isAnswered = !!currentAns;

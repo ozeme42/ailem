@@ -44,6 +44,7 @@ const formSchema = z.object({
     questionCount: z.coerce.number().min(1, "Soru sayısı en az 1 olmalıdır.")
   })).default([]),
   answerKey: z.record(z.string()).default({}),
+  openEnded: z.boolean().default(false),
 });
 
 type NewPdfTestFormProps = {
@@ -89,6 +90,7 @@ export function NewPdfTestForm({
       questionCount: initialData?.questionCount || 10,
       answerKey: initialData?.answerKey || {},
       sections: initialData?.sections || [],
+      openEnded: initialData?.openEnded || false,
     },
   });
 
@@ -132,6 +134,7 @@ export function NewPdfTestForm({
         fileUrl: initialData.fileUrl || "",
         questionCount: initialData.questionCount || 10,
         answerKey: initialData.answerKey || {},
+        openEnded: initialData.openEnded || false,
       });
     }
   }, [initialData, form]);
@@ -163,8 +166,10 @@ export function NewPdfTestForm({
         sourceType: 'pdf' as const,
         isArchived: (initialData && !isReassigning) ? initialData.isArchived : false,
         fileUrl: finalFileUrl,
-        answerKey: values.answerKey,
+        answerKey: values.openEnded ? {} : values.answerKey,
         topicId: values.topic || undefined,
+        openEnded: values.openEnded,
+        gradingType: values.openEnded ? 'manual' : 'auto',
       };
 
       await onFormSubmit(formattedData);
@@ -365,15 +370,49 @@ export function NewPdfTestForm({
                     </div>
 
                     <div className="flex flex-col h-[500px]">
-                         <FormLabel className={glassColors.LABEL}>Optik Cevap Anahtarı</FormLabel>
-                         <div className="flex-1 bg-black/20 border border-white/10 rounded-md overflow-hidden">
-                            <AnswerKeyForm 
-                                totalQuestions={watchedSections?.length > 0 ? watchedSections.reduce((acc, sec) => acc + Number(sec.questionCount || 0), 0) : watchedQuestionCount} 
-                                sections={watchedSections}
-                                answerKey={watchedAnswerKey} 
-                                onSave={(newKey) => form.setValue('answerKey', newKey as any)} 
-                            />
-                         </div>
+                        <div className="flex items-center justify-between mb-1.5">
+                            <FormLabel className={glassColors.LABEL.replace("mb-1.5", "")}>
+                                {form.watch("openEnded") ? "Açık Uçlu Test" : "Optik Cevap Anahtarı"}
+                            </FormLabel>
+                            <FormField control={form.control} name="openEnded" render={({ field }) => (
+                                <FormItem className="flex items-center gap-2 space-y-0">
+                                    <FormLabel className="text-xs text-slate-300 font-bold mb-0">Açık Uçlu (Manuel Puanlama)</FormLabel>
+                                    <FormControl>
+                                        <div 
+                                            className={cn(
+                                                "w-10 h-6 rounded-full p-1 cursor-pointer transition-colors relative flex items-center",
+                                                field.value ? "bg-indigo-500" : "bg-slate-700"
+                                            )}
+                                            onClick={() => field.onChange(!field.value)}
+                                        >
+                                            <div className={cn(
+                                                "w-4 h-4 bg-white rounded-full shadow-sm transition-transform",
+                                                field.value ? "translate-x-4" : "translate-x-0"
+                                            )} />
+                                        </div>
+                                    </FormControl>
+                                </FormItem>
+                            )}/>
+                        </div>
+                        <div className="flex-1 bg-black/20 border border-white/10 rounded-md overflow-hidden flex flex-col relative">
+                            {form.watch("openEnded") ? (
+                                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
+                                    <Layers className="w-12 h-12 text-indigo-500/50 mb-4" />
+                                    <p className="font-bold text-slate-300 mb-2">Açık Uçlu Test Modu Aktif</p>
+                                    <p className="text-xs">
+                                        Öğrenciler optik form yerine metin girişi yapacaklardır. 
+                                        Cevap anahtarı girmenize gerek yoktur. Test manuel olarak puanlanacaktır.
+                                    </p>
+                                </div>
+                            ) : (
+                                <AnswerKeyForm 
+                                    totalQuestions={watchedSections?.length > 0 ? watchedSections.reduce((acc, sec) => acc + Number(sec.questionCount || 0), 0) : watchedQuestionCount} 
+                                    sections={watchedSections}
+                                    answerKey={watchedAnswerKey} 
+                                    onSave={(newKey) => form.setValue('answerKey', newKey as any)} 
+                                />
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
