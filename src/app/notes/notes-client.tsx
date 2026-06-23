@@ -104,6 +104,15 @@ export function NotesClient() {
     // Data Helpers
     const currentFolder = useMemo(() => notebooks.find(n => n.id === currentFolderId) || null, [notebooks, currentFolderId]);
     
+    const displayedFolders = useMemo(() => {
+        const targetParentId = currentFolderId || 'root';
+        let filtered = notebooks.filter(n => (n.parentId || 'root') === targetParentId);
+        if (searchTerm) {
+            filtered = notebooks.filter(n => n.title.toLowerCase().includes(searchTerm.toLowerCase()));
+        }
+        return filtered.sort((a,b) => (b.createdAt ? new Date(b.createdAt).getTime() : 0) - (a.createdAt ? new Date(a.createdAt).getTime() : 0));
+    }, [notebooks, currentFolderId, searchTerm]);
+
     const displayedNotes = useMemo(() => {
         let filtered = allNotes.filter(n => n.notebookId === (currentFolderId || 'root'));
         if (searchTerm) {
@@ -111,8 +120,6 @@ export function NotesClient() {
         }
         return filtered.sort((a,b) => (b.createdAt ? new Date(b.createdAt).getTime() : 0) - (a.createdAt ? new Date(a.createdAt).getTime() : 0));
     }, [allNotes, currentFolderId, searchTerm]);
-
-    const displayedFolders = notebooks.filter(n => n.parentId !== 'root'); // Flatten for mobile chips
 
     // Actions
     const handleFolderSubmit = async (data: Omit<NotebookType, 'id' | 'familyId' | 'createdAt' | 'ownerId'>) => {
@@ -209,15 +216,34 @@ export function NotesClient() {
             {/* Folder Pills (Categories) */}
             <div className="px-4 md:px-8 pb-4 shrink-0 overflow-x-auto [scrollbar-width:none] max-w-7xl mx-auto w-full">
                 <div className="flex gap-3">
-                    <button onClick={() => setCurrentFolderId(null)}
-                        className={cn("px-6 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all shadow-sm active:scale-95 flex items-center gap-2", 
-                            currentFolderId === null 
-                            ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md" 
-                            : "bg-white text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-100 dark:border-slate-700/50 hover:bg-slate-50"
-                        )}
-                    >
-                        <FileText className="w-4 h-4" /> Tümü
-                    </button>
+                    {currentFolderId !== null ? (
+                        <button onClick={() => setCurrentFolderId(currentFolder?.parentId && currentFolder.parentId !== 'root' ? currentFolder.parentId : null)}
+                            className="px-4 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all bg-white text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 active:scale-95 flex items-center gap-1 shadow-sm"
+                        >
+                            <ChevronLeft className="w-4 h-4" /> Geri
+                        </button>
+                    ) : (
+                        <button onClick={() => setCurrentFolderId(null)}
+                            className="px-6 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all shadow-md active:scale-95 flex items-center gap-2 bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+                        >
+                            <FileText className="w-4 h-4" /> Tümü
+                        </button>
+                    )}
+
+                    {currentFolderId !== null && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button className="px-6 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all shadow-md shadow-pink-500/30 active:scale-95 flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-400 text-white">
+                                    <Folder className="w-4 h-4" /> {currentFolder?.title}
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="center" className="rounded-2xl border-0 shadow-xl min-w-[140px] p-2">
+                                <DropdownMenuItem onClick={() => { setEditingNotebook(currentFolder); setIsFolderFormOpen(true); }} className="rounded-xl font-bold py-2.5">Düzenle</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDeleteFolder(currentFolder!.id)} className="rounded-xl font-bold py-2.5 text-rose-500">Sil</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
+
                     {displayedFolders.map(f => (
                         <DropdownMenu key={f.id}>
                             <DropdownMenuTrigger asChild>
@@ -225,11 +251,7 @@ export function NotesClient() {
                                         if (f.password) { setPasswordPrompt({ folderId: f.id, expected: f.password }); } 
                                         else { setCurrentFolderId(f.id); }
                                     }}
-                                    className={cn("px-6 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all shadow-sm active:scale-95 flex items-center gap-2", 
-                                        currentFolderId === f.id 
-                                        ? "bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-pink-500/30 shadow-md" 
-                                        : "bg-white text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-100 dark:border-slate-700/50 hover:bg-slate-50"
-                                    )}
+                                    className="px-6 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all shadow-sm active:scale-95 flex items-center gap-2 bg-white text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-100 dark:border-slate-700/50 hover:bg-slate-50"
                                 >
                                     <Folder className="w-4 h-4" /> {f.title}
                                 </button>
