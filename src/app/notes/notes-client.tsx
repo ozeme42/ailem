@@ -5,14 +5,13 @@ import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType, Note } from '@/lib/data';
 import { onNotebooksUpdate, addNotebook, deleteNotebook, updateNotebook, onNotesUpdate, updateNoteInSection, addNoteToSection, deleteNoteFromSection } from '@/lib/dataService';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Edit, Search, MoreVertical, Folder, ChevronLeft, CalendarClock, PenLine, GripVertical, Check } from 'lucide-react';
+import { Plus, Trash2, Edit, Search, MoreVertical, Folder, ChevronLeft, CalendarClock, PenLine, GripVertical, Check, FolderOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from '@/components/ui/dialog';
 import { NewNotebookForm } from '@/components/new-notebook-form';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -31,36 +30,25 @@ import {
   DragOverlay,
   defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-// --- TASARIM SABİTLERİ ---
+// --- TASARIM SABİTLERİ (SAMSUNG NOTES STİLİ) ---
 const notebookThemes = [
-    { bg: "bg-rose-50 dark:bg-rose-950/30", hover: "hover:bg-rose-100 dark:hover:bg-rose-900/40", text: "text-rose-700 dark:text-rose-300", border: "border-rose-200/60 dark:border-rose-800/50", icon: "text-rose-500 dark:text-rose-400", meta: "text-rose-600/60 dark:text-rose-400/60" },
-    { bg: "bg-blue-50 dark:bg-blue-950/30", hover: "hover:bg-blue-100 dark:hover:bg-blue-900/40", text: "text-blue-700 dark:text-blue-300", border: "border-blue-200/60 dark:border-blue-800/50", icon: "text-blue-500 dark:text-blue-400", meta: "text-blue-600/60 dark:text-blue-400/60" },
-    { bg: "bg-emerald-50 dark:bg-emerald-950/30", hover: "hover:bg-emerald-100 dark:hover:bg-emerald-900/40", text: "text-emerald-700 dark:text-emerald-300", border: "border-emerald-200/60 dark:border-emerald-800/50", icon: "text-emerald-500 dark:text-emerald-400", meta: "text-emerald-600/60 dark:text-emerald-400/60" },
-    { bg: "bg-amber-50 dark:bg-amber-950/30", hover: "hover:bg-amber-100 dark:hover:bg-amber-900/40", text: "text-amber-700 dark:text-amber-300", border: "border-amber-200/60 dark:border-amber-800/50", icon: "text-amber-500 dark:text-amber-400", meta: "text-amber-600/60 dark:text-amber-400/60" },
-    { bg: "bg-violet-50 dark:bg-violet-950/30", hover: "hover:bg-violet-100 dark:hover:bg-violet-900/40", text: "text-violet-700 dark:text-violet-300", border: "border-violet-200/60 dark:border-violet-800/50", icon: "text-violet-500 dark:text-violet-400", meta: "text-violet-600/60 dark:text-violet-400/60" },
-    { bg: "bg-slate-50 dark:bg-slate-900/50", hover: "hover:bg-slate-100 dark:hover:bg-slate-800/60", text: "text-slate-700 dark:text-slate-300", border: "border-slate-200/60 dark:border-slate-700/50", icon: "text-slate-500 dark:text-slate-400", meta: "text-slate-500/70 dark:text-slate-400/60" },
+    { bg: "bg-slate-100 dark:bg-slate-800", text: "text-slate-800 dark:text-slate-200" },
+    { bg: "bg-indigo-100 dark:bg-indigo-900/40", text: "text-indigo-800 dark:text-indigo-300" },
+    { bg: "bg-emerald-100 dark:bg-emerald-900/40", text: "text-emerald-800 dark:text-emerald-300" },
+    { bg: "bg-amber-100 dark:bg-amber-900/40", text: "text-amber-800 dark:text-amber-300" },
+    { bg: "bg-rose-100 dark:bg-rose-900/40", text: "text-rose-800 dark:text-rose-300" },
 ];
 
 const noteColors = [
-    { id: 'yellow',  class: 'bg-yellow-100 text-yellow-900 dark:bg-yellow-900/40 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800/50', preview: 'bg-yellow-400', ring: 'ring-yellow-400' },
-    { id: 'amber',   class: 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200 border-amber-200 dark:border-amber-800/50', preview: 'bg-amber-400', ring: 'ring-amber-400' },
-    { id: 'orange',  class: 'bg-orange-100 text-orange-900 dark:bg-orange-900/40 dark:text-orange-200 border-orange-200 dark:border-orange-800/50', preview: 'bg-orange-400', ring: 'ring-orange-400' },
-    { id: 'rose',    class: 'bg-rose-100 text-rose-900 dark:bg-rose-900/40 dark:text-rose-200 border-rose-200 dark:border-rose-800/50', preview: 'bg-rose-400', ring: 'ring-rose-400' },
-    { id: 'pink',    class: 'bg-pink-100 text-pink-900 dark:bg-pink-900/40 dark:text-pink-200 border-pink-200 dark:border-pink-800/50', preview: 'bg-pink-400', ring: 'ring-pink-400' },
-    { id: 'fuchsia', class: 'bg-fuchsia-100 text-fuchsia-900 dark:bg-fuchsia-900/40 dark:text-fuchsia-200 border-fuchsia-200 dark:border-fuchsia-800/50', preview: 'bg-fuchsia-400', ring: 'ring-fuchsia-400' },
-    { id: 'purple',  class: 'bg-purple-100 text-purple-900 dark:bg-purple-900/40 dark:text-purple-200 border-purple-200 dark:border-purple-800/50', preview: 'bg-purple-400', ring: 'ring-purple-400' },
-    { id: 'violet',  class: 'bg-violet-100 text-violet-900 dark:bg-violet-900/40 dark:text-violet-200 border-violet-200 dark:border-violet-800/50', preview: 'bg-violet-400', ring: 'ring-violet-400' },
-    { id: 'indigo',  class: 'bg-indigo-100 text-indigo-900 dark:bg-indigo-900/40 dark:text-indigo-200 border-indigo-200 dark:border-indigo-800/50', preview: 'bg-indigo-400', ring: 'ring-indigo-400' },
-    { id: 'blue',    class: 'bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-200 border-blue-200 dark:border-blue-800/50', preview: 'bg-blue-400', ring: 'ring-blue-400' },
-    { id: 'sky',     class: 'bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-200 border-sky-200 dark:border-sky-800/50', preview: 'bg-sky-400', ring: 'ring-sky-400' },
-    { id: 'cyan',    class: 'bg-cyan-100 text-cyan-900 dark:bg-cyan-900/40 dark:text-cyan-200 border-cyan-200 dark:border-cyan-800/50', preview: 'bg-cyan-400', ring: 'ring-cyan-400' },
-    { id: 'teal',    class: 'bg-teal-100 text-teal-900 dark:bg-teal-900/40 dark:text-teal-200 border-teal-200 dark:border-teal-800/50', preview: 'bg-teal-400', ring: 'ring-teal-400' },
-    { id: 'emerald', class: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/50', preview: 'bg-emerald-400', ring: 'ring-emerald-400' },
-    { id: 'green',   class: 'bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-200 border-green-200 dark:border-green-800/50', preview: 'bg-green-400', ring: 'ring-green-400' },
-    { id: 'slate',   class: 'bg-slate-100 text-slate-900 dark:bg-slate-800/60 dark:text-slate-200 border-slate-200 dark:border-slate-700/50', preview: 'bg-slate-400', ring: 'ring-slate-400' },
+    { id: 'white',   class: 'bg-white text-slate-800 dark:bg-slate-900 dark:text-slate-200 border-slate-200 dark:border-slate-800', preview: 'bg-white border-slate-200', ring: 'ring-slate-300' },
+    { id: 'yellow',  class: 'bg-[#fff5d1] text-[#78600C] dark:bg-yellow-900/30 dark:text-yellow-200 border-[#ffe082] dark:border-yellow-800/50', preview: 'bg-[#ffe082]', ring: 'ring-yellow-400' },
+    { id: 'blue',    class: 'bg-[#e3f2fd] text-[#0C4A6E] dark:bg-sky-900/30 dark:text-sky-200 border-[#bbdefb] dark:border-sky-800/50', preview: 'bg-[#bbdefb]', ring: 'ring-sky-400' },
+    { id: 'green',   class: 'bg-[#e8f5e9] text-[#064E3B] dark:bg-emerald-900/30 dark:text-emerald-200 border-[#c8e6c9] dark:border-emerald-800/50', preview: 'bg-[#c8e6c9]', ring: 'ring-emerald-400' },
+    { id: 'pink',    class: 'bg-[#fce4ec] text-[#831843] dark:bg-pink-900/30 dark:text-pink-200 border-[#f8bbd0] dark:border-pink-800/50', preview: 'bg-[#f8bbd0]', ring: 'ring-pink-400' },
+    { id: 'purple',  class: 'bg-[#f3e5f5] text-[#4C1D95] dark:bg-purple-900/30 dark:text-purple-200 border-[#e1bee7] dark:border-purple-800/50', preview: 'bg-[#e1bee7]', ring: 'ring-purple-400' },
 ];
 
 const noteFormSchema = z.object({
@@ -132,8 +120,6 @@ export function NotesClient() {
         return filtered.sort((a,b) => (b.createdAt ? new Date(b.createdAt).getTime() : 0) - (a.createdAt ? new Date(a.createdAt).getTime() : 0));
     }, [allNotes, currentFolderId, searchTerm]);
 
-    const getNoteCount = (folderId: string) => allNotes.filter(n => n.notebookId === folderId).length;
-
     // Actions
     const handleFolderSubmit = async (data: Omit<NotebookType, 'id' | 'familyId' | 'createdAt' | 'ownerId'>) => {
         if (!user) return;
@@ -143,10 +129,10 @@ export function NotesClient() {
             
             if (editingNotebook) {
                 await updateNotebook(editingNotebook.id, payload);
-                toast({ title: 'Klasör Güncellendi!', className: "bg-indigo-100 text-indigo-800" });
+                toast({ title: 'Klasör Güncellendi!' });
             } else {
                 await addNotebook(payload);
-                toast({ title: 'Yeni Klasör Oluşturuldu!', className: "bg-emerald-100 text-emerald-800" });
+                toast({ title: 'Yeni Klasör Oluşturuldu!' });
             }
             setIsFolderFormOpen(false);
             setEditingNotebook(null);
@@ -156,8 +142,7 @@ export function NotesClient() {
     const handleDeleteFolder = async (notebookId: string) => {
         try { 
             await deleteNotebook(notebookId); 
-            // Optional: delete notes inside it, or backend handles it.
-            toast({ title: 'Klasör Silindi', className: "bg-rose-100 text-rose-800" }); 
+            toast({ title: 'Klasör Silindi' }); 
         } 
         catch (error) { toast({ title: 'Hata', variant: 'destructive' }); }
     };
@@ -203,7 +188,7 @@ export function NotesClient() {
         }
     };
 
-    // Drag and Drop implementation
+    // Drag and Drop
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
         useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
@@ -211,11 +196,7 @@ export function NotesClient() {
     );
 
     const [activeId, setActiveId] = useState<string | null>(null);
-
-    const handleDragStart = (event: any) => {
-        setActiveId(event.active.id);
-    };
-
+    const handleDragStart = (event: any) => setActiveId(event.active.id);
     const handleDragEnd = async (event: any) => {
         const { active, over } = event;
         setActiveId(null);
@@ -227,39 +208,23 @@ export function NotesClient() {
         const overIdStr = String(over.id);
 
         const isMovingNote = activeIdStr.startsWith('note-');
-        const isMovingFolder = activeIdStr.startsWith('folder-');
         const isTargetFolder = overIdStr.startsWith('folder-');
 
-        if (isTargetFolder) {
+        if (isTargetFolder && isMovingNote) {
             const targetFolderId = overIdStr.replace('folder-', '');
-            
-            if (isMovingNote) {
-                const noteId = activeIdStr.replace('note-', '');
-                const note = allNotes.find(n => n.id === noteId);
-                if (note && note.notebookId !== targetFolderId) {
-                    try {
-                        // Move note to new folder
-                        await deleteNoteFromSection(noteId); // Delete from old
-                        await addNoteToSection(familyId!, targetFolderId, 'default', {
-                            title: note.title,
-                            content: note.content,
-                            color: note.color,
-                        });
-                        toast({ title: "Not taşındı" });
-                    } catch (e) {
-                        toast({ title: 'Taşıma başarısız', variant: 'destructive' });
-                    }
-                }
-            } else if (isMovingFolder) {
-                const folderId = activeIdStr.replace('folder-', '');
-                if (folderId !== targetFolderId) {
-                    try {
-                        // Move folder into folder
-                        await updateNotebook(folderId, { parentId: targetFolderId });
-                        toast({ title: "Klasör taşındı" });
-                    } catch (e) {
-                        toast({ title: 'Taşıma başarısız', variant: 'destructive' });
-                    }
+            const noteId = activeIdStr.replace('note-', '');
+            const note = allNotes.find(n => n.id === noteId);
+            if (note && note.notebookId !== targetFolderId) {
+                try {
+                    await deleteNoteFromSection(noteId);
+                    await addNoteToSection(familyId!, targetFolderId, 'default', {
+                        title: note.title,
+                        content: note.content,
+                        color: note.color,
+                    });
+                    toast({ title: "Not klasöre taşındı" });
+                } catch (e) {
+                    toast({ title: 'Taşıma başarısız', variant: 'destructive' });
                 }
             }
         }
@@ -271,80 +236,72 @@ export function NotesClient() {
     ];
 
     return (
-        <div className="flex h-full min-h-[100dvh] flex-col bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-50 relative overflow-hidden pb-20">
-            {/* Ambient Background */}
-            <div className="fixed inset-0 z-0 pointer-events-none opacity-30 dark:opacity-10">
-                <div className="absolute top-[-10%] left-[-10%] w-[400px] h-[400px] bg-indigo-300 dark:bg-indigo-800 rounded-full blur-[100px]" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[300px] h-[300px] bg-fuchsia-300 dark:bg-fuchsia-800 rounded-full blur-[100px]" />
-            </div>
-
-            {/* Header */}
-            <div className="px-4 py-4 border-b border-slate-200/50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl sticky top-0 z-20 shadow-sm flex-shrink-0">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" onClick={goBack} className="mr-1 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full active:scale-90">
-                            <ChevronLeft className="w-7 h-7" />
-                        </Button>
-                        {!currentFolderId && (
-                            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-xl text-white mr-2">
-                                <Folder className="w-5 h-5" />
-                            </div>
+        <div className="flex h-[100dvh] flex-col bg-[#F5F5F5] dark:bg-[#000000] font-sans text-[#212121] dark:text-[#FAFAFA] relative overflow-hidden">
+            
+            {/* Header - Samsung Notes Style (Big, Clean) */}
+            <div className="pt-12 md:pt-16 px-6 pb-2 shrink-0 bg-[#F5F5F5] dark:bg-[#000000] z-20">
+                <div className="max-w-7xl mx-auto flex flex-col gap-4">
+                    <div className="flex items-center gap-1">
+                        {currentFolderId && (
+                            <Button variant="ghost" size="icon" onClick={goBack} className="rounded-full -ml-3 mr-2 active:scale-95 text-[#212121] dark:text-[#FAFAFA]">
+                                <ChevronLeft className="w-8 h-8" />
+                            </Button>
                         )}
-                        <h1 className="text-xl md:text-2xl font-black tracking-tight text-slate-900 dark:text-white truncate max-w-[200px] md:max-w-md">
-                            {currentFolder ? currentFolder.title : "Notlarım"}
+                        <h1 className="text-3xl md:text-4xl font-[800] tracking-tight truncate flex-1">
+                            {currentFolder ? currentFolder.title : "Tüm notlar"}
                         </h1>
-                    </div>
-
-                    <div className="flex items-center relative group w-1/3 md:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500" />
-                        <Input
-                            placeholder="Ara..."
-                            autoComplete="off"
-                            className="pl-9 h-10 bg-slate-100/50 border-slate-200 focus:bg-white rounded-full text-sm shadow-inner"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                        <Button variant="ghost" size="icon" className="rounded-full active:scale-95 text-[#212121] dark:text-[#FAFAFA]">
+                            <Search className="w-6 h-6" />
+                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="rounded-full active:scale-95 text-[#212121] dark:text-[#FAFAFA]">
+                                    <MoreVertical className="w-6 h-6" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 shadow-xl border-0 bg-white dark:bg-[#252525]">
+                                <DropdownMenuItem onClick={() => { setEditingNotebook(null); setIsFolderFormOpen(true); }} className="rounded-xl py-3 px-4 font-bold text-base cursor-pointer">
+                                    <Folder className="w-5 h-5 mr-3" /> Klasör oluştur
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
             </div>
 
             {/* Content Area */}
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                <div className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full relative z-10 space-y-6">
-                    
-                    <SortableContext items={dndItems} strategy={verticalListSortingStrategy}>
-                        
-                        {displayedFolders.length > 0 && (
-                            <div className="mb-6">
-                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Klasörler</h3>
-                                <div className="space-y-2">
-                                    {displayedFolders.map((folder, i) => (
-                                        <SortableFolder 
+            <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-24 w-full relative z-10 [scrollbar-width:none]">
+                <div className="max-w-7xl mx-auto space-y-6 pt-2">
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                        <SortableContext items={dndItems} strategy={rectSortingStrategy}>
+                            
+                            {/* Folders (Chips) */}
+                            {displayedFolders.length > 0 && (
+                                <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">
+                                    {currentFolderId === null && displayedFolders.map((folder, i) => (
+                                        <SortableFolderChip 
                                             key={folder.id} 
                                             folder={folder} 
                                             index={i}
-                                            noteCount={getNoteCount(folder.id)}
                                             onClick={() => {
-                                if (folder.password) {
-                                    setPasswordPrompt({ folderId: folder.id, expected: folder.password });
-                                } else {
-                                    setCurrentFolderId(folder.id);
-                                }
-                            }}
+                                                if (folder.password) {
+                                                    setPasswordPrompt({ folderId: folder.id, expected: folder.password });
+                                                } else {
+                                                    setCurrentFolderId(folder.id);
+                                                }
+                                            }}
                                             onEdit={() => { setEditingNotebook(folder); setIsFolderFormOpen(true); }}
                                             onDelete={() => handleDeleteFolder(folder.id)}
                                         />
                                     ))}
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {displayedNotes.length > 0 && (
-                            <div>
-                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Notlar</h3>
-                                <div className="space-y-2">
+                            {/* Notes (Grid) */}
+                            {displayedNotes.length > 0 && (
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 mt-4">
                                     {displayedNotes.map((note) => (
-                                        <SortableNote 
+                                        <SortableNoteCard 
                                             key={note.id} 
                                             note={note}
                                             onEdit={() => { setEditingNote(note); setIsNoteFormOpen(true); }}
@@ -352,156 +309,121 @@ export function NotesClient() {
                                         />
                                     ))}
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {displayedFolders.length === 0 && displayedNotes.length === 0 && (
-                            <div className="flex flex-col items-center justify-center h-[40vh] text-center px-4 opacity-70">
-                                <Folder className="w-16 h-16 text-slate-300 mb-4" />
-                                <p className="text-lg font-bold text-slate-500 mb-2">Burası şimdilik boş</p>
-                                <p className="text-sm font-medium text-slate-400">Yeni klasör veya not eklemek için sağ alttaki butonu kullanın.</p>
-                            </div>
-                        )}
+                            {displayedFolders.length === 0 && displayedNotes.length === 0 && (
+                                <div className="flex flex-col items-center justify-center h-[50vh] text-center px-4 opacity-50">
+                                    <PenLine className="w-20 h-20 text-[#212121] dark:text-[#FAFAFA] mb-6 opacity-20" strokeWidth={1} />
+                                    <p className="text-xl font-bold text-[#212121] dark:text-[#FAFAFA] mb-2">Not yok</p>
+                                    <p className="text-sm font-medium">Sağ alt köşedeki butona dokunarak ilk notunuzu oluşturun.</p>
+                                </div>
+                            )}
+                            
+                        </SortableContext>
                         
-                    </SortableContext>
+                        <DragOverlay dropAnimation={defaultDropAnimationSideEffects({ duration: 250 })}>
+                            {activeId ? (
+                                activeId.startsWith('folder-') ? (
+                                    <div className="px-4 py-2 bg-indigo-500 rounded-full shadow-2xl opacity-90 scale-105 flex items-center gap-2 text-white">
+                                        <Folder className="w-4 h-4" /> Klasör...
+                                    </div>
+                                ) : (
+                                    <div className="w-40 h-40 bg-white rounded-3xl shadow-2xl border border-slate-200 opacity-90 scale-105">
+                                    </div>
+                                )
+                            ) : null}
+                        </DragOverlay>
+
+                    </DndContext>
                 </div>
-
-                <DragOverlay dropAnimation={defaultDropAnimationSideEffects({ duration: 250 })}>
-                    {activeId ? (
-                        activeId.startsWith('folder-') ? (
-                            <div className="p-4 bg-white rounded-2xl shadow-2xl border-2 border-indigo-500 opacity-90 scale-105 flex items-center gap-3">
-                                <Folder className="w-6 h-6 text-indigo-500" />
-                                <span className="font-bold">Taşınıyor...</span>
-                            </div>
-                        ) : (
-                            <div className="p-4 bg-[#FFF9C4] rounded-2xl shadow-2xl border-2 border-amber-500 opacity-90 scale-105">
-                                <span className="font-bold text-amber-900">Not taşınıyor...</span>
-                            </div>
-                        )
-                    ) : null}
-                </DragOverlay>
-
-            </DndContext>
-
-            {/* Floating Action Button */}
-            <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 md:bottom-8 md:right-8 z-[60]">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button className="rounded-full w-14 h-14 md:w-16 md:h-16 shadow-xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center border border-white/20 active:scale-95 transition-transform">
-                            <Plus className="h-7 w-7 md:h-8 md:w-8" strokeWidth={2.5}/>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" sideOffset={10} className="w-48 rounded-2xl bg-white p-2 shadow-2xl border border-slate-100">
-                        <DropdownMenuItem onClick={() => { setEditingNote(null); noteForm.reset({ title: "", content: "", color: noteColors[0].class, notebookId: currentFolderId || 'root' }); setIsNoteFormOpen(true); }} className="rounded-xl py-3 px-4 font-bold text-slate-700 focus:bg-slate-50 focus:text-indigo-600 cursor-pointer text-base">
-                            <PenLine className="w-5 h-5 mr-3" /> Yeni Not
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator className="my-1 bg-slate-100" />
-                        <DropdownMenuItem onClick={() => { setEditingNotebook(null); setIsFolderFormOpen(true); }} className="rounded-xl py-3 px-4 font-bold text-slate-700 focus:bg-slate-50 focus:text-indigo-600 cursor-pointer text-base">
-                            <Folder className="w-5 h-5 mr-3" /> Yeni Klasör
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
             </div>
 
-            {/* Forms */}
-            <Dialog open={isFolderFormOpen} onOpenChange={(open) => { if (!open) setEditingNotebook(null); setIsFolderFormOpen(open); }}>
-                <DialogContent className="w-[95%] sm:max-w-md bg-white rounded-[2rem] p-6 shadow-2xl border-none">
-                    <DialogHeader className="mb-4">
-                        <DialogTitle className="text-xl font-black">
-                            {editingNotebook ? "Klasörü Düzenle" : "Yeni Klasör"}
-                        </DialogTitle>
-                    </DialogHeader>
-                    <NewNotebookForm 
-                        onSubmit={handleFolderSubmit} 
-                        initialData={editingNotebook} 
-                        availableFolders={notebooks}
-                        currentFolderId={currentFolderId}
-                    />
-                </DialogContent>
-            </Dialog>
+            {/* FAB */}
+            <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50">
+                <Button onClick={() => { setEditingNote(null); noteForm.reset({ title: "", content: "", color: noteColors[0].class, notebookId: currentFolderId || 'root' }); setIsNoteFormOpen(true); }} 
+                    className="rounded-[1.5rem] w-16 h-16 shadow-lg bg-[#E0E0E0] hover:bg-[#D6D6D6] dark:bg-[#323232] dark:hover:bg-[#404040] text-[#212121] dark:text-[#FAFAFA] flex items-center justify-center active:scale-90 transition-transform">
+                    <PenLine className="h-6 w-6" strokeWidth={2}/>
+                </Button>
+            </div>
 
+            {/* Editor Dialog */}
             <Dialog open={isNoteFormOpen} onOpenChange={(open) => { if (!open) setEditingNote(null); setIsNoteFormOpen(open); }}>
-                <DialogContent className="w-full h-[100dvh] max-w-none m-0 p-0 border-none flex flex-col z-[70] animate-in slide-in-from-bottom-full duration-300 md:rounded-none bg-transparent [&>button]:hidden">
+                <DialogContent className="w-full h-[100dvh] max-w-none m-0 p-0 border-0 flex flex-col z-[70] animate-in slide-in-from-bottom-full duration-300 md:rounded-none bg-[#F5F5F5] dark:bg-[#000000] [&>button]:hidden">
                     <DialogTitle className="sr-only">Not Düzenleyici</DialogTitle>
                     <Form {...noteForm}>
-                        <form onSubmit={noteForm.handleSubmit(handleSaveNote)} className={cn("flex flex-col h-full w-full transition-colors duration-500 shadow-2xl", noteForm.watch('color') || noteColors[0].class)}>
+                        <form onSubmit={noteForm.handleSubmit(handleSaveNote)} className={cn("flex flex-col h-full w-full transition-colors duration-500", noteForm.watch('color') || noteColors[0].class)}>
                             
-                            <div className="h-14 px-3 flex items-center justify-between border-b border-black/5 bg-white/20 backdrop-blur-md shrink-0">
+                            {/* Editor Toolbar */}
+                            <div className="h-16 px-2 flex items-center justify-between shrink-0">
                                 <DialogClose asChild>
-                                    <Button variant="ghost" className="text-black/60 hover:bg-black/5 font-bold rounded-full px-4 active:scale-95">İptal</Button>
+                                    <Button variant="ghost" size="icon" className="text-current rounded-full active:scale-95"><ChevronLeft className="w-8 h-8" /></Button>
                                 </DialogClose>
-                                <span className="font-bold text-black/30 text-[11px] uppercase tracking-[0.2em]">
-                                    {editingNote?.id ? "Düzenle" : "Yeni Not"}
-                                </span>
-                                <Button type="submit" variant="ghost" className="text-indigo-600 hover:bg-black/5 font-black rounded-full px-4 active:scale-95">Bitti</Button>
+                                
+                                <div className="flex items-center gap-1">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="text-current rounded-full active:scale-95"><FolderOpen className="w-5 h-5" /></Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-48 rounded-2xl">
+                                            <FormField name="notebookId" control={noteForm.control} render={({ field }) => (
+                                                <FormItem>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value || currentFolderId || 'root'}>
+                                                        <FormControl>
+                                                            <SelectTrigger className="border-0 shadow-none focus:ring-0">
+                                                                <SelectValue placeholder="Klasör seç" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="root">Ana Dizin</SelectItem>
+                                                            {notebooks.filter(nb => nb.parentId !== 'root').map(nb => (
+                                                                <SelectItem key={nb.id} value={nb.id}>{nb.title}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormItem>
+                                            )} />
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+
+                                    <Button type="submit" variant="ghost" className="font-bold rounded-full text-current active:scale-95">Kaydet</Button>
+                                </div>
                             </div>
 
+                            {/* Editor Body */}
                             <div className="flex-1 overflow-y-auto w-full [scrollbar-width:none]">
-                                <div className="max-w-3xl mx-auto p-5 md:p-8 flex flex-col min-h-full">
-                                    
-                                    <div className="mb-6 flex justify-end">
-                                        <FormField name="notebookId" control={noteForm.control} render={({ field }) => (
-                                            <FormItem className="w-48">
-                                                <Select onValueChange={field.onChange} defaultValue={field.value || currentFolderId || 'root'} value={field.value || currentFolderId || 'root'}>
-                                                    <FormControl>
-                                                        <SelectTrigger className="h-8 text-xs bg-slate-100/50 dark:bg-slate-800/50 border-none rounded-full px-3 text-slate-500 font-bold focus:ring-0">
-                                                            <Folder className="w-3.5 h-3.5 mr-2 opacity-50" />
-                                                            <SelectValue placeholder="Klasör seçin" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent className="z-[100]">
-                                                        {notebooks.filter(nb => nb.parentId && nb.parentId !== 'root').map(nb => (
-                                                            <SelectItem key={nb.id} value={nb.id} className="font-medium">{nb.title}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </FormItem>
-                                        )} />
-                                    </div>
-
-                                     <FormField name="title" control={noteForm.control} render={({ field }) => (
-                                        <FormItem className="mb-4">
+                                <div className="max-w-3xl mx-auto px-6 md:px-12 pb-12 flex flex-col min-h-full">
+                                    <FormField name="title" control={noteForm.control} render={({ field }) => (
+                                        <FormItem className="mb-2">
                                             <FormControl>
-                                                <input 
-                                                    {...field} 
-                                                    autoFocus={!editingNote?.id}
-                                                    placeholder="Başlık" 
-                                                    className="w-full text-2xl md:text-3xl font-black bg-transparent outline-none border-none p-0 placeholder:opacity-50 text-inherit" 
-                                                />
+                                                <input {...field} autoFocus={!editingNote?.id} placeholder="Başlık" className="w-full text-3xl md:text-4xl font-bold bg-transparent outline-none border-none p-0 placeholder:text-current/40 text-current" />
                                             </FormControl>
                                         </FormItem>
                                     )}/>
+                                    <p className="text-xs font-medium text-current/50 mb-6 px-0.5">
+                                        {editingNote?.updatedAt ? new Date(editingNote.updatedAt).toLocaleString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute:'2-digit' }) : new Date().toLocaleString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute:'2-digit' })}
+                                    </p>
+
                                     <FormField name="content" control={noteForm.control} render={({ field }) => (
                                         <FormItem className="flex-1">
                                             <FormControl>
-                                                <textarea 
-                                                    {...field} 
-                                                    placeholder="Not yazmaya başla..." 
-                                                    className="w-full h-full min-h-[50vh] bg-transparent outline-none border-none resize-none p-0 text-base md:text-lg font-medium leading-relaxed placeholder:opacity-50 text-inherit" 
-                                                />
+                                                <textarea {...field} placeholder="Not yazın..." className="w-full h-full min-h-[60vh] bg-transparent outline-none border-none resize-none p-0 text-lg md:text-xl font-medium leading-relaxed placeholder:text-current/30 text-current" />
                                             </FormControl>
                                         </FormItem>
                                     )}/>
                                 </div>
                             </div>
 
-                            <div className="h-16 px-4 border-t border-black/5 bg-white/20 backdrop-blur-xl flex items-center justify-center shrink-0 overflow-x-auto pb-safe">
+                            {/* Color Bar */}
+                            <div className="h-16 px-4 border-t border-black/5 dark:border-white/5 flex items-center justify-center shrink-0 overflow-x-auto pb-safe">
                                 <FormField name="color" control={noteForm.control} render={({field}) => (
                                     <FormItem>
                                         <FormControl>
                                             <div className="flex items-center gap-4">
                                                 {noteColors.map(color => (
-                                                    <button 
-                                                        key={color.id} 
-                                                        type="button" 
-                                                        onClick={() => noteForm.setValue('color', color.class)} 
-                                                        className={cn(
-                                                            "w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center active:scale-90", 
-                                                            color.preview,
-                                                            noteForm.watch('color') === color.class ? cn(color.ring, "border-white ring-2 scale-110") : "border-black/5 shadow-sm"
-                                                        )}
+                                                    <button key={color.id} type="button" onClick={() => noteForm.setValue('color', color.class)} 
+                                                        className={cn("w-8 h-8 rounded-full border border-black/10 transition-all flex items-center justify-center active:scale-90", color.preview, noteForm.watch('color') === color.class ? cn(color.ring, "ring-2 ring-offset-2 scale-110") : "")}
                                                     >
-                                                        {noteForm.watch('color') === color.class && <Check className="w-4 h-4 text-black/50" strokeWidth={3} />}
+                                                        {noteForm.watch('color') === color.class && <Check className="w-4 h-4 text-black/40" strokeWidth={3} />}
                                                     </button>
                                                 ))}
                                             </div>
@@ -514,45 +436,38 @@ export function NotesClient() {
                 </DialogContent>
             </Dialog>
 
-            {/* ŞİFRE PENCERESİ */}
+            <Dialog open={isFolderFormOpen} onOpenChange={(open) => { if (!open) setEditingNotebook(null); setIsFolderFormOpen(open); }}>
+                <DialogContent className="w-[95%] sm:max-w-md bg-white dark:bg-[#252525] rounded-[2rem] p-6 shadow-2xl border-0">
+                    <DialogHeader className="mb-4 text-left">
+                        <DialogTitle className="text-xl font-bold">{editingNotebook ? "Klasörü Düzenle" : "Klasör Oluştur"}</DialogTitle>
+                    </DialogHeader>
+                    <NewNotebookForm onSubmit={handleFolderSubmit} initialData={editingNotebook} availableFolders={notebooks} currentFolderId={currentFolderId} />
+                </DialogContent>
+            </Dialog>
+
             <Dialog open={!!passwordPrompt} onOpenChange={(open) => { if (!open) { setPasswordPrompt(null); setPasswordInput(""); } }}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md border-0 rounded-[2rem] bg-white dark:bg-[#252525]">
                     <DialogHeader>
-                        <DialogTitle>Şifreli Klasör</DialogTitle>
-                        <DialogDescription>Bu klasörü açmak için şifre girmeniz gerekiyor.</DialogDescription>
+                        <DialogTitle>Kilitli Klasör</DialogTitle>
+                        <DialogDescription>Görüntülemek için şifre girin.</DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
-                        <Input 
-                            type="password" 
-                            placeholder="Şifreniz..." 
-                            autoComplete="new-password"
-                            value={passwordInput} 
-                            onChange={(e) => setPasswordInput(e.target.value)} 
+                        <Input type="password" placeholder="Şifre" autoComplete="new-password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} 
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
-                                    if (passwordInput === passwordPrompt?.expected) {
-                                        setCurrentFolderId(passwordPrompt.folderId);
-                                        setPasswordPrompt(null);
-                                        setPasswordInput("");
-                                    } else {
-                                        toast({ title: 'Hatalı Şifre', variant: 'destructive' });
-                                    }
+                                    if (passwordInput === passwordPrompt?.expected) { setCurrentFolderId(passwordPrompt.folderId); setPasswordPrompt(null); setPasswordInput(""); } 
+                                    else { toast({ title: 'Hatalı Şifre', variant: 'destructive' }); }
                                 }
                             }}
                             className="h-12 rounded-xl"
                         />
                     </div>
                     <DialogFooter>
-                        <Button variant="ghost" onClick={() => { setPasswordPrompt(null); setPasswordInput(""); }}>İptal</Button>
+                        <Button variant="ghost" className="rounded-full font-bold" onClick={() => { setPasswordPrompt(null); setPasswordInput(""); }}>İptal</Button>
                         <Button onClick={() => {
-                            if (passwordInput === passwordPrompt?.expected) {
-                                setCurrentFolderId(passwordPrompt.folderId);
-                                setPasswordPrompt(null);
-                                setPasswordInput("");
-                            } else {
-                                toast({ title: 'Hatalı Şifre', variant: 'destructive' });
-                            }
-                        }} className="bg-indigo-600 hover:bg-indigo-700 text-white">Giriş Yap</Button>
+                            if (passwordInput === passwordPrompt?.expected) { setCurrentFolderId(passwordPrompt.folderId); setPasswordPrompt(null); setPasswordInput(""); } 
+                            else { toast({ title: 'Hatalı Şifre', variant: 'destructive' }); }
+                        }} className="rounded-full font-bold">Aç</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -561,101 +476,76 @@ export function NotesClient() {
     );
 }
 
-// --- DND SORTABLE COMPONENTS ---
-function SortableFolder({ folder, index, noteCount, onClick, onEdit, onDelete }: any) {
+// --- DND SORTABLE COMPONENTS (SAMSUNG STYLE) ---
+function SortableFolderChip({ folder, index, onClick, onEdit, onDelete }: any) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: `folder-${folder.id}`,
         data: { type: 'folder', folder }
     });
     const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, zIndex: isDragging ? 50 : 1 };
-    const theme = notebookThemes[index % notebookThemes.length];
-
+    
     return (
-        <div ref={setNodeRef} style={style} {...attributes} className={cn("relative group flex items-center justify-between h-16 rounded-2xl border px-4 cursor-pointer transition-all active:scale-95 shadow-sm hover:shadow-md", theme.bg, theme.border)} onClick={onClick}>
-            
-            <div className="flex items-center gap-4 flex-1 overflow-hidden">
-                <div {...listeners} className="p-1 cursor-grab opacity-30 hover:opacity-100 shrink-0 -ml-2">
-                    <GripVertical className="w-4 h-4" />
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <div ref={setNodeRef} style={style} {...attributes} onClick={onClick}
+                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#252525] rounded-full shrink-0 cursor-pointer shadow-sm border border-slate-100 dark:border-white/5 active:scale-95 transition-transform"
+                >
+                    <div {...listeners} className="cursor-grab opacity-50 hover:opacity-100 p-1 -ml-2" onClick={e=>e.stopPropagation()}>
+                        <GripVertical className="w-3 h-3" />
+                    </div>
+                    <Folder className="w-4 h-4 text-indigo-500" />
+                    <span className="text-sm font-bold truncate max-w-[120px]">{folder.title}</span>
                 </div>
-                <div className={cn("p-2 rounded-xl bg-white shadow-sm border border-black/5 shrink-0", theme.icon)}>
-                    <Folder className="w-5 h-5" strokeWidth={2.5} />
-                </div>
-                <div className="flex-1 min-w-0 flex items-center gap-2">
-                    {folder.password && <span className="flex items-center justify-center w-5 h-5 bg-slate-100 dark:bg-slate-800 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>}
-                    <h3 className={cn("font-bold text-base leading-tight truncate", theme.text)}>{folder.title}</h3>
-                </div>
-            </div>
-
-            <div className="flex items-center gap-3 shrink-0 ml-4">
-                <p className={cn("text-[11px] font-bold uppercase tracking-wider hidden sm:block", theme.meta)}>{noteCount} İçerik</p>
-                <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 sm:bg-white/50" onClick={(e) => { e.stopPropagation(); onEdit(); }}><Edit className="w-4 h-4 text-slate-600" /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 sm:bg-white/50" onClick={(e) => { e.stopPropagation(); onDelete(); }}><Trash2 className="w-4 h-4 text-rose-500" /></Button>
-                </div>
-            </div>
-        </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="rounded-2xl w-40 p-2 shadow-xl border-0">
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }} className="rounded-xl font-bold cursor-pointer"><Edit className="w-4 h-4 mr-2 text-slate-500" /> Düzenle</DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(); }} className="rounded-xl font-bold cursor-pointer text-rose-500"><Trash2 className="w-4 h-4 mr-2" /> Sil</DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
 
-function SortableNote({ note, onEdit, onDelete }: any) {
+function SortableNoteCard({ note, onEdit, onDelete }: any) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: `note-${note.id}`,
         data: { type: 'note', note }
     });
     const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, zIndex: isDragging ? 50 : 1 };
     
-    const colorMapping: Record<string, string> = {
-        'bg-[#FFF9C4] text-[#78600C]': 'bg-yellow-100 text-yellow-900 dark:bg-yellow-900/40 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800/50',
-        'bg-[#E0F2FE] text-[#0C4A6E]': 'bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-200 border-sky-200 dark:border-sky-800/50',
-        'bg-[#DCFCE7] text-[#064E3B]': 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/50',
-        'bg-[#FCE7F3] text-[#831843]': 'bg-pink-100 text-pink-900 dark:bg-pink-900/40 dark:text-pink-200 border-pink-200 dark:border-pink-800/50',
-        'bg-[#F3E8FF] text-[#4C1D95]': 'bg-purple-100 text-purple-900 dark:bg-purple-900/40 dark:text-purple-200 border-purple-200 dark:border-purple-800/50',
-        'bg-[#F1F5F9] text-[#0F172A]': 'bg-slate-100 text-slate-900 dark:bg-slate-800/60 dark:text-slate-200 border-slate-200 dark:border-slate-700/50',
-        'border-amber-400': 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200 border-amber-200 dark:border-amber-800/50',
-        'border-sky-400': 'bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-200 border-sky-200 dark:border-sky-800/50',
-        'border-emerald-400': 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/50',
-        'border-pink-400': 'bg-pink-100 text-pink-900 dark:bg-pink-900/40 dark:text-pink-200 border-pink-200 dark:border-pink-800/50',
-        'border-purple-400': 'bg-purple-100 text-purple-900 dark:bg-purple-900/40 dark:text-purple-200 border-purple-200 dark:border-purple-800/50',
-        'border-slate-400': 'bg-slate-100 text-slate-900 dark:bg-slate-800/60 dark:text-slate-200 border-slate-200 dark:border-slate-700/50',
-    };
-    
     const rawColor = note.color || noteColors[0].class;
-    const mappedColor = colorMapping[rawColor] || rawColor; // Fallback to raw if not mapped
+    
+    // Map old format to new format if necessary
+    const isOldFormat = rawColor.includes('text-');
+    const displayClass = isOldFormat ? noteColors[0].class : rawColor; // Fallback to white if old complex class
+
     const contentText = Array.isArray(note.content) ? (note.content.find((b: any) => b.type === 'text')?.data || '') : '';
     const plainText = typeof contentText === 'string' ? contentText.replace(/<[^>]+>/g, '') : '';
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} onClick={onEdit} className={cn("relative group flex items-center h-[4.5rem] rounded-[1rem] transition-all duration-300 cursor-pointer overflow-hidden px-4 shadow-sm hover:shadow-md border active:scale-95 hover:-translate-y-0.5", mappedColor)}>
-            
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div {...listeners} className="p-1.5 cursor-grab opacity-30 hover:opacity-100 bg-transparent shrink-0 -ml-2 rounded-full" onClick={e=>e.stopPropagation()}>
-                    <GripVertical className="w-4 h-4" />
-                </div>
-                
-                <div className="flex-1 min-w-0 flex flex-col justify-center">
-                    <h3 className="font-bold text-[15px] leading-tight truncate">
-                        {note.title || "İsimsiz Not"}
-                    </h3>
-                    <p className="text-[13px] font-medium truncate opacity-70 mt-0.5">
-                        {plainText || "Boş not..."}
-                    </p>
-                </div>
-            </div>
-            
-            <div className="flex items-center gap-3 shrink-0 ml-4">
-                <div className="flex items-center gap-1.5 opacity-60 hidden sm:flex">
-                    <CalendarClock className="w-3.5 h-3.5" />
-                    <span className="text-[10px] font-bold tracking-widest uppercase">
-                        {note.updatedAt ? new Date(note.updatedAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) : ''}
-                    </span>
-                </div>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <div ref={setNodeRef} style={style} {...attributes} onClick={onEdit} 
+                    className={cn(
+                        "flex flex-col h-48 md:h-56 p-4 rounded-3xl cursor-pointer shadow-sm border border-black/5 dark:border-white/5 active:scale-95 transition-transform overflow-hidden relative group",
+                        displayClass
+                    )}
+                >
+                    <div {...listeners} className="absolute top-2 right-2 p-1.5 cursor-grab opacity-0 group-hover:opacity-40 hover:!opacity-100 transition-opacity bg-black/5 rounded-full" onClick={e=>e.stopPropagation()}>
+                        <GripVertical className="w-4 h-4" />
+                    </div>
 
-                <div className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-rose-100/50 dark:bg-rose-900/30 sm:bg-white/30 sm:dark:bg-black/20 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
-                        <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <h3 className="font-bold text-lg leading-tight mb-2 truncate pr-6">{note.title || "İsimsiz"}</h3>
+                    <p className="text-sm font-medium opacity-70 flex-1 overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical' }}>
+                        {plainText || "İçerik yok"}
+                    </p>
+                    <div className="mt-3 text-[11px] font-bold opacity-50 uppercase tracking-widest shrink-0">
+                        {note.updatedAt ? new Date(note.updatedAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) : 'YENİ'}
+                    </div>
                 </div>
-            </div>
-        </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="rounded-2xl w-40 p-2 shadow-xl border-0">
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(); }} className="rounded-xl font-bold cursor-pointer text-rose-500"><Trash2 className="w-4 h-4 mr-2" /> Sil</DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
