@@ -231,35 +231,67 @@ export function NotesClient() {
             <div className="flex-1 overflow-y-auto px-4 md:px-8 w-full relative z-10 pb-32 [scrollbar-width:none]">
                 <div className="max-w-7xl mx-auto pt-2">
                     
-                    {/* Folders as Large Shopping-Style Cards */}
-                    {(displayedFolders.length > 0 || currentFolderId === null) && (
-                        <>
-                            {currentFolderId === null && <h2 className="text-[11px] font-black tracking-widest text-slate-400 dark:text-slate-500 mb-3 ml-1 uppercase">Klasörlerım</h2>}
-                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                                {displayedFolders.map((folder, idx) => (
-                                    <NotebookCard 
-                                        key={folder.id} 
-                                        notebook={folder} 
-                                        index={idx}
-                                        onClick={() => {
-                                            if (folder.password) { setPasswordPrompt({ folderId: folder.id, expected: folder.password }); }
-                                            else { setCurrentFolderId(folder.id); }
-                                        }}
-                                        onEdit={() => { setEditingNotebook(folder); setIsFolderFormOpen(true); }}
-                                        onDelete={() => handleDeleteFolder(folder.id)}
-                                    />
-                                ))}
-                                {/* Add Folder Card */}
-                                <div onClick={() => { setEditingNotebook(null); setIsFolderFormOpen(true); }}
-                                    className="group rounded-[1.5rem] cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.97] min-h-[180px] flex flex-col justify-center items-center border-2 border-dashed border-indigo-200 dark:border-indigo-800 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/30 p-5">
-                                    <div className="p-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-full group-hover:bg-indigo-200 transition-colors mb-3">
-                                        <Plus className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                    {/* Folders */}
+                    {displayedFolders.length > 0 || currentFolderId === null ? (
+                        currentFolderId === null ? (
+                            /* Root Folders as Large Shopping-Style Cards */
+                            <>
+                                <h2 className="text-[11px] font-black tracking-widest text-slate-400 dark:text-slate-500 mb-3 ml-1 uppercase">Klasörlerım</h2>
+                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                                    {displayedFolders.map((folder, idx) => (
+                                        <NotebookCard 
+                                            key={folder.id} 
+                                            notebook={folder} 
+                                            index={idx}
+                                            onClick={() => {
+                                                if (folder.password) { setPasswordPrompt({ folderId: folder.id, expected: folder.password }); }
+                                                else { setCurrentFolderId(folder.id); }
+                                            }}
+                                            onEdit={() => { setEditingNotebook(folder); setIsFolderFormOpen(true); }}
+                                            onDelete={() => handleDeleteFolder(folder.id)}
+                                        />
+                                    ))}
+                                    {/* Add Folder Card */}
+                                    <div onClick={() => { setEditingNotebook(null); setIsFolderFormOpen(true); }}
+                                        className="group rounded-[1.5rem] cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.97] min-h-[180px] flex flex-col justify-center items-center border-2 border-dashed border-indigo-200 dark:border-indigo-800 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/30 p-5">
+                                        <div className="p-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-full group-hover:bg-indigo-200 transition-colors mb-3">
+                                            <Plus className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                                        </div>
+                                        <span className="font-bold text-indigo-600 dark:text-indigo-400">Yeni Klasör</span>
                                     </div>
-                                    <span className="font-bold text-indigo-600 dark:text-indigo-400">Yeni Klasör</span>
+                                </div>
+                            </>
+                        ) : (
+                            /* Subfolders as Small Pills */
+                            <div className="overflow-x-auto [scrollbar-width:none] -mx-4 px-4 md:mx-0 md:px-0 mb-6">
+                                <div className="flex gap-2">
+                                    {displayedFolders.map(folder => (
+                                        <DropdownMenu key={folder.id}>
+                                            <DropdownMenuTrigger asChild>
+                                                <button onClick={() => {
+                                                        if (folder.password) { setPasswordPrompt({ folderId: folder.id, expected: folder.password }); }
+                                                        else { setCurrentFolderId(folder.id); }
+                                                    }}
+                                                    className="px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all shadow-sm active:scale-95 flex items-center gap-2 bg-white text-indigo-600 dark:bg-slate-800 dark:text-indigo-300 border border-indigo-100 dark:border-slate-700/50 hover:bg-indigo-50"
+                                                >
+                                                    <Folder className="w-4 h-4" /> {folder.title}
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="center" className="rounded-2xl border-0 shadow-xl min-w-[140px] p-2">
+                                                <DropdownMenuItem onClick={() => { setEditingNotebook(folder); setIsFolderFormOpen(true); }} className="rounded-xl font-bold py-2.5">Düzenle</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleDeleteFolder(folder.id)} className="rounded-xl font-bold py-2.5 text-rose-500">Sil</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    ))}
+                                    <button onClick={() => { setEditingNotebook(null); setIsFolderFormOpen(true); }}
+                                        className="px-4 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all border border-dashed border-indigo-300 text-indigo-500 hover:bg-indigo-50 active:scale-95 flex items-center"
+                                    >
+                                        <Plus className="w-4 h-4 mr-1" /> Klasör
+                                    </button>
                                 </div>
                             </div>
-                        </>
-                    )}
+                        )
+                    ) : null}
 
                     {/* Notes Grid */}
                     {displayedNotes.length > 0 ? (
