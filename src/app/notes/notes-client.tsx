@@ -5,13 +5,13 @@ import { useAuth } from '@/components/auth-provider';
 import { Notebook as NotebookType, Note } from '@/lib/data';
 import { onNotebooksUpdate, addNotebook, deleteNotebook, updateNotebook, onNotesUpdate, updateNoteInSection, addNoteToSection, deleteNoteFromSection } from '@/lib/dataService';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Edit, Search, MoreVertical, Folder, ChevronLeft, PenLine, Check, FileText } from 'lucide-react';
+import { Plus, Trash2, Edit, Search, MoreVertical, Folder, ChevronLeft, PenLine, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { NewNotebookForm } from '@/components/new-notebook-form';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -42,6 +42,15 @@ const easyColors = [
     { id: 'cyan',   class: 'bg-[#80DEEA] text-[#004D57] dark:bg-[#0097A7] dark:text-[#E0F7FA]', editor: 'bg-[#B2EBF2] dark:bg-[#006064]', preview: 'bg-[#80DEEA]', border: 'border-[#4DD0E1] dark:border-[#006064]' },
     { id: 'green',  class: 'bg-[#A5D6A7] text-[#0F4712] dark:bg-[#388E3C] dark:text-[#E8F5E9]', editor: 'bg-[#C8E6C9] dark:bg-[#1B5E20]', preview: 'bg-[#A5D6A7]', border: 'border-[#81C784] dark:border-[#1B5E20]' },
     { id: 'white',  class: 'bg-white text-slate-800 dark:bg-slate-800 dark:text-slate-100', editor: 'bg-[#F8FAFC] dark:bg-slate-900', preview: 'bg-slate-200 dark:bg-slate-700', border: 'border-slate-200 dark:border-slate-700' },
+];
+
+const FOLDER_GRADIENTS = [
+    'from-indigo-500 to-purple-600',
+    'from-emerald-400 to-teal-500',
+    'from-amber-400 to-orange-500',
+    'from-rose-400 to-pink-500',
+    'from-blue-400 to-cyan-500',
+    'from-violet-500 to-fuchsia-600',
 ];
 
 const noteFormSchema = z.object({
@@ -84,10 +93,8 @@ export function NotesClient() {
 
     useEffect(() => {
         if (editingNote) {
-            // Find which easyColor matches the saved note color (we save ID now, or fallback)
             let foundColorId = 'white';
             if (editingNote.color) {
-                // Check if it's an old class or an ID
                 const match = easyColors.find(c => c.id === editingNote.color || editingNote.color?.includes(c.id));
                 if (match) foundColorId = match.id;
             }
@@ -151,7 +158,7 @@ export function NotesClient() {
             const notePayload = {
                 title: data.title.trim() || 'İsimsiz Not',
                 content: [{ id: '1', type: 'text' as const, data: data.content || '' }],
-                color: data.colorId || 'white', // We save the ID now for easier mapping
+                color: data.colorId || 'white',
                 notebookId: data.notebookId || currentFolderId || 'root',
             };
 
@@ -187,18 +194,25 @@ export function NotesClient() {
         return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
     };
 
-    // Dynamic Editor Background Color
     const selectedEditorColorObj = easyColors.find(c => c.id === noteForm.watch('colorId')) || easyColors.find(c => c.id === 'white');
 
     return (
         <div className="flex h-[100dvh] flex-col bg-[#F8FAFC] dark:bg-[#0F172A] font-sans text-slate-900 dark:text-slate-50 relative">
             
-            {/* Header */}
+            {/* Header with Navigation */}
             <div className="px-4 md:px-8 pt-8 pb-4 shrink-0 bg-[#F8FAFC] dark:bg-[#0F172A] z-20">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <h1 className="text-3xl md:text-4xl font-[900] tracking-tight bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
-                        Notlar
-                    </h1>
+                    <div className="flex items-center gap-3">
+                        {currentFolderId !== null && (
+                            <Button variant="ghost" size="icon" onClick={() => setCurrentFolderId(currentFolder?.parentId && currentFolder.parentId !== 'root' ? currentFolder.parentId : null)}
+                                className="h-10 w-10 rounded-full bg-white dark:bg-slate-800 shadow-sm text-slate-600 dark:text-slate-300">
+                                <ChevronLeft className="w-6 h-6" />
+                            </Button>
+                        )}
+                        <h1 className="text-3xl md:text-4xl font-[900] tracking-tight bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 bg-clip-text text-transparent truncate max-w-[200px] sm:max-w-none">
+                            {currentFolderId === null ? "Notlar" : currentFolder?.title}
+                        </h1>
+                    </div>
                     <div className="flex items-center gap-2">
                         <div className="relative group hidden sm:block w-48 lg:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -213,98 +227,70 @@ export function NotesClient() {
                 </div>
             </div>
 
-            {/* Folder Pills (Categories) */}
-            <div className="px-4 md:px-8 pb-4 shrink-0 overflow-x-auto [scrollbar-width:none] max-w-7xl mx-auto w-full">
-                <div className="flex gap-3">
-                    {currentFolderId !== null ? (
-                        <button onClick={() => setCurrentFolderId(currentFolder?.parentId && currentFolder.parentId !== 'root' ? currentFolder.parentId : null)}
-                            className="px-4 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all bg-white text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 active:scale-95 flex items-center gap-1 shadow-sm"
-                        >
-                            <ChevronLeft className="w-4 h-4" /> Geri
-                        </button>
-                    ) : (
-                        <button onClick={() => setCurrentFolderId(null)}
-                            className="px-6 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all shadow-md active:scale-95 flex items-center gap-2 bg-slate-900 text-white dark:bg-white dark:text-slate-900"
-                        >
-                            <FileText className="w-4 h-4" /> Tümü
-                        </button>
-                    )}
-
-                    {currentFolderId !== null && (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <button className="px-6 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all shadow-md shadow-pink-500/30 active:scale-95 flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-400 text-white">
-                                    <Folder className="w-4 h-4" /> {currentFolder?.title}
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="center" className="rounded-2xl border-0 shadow-xl min-w-[140px] p-2">
-                                <DropdownMenuItem onClick={() => { setEditingNotebook(currentFolder); setIsFolderFormOpen(true); }} className="rounded-xl font-bold py-2.5">Düzenle</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleDeleteFolder(currentFolder!.id)} className="rounded-xl font-bold py-2.5 text-rose-500">Sil</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
-
-                    {displayedFolders.map(f => (
-                        <DropdownMenu key={f.id}>
-                            <DropdownMenuTrigger asChild>
-                                <button onClick={() => {
-                                        if (f.password) { setPasswordPrompt({ folderId: f.id, expected: f.password }); } 
-                                        else { setCurrentFolderId(f.id); }
-                                    }}
-                                    className="px-6 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all shadow-sm active:scale-95 flex items-center gap-2 bg-white text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-100 dark:border-slate-700/50 hover:bg-slate-50"
-                                >
-                                    <Folder className="w-4 h-4" /> {f.title}
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="center" className="rounded-2xl border-0 shadow-xl min-w-[140px] p-2">
-                                <DropdownMenuItem onClick={() => { setEditingNotebook(f); setIsFolderFormOpen(true); }} className="rounded-xl font-bold py-2.5">Düzenle</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleDeleteFolder(f.id)} className="rounded-xl font-bold py-2.5 text-rose-500">Sil</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    ))}
-                    <button onClick={() => { setEditingNotebook(null); setIsFolderFormOpen(true); }}
-                        className="px-4 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all border border-dashed border-slate-300 text-slate-500 hover:bg-slate-100 active:scale-95 flex items-center"
-                    >
-                        <Plus className="w-4 h-4 mr-1" /> Klasör
-                    </button>
-                </div>
-            </div>
-
             {/* Content Area */}
             <div className="flex-1 overflow-y-auto px-4 md:px-8 w-full relative z-10 pb-32 [scrollbar-width:none]">
                 <div className="max-w-7xl mx-auto pt-2">
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                        <SortableContext items={dndItems} strategy={rectSortingStrategy}>
-                            
-                            {displayedNotes.length > 0 ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
-                                    {displayedNotes.map((note) => (
-                                        <SortableNoteCard 
-                                            key={note.id} 
-                                            note={note}
-                                            dateStr={formatDate(note.updatedAt)}
-                                            onEdit={() => { setEditingNote(note); setIsNoteFormOpen(true); }}
-                                            onDelete={() => handleDeleteNote(note.id)}
-                                        />
-                                    ))}
+                    
+                    {/* Folders as Large Shopping-Style Cards */}
+                    {(displayedFolders.length > 0 || currentFolderId === null) && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+                            {displayedFolders.map((folder, idx) => (
+                                <NotebookCard 
+                                    key={folder.id} 
+                                    notebook={folder} 
+                                    index={idx}
+                                    onClick={() => {
+                                        if (folder.password) { setPasswordPrompt({ folderId: folder.id, expected: folder.password }); }
+                                        else { setCurrentFolderId(folder.id); }
+                                    }}
+                                    onEdit={() => { setEditingNotebook(folder); setIsFolderFormOpen(true); }}
+                                    onDelete={() => handleDeleteFolder(folder.id)}
+                                />
+                            ))}
+                            {/* Add Folder Card */}
+                            <div onClick={() => { setEditingNotebook(null); setIsFolderFormOpen(true); }}
+                                className="group rounded-[1.5rem] cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.97] min-h-[140px] flex flex-col justify-center items-center border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-pink-400 hover:bg-pink-50 dark:hover:bg-slate-800/50 p-5">
+                                <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-full group-hover:bg-pink-100 dark:group-hover:bg-pink-900/30 transition-colors mb-2">
+                                    <Plus className="h-6 w-6 text-slate-400 group-hover:text-pink-500" />
                                 </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center h-[50vh] text-center">
-                                    <div className="w-24 h-24 mb-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                                        <PenLine className="w-10 h-10 text-slate-400" strokeWidth={1.5} />
+                                <span className="font-bold text-slate-500 group-hover:text-pink-600">Yeni Klasör</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Notes Grid */}
+                    {displayedNotes.length > 0 ? (
+                        <>
+                            {displayedFolders.length > 0 && <h2 className="text-lg font-black text-slate-400 dark:text-slate-500 mb-4 ml-1">Notlar</h2>}
+                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                                <SortableContext items={dndItems} strategy={rectSortingStrategy}>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
+                                        {displayedNotes.map((note) => (
+                                            <SortableNoteCard 
+                                                key={note.id} 
+                                                note={note}
+                                                dateStr={formatDate(note.updatedAt)}
+                                                onEdit={() => { setEditingNote(note); setIsNoteFormOpen(true); }}
+                                                onDelete={() => handleDeleteNote(note.id)}
+                                            />
+                                        ))}
                                     </div>
-                                    <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200 mb-2">Henüz not yok</h3>
-                                    <p className="text-slate-500 font-medium">Harika fikirlerinizi kaydetmek için alttaki renkli butona dokunun.</p>
-                                </div>
-                            )}
-                            
-                        </SortableContext>
-                        <DragOverlay dropAnimation={defaultDropAnimationSideEffects({ duration: 250 })}>
-                            {activeId ? (
-                                <div className="w-32 h-32 bg-white rounded-[24px] shadow-2xl opacity-90 scale-105"></div>
-                            ) : null}
-                        </DragOverlay>
-                    </DndContext>
+                                </SortableContext>
+                                <DragOverlay dropAnimation={defaultDropAnimationSideEffects({ duration: 250 })}>
+                                    {activeId ? (
+                                        <div className="w-32 h-32 bg-white rounded-[24px] shadow-2xl opacity-90 scale-105"></div>
+                                    ) : null}
+                                </DragOverlay>
+                            </DndContext>
+                        </>
+                    ) : (
+                        currentFolderId !== null && (
+                            <div className="flex flex-col items-center justify-center mt-12 text-center opacity-50">
+                                <PenLine className="w-12 h-12 text-slate-400 mb-4" strokeWidth={1} />
+                                <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">Bu klasörde not yok</h3>
+                            </div>
+                        )
+                    )}
                 </div>
             </div>
 
@@ -393,6 +379,48 @@ export function NotesClient() {
     );
 }
 
+// --- SHOPPING STYLE FOLDER CARD ---
+function NotebookCard({ notebook, index, onClick, onEdit, onDelete }: any) {
+    const gradient = FOLDER_GRADIENTS[index % FOLDER_GRADIENTS.length];
+    return (
+        <div onClick={onClick}
+            className={cn(
+                "group relative rounded-[1.5rem] overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl active:scale-[0.97] min-h-[140px] flex flex-col justify-between p-5",
+                `bg-gradient-to-br ${gradient}`
+            )}>
+            {/* Subtle pattern overlay */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 20% 80%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
+
+            {/* Top row */}
+            <div className="flex items-start justify-between relative z-10">
+                <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-2xl">
+                    <Folder className="h-6 w-6 text-white" />
+                </div>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon"
+                            className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30 text-white active:scale-95"
+                            onClick={e => e.stopPropagation()}>
+                            <MoreVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl shadow-xl w-44 p-1">
+                        <DropdownMenuItem onClick={e => { e.stopPropagation(); onEdit(); }} className="cursor-pointer rounded-lg gap-2"><Edit className="h-4 w-4 text-slate-500" />Düzenle</DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />
+                        <DropdownMenuItem onClick={e => { e.stopPropagation(); onDelete(); }} className="text-rose-600 hover:bg-rose-50 cursor-pointer rounded-lg gap-2"><Trash2 className="h-4 w-4" />Sil</DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+
+            {/* Bottom info */}
+            <div className="relative z-10 mt-6">
+                <h3 className="font-black text-xl text-white leading-snug drop-shadow-sm">{notebook.title}</h3>
+            </div>
+        </div>
+    );
+}
+
+
 // --- DND SORTABLE COMPONENTS ---
 function SortableNoteCard({ note, dateStr, onEdit, onDelete }: any) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -401,7 +429,6 @@ function SortableNoteCard({ note, dateStr, onEdit, onDelete }: any) {
     });
     const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, zIndex: isDragging ? 50 : 1 };
     
-    // Resolve color
     let colorObj = easyColors.find(c => c.id === note.color) || easyColors.find(c => note.color?.includes(c.id));
     if (!colorObj) colorObj = easyColors.find(c => c.id === 'white');
 
