@@ -197,10 +197,10 @@ export function NotesClient() {
     const selectedEditorColorObj = easyColors.find(c => c.id === noteForm.watch('colorId')) || easyColors.find(c => c.id === 'white');
 
     return (
-        <div className="flex h-[100dvh] flex-col bg-[#F8FAFC] dark:bg-[#0F172A] font-sans text-slate-900 dark:text-slate-50 relative">
+        <div className="flex h-[100dvh] flex-col bg-gradient-to-br from-indigo-50 via-violet-50 to-purple-50 dark:from-indigo-950/50 dark:via-violet-950/30 dark:to-slate-950 font-sans text-slate-900 dark:text-slate-50 relative">
             
             {/* Header with Navigation */}
-            <div className="px-4 md:px-8 pt-8 pb-4 shrink-0 bg-[#F8FAFC] dark:bg-[#0F172A] z-20">
+            <div className="px-4 md:px-8 pt-8 pb-4 shrink-0 z-20">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         {currentFolderId !== null && (
@@ -233,29 +233,32 @@ export function NotesClient() {
                     
                     {/* Folders as Large Shopping-Style Cards */}
                     {(displayedFolders.length > 0 || currentFolderId === null) && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
-                            {displayedFolders.map((folder, idx) => (
-                                <NotebookCard 
-                                    key={folder.id} 
-                                    notebook={folder} 
-                                    index={idx}
-                                    onClick={() => {
-                                        if (folder.password) { setPasswordPrompt({ folderId: folder.id, expected: folder.password }); }
-                                        else { setCurrentFolderId(folder.id); }
-                                    }}
-                                    onEdit={() => { setEditingNotebook(folder); setIsFolderFormOpen(true); }}
-                                    onDelete={() => handleDeleteFolder(folder.id)}
-                                />
-                            ))}
-                            {/* Add Folder Card */}
-                            <div onClick={() => { setEditingNotebook(null); setIsFolderFormOpen(true); }}
-                                className="group rounded-[1.5rem] cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.97] min-h-[140px] flex flex-col justify-center items-center border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-pink-400 hover:bg-pink-50 dark:hover:bg-slate-800/50 p-5">
-                                <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-full group-hover:bg-pink-100 dark:group-hover:bg-pink-900/30 transition-colors mb-2">
-                                    <Plus className="h-6 w-6 text-slate-400 group-hover:text-pink-500" />
+                        <>
+                            {currentFolderId === null && <h2 className="text-[11px] font-black tracking-widest text-slate-400 dark:text-slate-500 mb-3 ml-1 uppercase">Klasörlerım</h2>}
+                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                                {displayedFolders.map((folder, idx) => (
+                                    <NotebookCard 
+                                        key={folder.id} 
+                                        notebook={folder} 
+                                        index={idx}
+                                        onClick={() => {
+                                            if (folder.password) { setPasswordPrompt({ folderId: folder.id, expected: folder.password }); }
+                                            else { setCurrentFolderId(folder.id); }
+                                        }}
+                                        onEdit={() => { setEditingNotebook(folder); setIsFolderFormOpen(true); }}
+                                        onDelete={() => handleDeleteFolder(folder.id)}
+                                    />
+                                ))}
+                                {/* Add Folder Card */}
+                                <div onClick={() => { setEditingNotebook(null); setIsFolderFormOpen(true); }}
+                                    className="group rounded-[1.5rem] cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.97] min-h-[180px] flex flex-col justify-center items-center border-2 border-dashed border-indigo-200 dark:border-indigo-800 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/30 p-5">
+                                    <div className="p-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-full group-hover:bg-indigo-200 transition-colors mb-3">
+                                        <Plus className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                                    </div>
+                                    <span className="font-bold text-indigo-600 dark:text-indigo-400">Yeni Klasör</span>
                                 </div>
-                                <span className="font-bold text-slate-500 group-hover:text-pink-600">Yeni Klasör</span>
                             </div>
-                        </div>
+                        </>
                     )}
 
                     {/* Notes Grid */}
@@ -385,7 +388,7 @@ function NotebookCard({ notebook, index, onClick, onEdit, onDelete }: any) {
     return (
         <div onClick={onClick}
             className={cn(
-                "group relative rounded-[1.5rem] overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl active:scale-[0.97] min-h-[140px] flex flex-col justify-between p-5",
+                "group relative rounded-[1.5rem] overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl active:scale-[0.97] min-h-[180px] flex flex-col justify-between p-5",
                 `bg-gradient-to-br ${gradient}`
             )}>
             {/* Subtle pattern overlay */}
