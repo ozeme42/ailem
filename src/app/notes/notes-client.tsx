@@ -330,7 +330,7 @@ export function NotesClient() {
             </div>
 
             {/* Premium FAB (Floating Action Button) */}
-            <div className="fixed bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-8 z-50">
+            <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-8 z-50">
                 <Button onClick={() => { setEditingNote(null); noteForm.reset({ title: "", content: "", colorId: 'yellow', notebookId: currentFolderId || 'root' }); setIsNoteFormOpen(true); }} 
                     className="rounded-full h-16 px-8 shadow-2xl shadow-pink-500/30 bg-gradient-to-r from-pink-500 via-rose-500 to-orange-400 hover:from-pink-600 hover:to-orange-500 text-white flex items-center justify-center active:scale-90 transition-all font-black text-lg gap-2 border-none">
                     <Plus className="h-6 w-6" strokeWidth={3}/> Yeni Not
