@@ -45,6 +45,7 @@ const formSchema = z.object({
   })).default([]),
   answerKey: z.record(z.string()).default({}),
   openEnded: z.boolean().default(false),
+  startingQuestionNumber: z.coerce.number().min(1, "Başlangıç soru numarası en az 1 olmalıdır.").default(1),
 });
 
 type NewPdfTestFormProps = {
@@ -91,6 +92,7 @@ export function NewPdfTestForm({
       answerKey: initialData?.answerKey || {},
       sections: initialData?.sections || [],
       openEnded: initialData?.openEnded || false,
+      startingQuestionNumber: initialData?.startingQuestionNumber || 1,
     },
   });
 
@@ -170,6 +172,7 @@ export function NewPdfTestForm({
         topicId: values.topic || undefined,
         openEnded: values.openEnded,
         gradingType: values.openEnded ? 'manual' : 'auto',
+        startingQuestionNumber: values.startingQuestionNumber,
       };
 
       await onFormSubmit(formattedData);
@@ -316,13 +319,25 @@ export function NewPdfTestForm({
                                 ))}
                             </div>
                         ) : (
-                            <FormField control={form.control} name="questionCount" render={({ field }) => (
-                                <FormItem>
-                                    <FormControl><Input type="number" {...field} className={glassColors.INPUT_BG}/></FormControl>
-                                    <FormMessage />
-                                    <p className="text-[10px] text-slate-500 mt-1">Eğer testiniz birden fazla branş içeriyorsa (Örn: Türkçe ve Matematik), yukarıdan bölüm ekleyebilirsiniz.</p>
-                                </FormItem>
-                            )}/>
+                            <div className="flex items-center gap-4">
+                                <FormField control={form.control} name="questionCount" render={({ field }) => (
+                                    <FormItem className="flex-1">
+                                        <FormLabel className="text-[10px] text-slate-400">Soru Sayısı</FormLabel>
+                                        <FormControl><Input type="number" {...field} className={glassColors.INPUT_BG}/></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                                <FormField control={form.control} name="startingQuestionNumber" render={({ field }) => (
+                                    <FormItem className="flex-1">
+                                        <FormLabel className="text-[10px] text-slate-400">Başlangıç No</FormLabel>
+                                        <FormControl><Input type="number" {...field} className={glassColors.INPUT_BG}/></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                            </div>
+                        )}
+                        {sectionFields.length === 0 && (
+                            <p className="text-[10px] text-slate-500 mt-1">Eğer testiniz birden fazla branş içeriyorsa (Örn: Türkçe ve Matematik), yukarıdan bölüm ekleyebilirsiniz.</p>
                         )}
                     </div>
                 </div>
