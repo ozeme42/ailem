@@ -255,26 +255,11 @@ export function PdfDocumentSolver({ test, studentAnswers, studentTextAnswers = {
     
     const renderOpticalForm = () => (
         <div className="flex flex-col h-full bg-white dark:bg-slate-900 w-full overflow-hidden">
-            <div className={cn("p-3 sm:p-4 border-b flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center shrink-0", isReviewMode ? "bg-indigo-600 text-white" : "bg-slate-50 dark:bg-slate-950")}>
-                <div className="flex items-center justify-between sm:justify-start gap-4">
-                    <h3 className="font-black text-sm uppercase">{test.openEnded ? "AÇIK UÇLU CEVAPLAR" : (isReviewMode ? "OPTİK SONUÇ" : "OPTİK FORM")}</h3>
-                    <Badge className={isReviewMode ? "bg-white/20" : "bg-indigo-600"}>
-                        {isReviewMode ? (test.openEnded ? "Sonuçlar" : `%${test.score?.toFixed(0)}`) : `${test.openEnded ? Object.keys(studentTextAnswers).length : Object.keys(studentAnswers).length} / ${test.questionCount}`}
-                    </Badge>
-                </div>
-                {!isReviewMode && (
-                    <div className="flex items-center justify-between sm:justify-end gap-2 text-xs font-bold text-slate-500">
-                        <label htmlFor="startOffset">Başlangıç No:</label>
-                        <input 
-                            type="number" 
-                            id="startOffset"
-                            min="1" 
-                            value={startOffset}
-                            onChange={(e) => setStartOffset(Math.max(1, parseInt(e.target.value) || 1))}
-                            className="w-16 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-center"
-                        />
-                    </div>
-                )}
+            <div className={cn("p-4 border-b flex justify-between items-center shrink-0", isReviewMode ? "bg-indigo-600 text-white" : "bg-slate-50 dark:bg-slate-950")}>
+                <h3 className="font-black text-sm uppercase">{test.openEnded ? "AÇIK UÇLU CEVAPLAR" : (isReviewMode ? "OPTİK SONUÇ" : "OPTİK FORM")}</h3>
+                <Badge className={isReviewMode ? "bg-white/20" : "bg-indigo-600"}>
+                    {isReviewMode ? (test.openEnded ? "Sonuçlar" : `%${test.score?.toFixed(0)}`) : `${test.openEnded ? Object.keys(studentTextAnswers).length : Object.keys(studentAnswers).length} / ${test.questionCount}`}
+                </Badge>
             </div>
             {isReviewMode && test.openEnded && (
                 <div className="bg-indigo-700 text-white px-4 py-3 flex gap-2 text-xs font-bold border-b border-indigo-500/50 shadow-inner shrink-0">
