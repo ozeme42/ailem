@@ -463,6 +463,7 @@ export interface Test {
   htmlContent?: string;
   revealedSubjectIds?: string[];
   mistakesReviewed?: boolean;
+  startingQuestionNumber?: number;
 }
 
 export interface ShoppingItem {
