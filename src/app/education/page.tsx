@@ -23,6 +23,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AddOfflineResultDialog } from "@/components/education/add-offline-result-dialog";
 
+const parseSafeDate = (dateStr: string) => {
+  if (!dateStr) return new Date();
+  const isoDate = new Date(dateStr);
+  if (!isNaN(isoDate.getTime())) return isoDate;
+  return parse(dateStr, 'dd MMMM yyyy', new Date(), { locale: tr });
+};
+
 // ─── RENK SİSTEMİ (Daha Kurumsal ve Yumuşak Tonlar) ───────────────────────
 const C = {
   BLUE:   '#3B82F6', // Tailwind Blue 500
@@ -178,8 +185,8 @@ export default function EducationPage() {
     const tTasks = tests
       .filter(t => t.status === 'Atandı')
       .map(t => {
-        const dateObj = parse(t.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr });
-        const startObj = t.assignedDate ? parse(t.assignedDate, 'dd MMMM yyyy', new Date(), { locale: tr }) : dateObj;
+        const dateObj = parseSafeDate(t.dueDate);
+        const startObj = t.assignedDate ? parseSafeDate(t.assignedDate) : dateObj;
         return {
           id: t.id,
           type: 'test',
@@ -196,8 +203,8 @@ export default function EducationPage() {
     const aTasks = assignments
       .filter(a => a.status === 'assigned')
       .map(a => {
-        const dateObj = new Date(a.dueDate);
-        const startObj = a.startDate ? new Date(a.startDate) : dateObj;
+        const dateObj = parseSafeDate(a.dueDate);
+        const startObj = a.startDate ? parseSafeDate(a.startDate) : dateObj;
         const plan = studyPlans.find(p => p.id === a.studyPlanId);
         return {
           id: a.id,
@@ -233,7 +240,7 @@ export default function EducationPage() {
     let totalQ = 0, totalC = 0;
     completedTests.forEach(t => { totalQ += t.questionCount || 0; totalC += t.correctAnswers || 0; });
     const successRate = totalQ > 0 ? (totalC / totalQ) * 100 : 0;
-    const overdueCount = tests.filter(t => t.status === 'Atandı' && isPast(parse(t.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr })) && !isToday(parse(t.dueDate, 'dd MMMM yyyy', new Date(), { locale: tr }))).length;
+    const overdueCount = tests.filter(t => t.status === 'Atandı' && isPast(parseSafeDate(t.dueDate)) && !isToday(parseSafeDate(t.dueDate))).length;
 
     return {
       testCount: tests.length,
@@ -1151,7 +1158,7 @@ export default function EducationPage() {
                                         {a.dueDate && (
                                             <span className="text-[9px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-1.5 py-0.5 rounded-sm flex items-center gap-1 shrink-0 whitespace-nowrap">
                                                 <CalendarIcon className="w-2.5 h-2.5" />
-                                                {format(new Date(a.dueDate), 'dd MMM', { locale: tr })}
+                                                {format(parseSafeDate(a.dueDate), 'dd MMM', { locale: tr })}
                                             </span>
                                         )}
                                       </div>
@@ -1186,7 +1193,7 @@ export default function EducationPage() {
                                             {a.dueDate && (
                                                 <span className="text-[9px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-sm flex items-center gap-1 shrink-0 whitespace-nowrap">
                                                     <CalendarIcon className="w-2.5 h-2.5" />
-                                                    {format(new Date(a.dueDate), 'dd MMM', { locale: tr })}
+                                                    {format(parseSafeDate(a.dueDate), 'dd MMM', { locale: tr })}
                                                 </span>
                                             )}
                                           </div>
