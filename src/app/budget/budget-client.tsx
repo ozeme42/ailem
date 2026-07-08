@@ -870,6 +870,11 @@ export function BudgetClient() {
                                     </div>
                                 )}
                             </div>
+                            
+                            {/* Ödenmiş Faturalar */}
+                            <div>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Ödenmiş Faturalar</h3>
                                     <button onClick={() => setIsBillArchiveOpen(true)} className="text-indigo-600 text-xs font-bold uppercase tracking-wider bg-indigo-50 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors">
                                         Arşivi Gör
                                     </button>
