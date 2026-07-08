@@ -434,10 +434,10 @@ export function PdfDocumentSolver({ test, studentAnswers, studentTextAnswers = {
                                 />
                             )}
                             <div className="ml-auto md:ml-0 flex items-center gap-2">
-                                <Button type="button" variant={isSplitScreenMobile ? "default" : "ghost"} size="icon" onClick={() => setIsSplitScreenMobile(!isSplitScreenMobile)} className={cn("md:hidden rounded-xl h-10 w-10", isSplitScreenMobile ? "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-400" : "hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500")}>
+                                <Button type="button" variant={isSplitScreenMobile ? "default" : "ghost"} size="icon" onClick={() => setIsSplitScreenMobile(!isSplitScreenMobile)} className={cn("lg:hidden rounded-xl h-10 w-10", isSplitScreenMobile ? "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-400" : "hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500")}>
                                     <SplitSquareVertical className="h-5 w-5" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="md:hidden h-10 w-10 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800" onClick={() => setIsOpticalOpenMobile(true)}>
+                                <Button type="button" variant="ghost" size="icon" className="lg:hidden h-10 w-10 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800" onClick={() => setIsOpticalOpenMobile(true)}>
                                     <LayoutGrid className="w-5 h-5 text-indigo-500" />
                                 </Button>
                                 
@@ -518,7 +518,7 @@ export function PdfDocumentSolver({ test, studentAnswers, studentTextAnswers = {
                 {/* Sürükleme Çubuğu (Sadece Mobil Split Mod) */}
                 {isSplitScreenMobile && (
                     <div 
-                        className="h-6 w-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center cursor-ns-resize touch-none md:hidden shrink-0 group relative"
+                        className="h-6 w-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center cursor-ns-resize touch-none lg:hidden shrink-0 group relative"
                         onMouseDown={handleDragStart}
                         onTouchStart={handleDragStart}
                     >
