@@ -870,28 +870,41 @@ export function BudgetClient() {
                                     </div>
                                 )}
                             </div>
-                            
-                            {/* Ödenmiş Faturalar */}
-                            <div>
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Ödenmiş Faturalar</h3>
                                     <button onClick={() => setIsBillArchiveOpen(true)} className="text-indigo-600 text-xs font-bold uppercase tracking-wider bg-indigo-50 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors">
                                         Arşivi Gör
                                     </button>
                                 </div>
-                                <div className="bg-white dark:bg-slate-900 rounded-[24px] shadow-sm border border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800/50">
-                                    {bills.filter(b => b.isPaid).sort((a,b) => (b.paidDate || "").localeCompare(a.paidDate || "")).reverse().slice(0, 5).map(bill => (
-                                        <div key={bill.id} className="flex items-center justify-between p-4 opacity-70 hover:opacity-100 transition-opacity cursor-pointer first:rounded-t-[24px] last:rounded-b-[24px]" onClick={() => openBillForm(bill)}>
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center">
-                                                    <FileText className="w-5 h-5" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[14px] font-bold text-slate-800 dark:text-slate-200 line-through decoration-slate-400">{bill.title}</p>
-                                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Ödendi: {bill.paidDate ? format(parseISO(bill.paidDate), 'd MMM', {locale: tr}) : '-'}</p>
-                                                </div>
+                                <div className="space-y-4">
+                                    {Object.entries(
+                                        bills.filter(b => b.isPaid)
+                                            .sort((a,b) => (b.paidDate || "").localeCompare(a.paidDate || ""))
+                                            .reverse()
+                                            .slice(0, 5)
+                                            .reduce((groups, bill) => {
+                                                const month = bill.paidDate ? format(parseISO(bill.paidDate), 'MMMM yyyy', {locale: tr}) : 'Bilinmeyen Tarih';
+                                                if (!groups[month]) groups[month] = [];
+                                                groups[month].push(bill);
+                                                return groups;
+                                            }, {} as Record<string, typeof bills>)
+                                    ).map(([month, monthBills]) => (
+                                        <div key={month}>
+                                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-4">{month}</h4>
+                                            <div className="bg-white dark:bg-slate-900 rounded-[24px] shadow-sm border border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800/50">
+                                                {monthBills.map(bill => (
+                                                    <div key={bill.id} className="flex items-center justify-between p-4 opacity-70 hover:opacity-100 transition-opacity cursor-pointer first:rounded-t-[24px] last:rounded-b-[24px]" onClick={() => openBillForm(bill)}>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center">
+                                                                <FileText className="w-5 h-5" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[14px] font-bold text-slate-800 dark:text-slate-200 line-through decoration-slate-400">{bill.title}</p>
+                                                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Ödendi: {bill.paidDate ? format(parseISO(bill.paidDate), 'd MMM', {locale: tr}) : '-'}</p>
+                                                            </div>
+                                                        </div>
+                                                        <p className="font-bold text-[15px] text-slate-500">{bill.amount.toLocaleString()} ₺</p>
+                                                    </div>
+                                                ))}
                                             </div>
-                                            <p className="font-bold text-[15px] text-slate-500">{bill.amount.toLocaleString()} ₺</p>
                                         </div>
                                     ))}
                                 </div>
@@ -1071,14 +1084,31 @@ export function BudgetClient() {
 
                     <div className="mt-6">
                         <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Geçmiş Faturalar Listesi</h4>
-                        <div className="space-y-2">
-                            {bills.filter(b => b.isPaid && (billArchiveFilter === 'Tümü' || b.title === billArchiveFilter)).sort((a,b) => (b.paidDate || "").localeCompare(a.paidDate || "")).reverse().map(bill => (
-                                <div key={bill.id} className="flex justify-between items-center p-4 bg-slate-50 dark:bg-white/5 rounded-[20px] border border-slate-100 dark:border-white/5">
-                                    <div>
-                                        <p className="font-bold text-[15px]">{bill.title}</p>
-                                        <p className="text-[12px] font-medium text-slate-500">{bill.paidDate ? format(parseISO(bill.paidDate), 'd MMMM yyyy', {locale: tr}) : '-'}</p>
+                        <div className="space-y-6">
+                            {Object.entries(
+                                bills.filter(b => b.isPaid && (billArchiveFilter === 'Tümü' || b.title === billArchiveFilter))
+                                    .sort((a,b) => (b.paidDate || "").localeCompare(a.paidDate || ""))
+                                    .reverse()
+                                    .reduce((groups, bill) => {
+                                        const month = bill.paidDate ? format(parseISO(bill.paidDate), 'MMMM yyyy', {locale: tr}) : 'Bilinmeyen Tarih';
+                                        if (!groups[month]) groups[month] = [];
+                                        groups[month].push(bill);
+                                        return groups;
+                                    }, {} as Record<string, typeof bills>)
+                            ).map(([month, monthBills]) => (
+                                <div key={month}>
+                                    <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-2">{month}</h5>
+                                    <div className="space-y-2">
+                                        {monthBills.map(bill => (
+                                            <div key={bill.id} className="flex justify-between items-center p-4 bg-slate-50 dark:bg-white/5 rounded-[20px] border border-slate-100 dark:border-white/5">
+                                                <div>
+                                                    <p className="font-bold text-[15px]">{bill.title}</p>
+                                                    <p className="text-[12px] font-medium text-slate-500">{bill.paidDate ? format(parseISO(bill.paidDate), 'd MMMM yyyy', {locale: tr}) : '-'}</p>
+                                                </div>
+                                                <p className="font-black text-lg text-slate-700 dark:text-slate-200">{bill.amount.toLocaleString()} ₺</p>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <p className="font-black text-lg text-slate-700 dark:text-slate-200">{bill.amount.toLocaleString()} ₺</p>
                                 </div>
                             ))}
                             {bills.filter(b => b.isPaid && (billArchiveFilter === 'Tümü' || b.title === billArchiveFilter)).length === 0 && (
