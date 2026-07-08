@@ -434,10 +434,10 @@ export function PdfDocumentSolver({ test, studentAnswers, studentTextAnswers = {
                                 />
                             )}
                             <div className="ml-auto md:ml-0 flex items-center gap-2">
-                                <Button type="button" variant={isSplitScreenMobile ? "default" : "ghost"} size="icon" onClick={() => setIsSplitScreenMobile(!isSplitScreenMobile)} className={cn("xl:hidden rounded-xl h-10 w-10", isSplitScreenMobile ? "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-400" : "hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500")}>
+                                <Button type="button" variant={isSplitScreenMobile ? "default" : "ghost"} size="icon" onClick={() => setIsSplitScreenMobile(!isSplitScreenMobile)} className={cn("rounded-xl h-10 w-10", isSplitScreenMobile ? "bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-400" : "hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500")}>
                                     <SplitSquareVertical className="h-5 w-5" />
                                 </Button>
-                                <Button type="button" variant="ghost" size="icon" className="xl:hidden h-10 w-10 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800" onClick={() => setIsOpticalOpenMobile(true)}>
+                                <Button type="button" variant="ghost" size="icon" className="lg:hidden h-10 w-10 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800" onClick={() => setIsOpticalOpenMobile(true)}>
                                     <LayoutGrid className="w-5 h-5 text-indigo-500" />
                                 </Button>
                                 
@@ -518,7 +518,7 @@ export function PdfDocumentSolver({ test, studentAnswers, studentTextAnswers = {
                 {/* Sürükleme Çubuğu (Sadece Mobil Split Mod) */}
                 {isSplitScreenMobile && (
                     <div 
-                        className="h-6 w-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center cursor-ns-resize touch-none xl:hidden shrink-0 group relative"
+                        className="h-6 w-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center cursor-ns-resize touch-none shrink-0 group relative"
                         onMouseDown={handleDragStart}
                         onTouchStart={handleDragStart}
                     >
@@ -531,7 +531,7 @@ export function PdfDocumentSolver({ test, studentAnswers, studentTextAnswers = {
                 <div 
                     className={cn(
                         "bg-white dark:bg-slate-900 flex flex-col min-h-0", 
-                        isSplitScreenMobile ? "xl:border-l xl:border-slate-200 xl:w-80 border-t" : "hidden xl:flex xl:border-l xl:border-slate-200 xl:w-80"
+                        isSplitScreenMobile ? "border-t" : "hidden lg:flex lg:border-l lg:border-slate-200 lg:w-80"
                     )}
                     style={isSplitScreenMobile ? { height: `calc(${100 - splitHeightPercent}% - 16px)` } : {}}
                 >
@@ -541,7 +541,7 @@ export function PdfDocumentSolver({ test, studentAnswers, studentTextAnswers = {
             </div>
 
             {(isOpticalOpenMobile && !isSplitScreenMobile) && (
-                <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm xl:hidden flex items-end">
+                <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm lg:hidden flex items-end">
                     <div className="bg-white dark:bg-slate-900 w-full h-[85vh] rounded-t-[3rem] overflow-hidden flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-500">
                         <div className="h-1.5 w-12 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mt-4 mb-2" onClick={() => setIsOpticalOpenMobile(false)} />
                         <div className="flex-1 overflow-hidden">

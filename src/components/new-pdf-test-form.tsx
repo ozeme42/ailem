@@ -7,7 +7,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { format, parse } from "date-fns";
 import { tr } from "date-fns/locale";
-import { CalendarIcon, Loader2, Code, User, BookOpen, Calendar as CalendarLucide, FileCode, Layers, Plus, Trash2, SplitSquareHorizontal } from "lucide-react";
+import { CalendarIcon, Loader2, Code, User, BookOpen, Calendar as CalendarLucide, FileCode, Layers, Plus, Trash2, SplitSquareHorizontal, Pen } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -168,7 +168,7 @@ export function NewPdfTestForm({
         sourceType: 'pdf' as const,
         isArchived: (initialData && !isReassigning) ? initialData.isArchived : false,
         fileUrl: finalFileUrl,
-        answerKey: values.openEnded ? {} : values.answerKey,
+        answerKey: values.answerKey,
         topicId: values.topic || undefined,
         openEnded: values.openEnded,
         gradingType: values.openEnded ? 'manual' : 'auto',
@@ -263,6 +263,31 @@ export function NewPdfTestForm({
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <FormField control={form.control} name="openEnded" render={({ field }) => (
+                        <FormItem className="flex flex-col justify-end">
+                            <div className="flex items-center justify-between p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 h-10">
+                                <FormLabel className="text-sm font-bold text-indigo-300 cursor-pointer mb-0 flex items-center" onClick={() => field.onChange(!field.value)}>
+                                    <Pen className="w-4 h-4 mr-2" />
+                                    Açık Uçlu Test Modu
+                                </FormLabel>
+                                <FormControl>
+                                    <div 
+                                        className={cn(
+                                            "w-10 h-6 rounded-full p-1 cursor-pointer transition-colors relative flex items-center shrink-0",
+                                            field.value ? "bg-indigo-500" : "bg-slate-700"
+                                        )}
+                                        onClick={() => field.onChange(!field.value)}
+                                    >
+                                        <div className={cn(
+                                            "w-4 h-4 bg-white rounded-full shadow-sm transition-transform",
+                                            field.value ? "translate-x-4" : "translate-x-0"
+                                        )} />
+                                    </div>
+                                </FormControl>
+                            </div>
+                        </FormItem>
+                    )}/>
+
                     <FormField control={form.control} name="dueDate" render={({ field }) => (
                         <FormItem className="flex flex-col">
                             <FormLabel className={glassColors.LABEL}><CalendarLucide className="w-3.5 h-3.5 text-blue-400"/> Bitiş Tarihi</FormLabel>
@@ -389,36 +414,36 @@ export function NewPdfTestForm({
                             <FormLabel className={glassColors.LABEL.replace("mb-1.5", "")}>
                                 {form.watch("openEnded") ? "Açık Uçlu Test" : "Optik Cevap Anahtarı"}
                             </FormLabel>
-                            <FormField control={form.control} name="openEnded" render={({ field }) => (
-                                <FormItem className="flex items-center gap-2 space-y-0">
-                                    <FormLabel className="text-xs text-slate-300 font-bold mb-0">Açık Uçlu (Manuel Puanlama)</FormLabel>
-                                    <FormControl>
-                                        <div 
-                                            className={cn(
-                                                "w-10 h-6 rounded-full p-1 cursor-pointer transition-colors relative flex items-center",
-                                                field.value ? "bg-indigo-500" : "bg-slate-700"
-                                            )}
-                                            onClick={() => field.onChange(!field.value)}
-                                        >
-                                            <div className={cn(
-                                                "w-4 h-4 bg-white rounded-full shadow-sm transition-transform",
-                                                field.value ? "translate-x-4" : "translate-x-0"
-                                            )} />
-                                        </div>
-                                    </FormControl>
-                                </FormItem>
-                            )}/>
                         </div>
                         <div className="flex-1 bg-black/20 border border-white/10 rounded-md overflow-hidden flex flex-col relative">
                             {form.watch("openEnded") ? (
-                                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
-                                    <Layers className="w-12 h-12 text-indigo-500/50 mb-4" />
-                                    <p className="font-bold text-slate-300 mb-2">Açık Uçlu Test Modu Aktif</p>
-                                    <p className="text-xs">
-                                        Öğrenciler optik form yerine metin girişi yapacaklardır. 
-                                        Cevap anahtarı girmenize gerek yoktur. Test manuel olarak puanlanacaktır.
-                                    </p>
-                                </div>
+                                <ScrollArea className="flex-1">
+                                    <div className="p-4 space-y-4">
+                                        <div className="flex flex-col items-center justify-center p-4 text-center text-slate-400 bg-black/20 rounded-lg mb-4">
+                                            <p className="font-bold text-slate-300 mb-2">Açık Uçlu Test Modu</p>
+                                            <p className="text-xs">
+                                                Aşağıdaki alanlara beklenen cevapları (cevap anahtarı) girebilirsiniz.
+                                            </p>
+                                        </div>
+                                        {Array.from({ length: watchedSections?.length > 0 ? watchedSections.reduce((acc, sec) => acc + Number(sec.questionCount || 0), 0) : watchedQuestionCount || 10 }).map((_, i) => {
+                                            const qNum = (i + watchedStartingQuestionNumber).toString();
+                                            return (
+                                                <div key={qNum} className="flex flex-col gap-2 p-3 rounded-lg bg-white/5 border border-white/10">
+                                                    <span className="text-xs font-black text-slate-400">Soru {qNum}</span>
+                                                    <Textarea 
+                                                        value={watchedAnswerKey[qNum] || ""}
+                                                        onChange={(e) => {
+                                                            const newKey = { ...watchedAnswerKey, [qNum]: e.target.value };
+                                                            form.setValue('answerKey', newKey as any);
+                                                        }}
+                                                        placeholder="Örnek cevap / Beklenen cevap..."
+                                                        className="min-h-[80px] text-sm resize-none bg-black/20 border-white/10 text-slate-200"
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </ScrollArea>
                             ) : (
                                 <AnswerKeyForm 
                                     totalQuestions={watchedSections?.length > 0 ? watchedSections.reduce((acc, sec) => acc + Number(sec.questionCount || 0), 0) : watchedQuestionCount} 
