@@ -169,7 +169,7 @@ export default function TasksPage() {
       const pdata = pp.find(p => p.memberId === m.id);
       const comp: string[] = pdata?.completions?.[todayStr] || [];
       PS.forEach(pr => {
-        list.push({ id: `pr-${m.id}-${pr}`, title: `${pr} Namazi`, module: "Namaz", assigneeId: m.id, isCompleted: comp.includes(pr), icon: Target, onToggle: async c => { const nc = c ? [...comp, pr] : comp.filter((x: string) => x !== pr); await updatePrayerProgress(m.id, todayStr, nc); } });
+        list.push({ id: `pr-${m.id}-${pr}`, title: `${pr} Namazi`, module: "Namaz", assigneeId: m.id, isCompleted: comp.includes(pr), icon: Target, onToggle: async c => { const nc = c ? [...comp, pr] : comp.filter((x: string) => x !== pr); const currentCompletions = pdata?.completions || {}; const newCompletions = { ...currentCompletions, [todayStr]: nc }; await updatePrayerProgress(m.id, newCompletions); } });
       });
     });
     return list;

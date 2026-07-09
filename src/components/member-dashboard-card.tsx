@@ -362,8 +362,7 @@ export function MemberDashboardCard({
                 <div className="space-y-4 md:space-y-5">
                       
                       {/* 1. NAMAZ TAKİBİ */}
-                    {member.role.includes('Çocuk') && (todaysPrayers.filter(p=>!p.completed).length > 0) && (
-                        <div className={cn("rounded-[1.5rem] md:rounded-[2rem] p-4 border", sectionThemes.prayer.container)}>
+                    <div className={cn("rounded-[1.5rem] md:rounded-[2rem] p-4 border", sectionThemes.prayer.container)}>
                             <h4 className={cn("font-extrabold text-[10px] md:text-xs uppercase tracking-widest mb-3 md:mb-4 flex items-center gap-1.5 md:gap-2", sectionThemes.prayer.title)}>
                                 <Clock className={cn("h-3.5 w-3.5 md:h-4 md:w-4", sectionThemes.prayer.icon)}/> Namaz Takibi
                             </h4>
@@ -383,7 +382,6 @@ export function MemberDashboardCard({
                                 ))}
                             </div>
                         </div>
-                    )}
 
                     {/* 2. ALIŞKANLIKLAR */}
                     {habits.length > 0 && (
