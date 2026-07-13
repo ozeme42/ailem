@@ -126,6 +126,11 @@ export default function EducationPage() {
   const [trackedBooks, setTrackedBooks] = React.useState<TrackedBook[]>([]);
   const [expandedBooks, setExpandedBooks] = React.useState<Set<string>>(new Set());
   const [todoViewMode, setTodoViewMode] = React.useState<'list' | 'week'>('week');
+  const [selectedCalendarDate, setSelectedCalendarDate] = React.useState<Date>(new Date());
+  
+  const calendarDays = React.useMemo(() => {
+    return Array.from({ length: 7 }).map((_, i) => addDays(new Date(), i));
+  }, []);
 
   const studentMembers = React.useMemo(() =>
     familyMembers.filter(m => m.role.includes('Çocuk')), [familyMembers]);
@@ -430,86 +435,142 @@ export default function EducationPage() {
                <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 border-none">{pendingTasks.length}</Badge>
             </div>
             
-            
+            {/* ── Calendar Strip ── */}
+            <div className="overflow-x-auto pb-2 hide-scrollbar snap-x snap-mandatory -mx-4 px-4">
+              <div className="flex gap-2 min-w-max">
+                {calendarDays.map((day, i) => {
+                  const active = isSameDay(selectedCalendarDate, day);
+                  const isDayToday = isToday(day);
+                  
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => setSelectedCalendarDate(day)}
+                      className={cn(
+                        "flex flex-col items-center justify-center w-14 h-20 rounded-2xl shrink-0 snap-center transition-all border",
+                        active 
+                          ? "bg-gradient-to-b from-indigo-500 to-indigo-600 border-transparent shadow-lg shadow-indigo-500/30 text-white" 
+                          : isDayToday
+                            ? "bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400"
+                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400"
+                      )}
+                    >
+                      <span className={cn("text-[9px] font-black uppercase tracking-wider mb-1 opacity-80", active && "text-indigo-100")}>
+                        {format(day, 'eee', { locale: tr })}
+                      </span>
+                      <span className={cn("text-xl font-black leading-none", active && "text-white")}>
+                        {format(day, 'd')}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="space-y-6">
-              {pendingTasks.filter(t => t.type === 'test').length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-xs font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2"><Layers className="w-3.5 h-3.5"/> Testler</h3>
-                  {pendingTasks.filter(t => t.type === 'test').map(task => {
-                const category = task.subject;
-                const theme = categoryThemes[category] || categoryThemes['Diğer'];
-                const Icon = theme.icon;
-                const dueDate = task.dueDateObj;
-                const overdue = isPast(dueDate) && !isToday(dueDate);
-                const dueToday = isToday(dueDate);
+              {(() => {
+                const dayTasks = pendingTasks.filter(t => {
+                   const cTime = new Date(selectedCalendarDate).setHours(0,0,0,0);
+                   const sTime = new Date(t.startDateObj).setHours(0,0,0,0);
+                   return isToday(selectedCalendarDate) ? sTime <= cTime : sTime === cTime;
+                });
+                
+                if (dayTasks.length === 0) {
+                  return (
+                    <div className="h-32 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-slate-400 gap-2 opacity-60">
+                      <CheckCircle2 className="w-6 h-6" />
+                      <span className="text-xs font-bold uppercase tracking-widest">Görev Yok</span>
+                    </div>
+                  );
+                }
+                
+                const testTasks = dayTasks.filter(t => t.type === 'test');
+                const studyTasks = dayTasks.filter(t => t.type === 'study');
                 
                 return (
-                  <Link href={task.type === 'test' ? `/education/${task.id}` : (task.planLink || `/education/study`)} key={task.id} className="block active:scale-[0.98] transition-transform">
-                    <div className={cn("bg-white dark:bg-slate-900 rounded-2xl p-3 flex gap-3 border shadow-sm relative overflow-hidden", theme.border, overdue ? "border-rose-300 dark:border-rose-800" : "")}>
-                       {overdue && <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500" />}
-                       
-                       <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border-2 bg-slate-50 dark:bg-slate-950", theme.border)}>
-                          <Icon className={cn("w-5 h-5", theme.text)} />
-                       </div>
-                       
-                       <div className="flex-1 min-w-0 flex flex-col justify-center">
-                          <div className="flex items-center gap-1.5 mb-1">
-                             <span className={cn("text-[9px] font-black uppercase tracking-widest", theme.text)}>{category}</span>
-                             {overdue && <span className="text-[9px] font-black text-rose-500 uppercase">{differenceInDays(new Date(), dueDate)} GÜN GECİKTİ</span>}
-                             {!overdue && dueToday && <span className="text-[9px] font-black text-amber-500 uppercase">Bugün</span>}
-                          </div>
-                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{task.title}</h4>
-                          <div className="flex items-center gap-3 mt-1.5 text-[10px] font-bold text-slate-500">
-                             <span className="flex items-center gap-1"><CalendarIcon className="w-3 h-3" /> {task.dueDateStr}</span>
-                             <span className="flex items-center gap-1"><Timer className="w-3 h-3" /> {task.durationMinutes} dk</span>
-                             {task.questionCount && <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {task.questionCount} Soru</span>}
-                          </div>
-                       </div>
-                    </div>
-                  </Link>
-                )
-              })}
-                </div>
-              )}
-              {pendingTasks.filter(t => t.type === 'study').length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-xs font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2"><BookOpen className="w-3.5 h-3.5"/> Konu Anlatımı</h3>
-                  {pendingTasks.filter(t => t.type === 'study').map(task => {
-                const category = task.subject;
-                const theme = categoryThemes[category] || categoryThemes['Diğer'];
-                const Icon = theme.icon;
-                const dueDate = task.dueDateObj;
-                const overdue = isPast(dueDate) && !isToday(dueDate);
-                const dueToday = isToday(dueDate);
-                
-                return (
-                  <Link href={task.type === 'test' ? `/education/${task.id}` : (task.planLink || `/education/study`)} key={task.id} className="block active:scale-[0.98] transition-transform">
-                    <div className={cn("bg-white dark:bg-slate-900 rounded-2xl p-3 flex gap-3 border shadow-sm relative overflow-hidden", theme.border, overdue ? "border-rose-300 dark:border-rose-800" : "")}>
-                       {overdue && <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500" />}
-                       
-                       <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border-2 bg-slate-50 dark:bg-slate-950", theme.border)}>
-                          <Icon className={cn("w-5 h-5", theme.text)} />
-                       </div>
-                       
-                       <div className="flex-1 min-w-0 flex flex-col justify-center">
-                          <div className="flex items-center gap-1.5 mb-1">
-                             <span className={cn("text-[9px] font-black uppercase tracking-widest", theme.text)}>{category}</span>
-                             {overdue && <span className="text-[9px] font-black text-rose-500 uppercase">{differenceInDays(new Date(), dueDate)} GÜN GECİKTİ</span>}
-                             {!overdue && dueToday && <span className="text-[9px] font-black text-amber-500 uppercase">Bugün</span>}
-                          </div>
-                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{task.title}</h4>
-                          <div className="flex items-center gap-3 mt-1.5 text-[10px] font-bold text-slate-500">
-                             <span className="flex items-center gap-1"><CalendarIcon className="w-3 h-3" /> {task.dueDateStr}</span>
-                             <span className="flex items-center gap-1"><Timer className="w-3 h-3" /> {task.durationMinutes} dk</span>
-                             {task.questionCount && <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {task.questionCount} Soru</span>}
-                          </div>
-                       </div>
-                    </div>
-                  </Link>
-                )
-              })}
-                </div>
-              )}
+                  <>
+                    {testTasks.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="text-xs font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2"><Layers className="w-3.5 h-3.5"/> Testler</h3>
+                        {testTasks.map(task => {
+                          const category = task.subject;
+                          const theme = categoryThemes[category] || categoryThemes['Diğer'];
+                          const Icon = theme.icon;
+                          const dueDate = task.dueDateObj;
+                          const overdue = isPast(dueDate) && !isToday(dueDate);
+                          const dueToday = isToday(dueDate);
+                          
+                          return (
+                            <Link href={task.type === 'test' ? `/education/${task.id}` : (task.planLink || `/education/study`)} key={task.id} className="block active:scale-[0.98] transition-transform">
+                              <div className={cn("bg-white dark:bg-slate-900 rounded-2xl p-3 flex gap-3 border shadow-sm relative overflow-hidden", theme.border, overdue ? "border-rose-300 dark:border-rose-800" : "")}>
+                                 {overdue && <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500" />}
+                                 
+                                 <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border-2 bg-slate-50 dark:bg-slate-950", theme.border)}>
+                                    <Icon className={cn("w-5 h-5", theme.text)} />
+                                 </div>
+                                 
+                                 <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                       <span className={cn("text-[9px] font-black uppercase tracking-widest", theme.text)}>{category}</span>
+                                       {overdue && <span className="text-[9px] font-black text-rose-500 uppercase">{differenceInDays(new Date(), dueDate)} GÜN GECİKTİ</span>}
+                                       {!overdue && dueToday && <span className="text-[9px] font-black text-amber-500 uppercase">Bugün</span>}
+                                    </div>
+                                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{task.title}</h4>
+                                    <div className="flex items-center gap-3 mt-1.5 text-[10px] font-bold text-slate-500">
+                                       <span className="flex items-center gap-1"><CalendarIcon className="w-3 h-3" /> {task.dueDateStr}</span>
+                                       <span className="flex items-center gap-1"><Timer className="w-3 h-3" /> {task.durationMinutes} dk</span>
+                                       {task.questionCount && <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {task.questionCount} Soru</span>}
+                                    </div>
+                                 </div>
+                              </div>
+                            </Link>
+                          )
+                        })}
+                      </div>
+                    )}
+                    
+                    {studyTasks.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="text-xs font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2"><BookOpen className="w-3.5 h-3.5"/> Konu Anlatımı</h3>
+                        {studyTasks.map(task => {
+                          const category = task.subject;
+                          const theme = categoryThemes[category] || categoryThemes['Diğer'];
+                          const Icon = theme.icon;
+                          const dueDate = task.dueDateObj;
+                          const overdue = isPast(dueDate) && !isToday(dueDate);
+                          const dueToday = isToday(dueDate);
+                          
+                          return (
+                            <Link href={task.type === 'test' ? `/education/${task.id}` : (task.planLink || `/education/study`)} key={task.id} className="block active:scale-[0.98] transition-transform">
+                              <div className={cn("bg-white dark:bg-slate-900 rounded-2xl p-3 flex gap-3 border shadow-sm relative overflow-hidden", theme.border, overdue ? "border-rose-300 dark:border-rose-800" : "")}>
+                                 {overdue && <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500" />}
+                                 
+                                 <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border-2 bg-slate-50 dark:bg-slate-950", theme.border)}>
+                                    <Icon className={cn("w-5 h-5", theme.text)} />
+                                 </div>
+                                 
+                                 <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                       <span className={cn("text-[9px] font-black uppercase tracking-widest", theme.text)}>{category}</span>
+                                       {overdue && <span className="text-[9px] font-black text-rose-500 uppercase">{differenceInDays(new Date(), dueDate)} GÜN GECİKTİ</span>}
+                                       {!overdue && dueToday && <span className="text-[9px] font-black text-amber-500 uppercase">Bugün</span>}
+                                    </div>
+                                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{task.title}</h4>
+                                    <div className="flex items-center gap-3 mt-1.5 text-[10px] font-bold text-slate-500">
+                                       <span className="flex items-center gap-1"><CalendarIcon className="w-3 h-3" /> {task.dueDateStr}</span>
+                                       <span className="flex items-center gap-1"><Timer className="w-3 h-3" /> {task.durationMinutes} dk</span>
+                                       {task.questionCount && <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {task.questionCount} Soru</span>}
+                                    </div>
+                                 </div>
+                              </div>
+                            </Link>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </section>
     
