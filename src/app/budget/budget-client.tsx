@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Trash2, Banknote, Landmark, CreditCard, BarChart2, ArrowUpRight, ArrowDownLeft, Calendar as CalendarIcon, ArrowLeft, ShoppingCart, Utensils, Bus, FileText, Gamepad2, HeartPulse, Shirt, GraduationCap, DollarSign, Briefcase, PlusCircle, CircleEllipsis, Printer, Check } from "lucide-react";
+import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Trash2, Banknote, Landmark, CreditCard, BarChart2, ArrowUpRight, ArrowDownLeft, Calendar as CalendarIcon, ArrowLeft, ShoppingCart, Utensils, Bus, FileText, Gamepad2, HeartPulse, Shirt, GraduationCap, DollarSign, Briefcase, PlusCircle, CircleEllipsis, Printer, Check, ListTree } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -21,6 +21,28 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useRouter } from "next/navigation";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { computeBudgetNetForMonth } from '@/utils/budget';
+
+// Map of icon names (stored in category.icon) to actual React icon components
+const IconMap: Record<string, React.ElementType> = {
+    ShoppingCart,
+    Utensils,
+    Bus,
+    FileText,
+    Gamepad2,
+    HeartPulse,
+    Shirt,
+    GraduationCap,
+    DollarSign,
+    Briefcase,
+    PlusCircle,
+    CircleEllipsis,
+    Wallet,
+    CreditCard,
+    Landmark,
+    Banknote,
+    ListTree
+};
 
 // --- TASARIM SİSTEMİ: Mobil Odaklı ---
 const themeClasses = {
@@ -226,9 +248,29 @@ export function BudgetClient() {
         headerTotal = headerIncome - headerExpense;
         labelTotal = `${format(currentDate, 'yyyy')} Net Durumu`;
     } else {
-        headerIncome = monthlyIncome;
-        headerExpense = monthlyExpense;
-        headerTotal = headerIncome - headerExpense;
+        // Compute net using card statement periods for the currently displayed month
+        const txsForHelper = allTransactions.map(t => {
+            const acc = accounts.find(a => a.id === t.accountId);
+            const accountType = acc ? (acc.type === 'credit-card' ? 'card' : acc.type) : 'bank';
+            return {
+                id: t.id,
+                date: t.date,
+                amount: t.amount,
+                type: t.type,
+                accountType,
+                cardId: accountType === 'card' ? t.accountId : undefined
+            };
+        });
+
+        const cardsForHelper = accounts
+            .filter(a => a.type === 'credit-card')
+            .map(a => ({ id: a.id, name: a.name, statementDay: a.statementDate ?? 1 }));
+
+        const budget = computeBudgetNetForMonth(currentDate, txsForHelper, cardsForHelper);
+
+        headerIncome = budget.income;
+        headerExpense = budget.nonCardExpenses + budget.totalCardExpenses;
+        headerTotal = budget.net;
         labelTotal = `${format(currentDate, 'MMMM', { locale: tr })} Net Durumu`;
     }
 
@@ -631,7 +673,13 @@ export function BudgetClient() {
                                                 >
                                                     <div className="flex items-center gap-3.5 min-w-0">
                                                         <div className={cn("w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-sm border border-black/5 dark:border-white/5", bgClass, textClass)}>
-                                                            {dynamicCategory ? <span className="text-2xl">{dynamicCategory.icon}</span> : <CategoryIcon className="w-5 h-5" />}
+                                                           {dynamicCategory ? (
+                                                               (() => {
+                                                                   const dynName = String(dynamicCategory.icon || '');
+                                                                   const Dyn = IconMap[dynName];
+                                                                   return Dyn ? <Dyn className="w-5 h-5" /> : <CategoryIcon className="w-5 h-5" />;
+                                                               })()
+                                                           ) : <CategoryIcon className="w-5 h-5" />}
                                                         </div>
                                                         <div className="min-w-0">
                                                             <p className="text-[15px] font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">
