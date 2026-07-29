@@ -21,6 +21,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useRouter } from "next/navigation";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Input } from '@/components/ui/input';
 import { computeBudgetNetForMonth, getCardStatementPeriodForMonth } from '@/utils/budget';
 
 // Map of icon names (stored in category.icon) to actual React icon components
@@ -105,6 +106,8 @@ export function BudgetClient() {
 
     const [mainTab, setMainTab] = React.useState('day');
     const [selectedCardId, setSelectedCardId] = React.useState<string | null>(null);
+    const [targetModalCard, setTargetModalCard] = React.useState<{id: string; value: string} | null>(null);
+    const [targetSaving, setTargetSaving] = React.useState(false);
 
     React.useEffect(() => {
         if (!familyId) return;
@@ -543,6 +546,37 @@ export function BudgetClient() {
 
     return (
         <div className="min-h-[100dvh] font-sans pb-[calc(100px+env(safe-area-inset-bottom))] relative bg-slate-50 dark:bg-[#0a0a14] transition-colors duration-500">
+            {/* Hedef modal */}
+            {targetModalCard && (
+                <Dialog open={!!targetModalCard} onOpenChange={(open) => { if (!open) setTargetModalCard(null); }}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Kart Aylık Hedefi</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 mt-2">
+                            <Input value={targetModalCard.value} onChange={(e) => setTargetModalCard(prev => prev ? { ...prev, value: e.target.value } : prev)} placeholder="Aylık hedef (TL)" />
+                            <div className="flex justify-end gap-2">
+                                <Button variant="secondary" onClick={() => setTargetModalCard(null)}>İptal</Button>
+                                <Button onClick={async () => {
+                                    if (!targetModalCard) return;
+                                    setTargetSaving(true);
+                                    try {
+                                        const num = targetModalCard.value.trim() === '' ? null : Number(targetModalCard.value.replace(/\D/g, ''));
+                                        await updateAccount(targetModalCard.id, num === null ? { monthlyTarget: null } : { monthlyTarget: num });
+                                        toast({ title: 'Hedef güncellendi' });
+                                        setTargetModalCard(null);
+                                    } catch (e) {
+                                        toast({ variant: 'destructive', title: 'Hedef kaydedilemedi' });
+                                    } finally {
+                                        setTargetSaving(false);
+                                    }
+                                }} disabled={targetSaving}>Kaydet</Button>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
+
             
             {/* HERO ALANI (FinPlan Tarzı Koyu Gradyan) */}
             <div className="bg-gradient-to-b from-indigo-950 via-indigo-900 to-slate-900 dark:from-black dark:to-[#0a0a14] text-white pt-[calc(env(safe-area-inset-top)+20px)] pb-12 px-4 rounded-b-[40px] relative z-10 overflow-hidden shadow-[0_10px_40px_rgb(0,0,0,0.2)]">
@@ -658,7 +692,7 @@ export function BudgetClient() {
                                                                         <div className="p-1 bg-white dark:bg-slate-900 text-center">
                                                                                                             <div className="flex items-center justify-between gap-2">
                                                                                                                 <p className="text-[10px] font-bold truncate">{card.name}</p>
-                                                                                                                <button onClick={(e) => { e.stopPropagation(); const val = window.prompt('Aylık hedef tutarı (TL). Boş bırak = temizle', (card as any).monthlyTarget ? String((card as any).monthlyTarget) : ''); if (val !== null) { const num = val.trim() === '' ? null : Number(val.replace(/\D/g,'')); (async()=>{ try { await updateAccount(card.id, num === null ? { monthlyTarget: null } : { monthlyTarget: num }); toast({ title: 'Hedef güncellendi' }); } catch(e) { toast({ variant: 'destructive', title: 'Hedef kaydedilemedi' }); } })(); } }} className="text-[10px] px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100">Hedef</button>
+                                                                                                                <button onClick={(e) => { e.stopPropagation(); setTargetModalCard({ id: card.id, value: (card as any).monthlyTarget ? String((card as any).monthlyTarget) : '' }); }} className="text-[10px] px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100">Hedef</button>
                                                                                                             </div>
                                                                                                             <div className="mt-2">
                                                                                                                 {/* Progress bar */}
