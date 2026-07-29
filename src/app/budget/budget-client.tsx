@@ -236,7 +236,6 @@ export function BudgetClient() {
         finalSummaries.forEach(summary => summary.transactions.sort((a, b) => b.date.localeCompare(a.date)));
         const finalDailyGroups = Object.values(daily).sort((a,b) => b.dateISO.localeCompare(a.dateISO));
         
-        const currentMonthKey = format(currentDate, 'yyyy-MM');
         const monthStats = monthSummaries[currentMonthKey] || { income: 0, expense: 0 };
         const yearlyIncomeTotal = Object.values(monthSummaries).reduce((s, m) => s + m.income, 0);
         const yearlyExpenseTotal = Object.values(monthSummaries).reduce((s, m) => s + m.expense, 0);
