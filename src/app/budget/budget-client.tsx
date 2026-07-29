@@ -21,7 +21,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useRouter } from "next/navigation";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { computeBudgetNetForMonth } from '@/utils/budget';
+import { computeBudgetNetForMonth, getCardStatementPeriodForMonth } from '@/utils/budget';
 
 // Map of icon names (stored in category.icon) to actual React icon components
 const IconMap: Record<string, React.ElementType> = {
@@ -172,42 +172,62 @@ export function BudgetClient() {
     const { monthlyIncome, monthlyExpense, yearlyIncome, yearlyExpense, monthlySummaries, dailyGroups } = React.useMemo(() => {
         const yearInterval = eachMonthOfInterval({ start: startOfYear(currentDate), end: endOfYear(currentDate) });
         const monthSummaries: {[key: string]: {income: number, expense: number, total: number, transactions: Transaction[]}} = {};
-        
+
         yearInterval.forEach(monthStart => {
             const monthKey = format(monthStart, 'yyyy-MM');
             monthSummaries[monthKey] = { income: 0, expense: 0, total: 0, transactions: [] };
         });
-        
+
         const daily: { [key: string]: { date: string; dateISO: string; dayTotalIncome: number; dayTotalExpense: number; transactions: Transaction[] } } = {};
 
-        const filteredTransactionsForMonth = allTransactions.filter(t => {
-            const transactionMonth = t.date.substring(0, 7);
-            const currentMonth = format(currentDate, 'yyyy-MM');
-            return transactionMonth === currentMonth;
-        });
-        
-        allTransactions.forEach(t => {
-            const transactionYear = getYear(parseISO(t.date));
-             if (transactionYear === getYear(currentDate)) {
-                const monthKey = t.date.substring(0, 7);
-                if(monthSummaries[monthKey]) {
-                    if (t.type === 'income') monthSummaries[monthKey].income += t.amount;
-                    else monthSummaries[monthKey].expense += t.amount;
-                    monthSummaries[monthKey].transactions.push(t);
-                }
-             }
-        });
+            const currentMonthKey = format(currentDate, 'yyyy-MM');
 
-        filteredTransactionsForMonth.forEach(t => {
-             if (!daily[t.date]) {
-                daily[t.date] = { date: format(parseISO(t.date), 'd EEEE', {locale: tr}), dateISO: t.date, dayTotalIncome: 0, dayTotalExpense: 0, transactions: [] };
+            function getAssignedMonthKeyForTransaction(t: Transaction) {
+                const acc = accounts.find(a => a.id === t.accountId);
+                if (acc && acc.type === 'credit-card') {
+                    const statementDay = acc.statementDate ?? 1;
+                    const txDate = parseISO(t.date);
+                    // candidate: month of transaction
+                    const candidate = new Date(txDate.getFullYear(), txDate.getMonth(), 1);
+                    const candidateKey = format(candidate, 'yyyy-MM');
+                    const period1 = getCardStatementPeriodForMonth(candidate, statementDay);
+                    if (isWithinInterval(txDate, { start: period1.start, end: period1.end })) return candidateKey;
+                    // candidate: next month
+                    const candidate2 = addMonths(candidate, 1);
+                    const candidate2Key = format(candidate2, 'yyyy-MM');
+                    const period2 = getCardStatementPeriodForMonth(candidate2, statementDay);
+                    if (isWithinInterval(txDate, { start: period2.start, end: period2.end })) return candidate2Key;
+                    // fallback to calendar month
+                    return t.date.substring(0,7);
+                }
+                return t.date.substring(0,7);
             }
-            if (t.type === 'income') daily[t.date].dayTotalIncome += t.amount;
-            else daily[t.date].dayTotalExpense += t.amount;
-            daily[t.date].transactions.push(t);
-        });
-        
-        const finalSummaries = Object.entries(monthSummaries)
+
+            const filteredTransactionsForMonth = allTransactions.filter(t => {
+                const assignedKey = getAssignedMonthKeyForTransaction(t);
+                return assignedKey === currentMonthKey;
+            });
+
+            // build month summaries using assigned months for card transactions
+            allTransactions.forEach(t => {
+                const assignedKey = getAssignedMonthKeyForTransaction(t);
+                if (monthSummaries[assignedKey]) {
+                    if (t.type === 'income') monthSummaries[assignedKey].income += t.amount;
+                    else monthSummaries[assignedKey].expense += t.amount;
+                    monthSummaries[assignedKey].transactions.push(t);
+                }
+            });
+
+            filteredTransactionsForMonth.forEach(t => {
+                if (!daily[t.date]) {
+                    daily[t.date] = { date: format(parseISO(t.date), 'd EEEE', {locale: tr}), dateISO: t.date, dayTotalIncome: 0, dayTotalExpense: 0, transactions: [] };
+                }
+                if (t.type === 'income') daily[t.date].dayTotalIncome += t.amount;
+                else daily[t.date].dayTotalExpense += t.amount;
+                daily[t.date].transactions.push(t);
+            });
+
+            const finalSummaries = Object.entries(monthSummaries)
             .map(([monthKey, values]) => ({
                 monthKey, month: format(new Date(monthKey + '-02'), 'MMMM', { locale: tr }), ...values, total: values.income - values.expense
             }))
