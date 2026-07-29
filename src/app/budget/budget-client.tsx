@@ -656,7 +656,29 @@ export function BudgetClient() {
                                                                                                                                                     <div className="text-lg">{amt.toLocaleString('tr-TR')} ₺</div>
                                                                                                                 </div>
                                                                         <div className="p-1 bg-white dark:bg-slate-900 text-center">
-                                                                            <p className="text-[10px] font-bold truncate">{card.name}</p>
+                                                                                                            <div className="flex items-center justify-between gap-2">
+                                                                                                                <p className="text-[10px] font-bold truncate">{card.name}</p>
+                                                                                                                <button onClick={(e) => { e.stopPropagation(); const val = window.prompt('Aylık hedef tutarı (TL). Boş bırak = temizle', (card as any).monthlyTarget ? String((card as any).monthlyTarget) : ''); if (val !== null) { const num = val.trim() === '' ? null : Number(val.replace(/\D/g,'')); (async()=>{ try { await updateAccount(card.id, num === null ? { monthlyTarget: null } : { monthlyTarget: num }); toast({ title: 'Hedef güncellendi' }); } catch(e) { toast({ variant: 'destructive', title: 'Hedef kaydedilemedi' }); } })(); } }} className="text-[10px] px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100">Hedef</button>
+                                                                                                            </div>
+                                                                                                            <div className="mt-2">
+                                                                                                                {/* Progress bar */}
+                                                                                                                {(() => {
+                                                                                                                    const target = (card as any).monthlyTarget ?? null;
+                                                                                                                    const spent = (cardExpensesByCard && cardExpensesByCard[card.id]) || 0;
+                                                                                                                    if (!target || target <= 0) {
+                                                                                                                        return <p className="text-[10px] text-slate-400">Hedef yok</p>;
+                                                                                                                    }
+                                                                                                                    const pct = Math.min(100, Math.round((spent / target) * 100));
+                                                                                                                    return (
+                                                                                                                        <div className="w-full">
+                                                                                                                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                                                                                                <div className={cn('h-full rounded-full', pct >= 100 ? 'bg-rose-500' : 'bg-emerald-500')} style={{ width: `${pct}%` }} />
+                                                                                                                            </div>
+                                                                                                                            <p className="text-[10px] text-slate-500 mt-1">{pct}% • {spent.toLocaleString('tr-TR')} / {target.toLocaleString('tr-TR')} ₺</p>
+                                                                                                                        </div>
+                                                                                                                    );
+                                                                                                                })()}
+                                                                                                            </div>
                                         </div>
                                     </button>
                                 );
