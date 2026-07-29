@@ -220,7 +220,7 @@ export function BudgetClient() {
 
             filteredTransactionsForMonth.forEach(t => {
                 if (!daily[t.date]) {
-                    daily[t.date] = { date: format(parseISO(t.date), 'd EEEE', {locale: tr}), dateISO: t.date, dayTotalIncome: 0, dayTotalExpense: 0, transactions: [] };
+                    daily[t.date] = { date: format(parseISO(t.date), 'd MMMM EEEE', {locale: tr}), dateISO: t.date, dayTotalIncome: 0, dayTotalExpense: 0, transactions: [] };
                 }
                 if (t.type === 'income') daily[t.date].dayTotalIncome += t.amount;
                 else daily[t.date].dayTotalExpense += t.amount;
