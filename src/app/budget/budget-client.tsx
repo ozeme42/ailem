@@ -1053,13 +1053,13 @@ export function BudgetClient() {
               </button>
             </div>
 
-            {/* Kredi Kartları (Gerçek Fiziksel Kart Görünümü) */}
+            {/* Kredi Kartları (Tek Satır - Mini Fiziksel Kartlar) */}
             {financialCalculations.creditCardStatements.length > 0 && (
               <div>
                 <p style={{ color: theme.textMuted }} className="font-black text-[10px] uppercase tracking-widest ml-1 mb-2">
                   Kredi Kartları
                 </p>
-                <div className="space-y-3">
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x">
                   {financialCalculations.creditCardStatements.map((acc) => {
                     const palette = getCardPalette(acc);
                     const hasTarget = !!(acc as any).targetLimit && (acc as any).targetLimit > 0;
@@ -1085,66 +1085,53 @@ export function BudgetClient() {
                         style={{
                           background: `linear-gradient(135deg, ${palette.fromHex}, ${palette.toHex})`,
                         }}
-                        className="w-full relative rounded-3xl p-5 text-white text-left shadow-lg overflow-hidden transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] group"
+                        className="w-[200px] shrink-0 h-[115px] relative rounded-2xl p-3 text-white text-left shadow-md overflow-hidden transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex flex-col justify-between snap-start group"
                       >
-                        {/* Ambient decorative circles */}
-                        <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/10 pointer-events-none" />
-                        <div className="absolute -bottom-10 -left-6 w-44 h-44 rounded-full bg-white/5 pointer-events-none" />
+                        {/* Ambient decorative glow */}
+                        <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10 pointer-events-none" />
 
-                        {/* Top: Chip + Card Name + Icon */}
-                        <div className="relative z-10 flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            {/* Metallic Chip */}
-                            <div className="w-9 h-6 rounded-md bg-yellow-300/80 border border-yellow-400/50 flex items-center justify-center relative overflow-hidden shadow-inner shrink-0">
+                        {/* Top: Chip + Card Name */}
+                        <div className="relative z-10 flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {/* Metallic Chip Mini */}
+                            <div className="w-6 h-4 rounded bg-yellow-300/80 border border-yellow-400/50 flex items-center justify-center relative overflow-hidden shrink-0">
                               <div className="w-full h-[1px] bg-yellow-600/40 my-0.5" />
-                              <div className="absolute h-full w-[1px] bg-yellow-600/40 left-3" />
                             </div>
-                            <div>
-                              <span className="text-white/70 text-[9px] font-extrabold uppercase tracking-widest block">Kredi Kartı</span>
-                              <span className="font-extrabold text-base leading-tight drop-shadow-sm">{acc.name}</span>
-                            </div>
+                            <span className="font-extrabold text-xs truncate leading-tight drop-shadow-sm">{acc.name}</span>
                           </div>
-                          <CreditCard size={22} className="text-white/40 group-hover:text-white/60 transition-colors" />
+                          <CreditCard size={15} className="text-white/50 shrink-0" />
                         </div>
 
-                        {/* Middle: Masked card number */}
-                        <div className="relative z-10 flex items-center gap-2 text-white/50 text-xs font-mono mb-3">
-                          <span>••••</span>
-                          <span>••••</span>
-                          <span>••••</span>
-                          <span className="text-white/80 font-bold">****</span>
-                        </div>
-
-                        {/* Bottom: Spent amount, remaining balance, and progress bar */}
-                        <div className="relative z-10 pt-2 border-t border-white/15">
-                          <div className="flex justify-between items-end mb-1.5">
+                        {/* Middle: Net Harcama & Kalan */}
+                        <div className="relative z-10">
+                          <div className="flex justify-between items-baseline">
                             <div>
-                              <span className="text-white/60 text-[9px] font-bold uppercase tracking-wider block">Net Harcama</span>
-                              <span className="text-white font-black text-xl tracking-tight">₺{acc.monthSpent.toLocaleString("tr-TR")}</span>
+                              <span className="text-white/60 text-[8px] font-extrabold uppercase tracking-wider block">Net Harcama</span>
+                              <span className="text-white font-black text-base tracking-tight">₺{acc.monthSpent.toLocaleString("tr-TR")}</span>
                             </div>
                             {remaining !== null && (
                               <div className="text-right">
-                                <span className="text-white/60 text-[9px] font-bold uppercase tracking-wider block">Kalan Bakiye</span>
-                                <span className="text-white/90 font-bold text-sm">₺{remaining.toLocaleString("tr-TR")}</span>
+                                <span className="text-white/60 text-[8px] font-extrabold uppercase tracking-wider block">Kalan</span>
+                                <span className="text-white/90 font-extrabold text-xs">₺{remaining.toLocaleString("tr-TR")}</span>
                               </div>
                             )}
                           </div>
-
-                          {(hasTarget || hasLimit) && (
-                            <div>
-                              <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
-                                <div
-                                  className={cn("h-full rounded-full transition-all duration-500", pct >= 90 ? "bg-rose-300" : "bg-white/90")}
-                                  style={{ width: `${pct}%` }}
-                                />
-                              </div>
-                              <div className="flex justify-between items-center mt-1 text-[9px] font-bold text-white/60">
-                                <span>%{pct} Harcandı</span>
-                                <span>{hasTarget ? `Hedef: ₺${((acc as any).targetLimit || 0).toLocaleString("tr-TR")}` : `Limit: ₺${acc.creditLimit?.toLocaleString("tr-TR")}`}</span>
-                              </div>
-                            </div>
-                          )}
                         </div>
+
+                        {/* Bottom: Mini Progress Bar */}
+                        {(hasTarget || hasLimit) && (
+                          <div className="relative z-10">
+                            <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden">
+                              <div
+                                className={cn("h-full rounded-full transition-all duration-500", pct >= 90 ? "bg-rose-300" : "bg-white/90")}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <div className="flex justify-between items-center mt-0.5 text-[8px] font-bold text-white/60">
+                              <span>%{pct} Harcandı</span>
+                            </div>
+                          </div>
+                        )}
                       </button>
                     );
                   })}
