@@ -653,9 +653,8 @@ export function BudgetClient() {
                                 return (
                                                                     <button key={card.id} onClick={() => setSelectedCardId(selected ? null : card.id)} className={"min-w-[120px] flex-shrink-0 rounded-full overflow-hidden shadow-sm " + (selected ? 'ring-2 ring-indigo-400' : '')}>
                                                                         <div className="w-full h-16 bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-white font-extrabold text-lg relative">
-                                                                            <div className="absolute top-1 right-1 bg-black/30 px-1 py-0.5 rounded-full text-[10px]">{amt.toLocaleString('tr-TR')} ₺</div>
-                                                                            <div className="text-lg">{amt.toLocaleString('tr-TR')} ₺</div>
-                                        </div>
+                                                                                                                                                    <div className="absolute top-1 right-1 bg-black/30 px-1 py-0.5 rounded-full text-[10px]">{amt.toLocaleString('tr-TR')} ₺</div>
+                                                                                                                </div>
                                                                         <div className="p-1 bg-white dark:bg-slate-900 text-center">
                                                                             <p className="text-[10px] font-bold truncate">{card.name}</p>
                                         </div>
