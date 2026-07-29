@@ -577,60 +577,63 @@ export function BudgetClient() {
                 </Dialog>
             )}
 
-            
-            {/* HERO ALANI (FinPlan Tarzı Koyu Gradyan) */}
-            <div className="bg-gradient-to-b from-indigo-950 via-indigo-900 to-slate-900 dark:from-black dark:to-[#0a0a14] text-white pt-[calc(env(safe-area-inset-top)+20px)] pb-12 px-4 rounded-b-[40px] relative z-10 overflow-hidden shadow-[0_10px_40px_rgb(0,0,0,0.2)]">
-                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                    <div className="absolute top-[-20%] left-[-10%] w-[300px] h-[300px] bg-indigo-500/20 rounded-full blur-[80px]" />
-                    <div className="absolute bottom-[-10%] right-[-10%] w-[250px] h-[250px] bg-purple-500/20 rounded-full blur-[80px]" />
-                </div>
-                
-                <div className="flex justify-between items-center mb-6 relative z-10 max-w-2xl mx-auto">
-                    <Button variant="ghost" size="icon" onClick={() => router.back()} className="text-white hover:bg-white/10 rounded-full">
-                        <ArrowLeft className="w-6 h-6" />
-                    </Button>
-                    <h1 className="text-[17px] font-bold tracking-wide">Bütçe Takibi</h1>
-                    <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => window.print()} className="text-white hover:bg-white/10 rounded-full print:hidden">
-                            <Printer className="w-5 h-5" />
-                        </Button>
-                        <Link href="/budget/stats" className="print:hidden">
-                            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full">
-                                <BarChart2 className="w-5 h-5" />
-                            </Button>
-                        </Link>
-                    </div>
-                </div>
+            {/* RN-style HERO: linear gradient banner, large total and stat cards */}
+            <div className="relative z-10">
+                <div style={{ background: 'linear-gradient(135deg, #3B2145 0%, #7A3B57 50%, #C1653F 100%)' }} className="text-white pt-[calc(env(safe-area-inset-top)+18px)] pb-12 px-4 rounded-b-[32px] overflow-hidden shadow-[0_10px_40px_rgb(0,0,0,0.18)]">
+                    <div className="absolute -top-16 -left-10 w-72 h-72 rounded-full opacity-20 blur-3xl" style={{ background: '#ffffff' }} />
+                    <div className="absolute -bottom-14 -right-10 w-64 h-64 rounded-full opacity-14 blur-2xl" style={{ background: '#ffffff' }} />
 
-                <div className="text-center relative z-10 mb-8 max-w-2xl mx-auto">
-                    <p className="text-indigo-200/80 text-xs font-bold uppercase tracking-widest mb-1">{labelTotal}</p>
-                    <h2 className="text-5xl font-black tracking-tighter flex items-center justify-center gap-1">
-                        {headerTotal.toLocaleString('tr-TR')} <span className="text-3xl text-indigo-300 font-bold">₺</span>
-                    </h2>
-                </div>
+                    <div className="max-w-2xl mx-auto">
+                        <div className="flex justify-between items-center mb-6">
+                            <button onClick={() => router.back()} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/12">
+                                <ArrowLeft className="w-4 h-4" />
+                            </button>
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-[17px] font-bold tracking-wide">Bütçe Takibi</h1>
+                            </div>
+                            <div className="flex gap-2 items-center">
+                                <button onClick={() => window.print()} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/12">
+                                    <Printer className="w-4 h-4" />
+                                </button>
+                                <Link href="/budget/stats" className="">
+                                    <button className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/12">
+                                        <BarChart2 className="w-4 h-4" />
+                                    </button>
+                                </Link>
+                            </div>
+                        </div>
 
-                <div className="flex justify-between gap-3 relative z-10 max-w-2xl mx-auto">
-                    <div className="flex-1 bg-white/10 backdrop-blur-md rounded-3xl p-3 sm:p-4 border border-white/10 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-                            <ArrowDownLeft className="w-5 h-5 text-emerald-400" />
+                        <div className="text-center mb-8">
+                            <p className="text-white/80 text-xs font-bold uppercase tracking-widest mb-1">{labelTotal}</p>
+                            <div className="flex items-end justify-center gap-2">
+                                <div className="text-5xl font-black tracking-tighter">{headerTotal.toLocaleString('tr-TR')}</div>
+                                <div className="text-2xl text-white/80 font-bold">₺</div>
+                            </div>
                         </div>
-                        <div className="min-w-0">
-                            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">{labelIncome}</p>
-                            <p className="text-lg sm:text-xl font-bold text-white truncate">{headerIncome.toLocaleString('tr-TR')} ₺</p>
-                        </div>
-                    </div>
-                    <div className="flex-1 bg-white/10 backdrop-blur-md rounded-3xl p-3 sm:p-4 border border-white/10 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-rose-500/20 flex items-center justify-center shrink-0">
-                            <ArrowUpRight className="w-5 h-5 text-rose-400" />
-                        </div>
-                        <div className="min-w-0">
-                            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">{labelExpense}</p>
-                            <p className="text-lg sm:text-xl font-bold text-white truncate">{headerExpense.toLocaleString('tr-TR')} ₺</p>
+
+                        <div className="flex justify-between gap-3">
+                            <div className="flex-1 bg-white/10 rounded-2xl p-3 flex items-center gap-3 border border-white/10">
+                                <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                    <ArrowDownLeft className="w-4 h-4 text-emerald-300" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-bold text-white/80 uppercase tracking-wider">{labelIncome}</p>
+                                    <p className="text-lg font-bold text-white truncate">{headerIncome.toLocaleString('tr-TR')} ₺</p>
+                                </div>
+                            </div>
+                            <div className="flex-1 bg-white/10 rounded-2xl p-3 flex items-center gap-3 border border-white/10">
+                                <div className="w-10 h-10 rounded-full bg-rose-500/20 flex items-center justify-center">
+                                    <ArrowUpRight className="w-4 h-4 text-rose-300" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-bold text-white/80 uppercase tracking-wider">{labelExpense}</p>
+                                    <p className="text-lg font-bold text-white truncate">{headerExpense.toLocaleString('tr-TR')} ₺</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
             {/* TABS (FinPlan tarzı modern ikonlu) */}
             <div className="px-4 -mt-6 relative z-20 max-w-2xl mx-auto">
                 <div className="bg-white dark:bg-slate-900 rounded-[24px] p-1.5 flex shadow-lg border border-slate-100 dark:border-slate-800">
