@@ -104,6 +104,7 @@ export function BudgetClient() {
     const [paymentAccountId, setPaymentAccountId] = React.useState<string>("");
 
     const [mainTab, setMainTab] = React.useState('day');
+    const [selectedCardId, setSelectedCardId] = React.useState<string | null>(null);
 
     React.useEffect(() => {
         if (!familyId) return;
@@ -515,6 +516,30 @@ export function BudgetClient() {
     // --- SABİT GİDERLER (Abonelikler vb.) ---
     const recurringExpenses = React.useMemo(() => {
         return allTransactions.filter(tx => tx.isRecurring && tx.type === 'expense');
+    }, [allTransactions]);
+
+    // Compute per-card expenses for the displayed month (used in the card tiles)
+    const cardExpensesByCard = React.useMemo(() => {
+        const txsForHelper = allTransactions.map(t => {
+            const acc = accounts.find(a => a.id === t.accountId);
+            const accountType = acc ? (acc.type === 'credit-card' ? 'card' : acc.type) : 'bank';
+            return {
+                id: t.id,
+                date: t.date,
+                amount: t.amount,
+                type: t.type,
+                accountType,
+                cardId: accountType === 'card' ? t.accountId : undefined
+            };
+        });
+
+        const cardsForHelper = accounts
+            .filter(a => a.type === 'credit-card')
+            .map(a => ({ id: a.id, name: a.name, statementDay: a.statementDate ?? 1 }));
+
+        const budget = computeBudgetNetForMonth(currentDate, txsForHelper as any, cardsForHelper as any);
+        return budget.cardExpensesByCard;
+    }, [allTransactions, accounts, currentDate]);
     }, [allTransactions]);
 
     return (
