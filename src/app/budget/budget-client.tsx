@@ -651,7 +651,7 @@ export function BudgetClient() {
                                 const amt = (cardExpensesByCard && cardExpensesByCard[card.id]) || 0;
                                 const selected = selectedCardId === card.id;
                                 return (
-                                                                    <button key={card.id} onClick={() => setSelectedCardId(selected ? null : card.id)} className={"min-w-[120px] flex-shrink-0 rounded-full overflow-hidden shadow-sm " + (selected ? 'ring-2 ring-indigo-400' : '')}>
+                                                                    <div key={card.id} role="button" tabIndex={0} onClick={() => setSelectedCardId(selected ? null : card.id)} onKeyDown={(e: any) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedCardId(selected ? null : card.id); } }} className={"min-w-[120px] flex-shrink-0 rounded-full overflow-hidden shadow-sm " + (selected ? 'ring-2 ring-indigo-400' : '')}>
                                                                         <div className="w-full h-16 bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-white font-extrabold text-lg relative">
                                                                                                                                                     <div className="text-lg">{amt.toLocaleString('tr-TR')} ₺</div>
                                                                                                                 </div>
@@ -680,7 +680,7 @@ export function BudgetClient() {
                                                                                                                 })()}
                                                                                                             </div>
                                         </div>
-                                    </button>
+                                                                                                        </div>
                                 );
                             })}
                         </div>
