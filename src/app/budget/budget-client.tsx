@@ -651,13 +651,13 @@ export function BudgetClient() {
                                 const amt = (cardExpensesByCard && cardExpensesByCard[card.id]) || 0;
                                 const selected = selectedCardId === card.id;
                                 return (
-                                    <button key={card.id} onClick={() => setSelectedCardId(selected ? null : card.id)} className={"min-w-[220px] flex-shrink-0 rounded-2xl overflow-hidden shadow-md " + (selected ? 'ring-2 ring-indigo-400' : '')}>
-                                        <div className="w-full h-36 bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-white font-extrabold text-2xl relative">
-                                            <div className="absolute top-3 right-3 bg-black/30 px-3 py-1 rounded-full text-xs">{amt.toLocaleString('tr-TR')} ₺</div>
-                                            <div className="text-3xl">{amt.toLocaleString('tr-TR')} ₺</div>
+                                                                    <button key={card.id} onClick={() => setSelectedCardId(selected ? null : card.id)} className={"min-w-[160px] flex-shrink-0 rounded-3xl overflow-hidden shadow-sm " + (selected ? 'ring-2 ring-indigo-400' : '')}>
+                                                                        <div className="w-full h-24 bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-white font-extrabold text-xl relative">
+                                                                            <div className="absolute top-2 right-2 bg-black/30 px-2 py-0.5 rounded-full text-xs">{amt.toLocaleString('tr-TR')} ₺</div>
+                                                                            <div className="text-xl">{amt.toLocaleString('tr-TR')} ₺</div>
                                         </div>
-                                        <div className="p-3 bg-white dark:bg-slate-900 text-center">
-                                            <p className="text-sm font-bold truncate">{card.name}</p>
+                                                                        <div className="p-2 bg-white dark:bg-slate-900 text-center">
+                                                                            <p className="text-xs font-bold truncate">{card.name}</p>
                                         </div>
                                     </button>
                                 );
