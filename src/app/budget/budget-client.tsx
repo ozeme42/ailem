@@ -624,7 +624,8 @@ export function BudgetClient() {
                 
                 {/* TARİH SEÇİCİ (Günlük/Aylık sekmelerinde) */}
                 {(mainTab === 'day' || mainTab === 'month') && (
-                    <div className="flex items-center justify-between px-4">
+                <>
+                <div className="flex items-center justify-between px-4">
                         <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 dark:text-indigo-400" onClick={() => handleNavDate('prev')}><ChevronLeft className="h-5 w-5"/></Button>
                         <Popover>
                             <PopoverTrigger asChild>
@@ -643,6 +644,28 @@ export function BudgetClient() {
                         </Popover>
                         <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 dark:text-indigo-400" onClick={() => handleNavDate('next')}><ChevronRight className="h-5 w-5"/></Button>
                     </div>
+
+                    {/* Credit cards carousel */}
+                    <div className="px-4 mt-4">
+                        <div className="flex gap-4 overflow-x-auto pb-3">
+                            {accounts.filter(a => a.type === 'credit-card').map(card => {
+                                const amt = (cardExpensesByCard && cardExpensesByCard[card.id]) || 0;
+                                const selected = selectedCardId === card.id;
+                                return (
+                                    <button key={card.id} onClick={() => setSelectedCardId(selected ? null : card.id)} className={"min-w-[220px] flex-shrink-0 rounded-2xl overflow-hidden shadow-md " + (selected ? 'ring-2 ring-indigo-400' : '')}>
+                                        <div className="w-full h-36 bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-white font-extrabold text-2xl relative">
+                                            <div className="absolute top-3 right-3 bg-black/30 px-3 py-1 rounded-full text-xs">{amt.toLocaleString('tr-TR')} ₺</div>
+                                            <div className="text-3xl">{amt.toLocaleString('tr-TR')} ₺</div>
+                                        </div>
+                                        <div className="p-3 bg-white dark:bg-slate-900 text-center">
+                                            <p className="text-sm font-bold truncate">{card.name}</p>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    </>
                 )}
 
                 {/* BÜTÇE LİMİTLERİ (Progress Barlar - Sadece Günlük/Aylık'ta gösterilir) */}
@@ -696,7 +719,7 @@ export function BudgetClient() {
                                     </div>
                                     
                                     <div className="bg-white dark:bg-slate-900 rounded-[24px] shadow-sm border border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800/50">
-                                        {group.transactions.map((tx) => {
+                                        {group.transactions.filter(tx => !selectedCardId || tx.accountId === selectedCardId).map((tx) => {
                                             const account = accounts.find(a => a.id === tx.accountId);
                                             const dynamicCategory = categories.find(c => c.name === tx.category);
                                             let config = categoryConfig[tx.category];
