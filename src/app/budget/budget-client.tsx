@@ -1053,13 +1053,13 @@ export function BudgetClient() {
               </button>
             </div>
 
-            {/* Kredi Kartları (Tek Satır - Mini Fiziksel Kartlar) */}
+            {/* Kredi Kartları (Yan Yana 2 Kart Grid Görünümü) */}
             {financialCalculations.creditCardStatements.length > 0 && (
               <div>
                 <p style={{ color: theme.textMuted }} className="font-black text-[10px] uppercase tracking-widest ml-1 mb-2">
                   Kredi Kartları
                 </p>
-                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x">
+                <div className="grid grid-cols-2 gap-2.5">
                   {financialCalculations.creditCardStatements.map((acc) => {
                     const palette = getCardPalette(acc);
                     const hasTarget = !!(acc as any).targetLimit && (acc as any).targetLimit > 0;
@@ -1085,34 +1085,34 @@ export function BudgetClient() {
                         style={{
                           background: `linear-gradient(135deg, ${palette.fromHex}, ${palette.toHex})`,
                         }}
-                        className="w-[200px] shrink-0 h-[115px] relative rounded-2xl p-3 text-white text-left shadow-md overflow-hidden transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex flex-col justify-between snap-start group"
+                        className="w-full h-[110px] relative rounded-2xl p-2.5 text-white text-left shadow-md overflow-hidden transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex flex-col justify-between group"
                       >
                         {/* Ambient decorative glow */}
-                        <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10 pointer-events-none" />
+                        <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-white/10 pointer-events-none" />
 
                         {/* Top: Chip + Card Name */}
                         <div className="relative z-10 flex items-center justify-between">
-                          <div className="flex items-center gap-2 min-w-0">
+                          <div className="flex items-center gap-1.5 min-w-0 mr-1">
                             {/* Metallic Chip Mini */}
-                            <div className="w-6 h-4 rounded bg-yellow-300/80 border border-yellow-400/50 flex items-center justify-center relative overflow-hidden shrink-0">
+                            <div className="w-5 h-3.5 rounded bg-yellow-300/80 border border-yellow-400/50 flex items-center justify-center relative overflow-hidden shrink-0">
                               <div className="w-full h-[1px] bg-yellow-600/40 my-0.5" />
                             </div>
-                            <span className="font-extrabold text-xs truncate leading-tight drop-shadow-sm">{acc.name}</span>
+                            <span className="font-extrabold text-[11px] truncate leading-tight drop-shadow-sm">{acc.name}</span>
                           </div>
-                          <CreditCard size={15} className="text-white/50 shrink-0" />
+                          <CreditCard size={13} className="text-white/50 shrink-0" />
                         </div>
 
                         {/* Middle: Net Harcama & Kalan */}
                         <div className="relative z-10">
                           <div className="flex justify-between items-baseline">
-                            <div>
-                              <span className="text-white/60 text-[8px] font-extrabold uppercase tracking-wider block">Net Harcama</span>
-                              <span className="text-white font-black text-base tracking-tight">₺{acc.monthSpent.toLocaleString("tr-TR")}</span>
+                            <div className="min-w-0">
+                              <span className="text-white/60 text-[7.5px] font-extrabold uppercase tracking-wider block">Net Harcama</span>
+                              <span className="text-white font-black text-sm tracking-tight truncate block">₺{acc.monthSpent.toLocaleString("tr-TR")}</span>
                             </div>
                             {remaining !== null && (
-                              <div className="text-right">
-                                <span className="text-white/60 text-[8px] font-extrabold uppercase tracking-wider block">Kalan</span>
-                                <span className="text-white/90 font-extrabold text-xs">₺{remaining.toLocaleString("tr-TR")}</span>
+                              <div className="text-right shrink-0 ml-1">
+                                <span className="text-white/60 text-[7.5px] font-extrabold uppercase tracking-wider block">Kalan</span>
+                                <span className="text-white/90 font-extrabold text-[10px]">₺{remaining.toLocaleString("tr-TR")}</span>
                               </div>
                             )}
                           </div>
@@ -1127,7 +1127,7 @@ export function BudgetClient() {
                                 style={{ width: `${pct}%` }}
                               />
                             </div>
-                            <div className="flex justify-between items-center mt-0.5 text-[8px] font-bold text-white/60">
+                            <div className="flex justify-between items-center mt-0.5 text-[7.5px] font-bold text-white/60">
                               <span>%{pct} Harcandı</span>
                             </div>
                           </div>
