@@ -1053,103 +1053,104 @@ export function BudgetClient() {
               </button>
             </div>
 
-            {/* Credit Cards SVG Gauge Carousel */}
-            <div>
-              <p style={{ color: theme.textMuted }} className="font-black text-[10px] uppercase tracking-widest ml-1 mb-2">Kredi Kartları</p>
-              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none">
-                {/* Kart Ekle Circle */}
-                <button
-                  onClick={() => {
-                    setAccType("credit-card");
-                    openNewAccount();
-                  }}
-                  className="flex flex-col items-center shrink-0 group"
-                >
-                  <div className="w-[104px] h-[104px] relative flex items-center justify-center">
-                    <svg width="104" height="104" viewBox="0 0 104 104" className="absolute">
-                      <circle cx="52" cy="52" r="48" stroke={theme.accent} strokeWidth="2" fill="none" strokeDasharray="6,5" />
-                    </svg>
-                    <div style={{ backgroundColor: theme.accent + "1E" }} className="w-[88px] h-[88px] rounded-full flex items-center justify-center group-hover:scale-105 transition-transform">
-                      <Plus size={26} style={{ color: theme.accent }} />
-                    </div>
-                  </div>
-                  <span className="font-extrabold text-[12px] mt-2 text-[#2B2420]">Kart Ekle</span>
-                  <span style={{ color: theme.textMuted }} className="font-bold text-[10px]">Yeni Kart</span>
-                </button>
+            {/* Kredi Kartları (Gerçek Fiziksel Kart Görünümü) */}
+            {financialCalculations.creditCardStatements.length > 0 && (
+              <div>
+                <p style={{ color: theme.textMuted }} className="font-black text-[10px] uppercase tracking-widest ml-1 mb-2">
+                  Kredi Kartları
+                </p>
+                <div className="space-y-3">
+                  {financialCalculations.creditCardStatements.map((acc) => {
+                    const palette = getCardPalette(acc);
+                    const hasTarget = !!(acc as any).targetLimit && (acc as any).targetLimit > 0;
+                    const hasLimit = !!acc.creditLimit && acc.creditLimit > 0;
+                    const validSpent = Math.max(0, acc.monthSpent);
 
-                {/* Credit Card Rings */}
-                {financialCalculations.creditCardStatements.map((acc) => {
-                  const palette = getCardPalette(acc);
-                  const hasTarget = !!(acc as any).targetLimit && (acc as any).targetLimit > 0;
-                  const hasLimit = !!acc.creditLimit && acc.creditLimit > 0;
-                  const validSpent = Math.max(0, acc.monthSpent);
+                    const pct = hasTarget
+                      ? Math.min((validSpent / ((acc as any).targetLimit || 1)) * 100, 100)
+                      : hasLimit
+                      ? Math.min((acc.balance / (acc.creditLimit || 1)) * 100, 100)
+                      : 0;
 
-                  const pct = hasTarget
-                    ? Math.min((validSpent / ((acc as any).targetLimit || 1)) * 100, 100)
-                    : hasLimit
-                    ? Math.min((acc.balance / (acc.creditLimit || 1)) * 100, 100)
-                    : 0;
+                    const remaining = hasTarget
+                      ? Math.max(((acc as any).targetLimit || 0) - validSpent, 0)
+                      : hasLimit
+                      ? Math.max((acc.creditLimit || 0) - acc.balance, 0)
+                      : null;
 
-                  const isOverLimit = pct >= 90;
-                  const strokeColor = isOverLimit ? theme.expense : palette.hex;
-                  const remaining = hasTarget
-                    ? Math.max(((acc as any).targetLimit || 0) - validSpent, 0)
-                    : hasLimit
-                    ? Math.max((acc.creditLimit || 0) - acc.balance, 0)
-                    : null;
+                    return (
+                      <button
+                        key={acc.id}
+                        onClick={() => handleOpenStatement(acc)}
+                        style={{
+                          background: `linear-gradient(135deg, ${palette.fromHex}, ${palette.toHex})`,
+                        }}
+                        className="w-full relative rounded-3xl p-5 text-white text-left shadow-lg overflow-hidden transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] group"
+                      >
+                        {/* Ambient decorative circles */}
+                        <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/10 pointer-events-none" />
+                        <div className="absolute -bottom-10 -left-6 w-44 h-44 rounded-full bg-white/5 pointer-events-none" />
 
-                  const circumference = 2 * Math.PI * 48; // ~301.59
-                  const strokeDashoffset = circumference - (pct / 100) * circumference;
-
-                  return (
-                    <button
-                      key={acc.id}
-                      onClick={() => handleOpenStatement(acc)}
-                      className="flex flex-col items-center shrink-0 group text-center"
-                    >
-                      <div className="w-[104px] h-[104px] relative flex items-center justify-center">
-                        <svg width="104" height="104" viewBox="0 0 104 104" className="absolute">
-                          <circle cx="52" cy="52" r="48" stroke={theme.borderStrong} strokeWidth="4" fill="none" />
-                          {(hasTarget || hasLimit) && pct > 0 && (
-                            <circle
-                              cx="52"
-                              cy="52"
-                              r="48"
-                              stroke={strokeColor}
-                              strokeWidth="5"
-                              fill="none"
-                              strokeDasharray={`${circumference} ${circumference}`}
-                              strokeDashoffset={strokeDashoffset}
-                              strokeLinecap="round"
-                              transform="rotate(-90 52 52)"
-                              className="transition-all duration-700"
-                            />
-                          )}
-                        </svg>
-                        <div
-                          style={{
-                            background: `linear-gradient(135deg, ${palette.fromHex}, ${palette.toHex})`,
-                          }}
-                          className="w-[88px] h-[88px] rounded-full flex flex-col items-center justify-center p-1 text-white shadow-md group-hover:scale-105 transition-transform"
-                        >
-                          <CreditCard size={14} className="opacity-90 mb-0.5" />
-                          <span className="font-black text-[12px] leading-tight">₺{acc.monthSpent.toLocaleString("tr-TR")}</span>
-                          {remaining !== null ? (
-                            <div className="bg-black/25 px-1.5 py-0.5 rounded text-[8px] mt-0.5 leading-tight">
-                              <span className="opacity-75 block text-[7px]">Kalan</span>
-                              <span className="font-bold">₺{remaining.toLocaleString("tr-TR")}</span>
+                        {/* Top: Chip + Card Name + Icon */}
+                        <div className="relative z-10 flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            {/* Metallic Chip */}
+                            <div className="w-9 h-6 rounded-md bg-yellow-300/80 border border-yellow-400/50 flex items-center justify-center relative overflow-hidden shadow-inner shrink-0">
+                              <div className="w-full h-[1px] bg-yellow-600/40 my-0.5" />
+                              <div className="absolute h-full w-[1px] bg-yellow-600/40 left-3" />
                             </div>
-                          ) : (
-                            <span className="text-[8px] font-bold opacity-80 uppercase tracking-tight">Net Harcama</span>
+                            <div>
+                              <span className="text-white/70 text-[9px] font-extrabold uppercase tracking-widest block">Kredi Kartı</span>
+                              <span className="font-extrabold text-base leading-tight drop-shadow-sm">{acc.name}</span>
+                            </div>
+                          </div>
+                          <CreditCard size={22} className="text-white/40 group-hover:text-white/60 transition-colors" />
+                        </div>
+
+                        {/* Middle: Masked card number */}
+                        <div className="relative z-10 flex items-center gap-2 text-white/50 text-xs font-mono mb-3">
+                          <span>••••</span>
+                          <span>••••</span>
+                          <span>••••</span>
+                          <span className="text-white/80 font-bold">****</span>
+                        </div>
+
+                        {/* Bottom: Spent amount, remaining balance, and progress bar */}
+                        <div className="relative z-10 pt-2 border-t border-white/15">
+                          <div className="flex justify-between items-end mb-1.5">
+                            <div>
+                              <span className="text-white/60 text-[9px] font-bold uppercase tracking-wider block">Net Harcama</span>
+                              <span className="text-white font-black text-xl tracking-tight">₺{acc.monthSpent.toLocaleString("tr-TR")}</span>
+                            </div>
+                            {remaining !== null && (
+                              <div className="text-right">
+                                <span className="text-white/60 text-[9px] font-bold uppercase tracking-wider block">Kalan Bakiye</span>
+                                <span className="text-white/90 font-bold text-sm">₺{remaining.toLocaleString("tr-TR")}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {(hasTarget || hasLimit) && (
+                            <div>
+                              <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
+                                <div
+                                  className={cn("h-full rounded-full transition-all duration-500", pct >= 90 ? "bg-rose-300" : "bg-white/90")}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <div className="flex justify-between items-center mt-1 text-[9px] font-bold text-white/60">
+                                <span>%{pct} Harcandı</span>
+                                <span>{hasTarget ? `Hedef: ₺${((acc as any).targetLimit || 0).toLocaleString("tr-TR")}` : `Limit: ₺${acc.creditLimit?.toLocaleString("tr-TR")}`}</span>
+                              </div>
+                            </div>
                           )}
                         </div>
-                      </div>
-                      <span className="font-extrabold text-[12px] mt-2 text-[#2B2420] truncate max-w-[104px]">{acc.name}</span>
-                    </button>
-                  );
-                })}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Daily Transactions */}
             <div>
