@@ -540,7 +540,6 @@ export function BudgetClient() {
         const budget = computeBudgetNetForMonth(currentDate, txsForHelper as any, cardsForHelper as any);
         return budget.cardExpensesByCard;
     }, [allTransactions, accounts, currentDate]);
-    }, [allTransactions]);
 
     return (
         <div className="min-h-[100dvh] font-sans pb-[calc(100px+env(safe-area-inset-bottom))] relative bg-slate-50 dark:bg-[#0a0a14] transition-colors duration-500">
