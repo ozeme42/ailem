@@ -685,36 +685,47 @@ export function BudgetClient() {
                                 const amt = (cardExpensesByCard && cardExpensesByCard[card.id]) || 0;
                                 const selected = selectedCardId === card.id;
                                 return (
-                                                                    <div key={card.id} role="button" tabIndex={0} onClick={() => setSelectedCardId(selected ? null : card.id)} onKeyDown={(e: any) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedCardId(selected ? null : card.id); } }} className={"min-w-[120px] flex-shrink-0 rounded-full overflow-hidden shadow-sm " + (selected ? 'ring-2 ring-indigo-400' : '')}>
-                                                                        <div className="w-full h-16 bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-white font-extrabold text-lg relative">
-                                                                                                                                                    <div className="text-lg">{amt.toLocaleString('tr-TR')} ₺</div>
-                                                                                                                </div>
-                                                                        <div className="p-1 bg-white dark:bg-slate-900 text-center">
-                                                                                                            <div className="flex items-center justify-between gap-2">
-                                                                                                                <p className="text-[10px] font-bold truncate">{card.name}</p>
-                                                                                                                <button onClick={(e) => { e.stopPropagation(); setTargetModalCard({ id: card.id, value: (card as any).monthlyTarget ? String((card as any).monthlyTarget) : '' }); }} className="text-[10px] px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100">Hedef</button>
-                                                                                                            </div>
-                                                                                                            <div className="mt-2">
-                                                                                                                {/* Progress bar */}
-                                                                                                                {(() => {
-                                                                                                                    const target = (card as any).monthlyTarget ?? null;
-                                                                                                                    const spent = (cardExpensesByCard && cardExpensesByCard[card.id]) || 0;
-                                                                                                                    if (!target || target <= 0) {
-                                                                                                                        return <p className="text-[10px] text-slate-400">Hedef yok</p>;
-                                                                                                                    }
-                                                                                                                    const pct = Math.min(100, Math.round((spent / target) * 100));
-                                                                                                                    return (
-                                                                                                                        <div className="w-full">
-                                                                                                                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                                                                                                <div className={cn('h-full rounded-full', pct >= 100 ? 'bg-rose-500' : 'bg-emerald-500')} style={{ width: `${pct}%` }} />
-                                                                                                                            </div>
-                                                                                                                            <p className="text-[10px] text-slate-500 mt-1">{pct}% • {spent.toLocaleString('tr-TR')} / {target.toLocaleString('tr-TR')} ₺</p>
-                                                                                                                        </div>
-                                                                                                                    );
-                                                                                                                })()}
-                                                                                                            </div>
+                                    <div key={card.id} role="button" tabIndex={0} onClick={() => setSelectedCardId(selected ? null : card.id)} onKeyDown={(e: any) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedCardId(selected ? null : card.id); } }} className={"min-w-[120px] flex-shrink-0 rounded-full overflow-hidden shadow-sm " + (selected ? 'ring-2 ring-indigo-400' : '')}>
+                                        <div className="w-full h-16 flex items-center justify-center relative">
+                                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-white font-extrabold text-lg relative z-10">
+                                                <div className="text-lg">{amt.toLocaleString('tr-TR')} ₺</div>
+                                            </div>
+                                            {/* Circular progress ring around the circle */}
+                                            {(() => {
+                                                const target = (card as any).monthlyTarget ?? null;
+                                                const spent = (cardExpensesByCard && cardExpensesByCard[card.id]) || 0;
+                                                const pct = target && target > 0 ? Math.min(100, Math.round((spent / target) * 100)) : 0;
+                                                const radius = 28;
+                                                const circumference = 2 * Math.PI * radius;
+                                                const dashOffset = circumference * (1 - (pct / 100));
+                                                if (!target || target <= 0) return null;
+                                                return (
+                                                    <svg className="absolute" width={64} height={64} viewBox="0 0 64 64" style={{ pointerEvents: 'none' }}>
+                                                        <circle cx={32} cy={32} r={radius} stroke="rgba(0,0,0,0.06)" strokeWidth={4} fill="transparent" />
+                                                        <circle cx={32} cy={32} r={radius} stroke={pct >= 100 ? '#ef4444' : '#10b981'} strokeWidth={4} fill="transparent" strokeLinecap="round"
+                                                            strokeDasharray={circumference} strokeDashoffset={dashOffset} transform="rotate(-90 32 32)" />
+                                                    </svg>
+                                                );
+                                            })()}
                                         </div>
-                                                                                                        </div>
+                                        <div className="p-1 bg-white dark:bg-slate-900 text-center">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <p className="text-[10px] font-bold truncate">{card.name}</p>
+                                                <button onClick={(e) => { e.stopPropagation(); setTargetModalCard({ id: card.id, value: (card as any).monthlyTarget ? String((card as any).monthlyTarget) : '' }); }} className="text-[10px] px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100">Hedef</button>
+                                            </div>
+                                            <div className="mt-2">
+                                                {(() => {
+                                                    const target = (card as any).monthlyTarget ?? null;
+                                                    const spent = (cardExpensesByCard && cardExpensesByCard[card.id]) || 0;
+                                                    if (!target || target <= 0) {
+                                                        return <p className="text-[10px] text-slate-400">Hedef yok</p>;
+                                                    }
+                                                    const pct = Math.min(100, Math.round((spent / target) * 100));
+                                                    return <p className="text-[10px] text-slate-500 mt-1">{pct}% • {spent.toLocaleString('tr-TR')} / {target.toLocaleString('tr-TR')} ₺</p>;
+                                                })()}
+                                            </div>
+                                        </div>
+                                    </div>
                                 );
                             })}
                         </div>
