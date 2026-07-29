@@ -14,7 +14,7 @@ import { useAuth } from "@/components/auth-provider";
 import { onAccountsUpdate, deleteAccount, addAccount, updateAccount, addTransaction, updateTransaction, deleteTransaction, onTransactionsUpdate, onBudgetCategoriesUpdate, onBillsUpdate, addBill, updateBill, deleteBill, onTransactionTemplatesUpdate, addTransactionTemplate } from "@/lib/dataService";
 import type { Account, Transaction, BudgetCategory, Bill, TransactionTemplate } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfYear, endOfYear, subYears, parseISO, addYears, eachMonthOfInterval, subMonths, addMonths, getYear, isSameMonth } from "date-fns";
+import { format, startOfYear, endOfYear, subYears, parseISO, addYears, eachMonthOfInterval, subMonths, addMonths, getYear, isSameMonth, isWithinInterval } from "date-fns";
 import { tr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
