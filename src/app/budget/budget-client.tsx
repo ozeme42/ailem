@@ -1182,6 +1182,138 @@ export function BudgetClient() {
                     </div>
                 </DialogContent>
             </Dialog>
+            {/* HESAP DETAYLARI MODALI */}
+            <Dialog open={isAccountDetailsOpen} onOpenChange={setIsAccountDetailsOpen}>
+                <DialogContent className="max-w-[420px] p-0 overflow-hidden bg-[#F8F5EF] rounded-[24px] border-0" showCloseButton={false}>
+                    {selectedAccountDetails && (() => {
+                        const isCreditCard = selectedAccountDetails.type === 'credit-card' || selectedAccountDetails.type === 'debt';
+                        const palette = getCardPalette(selectedAccountDetails);
+                        const bannerGrad = isCreditCard || (selectedAccountDetails as any).color ? palette.grad : theme.assetGrad;
+                        
+                        const accountTxs = allTransactions
+                            .filter((t: any) => t.accountId === selectedAccountDetails.id)
+                            .sort((a: any, b: any) => b.date.localeCompare(a.date));
+                        
+                        const grouped: Record<string, typeof accountTxs> = {};
+                        accountTxs.forEach((tx: any) => {
+                            const month = tx.date.substring(0, 7);
+                            if (!grouped[month]) grouped[month] = [];
+                            grouped[month].push(tx);
+                        });
+
+                        return (
+                            <div className="flex flex-col h-[85vh] max-h-[800px]">
+                                {/* Banner */}
+                                <div className="p-5 flex flex-col justify-between shrink-0 rounded-b-[24px] shadow-sm relative overflow-hidden" style={{ background: `linear-gradient(to bottom right, ${bannerGrad[0]}, ${bannerGrad[1]})` }}>
+                                    <div className="flex justify-between items-center mb-4 relative z-10">
+                                        <button onClick={() => setIsAccountDetailsOpen(false)} className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-white hover:bg-black/30 transition-colors">
+                                            <ChevronLeft className="w-5 h-5" />
+                                        </button>
+                                        <button onClick={() => {
+                                            setIsAccountDetailsOpen(false);
+                                            setEditingAccount(selectedAccountDetails);
+                                            setIsAccountFormOpen(true);
+                                        }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors text-white text-xs font-bold">
+                                            <MoreHorizontal className="w-4 h-4" />
+                                            <span>Düzenle</span>
+                                        </button>
+                                    </div>
+                                    <div className="relative z-10">
+                                        <p className="text-white/80 text-xs font-black uppercase tracking-wider mb-1">{selectedAccountDetails.name}</p>
+                                        {isEditingAccountDetailsBalance ? (
+                                            <div className="flex items-center gap-3 mt-1">
+                                                <input 
+                                                    type="number" 
+                                                    className="bg-transparent border-b-2 border-white/40 text-white text-3xl font-black focus:outline-none focus:border-white w-32" 
+                                                    value={accountDetailsBalanceEdit}
+                                                    onChange={(e) => setAccountDetailsBalanceEdit(e.target.value)}
+                                                    autoFocus
+                                                />
+                                                <button onClick={handleSaveAccountDetailsBalance} className="bg-white/20 text-white px-3 py-1.5 rounded-full text-xs font-black hover:bg-white/30 transition-colors">
+                                                    Kaydet
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-end gap-2 mt-1 group">
+                                                <p className="text-white text-3xl font-black">₺{selectedAccountDetails.balance.toLocaleString('tr-TR')}</p>
+                                                <button onClick={() => setIsEditingAccountDetailsBalance(true)} className="mb-2 opacity-50 hover:opacity-100 transition-opacity">
+                                                    <Pencil className="w-4 h-4 text-white" />
+                                                </button>
+                                            </div>
+                                        )}
+                                        <p className="text-white/70 text-[10px] font-bold mt-1">
+                                            {isCreditCard ? "Güncel Borç" : "Güncel Bakiye"}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Transactions */}
+                                <div className="flex-1 p-5 overflow-y-auto pb-8">
+                                    <h3 className="text-sm font-black text-[#75695C] uppercase tracking-wider mb-4">Hesap Hareketleri</h3>
+                                    
+                                    {accountTxs.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-10 opacity-50">
+                                            <Wallet className="w-12 h-12 text-[#A79C8D] mb-3" />
+                                            <p className="text-sm font-bold text-[#75695C]">Henüz işlem yok</p>
+                                        </div>
+                                    ) : (
+                                        Object.entries(grouped).map(([month, txs]) => {
+                                            const monthTotal = txs.reduce((s: number, tx: any) => s + (tx.type === 'income' ? tx.amount : -tx.amount), 0);
+                                            return (
+                                                <div key={month} className="mb-6">
+                                                    <div className="flex justify-between items-center mb-3">
+                                                        <span className="text-xs font-bold text-[#A79C8D] capitalize">
+                                                            {format(parseISO(month + '-01'), 'MMMM yyyy', { locale: tr })}
+                                                        </span>
+                                                        <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full", monthTotal >= 0 ? "bg-[#3E7C74]/10 text-[#3E7C74]" : "bg-red-100 text-red-600")}>
+                                                            {monthTotal >= 0 ? "+" : ""}₺{Math.abs(monthTotal).toLocaleString('tr-TR')}
+                                                        </span>
+                                                    </div>
+                                                    <div className="bg-white rounded-[20px] p-2 border border-[rgba(43,36,28,0.06)] shadow-sm divide-y divide-[rgba(43,36,28,0.04)]">
+                                                        {txs.map((tx: any) => {
+                                                            const customCat = categories.find(c => c.name === tx.category);
+                                                            const iconColor = customCat?.color || categoryConfig[tx.category]?.color || '#94a3b8';
+                                                            const iconBg = `${iconColor}15`;
+                                                            const TxIcon = categoryConfig[tx.category]?.icon || CircleEllipsis;
+                                                            return (
+                                                                <div key={tx.id} onClick={() => {
+                                                                    setIsAccountDetailsOpen(false);
+                                                                    setEditingTransaction(tx);
+                                                                    setIsTransactionFormOpen(true);
+                                                                }} className="flex items-center gap-3 p-2 hover:bg-black/5 rounded-[12px] cursor-pointer transition-colors group">
+                                                                    <div className="w-[36px] h-[36px] rounded-[12px] flex items-center justify-center shrink-0" style={{ backgroundColor: iconBg, color: iconColor }}>
+                                                                        {(() => {
+                                                                            if (customCat?.icon) {
+                                                                                const CustomIconComponent = ICON_MAP[customCat.icon];
+                                                                                if (CustomIconComponent) return <CustomIconComponent className="w-4 h-4" style={{color: iconColor}} />;
+                                                                                return <span className="text-[16px]">{customCat.icon}</span>;
+                                                                            }
+                                                                            return <TxIcon className="w-4 h-4" style={{color: iconColor}} />;
+                                                                        })()}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="text-[13px] font-black text-[#2B241C] truncate">{tx.title || tx.category}</p>
+                                                                        <p className="text-[10px] font-bold text-[#A79C8D] truncate">{format(parseISO(tx.date), 'dd MMMM, HH:mm', { locale: tr })}</p>
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        <p className={cn("text-[13px] font-black", tx.type === 'income' ? 'text-[#3E7C74]' : 'text-[#2B241C]')}>
+                                                                            {tx.type === 'income' ? '+' : '-'}₺{tx.amount.toLocaleString('tr-TR')}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })()}
+                </DialogContent>
+            </Dialog>
             
             <Dialog open={isTransactionFormOpen} onOpenChange={(open) => { if (!open) setEditingTransaction(null); setIsTransactionFormOpen(open); }}>
                 <DialogContent className="w-[96vw] max-w-md max-h-[92dvh] h-auto rounded-[32px] bg-[#F8F5EF] border border-[rgba(43,36,28,0.08)] shadow-2xl p-0 flex flex-col overflow-hidden focus:outline-none">
