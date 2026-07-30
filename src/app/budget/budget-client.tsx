@@ -175,18 +175,6 @@ const accountLabels: Record<string, string> = {
   debt: "Borç Hesabı",
 };
 
-function getEffectiveMonth(dateStr: string, accountId: string, accountsList: Account[]): string {
-  const acc = accountsList.find(a => a.id === accountId);
-  if (acc && acc.type === 'credit-card' && acc.statementDate) {
-    const d = parseISO(dateStr);
-    const day = d.getDate();
-    if (day > acc.statementDate) {
-      const nextMonth = addMonths(d, 1);
-      return format(nextMonth, 'yyyy-MM');
-    }
-  }
-  return dateStr.substring(0, 7);
-}
 
 export function BudgetClient() {
     const router = useRouter();
