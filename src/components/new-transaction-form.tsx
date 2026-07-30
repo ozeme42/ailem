@@ -196,8 +196,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
   const { errors } = form.formState;
 
   const filteredAccounts = React.useMemo(() => {
-    if (transactionType === 'income') return accounts.filter(acc => acc.type === 'bank' || acc.type === 'cash');
-    if (transactionType === 'expense') return accounts.filter(acc => acc.type === 'credit-card' || acc.type === 'debt' || acc.type === 'other');
+    if (transactionType === 'income') return accounts.filter(acc => acc.type !== 'credit-card' && acc.type !== 'debt');
     return accounts;
   }, [accounts, transactionType]);
   

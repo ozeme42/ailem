@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, PlusCircle, Repeat, Loader2, MoreVertical, ChevronRight } from "lucide-react";
+import { Plus, X, ArrowLeft, ListChecks, Notebook, Edit, Home, Cake, ShoppingCart, Trash2, PlusCircle, Repeat, Loader2, MoreVertical, ChevronRight, Check } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -476,7 +476,7 @@ export default function NeedsPage() {
                                         <div className="divide-y divide-sky-200 dark:divide-sky-800">
                                             {items.map((item) => (
                                                 <div key={item.id} className="flex items-center gap-4 py-3 group">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => moveItemToPendingList(selectedList.id, item)} title="Tekrar ekle">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => moveItemToPending(selectedList.id, item.id)} title="Tekrar ekle">
                                                         <Repeat className="h-4 w-4"/>
                                                     </Button>
                                                     <p className="font-semibold flex-grow line-through text-muted-foreground">{item.name}</p>
