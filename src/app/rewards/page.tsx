@@ -426,9 +426,9 @@ export default function RewardsPage() {
 
       {/* Add Behavior Modal */}
       <Dialog open={showAddBehavior} onOpenChange={setShowAddBehavior}>
-        <DialogContent className="max-w-md rounded-2xl">
+        <DialogContent className="max-w-2xl w-[95vw] rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-xl">
               <span>{behaviorType === 'positive' ? '⭐ Olumlu Davranış Ekle' : '⚠️ Olumsuz Davranış'}</span>
             </DialogTitle>
             <DialogDescription>
@@ -438,7 +438,7 @@ export default function RewardsPage() {
 
           <div className="space-y-4 py-2">
             {/* Presets Grid */}
-            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+            <div className="grid grid-cols-3 gap-3 max-h-72 overflow-y-auto pr-1">
               {allPresets
                 .filter((p) => p.type === behaviorType)
                 .map((preset) => (

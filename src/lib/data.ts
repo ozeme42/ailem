@@ -338,6 +338,7 @@ export interface Note {
     id: string;
     notebookId: string;
     sectionId: string;
+    subSectionId?: string;
     familyId: string;
     title: string;
     content: NoteContentBlock[];
@@ -347,6 +348,12 @@ export interface Note {
     tags?: string[];
     imageUrl?: string | null;
     folder?: string;
+    pinned?: boolean;
+    isPassword?: boolean;
+    accountName?: string;
+    username?: string;
+    password?: string;
+    passwordCategory?: string;
 }
 
 export interface NotebookSection {

@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { useRouter, Stack } from 'expo-router';
-import { ChevronLeft, Star, Plus, Minus, ShoppingBag, History, X, Settings, ChevronRight, Gift, Trash2, Edit3, RotateCcw, Target, Printer } from 'lucide-react-native';
+import { ChevronLeft, Star, Plus, Minus, ShoppingBag, History, X, Settings, ChevronRight, Gift, Trash2, Edit3, RotateCcw, Target, Printer, ArrowUp, ArrowDown } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAuth } from '../context/auth-context';
@@ -366,6 +366,23 @@ export default function RewardsScreen() {
     ]);
   };
 
+  const handleReorderPreset = async (index: number, direction: 'up' | 'down') => {
+    if (!familyId) return;
+    const newPresets = [...allPresets];
+    if (direction === 'up' && index > 0) {
+      const temp = newPresets[index - 1];
+      newPresets[index - 1] = newPresets[index];
+      newPresets[index] = temp;
+    } else if (direction === 'down' && index < newPresets.length - 1) {
+      const temp = newPresets[index + 1];
+      newPresets[index + 1] = newPresets[index];
+      newPresets[index] = temp;
+    } else {
+      return;
+    }
+    await saveFamilyRewardSettings(familyId, { customBehaviors: newPresets });
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: isDark ? '#0A0A1A' : '#F0F4FF' }}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -619,10 +636,9 @@ export default function RewardsScreen() {
       </ScrollView>
 
       {/* ─── BEHAVIOR MODAL ─── */}
-      <Modal visible={showBehaviorModal} transparent animationType="slide">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setShowBehaviorModal(false)} />
-          <View style={{ backgroundColor: isDark ? '#1A1A2E' : '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, maxHeight: '85%' }}>
+      <Modal visible={showBehaviorModal} animationType="slide">
+        <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#1A1A2E' : '#FFFFFF' }} edges={['top']}>
+          <View style={{ flex: 1, padding: 24 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <View>
                 <Text style={{ fontSize: 18, fontWeight: '800', color: isDark ? '#F0E6FF' : '#2D1B69' }}>
@@ -637,7 +653,7 @@ export default function RewardsScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 360 }}>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                 <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#9B7EC8' : '#7B5CB8', letterSpacing: 1 }}>HAZIR DAVRANIŞLAR</Text>
                 <TouchableOpacity onPress={() => { setShowBehaviorModal(false); setShowManageBehaviors(true); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -700,14 +716,13 @@ export default function RewardsScreen() {
               />
             </ScrollView>
           </View>
-        </View>
+        </SafeAreaView>
       </Modal>
 
       {/* ─── MANAGE PRESET BEHAVIORS MODAL ─── */}
-      <Modal visible={showManageBehaviors} transparent animationType="slide">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setShowManageBehaviors(false)} />
-          <View style={{ backgroundColor: isDark ? '#1A1A2E' : '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, maxHeight: '90%' }}>
+      <Modal visible={showManageBehaviors} animationType="slide">
+        <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#1A1A2E' : '#FFFFFF' }} edges={['top']}>
+          <View style={{ flex: 1, padding: 24 }}>
             
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <View>
@@ -721,7 +736,7 @@ export default function RewardsScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 440 }}>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
 
               {/* Add New / Edit Preset Form */}
               <View style={{ backgroundColor: isDark ? 'rgba(162,89,255,0.1)' : 'rgba(162,89,255,0.06)', borderRadius: 18, padding: 14, marginBottom: 18, borderWidth: 1, borderColor: 'rgba(162,89,255,0.2)' }}>
@@ -797,9 +812,17 @@ export default function RewardsScreen() {
               </View>
 
               <View style={{ gap: 6, marginBottom: 20 }}>
-                {allPresets.map((b) => (
+                {allPresets.map((b, index) => (
                   <View key={b.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F0FF', borderRadius: 12, padding: 10, borderWidth: 1, borderColor: 'rgba(162,89,255,0.15)' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                      <View style={{ alignItems: 'center', marginRight: 2 }}>
+                        <TouchableOpacity onPress={() => handleReorderPreset(index, 'up')} disabled={index === 0} style={{ opacity: index === 0 ? 0.3 : 1, padding: 4 }}>
+                          <ArrowUp size={14} color={isDark ? '#9B7EC8' : '#7B5CB8'} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleReorderPreset(index, 'down')} disabled={index === allPresets.length - 1} style={{ opacity: index === allPresets.length - 1 ? 0.3 : 1, padding: 4 }}>
+                          <ArrowDown size={14} color={isDark ? '#9B7EC8' : '#7B5CB8'} />
+                        </TouchableOpacity>
+                      </View>
                       <Text style={{ fontSize: 18 }}>{b.emoji}</Text>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 12, fontWeight: '700', color: isDark ? '#F0E6FF' : '#2D1B69' }}>{b.title}</Text>
@@ -822,7 +845,7 @@ export default function RewardsScreen() {
 
             </ScrollView>
           </View>
-        </View>
+        </SafeAreaView>
       </Modal>
 
       {/* ─── SETTINGS MODAL ─── */}

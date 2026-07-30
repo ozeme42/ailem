@@ -1191,6 +1191,12 @@ export function BudgetClient() {
                         const palette = getCardPalette(selectedAccountDetails);
                         const bannerGrad = isCreditCard || (selectedAccountDetails as any).color ? palette.grad : theme.assetGrad;
                         
+                        // Kredi kartı ise seçili ayın harcamasını göster
+                        const creditStatement = isCreditCard 
+                            ? creditCardStatements.find((s: any) => s.id === selectedAccountDetails.id)
+                            : null;
+                        const displayBalance = creditStatement ? creditStatement.monthSpent : selectedAccountDetails.balance;
+
                         const accountTxs = allTransactions
                             .filter((t: any) => t.accountId === selectedAccountDetails.id)
                             .sort((a: any, b: any) => b.date.localeCompare(a.date));
@@ -1236,14 +1242,16 @@ export function BudgetClient() {
                                             </div>
                                         ) : (
                                             <div className="flex items-end gap-2 mt-1 group">
-                                                <p className="text-white text-3xl font-black">₺{selectedAccountDetails.balance.toLocaleString('tr-TR')}</p>
-                                                <button onClick={() => setIsEditingAccountDetailsBalance(true)} className="mb-2 opacity-50 hover:opacity-100 transition-opacity">
-                                                    <Pencil className="w-4 h-4 text-white" />
-                                                </button>
+                                                <p className="text-white text-3xl font-black">₺{displayBalance.toLocaleString('tr-TR')}</p>
+                                                {!isCreditCard && (
+                                                    <button onClick={() => setIsEditingAccountDetailsBalance(true)} className="mb-2 opacity-50 hover:opacity-100 transition-opacity">
+                                                        <Pencil className="w-4 h-4 text-white" />
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
                                         <p className="text-white/70 text-[10px] font-bold mt-1">
-                                            {isCreditCard ? "Güncel Borç" : "Güncel Bakiye"}
+                                            {isCreditCard ? `${format(currentDate, 'MMMM yyyy', { locale: tr })} Harcaması` : "Güncel Bakiye"}
                                         </p>
                                     </div>
                                 </div>

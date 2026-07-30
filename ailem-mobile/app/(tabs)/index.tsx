@@ -439,45 +439,7 @@ export default function DashboardScreen() {
     );
   };
 
-  const renderRewardsBanner = () => {
-    return (
-      <View style={{ paddingHorizontal: isTabletLandscape ? 0 : 14, paddingTop: 6 }}>
-        <TouchableOpacity onPress={() => router.push('/rewards' as any)} activeOpacity={0.85}>
-          <LinearGradient
-            colors={['#A259FF', '#FF6B9D', '#FF9500']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{
-              borderRadius: 22,
-              padding: 16,
-              flexDirection: 'row',
-              alignItems: 'center',
-              overflow: 'hidden',
-              shadowColor: '#A259FF',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 10,
-              elevation: 6,
-            }}
-          >
-            <View style={{ position: 'absolute', right: -20, top: -20, opacity: 0.15 }}>
-              <Gift size={100} color="white" />
-            </View>
-            <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-              <Text style={{ fontSize: 24 }}>⭐</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: 'white', fontWeight: '900', fontSize: 16, letterSpacing: -0.3 }}>⭐ Davranışlar & Ödüller</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: '700', marginTop: 2 }}>Yıldızlar, Etiketler & Fiziki A4 Çizelge</Text>
-            </View>
-            <View style={{ backgroundColor: 'white', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6 }}>
-              <Text style={{ color: '#A259FF', fontWeight: '900', fontSize: 12 }}>Aç →</Text>
-            </View>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
-    );
-  };
+
 
   const renderBentoGrid = () => {
     return (
@@ -1091,7 +1053,6 @@ export default function DashboardScreen() {
         ) : (
           <>
             {renderHeroBanner()}
-            {renderRewardsBanner()}
             {renderBentoGrid()}
             {renderLibrary()}
             {renderReadingProgressWidget()}
