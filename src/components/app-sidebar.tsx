@@ -113,7 +113,7 @@ export function AppSidebar() {
               <div className="w-16 h-16 rounded-full bg-white/20 border-2 border-white/50 flex items-center justify-center backdrop-blur-md mb-3 overflow-hidden shadow-inner">
                  <User className="w-8 h-8 text-white/90" />
               </div>
-              <h2 className="text-xl font-black leading-none">{user?.displayName || 'Kullanıcı'}</h2>
+              <h2 className="text-xl font-black leading-none">{user?.name || 'Kullanıcı'}</h2>
               <p className="text-indigo-100 text-xs font-medium mt-1">{user?.email || 'Hoş geldiniz'}</p>
            </div>
          </SidebarHeader>

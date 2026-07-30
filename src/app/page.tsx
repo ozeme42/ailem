@@ -334,7 +334,7 @@ return (
               <div className="h-9 w-9 ml-1 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-[2px] shadow-sm cursor-pointer hover:scale-105 active:scale-95 transition-transform">
                 <div className="h-full w-full rounded-full bg-white dark:bg-slate-900 flex items-center justify-center">
                   <span className="text-transparent bg-clip-text bg-gradient-to-br from-indigo-500 to-purple-600 font-bold text-xs">
-                    {user?.displayName?.charAt(0) || "A"}
+                    {user?.name?.charAt(0) || "A"}
                   </span>
                 </div>
               </div>
@@ -364,12 +364,12 @@ return (
                   {new Date().getHours() < 12 ? "Günaydın ☀️" : new Date().getHours() < 18 ? "İyi günler 🌤️" : "İyi akşamlar 🌙"}
                 </h2>
                 <p className="text-white/80 text-sm font-medium mt-0.5 truncate">
-                  {user?.displayName || "Hoş geldiniz"}!
+                  {user?.name || "Hoş geldiniz"}!
                 </p>
               </div>
               {/* Kullanıcı avatarı */}
               <div className="shrink-0 w-12 h-12 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center text-xl font-black backdrop-blur-sm">
-                {user?.displayName?.charAt(0)?.toUpperCase() || "👋"}
+                {user?.name?.charAt(0)?.toUpperCase() || "👋"}
               </div>
             </div>
 
@@ -504,23 +504,6 @@ return (
               </div>
             </Link>
 
-            {/* Davranış & Ödüller */}
-            <Link href="/rewards" className="group block">
-              <div className={cn("relative overflow-hidden rounded-[1.75rem] p-5 h-full flex flex-col min-h-[140px] md:min-h-[160px]", themeClasses.CARD_BG, themeClasses.CARD_HOVER)}>
-                <div className="absolute -top-4 -right-4 opacity-[0.07]">
-                  <Trophy className="w-24 h-24 text-amber-500" />
-                </div>
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3 shadow-sm bg-gradient-to-br from-amber-400 to-orange-500">
-                  <Star className="w-5 h-5 text-white fill-white" />
-                </div>
-                <h3 className={cn("font-black text-sm md:text-base mb-1", themeClasses.TEXT_MAIN)}>Davranış & Ödüller</h3>
-                <div className="mt-auto">
-                  <p className="text-amber-600 dark:text-amber-400 text-xs font-bold flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5" /> Yıldız & Etiket Çizelgesi
-                  </p>
-                </div>
-              </div>
-            </Link>
 
             {/* Görevler */}
             <Link href="/tasks" className="group block">

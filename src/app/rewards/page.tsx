@@ -151,7 +151,7 @@ export default function RewardsPage() {
         emoji,
         stars,
         type: behaviorType,
-        createdBy: user?.displayName || 'Ebeveyn',
+        createdBy: user?.name || 'Ebeveyn',
       });
       setShowAddBehavior(false);
       toast({
@@ -166,7 +166,7 @@ export default function RewardsPage() {
   const handleAwardStickerDirect = async (member: FamilyMember) => {
     if (!familyId) return;
     try {
-      await awardSticker(familyId, member.id, member.name, settings.starsPerSticker, 1, user?.displayName || 'Ebeveyn', undefined, true);
+      await awardSticker(familyId, member.id, member.name, settings.starsPerSticker, 1, user?.name || 'Ebeveyn', undefined, true);
       toast({ title: 'Etiket Kazanıldı! 🌟', description: `${member.name} 1 etiket kazandı!` });
     } catch (err: any) {
       toast({ title: 'İşlem Başarısız', description: err?.message, variant: 'destructive' });
@@ -180,7 +180,7 @@ export default function RewardsPage() {
     const rewardTitle = target?.bigRewardTitle || settings.bigRewardTitle;
 
     try {
-      await awardBigReward(familyId, member.id, member.name, stickersNeeded, user?.displayName || 'Ebeveyn', rewardTitle);
+      await awardBigReward(familyId, member.id, member.name, stickersNeeded, user?.name || 'Ebeveyn', rewardTitle);
       toast({ title: '🎉 TEBRİKLER! BÜYÜK ÖDÜL!', description: `${member.name} "${rewardTitle}" ödülünü kazandı!` });
     } catch (err: any) {
       toast({ title: 'İşlem Başarısız', description: err?.message, variant: 'destructive' });

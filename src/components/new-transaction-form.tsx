@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { CalendarIcon, Edit, Banknote, Landmark, CreditCard, Wallet, ChevronRight, ChevronLeft } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, getDay, isSameDay, isToday, subDays } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -313,7 +314,13 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                     <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide px-1">
                         {categories.filter(c => c.type === transactionType).slice(0, 10).map(cat => (
                             <div key={cat.id} onClick={() => handleCategorySelect(cat.name)} className={cn("flex flex-col items-center justify-center gap-1.5 p-2 rounded-[18px] cursor-pointer shrink-0 w-[76px] h-[76px] transition-all border", selectedCategory?.name === cat.name ? 'bg-indigo-50 border-indigo-500 dark:bg-indigo-500/20 dark:border-indigo-500/50 shadow-sm scale-105' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-indigo-300 dark:hover:border-indigo-700/50')}>
-                                <span className="text-[28px] drop-shadow-sm leading-none">{cat.icon}</span>
+                                {(() => {
+                                    if (typeof cat.icon === 'string' && (LucideIcons as any)[cat.icon]) {
+                                        const Icon = (LucideIcons as any)[cat.icon];
+                                        return <Icon className={cn("w-7 h-7", selectedCategory?.name === cat.name ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 dark:text-slate-400")} />;
+                                    }
+                                    return <span className="text-[28px] drop-shadow-sm leading-none">{cat.icon}</span>;
+                                })()}
                                 <span className={cn("text-[10px] font-bold truncate w-full text-center", selectedCategory?.name === cat.name ? "text-indigo-700 dark:text-indigo-300" : "text-slate-600 dark:text-slate-400")}>{cat.name}</span>
                             </div>
                         ))}
@@ -441,7 +448,13 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                     {categories.filter(c => c.type === form.watch('type')).map(cat => (
                         <div key={cat.id} className="flex flex-col items-center gap-1">
                             <Button variant="outline" className="w-full aspect-square rounded-2xl flex flex-col items-center justify-center h-auto hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 shadow-sm" onClick={() => handleCategorySelect(cat.name)}>
-                                <span className="text-3xl">{cat.icon}</span>
+                                {(() => {
+                                    if (typeof cat.icon === 'string' && (LucideIcons as any)[cat.icon]) {
+                                        const Icon = (LucideIcons as any)[cat.icon];
+                                        return <Icon className="w-8 h-8 text-slate-500 dark:text-slate-400" />;
+                                    }
+                                    return <span className="text-3xl">{cat.icon}</span>;
+                                })()}
                             </Button>
                             <span className="text-[10px] font-medium text-center truncate w-full">{cat.name}</span>
                         </div>
