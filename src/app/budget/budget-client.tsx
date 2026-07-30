@@ -1185,6 +1185,7 @@ export function BudgetClient() {
             {/* HESAP DETAYLARI MODALI */}
             <Dialog open={isAccountDetailsOpen} onOpenChange={setIsAccountDetailsOpen}>
                 <DialogContent className="max-w-[420px] p-0 overflow-hidden bg-[#F8F5EF] rounded-[24px] border-0" showCloseButton={false}>
+                    <DialogTitle className="sr-only">Hesap Detayları</DialogTitle>
                     {selectedAccountDetails && (() => {
                         const isCreditCard = selectedAccountDetails.type === 'credit-card' || selectedAccountDetails.type === 'debt';
                         const palette = getCardPalette(selectedAccountDetails);
