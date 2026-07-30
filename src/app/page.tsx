@@ -393,6 +393,34 @@ return (
           </div>
         </div>
 
+        {/* 🌟 Davranışlar ve Ödüller Özel Hero Banner */}
+        <div className="px-4 md:px-6">
+          <Link href="/rewards" className="group block">
+            <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 p-5 md:p-6 text-white shadow-xl shadow-purple-500/20 hover:scale-[1.01] transition-transform">
+              <div className="absolute -top-10 -right-10 w-44 h-44 bg-white/10 rounded-full blur-2xl" />
+              <div className="flex items-center justify-between gap-4 relative z-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-2xl md:text-3xl shadow-inner">
+                    ⭐
+                  </div>
+                  <div>
+                    <h3 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
+                      ⭐ Davranışlar & Ödül Çizelgesi
+                    </h3>
+                    <p className="text-xs md:text-sm text-white/85 font-semibold mt-0.5">
+                      Çocuklar için Yıldızlar, Etiketler & A4 Fiziki Yazdırılabilir Çizelge
+                    </p>
+                  </div>
+                </div>
+
+                <div className="hidden sm:flex items-center gap-2 bg-white text-purple-700 px-4 py-2 rounded-xl text-xs font-black shadow-md">
+                  Ödül Sayfasına Git →
+                </div>
+              </div>
+            </div>
+          </Link>
+        </div>
+
 
         {/* ──────────────────────────────
             ANA ÖZELLİK KARTLARI (2×2)
@@ -472,6 +500,24 @@ return (
                   ) : (
                     <p className={cn("text-xs font-medium", themeClasses.TEXT_MUTED)}>Yaklaşan etkinlik yok</p>
                   )}
+                </div>
+              </div>
+            </Link>
+
+            {/* Davranış & Ödüller */}
+            <Link href="/rewards" className="group block">
+              <div className={cn("relative overflow-hidden rounded-[1.75rem] p-5 h-full flex flex-col min-h-[140px] md:min-h-[160px]", themeClasses.CARD_BG, themeClasses.CARD_HOVER)}>
+                <div className="absolute -top-4 -right-4 opacity-[0.07]">
+                  <Trophy className="w-24 h-24 text-amber-500" />
+                </div>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3 shadow-sm bg-gradient-to-br from-amber-400 to-orange-500">
+                  <Star className="w-5 h-5 text-white fill-white" />
+                </div>
+                <h3 className={cn("font-black text-sm md:text-base mb-1", themeClasses.TEXT_MAIN)}>Davranış & Ödüller</h3>
+                <div className="mt-auto">
+                  <p className="text-amber-600 dark:text-amber-400 text-xs font-bold flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5" /> Yıldız & Etiket Çizelgesi
+                  </p>
                 </div>
               </div>
             </Link>

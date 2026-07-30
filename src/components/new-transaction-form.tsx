@@ -91,6 +91,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   saveAsTemplate: z.boolean().default(false).optional(),
   templateName: z.string().optional(),
+  isAppliedToAccount: z.boolean().default(true).optional(),
 });
 
 type NewTransactionFormProps = {
@@ -128,6 +129,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
       description: "",
       saveAsTemplate: false,
       templateName: "",
+      isAppliedToAccount: true,
     },
   });
   
@@ -143,6 +145,7 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
         isRecurring: initialData.isRecurring || false,
         installmentCount: initialData.installmentDetails?.total || 2,
         description: initialData.description || "",
+        isAppliedToAccount: initialData.isAppliedToAccount !== undefined ? initialData.isAppliedToAccount : true,
       });
     }
   }, [initialData, form, user]);
@@ -318,6 +321,26 @@ export function NewTransactionForm({ accounts, familyMembers, onSubmit, initialD
                     </div>
                     {!selectedCategory && <p className="text-xs font-medium text-rose-500 ml-1">Kategori seçimi zorunludur</p>}
                 </div>
+
+                {/* Hesaba Yansıt */}
+                {selectedAccountId && (
+                    <div className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl space-y-3">
+                        <FormField control={form.control} name="isAppliedToAccount" render={({ field }) => {
+                            const acc = accounts.find(a => a.id === selectedAccountId);
+                            const isCreditCard = acc?.type === 'credit-card';
+                            return (
+                                <FormItem className="flex items-center justify-between space-y-0">
+                                    <div>
+                                        <FormLabel className="text-sm font-medium">{isCreditCard ? 'Kredi Kartı Borcuna Ekle' : 'Hesap Bakiyesine Yansıt'}</FormLabel>
+                                        <p className="text-[11px] text-slate-500 mt-0.5">{isCreditCard ? 'Bu işlem kartın toplam borcuna eklensin mi?' : 'Bu işlem hesap bakiyesinden düşülsün mü?'}</p>
+                                    </div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )
+                        }}/>
+                    </div>
+                )}
+
 
                 {/* Açıklama */}
                 <div className="space-y-1.5">

@@ -45,3 +45,7 @@ firebase-debug.log
 firestore-debug.log
 .vercel
 .env*
+*.apk
+scratch/
+temp_*.txt
+*.tmp

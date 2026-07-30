@@ -19,6 +19,7 @@ const formSchema = z.object({
   balance: z.coerce.number().default(0),
   statementDate: z.coerce.number().min(1).max(31).optional(),
   dueDate: z.coerce.number().min(1).max(31).optional(),
+  targetLimit: z.coerce.number().optional(),
 });
 
 type NewAccountFormProps = {
@@ -38,6 +39,7 @@ export function NewAccountForm({ familyMembers, onSubmit, initialData, initialTy
       balance: initialData?.balance || 0,
       statementDate: initialData?.statementDate || undefined,
       dueDate: initialData?.dueDate || undefined,
+      targetLimit: initialData?.targetLimit || undefined,
     },
   });
 
@@ -51,6 +53,7 @@ export function NewAccountForm({ familyMembers, onSubmit, initialData, initialTy
       balance: initialData?.balance || 0,
       statementDate: initialData?.statementDate,
       dueDate: initialData?.dueDate,
+      targetLimit: initialData?.targetLimit,
     });
   }, [initialData, initialType, form]);
 
@@ -118,7 +121,7 @@ export function NewAccountForm({ familyMembers, onSubmit, initialData, initialTy
           name="balance"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Bakiye</FormLabel>
+              <FormLabel>{accountType === 'credit-card' ? 'Güncel Kredi Kartı Borcu' : accountType === 'debt' ? 'Mevcut Borç Tutarı' : 'Güncel Bakiye'}</FormLabel>
               <FormControl><Input type="number" step="any" placeholder="0.00" {...field} /></FormControl>
               <FormMessage />
             </FormItem>
@@ -126,7 +129,14 @@ export function NewAccountForm({ familyMembers, onSubmit, initialData, initialTy
         />
 
         {accountType === 'credit-card' && (
-            <div className="p-4 border rounded-lg space-y-4">
+            <div className="p-4 border rounded-lg space-y-4 bg-slate-50 dark:bg-slate-900/50">
+                 <FormField control={form.control} name="targetLimit" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Aylık Harcama Hedefi (İsteğe Bağlı)</FormLabel>
+                        <FormControl><Input type="number" step="any" placeholder="Örn: 10000" {...field} value={field.value ?? ''} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}/>
                  <div className="grid grid-cols-2 gap-4">
                      <FormField control={form.control} name="statementDate" render={({ field }) => (
                         <FormItem>

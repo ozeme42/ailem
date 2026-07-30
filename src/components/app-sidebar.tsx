@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { 
   Home, ListTodo, CalendarDays, Library, ChevronsRight, GraduationCap, 
   ShoppingCart, UtensilsCrossed, Target, User, LogOut, 
-  CheckCircle, Notebook, Youtube, Columns3, Wallet, Timer, PanelLeft, ScrollText, X 
+  CheckCircle, Notebook, Youtube, Columns3, Wallet, Timer, PanelLeft, ScrollText, X, Star, Trophy 
 } from "lucide-react";
 import { 
   Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, 
@@ -67,6 +67,7 @@ export function AppSidebar() {
     { href: "/", label: "Ana Sayfa", icon: Home },
     { href: "/calendar", label: "Takvim", icon: CalendarDays },
     { href: "/tasks", label: "Görevler", icon: ListTodo },
+    { href: "/rewards", label: "Davranış & Ödüller", icon: Star },
     { section: "Yaşam & İbadet" },
     { href: "/prayers", label: "Namaz Takibi", icon: MosqueIcon },
     { href: "/memorization", label: "Ezber Takibi", icon: CheckCircle },

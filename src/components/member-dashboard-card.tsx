@@ -512,6 +512,32 @@ export function MemberDashboardCard({
                         </div>
                     )}
 
+                    {/* DAVRANIŞ & ÖDÜL TAKİBİ */}
+                    <div className="rounded-[1.5rem] md:rounded-[2rem] p-4 border bg-gradient-to-br from-amber-500/10 via-purple-500/10 to-pink-500/10 border-amber-200/50 dark:border-amber-900/40 shadow-sm mb-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-extrabold text-[10px] md:text-xs uppercase tracking-widest text-amber-800 dark:text-amber-400 flex items-center gap-2">
+                                <Sparkles className="h-4 w-4 text-amber-500 fill-amber-500" /> Yıldız & Ödül Durumu
+                            </h4>
+                            <Link href="/rewards" className="text-[10px] font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1">
+                                Detaylar & Çizelge Yazdır <ChevronRight className="w-3 h-3" />
+                            </Link>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                            <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-amber-100 dark:border-amber-900/40">
+                                <p className="text-base font-black text-amber-600 dark:text-amber-400">{member.starBalance || 0} ⭐</p>
+                                <p className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">Yıldız Bakiyesi</p>
+                            </div>
+                            <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-purple-100 dark:border-purple-900/40">
+                                <p className="text-base font-black text-purple-600 dark:text-purple-400">{member.stickerBalance || 0} 🌟</p>
+                                <p className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">Etiket Bakiyesi</p>
+                            </div>
+                            <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-pink-100 dark:border-pink-900/40">
+                                <p className="text-base font-black text-pink-600 dark:text-pink-400">{member.totalBigRewardsEarned || 0} 🏆</p>
+                                <p className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">Kazanılan Ödül</p>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* 6. YAPILACAKLAR */}
                     {(pendingTests.length > 0 || pendingStudies.length > 0 || pendingTasks.length > 0) && (
                         <div className={cn("rounded-[1.5rem] md:rounded-[2rem] p-4 border", sectionThemes.todo.container)}>

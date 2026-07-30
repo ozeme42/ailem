@@ -2,7 +2,8 @@
 import { db, storage } from './firebase';
 import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, setDoc, writeBatch, query, where, onSnapshot, arrayUnion, arrayRemove, orderBy, limit, Unsubscribe, serverTimestamp } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, PrayerProgress, Video, CalorieLog, DailyTracking, BankQuestion, TrackedBook, TrackedBookTest, BudgetCategory, PomodoroProject, PomodoroSession, Summary, PerformanceGoal, Bill, TransactionTemplate } from './data';
+import type { Book, Task, CalendarEvent, ShoppingList, ShoppingItem, Test, PracticeExam, MealPlan, Recipe, User, FamilyMember, UserLibrary, UserLibraryBook, BookReadingStatus, Mistake, StudyPlan, StudyAssignment, Goal, GoalSection, ReadingSession, AmbientSound, MemorizationItem, MemorizationProgress, Notebook, Note, PrayerProgress, Video, CalorieLog, DailyTracking, BankQuestion, TrackedBook, TrackedBookTest, BudgetCategory, PomodoroProject, PomodoroSession, Summary, PerformanceGoal, Bill, TransactionTemplate, BehaviorRecord, FamilyRewardSettings, StickerRecord, BehaviorOption } from './data';
+import { DEFAULT_REWARD_SETTINGS } from './data';
 import { isPast, parseISO, isSameDay, subDays, format, startOfWeek, endOfWeek, subWeeks, isWithinInterval, differenceInDays, startOfMonth, endOfMonth, isFuture, subMonths, addMonths } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
@@ -761,3 +762,296 @@ export const deleteReadingSession = async (sessionId: string) => {
 };
 
 export const onAmbientSoundsUpdate = (cb: (s: AmbientSound[]) => void) => onFamilyDataUpdate<AmbientSound>('ambientSounds', cb);
+
+// ==================== REWARDS & BEHAVIORS SERVICE ====================
+
+export const addBehaviorRecord = async (
+  familyId: string,
+  record: Omit<BehaviorRecord, 'id' | 'createdAt'>
+): Promise<string> => {
+  const colRef = collection(db, 'behaviorRecords');
+  const docRef = await addDoc(colRef, {
+    ...record,
+    familyId,
+    createdAt: new Date().toISOString(),
+  });
+
+  const familyRef = doc(db, 'families', familyId);
+  const familySnap = await getDoc(familyRef);
+  if (familySnap.exists()) {
+    const members: FamilyMember[] = familySnap.data().members || [];
+    const memberIndex = members.findIndex((m) => m.id === record.memberId);
+    if (memberIndex !== -1) {
+      const currentStarBalance = members[memberIndex].starBalance ?? 0;
+      const currentTotalStars = members[memberIndex].totalStarsEarned ?? 0;
+      const starChange = record.type === 'positive' ? record.stars : -record.stars;
+
+      const newStarBalance = Math.max(0, currentStarBalance + starChange);
+      const newTotalStars = record.type === 'positive' ? currentTotalStars + record.stars : currentTotalStars;
+
+      members[memberIndex] = {
+        ...members[memberIndex],
+        starBalance: newStarBalance,
+        totalStarsEarned: newTotalStars,
+      };
+      await updateDoc(familyRef, { members });
+    }
+  }
+
+  return docRef.id;
+};
+
+export const deleteBehaviorRecord = async (
+  familyId: string,
+  recordId: string,
+  memberId: string,
+  stars: number,
+  type: 'positive' | 'negative'
+): Promise<void> => {
+  await deleteDoc(doc(db, 'behaviorRecords', recordId));
+
+  const familyRef = doc(db, 'families', familyId);
+  const familySnap = await getDoc(familyRef);
+  if (familySnap.exists()) {
+    const members: FamilyMember[] = familySnap.data().members || [];
+    const memberIndex = members.findIndex((m) => m.id === memberId);
+    if (memberIndex !== -1) {
+      const currentStarBalance = members[memberIndex].starBalance ?? 0;
+      const currentTotalStars = members[memberIndex].totalStarsEarned ?? 0;
+
+      const starRevert = type === 'positive' ? -stars : stars;
+      const newStarBalance = Math.max(0, currentStarBalance + starRevert);
+      const newTotalStars = type === 'positive' ? Math.max(0, currentTotalStars - stars) : currentTotalStars;
+
+      members[memberIndex] = {
+        ...members[memberIndex],
+        starBalance: newStarBalance,
+        totalStarsEarned: newTotalStars,
+      };
+      await updateDoc(familyRef, { members });
+    }
+  }
+};
+
+export const onBehaviorRecordsUpdate = (
+  familyId: string,
+  callback: (records: BehaviorRecord[]) => void
+): (() => void) => {
+  const q = query(
+    collection(db, 'behaviorRecords'),
+    where('familyId', '==', familyId),
+    orderBy('createdAt', 'desc'),
+    limit(50)
+  );
+  return onSnapshot(q, (snapshot) => {
+    const records = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as BehaviorRecord));
+    callback(records);
+  });
+};
+
+export const getFamilyRewardSettings = async (familyId: string): Promise<FamilyRewardSettings> => {
+  const docRef = doc(db, 'rewardSettings', familyId);
+  const snap = await getDoc(docRef);
+  if (snap.exists()) {
+    return { ...DEFAULT_REWARD_SETTINGS, ...snap.data() } as FamilyRewardSettings;
+  }
+  return { familyId, ...DEFAULT_REWARD_SETTINGS };
+};
+
+export const onRewardSettingsUpdate = (
+  familyId: string,
+  callback: (settings: FamilyRewardSettings) => void
+): (() => void) => {
+  const docRef = doc(db, 'rewardSettings', familyId);
+  return onSnapshot(docRef, (snap) => {
+    if (snap.exists()) {
+      callback({ ...DEFAULT_REWARD_SETTINGS, ...snap.data() } as FamilyRewardSettings);
+    } else {
+      callback({ familyId, ...DEFAULT_REWARD_SETTINGS });
+    }
+  });
+};
+
+export const saveFamilyRewardSettings = async (
+  familyId: string,
+  settings: Partial<FamilyRewardSettings>
+): Promise<void> => {
+  const docRef = doc(db, 'rewardSettings', familyId);
+  await setDoc(docRef, { familyId, ...settings }, { merge: true });
+};
+
+export const saveMemberRewardTarget = async (
+  familyId: string,
+  memberId: string,
+  target: { bigRewardTitle: string; bigRewardEmoji: string; stickersPerBigReward: number }
+): Promise<void> => {
+  const docRef = doc(db, 'rewardSettings', familyId);
+  await setDoc(docRef, {
+    familyId,
+    memberTargets: {
+      [memberId]: target
+    }
+  }, { merge: true });
+};
+
+export const awardSticker = async (
+  familyId: string,
+  memberId: string,
+  memberName: string,
+  starsPerSticker: number,
+  count: number = 1,
+  createdBy: string = 'Ebeveyn',
+  note?: string,
+  deductStars: boolean = true
+): Promise<void> => {
+  const safeCount = Number(count) || 1;
+  const safeStarsPerSticker = Number(starsPerSticker) || 10;
+  const starsNeeded = deductStars ? safeStarsPerSticker * safeCount : 0;
+
+  const familyRef = doc(db, 'families', familyId);
+  const familySnap = await getDoc(familyRef);
+  if (!familySnap.exists()) throw new Error('Aile bulunamadı');
+
+  const members: FamilyMember[] = familySnap.data().members || [];
+  const memberIndex = members.findIndex((m) => m.id === memberId);
+  if (memberIndex === -1) throw new Error('Üye bulunamadı');
+
+  const currentStarBalance = members[memberIndex].starBalance ?? 0;
+  const currentStickerBalance = members[memberIndex].stickerBalance ?? 0;
+  const currentTotalStickers = members[memberIndex].totalStickersEarned ?? 0;
+
+  if (deductStars && currentStarBalance < starsNeeded) {
+    throw new Error(`Yetersiz Yıldız! Gereken: ${starsNeeded}, Mevcut: ${currentStarBalance}`);
+  }
+
+  members[memberIndex] = {
+    ...members[memberIndex],
+    starBalance: deductStars ? Math.max(0, currentStarBalance - starsNeeded) : currentStarBalance,
+    stickerBalance: currentStickerBalance + safeCount,
+    totalStickersEarned: currentTotalStickers + safeCount,
+  };
+
+  await updateDoc(familyRef, { members });
+
+  await addDoc(collection(db, 'stickerRecords'), {
+    familyId,
+    memberId,
+    memberName,
+    type: 'sticker_awarded',
+    count: safeCount,
+    starsSpent: starsNeeded,
+    note: note || (deductStars ? `${starsNeeded} yıldız ile 1 etiket alındı` : 'Doğrudan etiket eklendi'),
+    createdAt: new Date().toISOString(),
+    createdBy,
+  });
+};
+
+export const awardBigReward = async (
+  familyId: string,
+  memberId: string,
+  memberName: string,
+  stickersNeeded: number,
+  createdBy: string = 'Ebeveyn',
+  rewardTitle: string = 'Büyük Ödül'
+): Promise<void> => {
+  const safeStickersNeeded = Number(stickersNeeded) || 10;
+  const familyRef = doc(db, 'families', familyId);
+  const familySnap = await getDoc(familyRef);
+  if (!familySnap.exists()) throw new Error('Aile bulunamadı');
+
+  const members: FamilyMember[] = familySnap.data().members || [];
+  const memberIndex = members.findIndex((m) => m.id === memberId);
+  if (memberIndex === -1) throw new Error('Üye bulunamadı');
+
+  const currentStickerBalance = members[memberIndex].stickerBalance ?? 0;
+  const currentBigRewards = members[memberIndex].totalBigRewardsEarned ?? 0;
+
+  if (currentStickerBalance < safeStickersNeeded) {
+    throw new Error(`Yetersiz Etiket! Gereken: ${safeStickersNeeded}, Mevcut: ${currentStickerBalance}`);
+  }
+
+  members[memberIndex] = {
+    ...members[memberIndex],
+    stickerBalance: Math.max(0, currentStickerBalance - safeStickersNeeded),
+    totalBigRewardsEarned: currentBigRewards + 1,
+  };
+
+  await updateDoc(familyRef, { members });
+
+  await addDoc(collection(db, 'stickerRecords'), {
+    familyId,
+    memberId,
+    memberName,
+    type: 'big_reward_awarded',
+    count: safeStickersNeeded,
+    note: `${rewardTitle} ödülü kazanıldı! (${safeStickersNeeded} etiket harcandı)`,
+    createdAt: new Date().toISOString(),
+    createdBy,
+  });
+};
+
+export const removeSticker = async (
+  familyId: string,
+  memberId: string,
+  memberName: string,
+  count: number = 1,
+  createdBy: string = 'Ebeveyn'
+): Promise<void> => {
+  const safeCount = Number(count) || 1;
+  const familyRef = doc(db, 'families', familyId);
+  const familySnap = await getDoc(familyRef);
+  if (!familySnap.exists()) throw new Error('Aile bulunamadı');
+
+  const members: FamilyMember[] = familySnap.data().members || [];
+  const memberIndex = members.findIndex((m) => m.id === memberId);
+  if (memberIndex === -1) throw new Error('Üye bulunamadı');
+
+  const currentStickerBalance = members[memberIndex].stickerBalance ?? 0;
+
+  members[memberIndex] = {
+    ...members[memberIndex],
+    stickerBalance: Math.max(0, currentStickerBalance - safeCount),
+  };
+
+  await updateDoc(familyRef, { members });
+
+  await addDoc(collection(db, 'stickerRecords'), {
+    familyId,
+    memberId,
+    memberName,
+    type: 'sticker_removed',
+    count: safeCount,
+    note: `${safeCount} etiket geri alındı`,
+    createdAt: new Date().toISOString(),
+    createdBy,
+  });
+};
+
+export const addOrUpdateBehaviorOption = async (
+  familyId: string,
+  option: BehaviorOption
+): Promise<void> => {
+  const currentSettings = await getFamilyRewardSettings(familyId);
+  const currentBehaviors = currentSettings.customBehaviors || [];
+  const index = currentBehaviors.findIndex((b) => b.id === option.id);
+
+  let updated: BehaviorOption[];
+  if (index !== -1) {
+    updated = [...currentBehaviors];
+    updated[index] = option;
+  } else {
+    updated = [...currentBehaviors, option];
+  }
+
+  await saveFamilyRewardSettings(familyId, { customBehaviors: updated });
+};
+
+export const deleteBehaviorOption = async (
+  familyId: string,
+  optionId: string
+): Promise<void> => {
+  const currentSettings = await getFamilyRewardSettings(familyId);
+  const currentBehaviors = currentSettings.customBehaviors || [];
+  const updated = currentBehaviors.filter((b) => b.id !== optionId);
+  await saveFamilyRewardSettings(familyId, { customBehaviors: updated });
+};

@@ -31,6 +31,97 @@ export interface FamilyMember {
   mood: 'happy' | 'excited' | 'focused' | 'playful' | 'tired' | 'stressed';
   status: 'online' | 'offline';
   readingGoals?: ReadingGoals;
+  starBalance?: number;
+  totalStarsEarned?: number;
+  stickerBalance?: number;
+  totalStickersEarned?: number;
+  totalBigRewardsEarned?: number;
+}
+
+export interface MemberRewardTarget {
+  bigRewardTitle?: string;
+  bigRewardEmoji?: string;
+  stickersPerBigReward?: number;
+}
+
+export interface BehaviorOption {
+  id: string;
+  title: string;
+  emoji: string;
+  stars: number;
+  type: 'positive' | 'negative';
+}
+
+export interface FamilyRewardSettings {
+  familyId?: string;
+  starsPerSticker: number;
+  stickersPerBigReward: number;
+  bigRewardTitle: string;
+  bigRewardEmoji: string;
+  stickerEmoji: string;
+  memberTargets?: Record<string, MemberRewardTarget>;
+  customBehaviors?: BehaviorOption[];
+}
+
+export interface BehaviorRecord {
+  id?: string;
+  familyId: string;
+  memberId: string;
+  memberName: string;
+  title: string;
+  emoji: string;
+  stars: number;
+  type: 'positive' | 'negative';
+  note?: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface StickerRecord {
+  id?: string;
+  familyId: string;
+  memberId: string;
+  memberName: string;
+  type: 'sticker_awarded' | 'big_reward_awarded' | 'sticker_removed';
+  count: number;
+  starsSpent?: number;
+  note?: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+export const DEFAULT_REWARD_SETTINGS: FamilyRewardSettings = {
+  starsPerSticker: 10,
+  stickersPerBigReward: 10,
+  bigRewardTitle: 'Özel Hedef / Oyuncak',
+  bigRewardEmoji: '🎁',
+  stickerEmoji: '🌟',
+};
+
+export const DEFAULT_POSITIVE_BEHAVIORS: Omit<BehaviorOption, 'id'>[] = [
+  { title: 'Diş Fırçalama', emoji: '🦷', stars: 2, type: 'positive' },
+  { title: 'Kitap Okuma (20 dk)', emoji: '📚', stars: 2, type: 'positive' },
+  { title: 'Yatak Toplama', emoji: '🛌', stars: 1, type: 'positive' },
+  { title: 'Ödev Yapma', emoji: '✏️', stars: 2, type: 'positive' },
+  { title: 'Odasını Toplama', emoji: '🧹', stars: 2, type: 'positive' },
+  { title: 'Sebze/Meyve Yeme', emoji: '🥦', stars: 1, type: 'positive' },
+  { title: 'Zamanında Uyumak', emoji: '🌙', stars: 2, type: 'positive' },
+  { title: 'Nezaket Sözcükleri Kullanma', emoji: '🤝', stars: 1, type: 'positive' },
+];
+
+export const DEFAULT_NEGATIVE_BEHAVIORS: Omit<BehaviorOption, 'id'>[] = [
+  { title: 'Aşırı Ekran Süresi', emoji: '📱', stars: 1, type: 'negative' },
+  { title: 'Öfke Nöbeti / Bağırma', emoji: '😤', stars: 2, type: 'negative' },
+  { title: 'Söz Dinlememe', emoji: '🙉', stars: 1, type: 'negative' },
+  { title: 'Dağınıklık Bırakma', emoji: '🧺', stars: 1, type: 'negative' },
+];
+
+export function getLevelInfo(totalStars: number): { level: number; label: string; emoji: string; minStars: number; nextLevelStars: number } {
+  if (totalStars >= 200) return { level: 5, label: 'Efsane Şampiyon', emoji: '💎', minStars: 200, nextLevelStars: 500 };
+  if (totalStars >= 100) return { level: 4, label: 'Süper Yıldız', emoji: '👑', minStars: 100, nextLevelStars: 200 };
+  if (totalStars >= 50) return { level: 3, label: 'Davranış Kahramanı', emoji: '🚀', minStars: 50, nextLevelStars: 100 };
+  if (totalStars >= 20) return { level: 2, label: 'Yıldız Toplayıcı', emoji: '🌟', minStars: 20, nextLevelStars: 50 };
+  return { level: 1, label: 'Çaylak Kaşif', emoji: '⭐', minStars: 0, nextLevelStars: 20 };
 }
 
 export interface Subtask {
@@ -98,6 +189,9 @@ export interface Book {
 }
 
 export type BookReadingStatus = 'to-read' | 'reading' | 'finished';
+
+export type EzberItem = MemorizationItem;
+export type EzberProgress = MemorizationProgress;
 
 export interface UserLibraryBook {
     bookId: string;
@@ -557,6 +651,7 @@ export interface Account {
     balance: number;
     ownerId: string;
     creditLimit?: number;
+    targetLimit?: number;
     statementDate?: number;
     dueDate?: number;
 }
@@ -573,6 +668,7 @@ export interface Transaction {
     isInstallment: boolean;
     isRecurring?: boolean;
     isApplied?: boolean;
+    isAppliedToAccount?: boolean;
     description?: string;
     installmentDetails?: {
         current: number;

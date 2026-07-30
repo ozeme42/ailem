@@ -1,0 +1,14 @@
+android/app/build/
+android/.gradle/
+android/.kotlin/
+android/build/
+node_modules/
+.expo/
+dist/
+.idea/
+.vscode/
+*.apk
+*.aab
+scratch/
+*.log
+.git/

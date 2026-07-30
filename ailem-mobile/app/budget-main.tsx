@@ -51,6 +51,7 @@ import {
     Trash2,
     Utensils,
     Wallet,
+    Wifi,
     X,
 } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
@@ -71,6 +72,8 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+    NativeModules,
+    Keyboard,
 } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -97,6 +100,7 @@ import {
     onTransactionsUpdate,
     updateAccount,
     updateBill,
+    updateBudgetCategory,
     updateTransaction,
 } from "../lib/dataService";
 
@@ -403,6 +407,80 @@ export default function BudgetMainScreen() {
   const [txIsRecurring, setTxIsRecurring] = useState(false);
   const [txIsAppliedToAccount, setTxIsAppliedToAccount] = useState(true);
 
+  // Category and Account Reordering states & handlers
+  const [isReorderingCats, setIsReorderingCats] = useState(false);
+  const [isReorderingAccounts, setIsReorderingAccounts] = useState(false);
+
+  const handleMoveCategory = async (
+    catKey: string,
+    direction: -1 | 1,
+    filteredCats: BudgetCategory[],
+  ) => {
+    const index = filteredCats.findIndex(
+      (c) => (c.id && c.id === catKey) || c.name === catKey,
+    );
+    if (index === -1) return;
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= filteredCats.length) return;
+
+    const newFiltered = [...filteredCats];
+    const temp = newFiltered[index];
+    newFiltered[index] = newFiltered[targetIndex];
+    newFiltered[targetIndex] = temp;
+
+    const updatedCategories = categories.map((c) => {
+      const fIndex = newFiltered.findIndex(
+        (fc) => (fc.id && fc.id === c.id) || fc.name === c.name,
+      );
+      if (fIndex !== -1) {
+        return { ...c, order: fIndex };
+      }
+      return c;
+    });
+
+    setCategories(updatedCategories);
+
+    for (let i = 0; i < newFiltered.length; i++) {
+      const item = newFiltered[i];
+      if (item.id) {
+        updateBudgetCategory(item.id, { order: i }).catch(() => {});
+      }
+    }
+  };
+
+  const handleMoveAccount = async (
+    accId: string,
+    direction: -1 | 1,
+    filteredAccs: Account[],
+  ) => {
+    const index = filteredAccs.findIndex((a) => a.id === accId);
+    if (index === -1) return;
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= filteredAccs.length) return;
+
+    const newFiltered = [...filteredAccs];
+    const temp = newFiltered[index];
+    newFiltered[index] = newFiltered[targetIndex];
+    newFiltered[targetIndex] = temp;
+
+    const updatedAccounts = accounts.map((a) => {
+      const fIndex = newFiltered.findIndex((fa) => fa.id === a.id);
+      if (fIndex !== -1) {
+        return { ...a, order: fIndex };
+      }
+      return a;
+    });
+
+    setAccounts(updatedAccounts);
+
+    for (let i = 0; i < newFiltered.length; i++) {
+      const item = newFiltered[i];
+      if (item.id) {
+        updateAccount(item.id, { order: i }).catch(() => {});
+      }
+    }
+  };
+
   // Account form
   const [accName, setAccName] = useState("");
   const [accType, setAccType] = useState<
@@ -427,6 +505,7 @@ export default function BudgetMainScreen() {
   const [paymentAccountId, setPaymentAccountId] = useState("");
   const [isPaidBillsArchiveOpen, setIsPaidBillsArchiveOpen] = useState(false);
   const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
+
 
   useEffect(() => {
     let unsubs: any[] = [];
@@ -681,6 +760,83 @@ export default function BudgetMainScreen() {
       recurringExpensesTotal,
     };
   }, [allTransactions, categories, currentDate, accounts]);
+
+  // Sync credit card data to Android home screen widget (statement-period-based)
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !NativeModules.WidgetModule) return;
+    const creditCards = accounts.filter(a => a.type === 'credit-card');
+    if (creditCards.length === 0 || allTransactions.length === 0) return;
+
+    const MONTH_TR = ['Ocak','Subat','Mart','Nisan','Mayis','Haziran',
+                      'Temmuz','Agustos','Eylul','Ekim','Kasim','Aralik'];
+    const fmt = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+    // Use primary card's statement day to determine "current" period
+    const primaryStmtDay = creditCards[0]?.statementDate || 31;
+    const today = new Date();
+
+    // If today's day > statementDate, we're in the NEXT month's billing period
+    // e.g. today=July21, stmtDay=5 → current open period ends August 5
+    let baseEndMonth = today.getMonth();
+    let baseEndYear = today.getFullYear();
+    if (today.getDate() > primaryStmtDay) {
+      baseEndMonth++;
+      if (baseEndMonth > 11) { baseEndMonth = 0; baseEndYear++; }
+    }
+
+    // Build 9 periods: index 0 = 2 months future, index 2 = current open, index 8 = 6 months past
+    const TOTAL = 9;
+    const DEFAULT_INDEX = 2;
+    const periodsData: any[] = [];
+
+    for (let i = 0; i < TOTAL; i++) {
+      // periodShift > 0 = future, < 0 = past
+      const shift = DEFAULT_INDEX - i;
+
+      let endMonth = baseEndMonth + shift;
+      let endYear = baseEndYear;
+      while (endMonth > 11) { endMonth -= 12; endYear++; }
+      while (endMonth < 0) { endMonth += 12; endYear--; }
+
+      const label = `${MONTH_TR[endMonth]} ${endYear}`;
+
+      const cards = creditCards.slice(0, 3).map(card => {
+        const stmtDay = card.statementDate || 31;
+
+        // End date of this period
+        const endDate = new Date(endYear, endMonth, stmtDay);
+        if (endDate.getMonth() !== endMonth) endDate.setDate(0);
+
+        // Start date = day after statementDate of previous month
+        const prevMonth = endMonth === 0 ? 11 : endMonth - 1;
+        const prevYear = endMonth === 0 ? endYear - 1 : endYear;
+        const prevStmt = new Date(prevYear, prevMonth, stmtDay);
+        if (prevStmt.getMonth() !== prevMonth) prevStmt.setDate(0);
+        const startDate = new Date(prevStmt);
+        startDate.setDate(startDate.getDate() + 1);
+
+        const startStr = fmt(startDate);
+        const endStr = fmt(endDate);
+
+        const txs = allTransactions.filter(
+          t => t.accountId === card.id && t.date >= startStr && t.date <= endStr
+        );
+        const spent = txs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+                    - txs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+
+        const limit = (card.targetLimit && card.targetLimit > 0)
+          ? card.targetLimit
+          : (card.creditLimit || 0);
+
+        return { name: card.name, spent: Math.max(0, spent), limit };
+      });
+
+      periodsData.push({ label, cards });
+    }
+
+    NativeModules.WidgetModule.setWidgetData(JSON.stringify({ periods: periodsData, defaultIndex: DEFAULT_INDEX }));
+  }, [allTransactions, accounts]);
 
   const statementAccount = useMemo(() => {
     if (!statementAccountId) return null;
@@ -1363,174 +1519,211 @@ export default function BudgetMainScreen() {
             </View>
 
             {/* Credit cards */}
-            <View style={{ marginTop: 22, marginBottom: 26 }}>
-              <Text style={styles.sectionLabel}>Kredi Kartları</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingRight: 20, paddingTop: 4 }}
-              >
-                <TouchableOpacity
-                  onPress={() => {
-                    setAccType("credit-card");
-                    openNewAccount();
-                  }}
-                  style={{ alignItems: "center", marginRight: 20 }}
-                  activeOpacity={0.75}
+            {financialCalculations.creditCardStatements.length > 0 && (
+              <View style={{ marginTop: 22, marginBottom: 26 }}>
+                <View style={[styles.rowBetween, { marginBottom: 12 }]}>
+                  <Text style={styles.sectionLabel}>Kredi Kartları</Text>
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: theme.textMuted }}>
+                    {financialCalculations.creditCardStatements.length} Kart
+                  </Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingRight: 20, paddingTop: 4, gap: 10 }}
                 >
-                  <View style={styles.circleWrap}>
-                    <Svg
-                      width="104"
-                      height="104"
-                      viewBox="0 0 104 104"
-                      style={{ position: "absolute" }}
-                    >
-                      <Circle
-                        cx="52"
-                        cy="52"
-                        r="48"
-                        stroke={theme.accent}
-                        strokeWidth="2"
-                        fill="none"
-                        strokeDasharray="6,5"
-                      />
-                    </Svg>
-                    <View
-                      style={[
-                        styles.circleInner,
-                        { backgroundColor: theme.accent + "1E" },
-                      ]}
-                    >
-                      <Plus size={26} color={theme.accent} />
-                    </View>
-                  </View>
-                  <Text style={styles.circleLabelStrong} numberOfLines={1}>
-                    Kart Ekle
-                  </Text>
-                  <Text style={styles.circleLabelSub} numberOfLines={1}>
-                    Yeni Kart
-                  </Text>
-                </TouchableOpacity>
+                  {financialCalculations.creditCardStatements.map((acc) => {
+                    const palette = getCardPalette(acc);
+                    const hasTarget = !!acc.targetLimit && acc.targetLimit > 0;
+                    const hasLimit = !!acc.creditLimit && acc.creditLimit > 0;
+                    const validSpent = Math.max(0, acc.monthSpent);
 
-                {financialCalculations.creditCardStatements.map((acc) => {
-                  const palette = getCardPalette(acc);
-                  const hasTarget = !!acc.targetLimit && acc.targetLimit > 0;
-                  const hasLimit = !!acc.creditLimit && acc.creditLimit > 0;
-
-                  const validSpent = Math.max(0, acc.monthSpent);
-
-                  const pct = hasTarget
-                    ? Math.min((validSpent / (acc.targetLimit || 1)) * 100, 100)
-                    : hasLimit
-                      ? Math.min(
-                          (acc.balance / (acc.creditLimit || 1)) * 100,
-                          100,
-                        )
+                    const limitValue = hasTarget
+                      ? acc.targetLimit || 1
+                      : hasLimit
+                      ? acc.creditLimit || 1
                       : 0;
 
-                  const isOverLimit = pct >= 90;
-                  const strokeColor = isOverLimit ? theme.expense : palette.hex;
-                  const remaining = hasTarget
-                    ? Math.max((acc.targetLimit || 0) - validSpent, 0)
-                    : hasLimit
+                    const pct = limitValue > 0
+                      ? Math.min((validSpent / limitValue) * 100, 100)
+                      : 0;
+
+                    const isOverLimit = pct >= 90;
+                    const remaining = hasTarget
+                      ? Math.max((acc.targetLimit || 0) - validSpent, 0)
+                      : hasLimit
                       ? Math.max((acc.creditLimit || 0) - acc.balance, 0)
                       : null;
 
-                  // SVG Circle progress dash calculations
-                  const circumference = 2 * Math.PI * 48; // ~301.59
-                  const strokeDashoffset =
-                    circumference - (pct / 100) * circumference;
+                    const cardLastFour = (acc.id || "").replace(/\D/g, "").slice(-4) || "4821";
 
-                  return (
-                    <TouchableOpacity
-                      key={acc.id}
-                      onPress={() => handleOpenStatement(acc)}
-                      style={{ alignItems: "center", marginRight: 20 }}
-                      activeOpacity={0.8}
-                    >
-                      <View style={styles.circleWrap}>
-                        <Svg
-                          width="104"
-                          height="104"
-                          viewBox="0 0 104 104"
-                          style={{ position: "absolute" }}
-                        >
-                          {/* Arkaplan dairesi */}
-                          <Circle
-                            cx="52"
-                            cy="52"
-                            r="48"
-                            stroke={theme.borderStrong}
-                            strokeWidth="4"
-                            fill="none"
-                          />
-
-                          {/* İlerleme dairesi */}
-                          {(hasTarget || hasLimit) && pct > 0 && (
-                            <Circle
-                              cx="52"
-                              cy="52"
-                              r="48"
-                              stroke={strokeColor}
-                              strokeWidth="5"
-                              fill="none"
-                              strokeDasharray={`${circumference} ${circumference}`}
-                              strokeDashoffset={strokeDashoffset}
-                              strokeLinecap="round"
-                              transform="rotate(-90 52 52)"
-                            />
-                          )}
-                        </Svg>
+                    return (
+                      <TouchableOpacity
+                        key={acc.id}
+                        onPress={() => handleOpenStatement(acc)}
+                        activeOpacity={0.88}
+                        style={{
+                          width: Math.min((Dimensions.get("window").width - 46) / 2, 175),
+                          height: 115,
+                          borderRadius: 14,
+                          overflow: "hidden",
+                          elevation: 4,
+                          shadowColor: palette.hex,
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.25,
+                          shadowRadius: 6,
+                        }}
+                      >
                         <LinearGradient
                           colors={palette.grad}
                           start={{ x: 0, y: 0 }}
                           end={{ x: 1, y: 1 }}
-                          style={styles.circleInnerBig}
+                          style={{
+                            flex: 1,
+                            padding: 10,
+                            justifyContent: "space-between",
+                            position: "relative",
+                          }}
                         >
-                          <CreditCard
-                            size={14}
-                            color="rgba(255,255,255,0.9)"
-                            style={{ marginBottom: 2 }}
+                          {/* Glossy Overlay Circles */}
+                          <View
+                            style={{
+                              position: "absolute",
+                              top: -20,
+                              right: -20,
+                              width: 80,
+                              height: 80,
+                              borderRadius: 40,
+                              backgroundColor: "rgba(255,255,255,0.08)",
+                            }}
                           />
-                          <Text
-                            style={styles.circleAmountMain}
-                            numberOfLines={1}
-                          >
-                            ₺{acc.monthSpent.toLocaleString("tr-TR")}
-                          </Text>
-                          {remaining !== null ? (
-                            <View style={styles.circleRemainingBadge}>
+                          <View
+                            style={{
+                              position: "absolute",
+                              bottom: -25,
+                              left: -10,
+                              width: 90,
+                              height: 90,
+                              borderRadius: 45,
+                              backgroundColor: "rgba(255,255,255,0.05)",
+                            }}
+                          />
+
+                          {/* Card Top Header: Bank Name & Contactless */}
+                          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1, paddingRight: 4 }}>
+                              <CreditCard size={12} color="rgba(255,255,255,0.9)" />
                               <Text
-                                style={[styles.circleAmountSub, { fontSize: 7, opacity: 0.8, textAlign: "center", marginBottom: 1 }]}
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: "900",
+                                  color: "#FFFFFF",
+                                  letterSpacing: 0.3,
+                                  textTransform: "uppercase",
+                                }}
                                 numberOfLines={1}
                               >
-                                Kalan
-                              </Text>
-                              <Text
-                                style={[styles.circleAmountSub, { fontSize: 9.5, textAlign: "center" }]}
-                                numberOfLines={1}
-                              >
-                                ₺{remaining.toLocaleString("tr-TR")}
+                                {acc.name}
                               </Text>
                             </View>
-                          ) : (
-                            <Text
-                              style={styles.circleAmountSub}
-                              numberOfLines={1}
+                            {/* Contactless waves Icon */}
+                            <View style={{ opacity: 0.85 }}>
+                              <Wifi size={13} color="#FFFFFF" style={{ transform: [{ rotate: "90deg" }] }} />
+                            </View>
+                          </View>
+
+                          {/* Card Middle: EMV Chip & Card Number Preview */}
+                          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginVertical: 1 }}>
+                            {/* Golden Metallic Chip */}
+                            <View
+                              style={{
+                                width: 22,
+                                height: 15,
+                                borderRadius: 3,
+                                backgroundColor: "#F59E0B",
+                                borderWidth: 1,
+                                borderColor: "#FCD34D",
+                                padding: 1,
+                                justifyContent: "center",
+                              }}
                             >
-                              Net Harcama
+                              <View
+                                style={{
+                                  flex: 1,
+                                  borderRadius: 1.5,
+                                  borderWidth: 0.5,
+                                  borderColor: "rgba(0,0,0,0.2)",
+                                  backgroundColor: "#EAB308",
+                                }}
+                              />
+                            </View>
+
+                            {/* Masked Card Number */}
+                            <Text
+                              style={{
+                                color: "rgba(255,255,255,0.85)",
+                                fontSize: 10,
+                                fontWeight: "700",
+                                letterSpacing: 1.2,
+                              }}
+                            >
+                              •• {cardLastFour}
                             </Text>
-                          )}
+                          </View>
+
+                          {/* Card Bottom: Spent Amount, Limit Bar & Remaining */}
+                          <View>
+                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 3 }}>
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 7.5, fontWeight: "700", color: "rgba(255,255,255,0.75)", textTransform: "uppercase" }}>
+                                  Harcama
+                                </Text>
+                                <Text style={{ fontSize: 13, fontWeight: "900", color: "#FFFFFF", letterSpacing: -0.3 }} numberOfLines={1}>
+                                  ₺{acc.monthSpent.toLocaleString("tr-TR")}
+                                </Text>
+                              </View>
+
+                              {remaining !== null && (
+                                <View style={{ alignItems: "flex-end" }}>
+                                  <Text style={{ fontSize: 7.5, fontWeight: "700", color: "rgba(255,255,255,0.75)", textTransform: "uppercase" }}>
+                                    Kalan
+                                  </Text>
+                                  <Text style={{ fontSize: 9.5, fontWeight: "800", color: isOverLimit ? "#FCA5A5" : "#FFFFFF" }} numberOfLines={1}>
+                                    ₺{remaining.toLocaleString("tr-TR")}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+
+                            {/* Progress bar if target/limit exists */}
+                            {limitValue > 0 && (
+                              <View
+                                style={{
+                                  height: 3,
+                                  width: "100%",
+                                  backgroundColor: "rgba(255,255,255,0.25)",
+                                  borderRadius: 1.5,
+                                  overflow: "hidden",
+                                }}
+                              >
+                                <View
+                                  style={{
+                                    height: "100%",
+                                    width: `${pct}%`,
+                                    backgroundColor: isOverLimit ? "#EF4444" : "#FFFFFF",
+                                    borderRadius: 1.5,
+                                  }}
+                                />
+                              </View>
+                            )}
+                          </View>
                         </LinearGradient>
-                      </View>
-                      <Text style={styles.circleLabelStrong} numberOfLines={1}>
-                        {acc.name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
 
             {/* Daily transactions */}
             <Text style={styles.sectionLabel}>İşlemler</Text>
@@ -1694,9 +1887,9 @@ export default function BudgetMainScreen() {
                     width={Dimensions.get("window").width - 64}
                     height={180}
                     chartConfig={{
-                      backgroundColor: "transparent",
-                      backgroundGradientFrom: "transparent",
-                      backgroundGradientTo: "transparent",
+                      backgroundColor: theme.surface,
+                      backgroundGradientFrom: theme.surface,
+                      backgroundGradientTo: theme.surface,
                       decimalPlaces: 0,
                       color: (o = 1) => `rgba(62,124,116,${o})`,
                       labelColor: (o = 1) => `rgba(117,105,92,${o})`,
@@ -1709,7 +1902,6 @@ export default function BudgetMainScreen() {
                       propsForBackgroundLines: {
                         stroke: "rgba(43,36,28,0.06)",
                       },
-                      useShadowColorFromDataset: true,
                     }}
                     bezier
                     style={{
@@ -2251,9 +2443,29 @@ export default function BudgetMainScreen() {
                         >
                           <ChevronLeft size={18} color="#fff" />
                         </TouchableOpacity>
-                        <View style={styles.statementIconWrap}>
-                          <Receipt size={18} color="#fff" />
-                        </View>
+                        <TouchableOpacity
+                          onPress={() => {
+                            handleCloseStatement();
+                            openEditAccount(statementAccount);
+                          }}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 5,
+                            backgroundColor: "rgba(255,255,255,0.2)",
+                            paddingHorizontal: 10,
+                            paddingVertical: 5,
+                            borderRadius: 14,
+                            borderWidth: 1,
+                            borderColor: "rgba(255,255,255,0.3)",
+                          }}
+                          activeOpacity={0.8}
+                        >
+                          <Pencil size={13} color="#fff" />
+                          <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>
+                            Düzenle
+                          </Text>
+                        </TouchableOpacity>
                       </View>
                       <Text style={styles.statementCardName}>
                         {statementAccount.name}
@@ -2708,84 +2920,194 @@ export default function BudgetMainScreen() {
                 onChangeText={setTxDescription}
               />
 
-              <Text style={styles.fieldLabel}>Kategori</Text>
+              {/* Category selector with Reorder mode */}
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 10, marginBottom: 6 }}>
+                <Text style={styles.fieldLabel}>Kategori</Text>
+                <TouchableOpacity
+                  onPress={() => setIsReorderingCats(!isReorderingCats)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: 10,
+                    backgroundColor: isReorderingCats ? theme.accent + "20" : theme.border,
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <ListTree size={12} color={isReorderingCats ? theme.accent : theme.textSecondary} />
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: isReorderingCats ? theme.accent : theme.textSecondary }}>
+                    {isReorderingCats ? "Bitti" : "Sırala"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 style={{ marginBottom: 16 }}
+                contentContainerStyle={{ gap: 6 }}
               >
-                {categories
-                  .filter((c) => c.type === txType)
-                  .map((cat) => {
+                {(() => {
+                  const filteredCats = categories
+                    .filter((c) => c.type === txType)
+                    .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+
+                  return filteredCats.map((cat, idx) => {
                     const isSelected = txCategory === cat.name;
                     const conf = getCategoryConfig(
                       cat.name,
                       txType,
                       categories,
                     );
+
                     return (
-                      <TouchableOpacity
+                      <View
                         key={cat.id || cat.name}
-                        onPress={() => setTxCategory(cat.name)}
                         style={[
                           styles.chip,
                           isSelected && {
                             backgroundColor: conf.color,
                             borderColor: conf.color,
                           },
+                          isReorderingCats && { paddingHorizontal: 6, gap: 4 },
                         ]}
                       >
-                        <CatIcon conf={conf} size={13} />
-                        <Text
-                          style={[
-                            styles.chipText,
-                            isSelected && { color: "#fff" },
-                          ]}
+                        {isReorderingCats && idx > 0 && (
+                          <TouchableOpacity
+                            onPress={() => handleMoveCategory(cat.id || cat.name, -1, filteredCats)}
+                            hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+                            style={{ padding: 2 }}
+                          >
+                            <ChevronLeft size={14} color={isSelected ? "#fff" : theme.textSecondary} />
+                          </TouchableOpacity>
+                        )}
+
+                        <TouchableOpacity
+                          onPress={() => setTxCategory(cat.name)}
+                          onLongPress={() => setIsReorderingCats(true)}
+                          style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+                          activeOpacity={0.8}
                         >
-                          {cat.name}
-                        </Text>
-                      </TouchableOpacity>
+                          <CatIcon conf={conf} size={13} />
+                          <Text
+                            style={[
+                              styles.chipText,
+                              isSelected && { color: "#fff" },
+                            ]}
+                          >
+                            {cat.name}
+                          </Text>
+                        </TouchableOpacity>
+
+                        {isReorderingCats && idx < filteredCats.length - 1 && (
+                          <TouchableOpacity
+                            onPress={() => handleMoveCategory(cat.id || cat.name, 1, filteredCats)}
+                            hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+                            style={{ padding: 2 }}
+                          >
+                            <ChevronRight size={14} color={isSelected ? "#fff" : theme.textSecondary} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     );
-                  })}
+                  });
+                })()}
               </ScrollView>
 
-              <Text style={styles.fieldLabel}>Hesap</Text>
+              {/* Account selector with Reorder mode */}
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4, marginBottom: 6 }}>
+                <Text style={styles.fieldLabel}>Hesap</Text>
+                <TouchableOpacity
+                  onPress={() => setIsReorderingAccounts(!isReorderingAccounts)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: 10,
+                    backgroundColor: isReorderingAccounts ? theme.accent + "20" : theme.border,
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <ListTree size={12} color={isReorderingAccounts ? theme.accent : theme.textSecondary} />
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: isReorderingAccounts ? theme.accent : theme.textSecondary }}>
+                    {isReorderingAccounts ? "Bitti" : "Sırala"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 style={{ marginBottom: 16 }}
+                contentContainerStyle={{ gap: 6 }}
               >
-                {accounts
-                  .filter((acc) =>
-                    txType === "income"
-                      ? acc.type !== "credit-card" && acc.type !== "debt"
-                      : true,
-                  )
-                  .map((acc) => {
+                {(() => {
+                  const filteredAccs = accounts
+                    .filter((acc) =>
+                      txType === "income"
+                        ? acc.type !== "credit-card" && acc.type !== "debt"
+                        : true,
+                    )
+                    .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+
+                  return filteredAccs.map((acc, idx) => {
                     const isSelected = txAccountId === acc.id;
+
                     return (
-                      <TouchableOpacity
+                      <View
                         key={acc.id}
-                        onPress={() => setTxAccountId(acc.id)}
                         style={[
                           styles.chip,
                           isSelected && {
                             backgroundColor: theme.accent,
                             borderColor: theme.accent,
                           },
+                          isReorderingAccounts && { paddingHorizontal: 6, gap: 4 },
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.chipText,
-                            isSelected && { color: "#fff" },
-                          ]}
+                        {isReorderingAccounts && idx > 0 && (
+                          <TouchableOpacity
+                            onPress={() => handleMoveAccount(acc.id, -1, filteredAccs)}
+                            hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+                            style={{ padding: 2 }}
+                          >
+                            <ChevronLeft size={14} color={isSelected ? "#fff" : theme.textSecondary} />
+                          </TouchableOpacity>
+                        )}
+
+                        <TouchableOpacity
+                          onPress={() => setTxAccountId(acc.id)}
+                          onLongPress={() => setIsReorderingAccounts(true)}
+                          style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+                          activeOpacity={0.8}
                         >
-                          {acc.name}
-                        </Text>
-                      </TouchableOpacity>
+                          <Text
+                            style={[
+                              styles.chipText,
+                              isSelected && { color: "#fff" },
+                            ]}
+                          >
+                            {acc.name}
+                          </Text>
+                        </TouchableOpacity>
+
+                        {isReorderingAccounts && idx < filteredAccs.length - 1 && (
+                          <TouchableOpacity
+                            onPress={() => handleMoveAccount(acc.id, 1, filteredAccs)}
+                            hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+                            style={{ padding: 2 }}
+                          >
+                            <ChevronRight size={14} color={isSelected ? "#fff" : theme.textSecondary} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     );
-                  })}
+                  });
+                })()}
               </ScrollView>
 
               {txAccountId &&
@@ -3909,7 +4231,7 @@ const styles = StyleSheet.create({
   },
   statValue: { color: "#fff", fontWeight: "800", fontSize: 13, marginTop: 2 },
 
-  tabsWrap: { paddingHorizontal: 16, marginTop: -22, zIndex: 20 },
+  tabsWrap: { paddingHorizontal: 16, marginTop: 12, zIndex: 20 },
   tabsBar: {
     backgroundColor: theme.surfaceRaised,
     borderRadius: 22,

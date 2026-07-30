@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Trash2, Banknote, Landmark, CreditCard, BarChart2, ArrowUpRight, ArrowDownLeft, Calendar as CalendarIcon, ArrowLeft, ShoppingCart, Utensils, Bus, FileText, Gamepad2, HeartPulse, Shirt, GraduationCap, DollarSign, Briefcase, PlusCircle, CircleEllipsis, Printer, Check } from "lucide-react";
+import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Trash2, Banknote, Landmark, CreditCard, BarChart2, ArrowUpRight, ArrowDownLeft, Calendar as CalendarIcon, ArrowLeft, ShoppingCart, Utensils, Bus, FileText, Gamepad2, HeartPulse, Shirt, GraduationCap, DollarSign, Briefcase, PlusCircle, CircleEllipsis, Printer, Check, Pencil, Settings, List } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -16,7 +16,7 @@ import type { Account, Transaction, BudgetCategory, Bill, TransactionTemplate } 
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfYear, endOfYear, subYears, parseISO, addYears, eachMonthOfInterval, subMonths, addMonths, getYear, isSameMonth } from "date-fns";
 import { tr } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn , getEffectiveMonth } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useRouter } from "next/navigation";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -67,6 +67,30 @@ export function BudgetClient() {
     const [bills, setBills] = React.useState<Bill[]>([]);
     const [transactionTemplates, setTransactionTemplates] = React.useState<TransactionTemplate[]>([]);
     
+    const [selectedAccountDetails, setSelectedAccountDetails] = React.useState<Account | null>(null);
+    const [isAccountDetailsOpen, setIsAccountDetailsOpen] = React.useState(false);
+    const [accountDetailsBalanceEdit, setAccountDetailsBalanceEdit] = React.useState<string>("");
+    const [isEditingAccountDetailsBalance, setIsEditingAccountDetailsBalance] = React.useState(false);
+
+    const handleOpenAccountDetails = (acc: Account) => {
+        setSelectedAccountDetails(acc);
+        setAccountDetailsBalanceEdit(acc.balance.toString());
+        setIsEditingAccountDetailsBalance(false);
+        setIsAccountDetailsOpen(true);
+    };
+
+    const handleSaveAccountDetailsBalance = async () => {
+        if (selectedAccountDetails) {
+            const newBal = parseFloat(accountDetailsBalanceEdit);
+            if (!isNaN(newBal)) {
+                await updateAccount(selectedAccountDetails.id, { balance: newBal });
+                setSelectedAccountDetails({ ...selectedAccountDetails, balance: newBal });
+                setIsEditingAccountDetailsBalance(false);
+                toast({ title: "Bakiye güncellendi", variant: "default" });
+            }
+        }
+    };
+
     const [isAccountFormOpen, setIsAccountFormOpen] = React.useState(false);
     const [isTransactionFormOpen, setIsTransactionFormOpen] = React.useState(false);
     const [isBillFormOpen, setIsBillFormOpen] = React.useState(false);
@@ -147,7 +171,7 @@ export function BudgetClient() {
         };
     }, [accounts]);
 
-    const { monthlyIncome, monthlyExpense, yearlyIncome, yearlyExpense, monthlySummaries, dailyGroups } = React.useMemo(() => {
+    const { creditCardStatements, monthlyIncome, monthlyExpense, yearlyIncome, yearlyExpense, monthlySummaries, dailyGroups } = React.useMemo(() => {
         const yearInterval = eachMonthOfInterval({ start: startOfYear(currentDate), end: endOfYear(currentDate) });
         const monthSummaries: {[key: string]: {income: number, expense: number, total: number, transactions: Transaction[]}} = {};
         
@@ -159,7 +183,7 @@ export function BudgetClient() {
         const daily: { [key: string]: { date: string; dateISO: string; dayTotalIncome: number; dayTotalExpense: number; transactions: Transaction[] } } = {};
 
         const filteredTransactionsForMonth = allTransactions.filter(t => {
-            const transactionMonth = t.date.substring(0, 7);
+            const transactionMonth = getEffectiveMonth(t.date, t.accountId, accounts);
             const currentMonth = format(currentDate, 'yyyy-MM');
             return transactionMonth === currentMonth;
         });
@@ -167,7 +191,7 @@ export function BudgetClient() {
         allTransactions.forEach(t => {
             const transactionYear = getYear(parseISO(t.date));
              if (transactionYear === getYear(currentDate)) {
-                const monthKey = t.date.substring(0, 7);
+                const monthKey = getEffectiveMonth(t.date, t.accountId, accounts);
                 if(monthSummaries[monthKey]) {
                     if (t.type === 'income') monthSummaries[monthKey].income += t.amount;
                     else monthSummaries[monthKey].expense += t.amount;
@@ -176,7 +200,10 @@ export function BudgetClient() {
              }
         });
 
-        filteredTransactionsForMonth.forEach(t => {
+        filteredTransactionsForMonth.filter(t => {
+             const acc = accounts.find(a => a.id === t.accountId);
+             return acc?.type !== 'credit-card';
+        }).forEach(t => {
              if (!daily[t.date]) {
                 daily[t.date] = { date: format(parseISO(t.date), 'd EEEE', {locale: tr}), dateISO: t.date, dayTotalIncome: 0, dayTotalExpense: 0, transactions: [] };
             }
@@ -199,7 +226,22 @@ export function BudgetClient() {
         const yearlyIncomeTotal = Object.values(monthSummaries).reduce((s, m) => s + m.income, 0);
         const yearlyExpenseTotal = Object.values(monthSummaries).reduce((s, m) => s + m.expense, 0);
 
+        const creditCardStatements = accounts
+            .filter(a => a.type === 'credit-card')
+            .map(card => {
+                const cardTxs = filteredTransactionsForMonth.filter(t => t.accountId === card.id);
+                const monthSpent = cardTxs
+                    .filter(t => t.type === 'expense')
+                    .reduce((sum, t) => sum + t.amount, 0);
+                return {
+                    ...card,
+                    monthSpent,
+                    transactions: cardTxs.sort((a,b) => b.date.localeCompare(a.date))
+                };
+            });
+
         return { 
+            creditCardStatements,
             monthlyIncome: monthStats.income, monthlyExpense: monthStats.expense,
             yearlyIncome: yearlyIncomeTotal, yearlyExpense: yearlyExpenseTotal,
             monthlySummaries: finalSummaries, dailyGroups: finalDailyGroups,
@@ -241,6 +283,15 @@ export function BudgetClient() {
     };
 
     const handleTransactionSubmit = async (data: any) => {
+    const calculateNewBalance = (acc, type, amount, isRevert = false) => {
+        let multiplier = type === 'income' ? 1 : -1;
+        if (acc.type === 'credit-card' || acc.type === 'debt') {
+            multiplier = type === 'expense' ? 1 : -1;
+        }
+        if (isRevert) multiplier *= -1;
+        return acc.balance + (amount * multiplier);
+    };
+
         try {
             const todayStr = format(new Date(), 'yyyy-MM-dd');
             
@@ -255,20 +306,20 @@ export function BudgetClient() {
                 
                 if (isSameAccount && targetAccount1) {
                      let tempBalance = targetAccount1.balance;
-                     if (oldTx.isApplied || oldTx.isApplied === undefined) {
-                         tempBalance = oldTx.type === 'income' ? tempBalance - oldTx.amount : tempBalance + oldTx.amount;
+                     if ((oldTx.isApplied || oldTx.isApplied === undefined) && oldTx.isAppliedToAccount !== false) {
+                         tempBalance = calculateNewBalance({ type: targetAccount1.type, balance: tempBalance }, oldTx.type, oldTx.amount, true);
                      }
-                     if (newIsApplied) {
-                         tempBalance = data.type === 'income' ? tempBalance + data.amount : tempBalance - data.amount;
+                     if (newIsApplied && data.isAppliedToAccount !== false) {
+                         tempBalance = calculateNewBalance({ type: targetAccount1.type, balance: tempBalance }, data.type, data.amount, false);
                      }
                      await updateAccount(targetAccount1.id, { balance: tempBalance });
                 } else {
-                     if ((oldTx.isApplied || oldTx.isApplied === undefined) && targetAccount1) {
-                         const revertedBalance = oldTx.type === 'income' ? targetAccount1.balance - oldTx.amount : targetAccount1.balance + oldTx.amount;
+                     if ((oldTx.isApplied || oldTx.isApplied === undefined) && oldTx.isAppliedToAccount !== false && targetAccount1) {
+                         const revertedBalance = calculateNewBalance(targetAccount1, oldTx.type, oldTx.amount, true);
                          await updateAccount(targetAccount1.id, { balance: revertedBalance });
                      }
-                     if (newIsApplied && targetAccount2) {
-                         const newBalance = data.type === 'income' ? targetAccount2.balance + data.amount : targetAccount2.balance - data.amount;
+                     if (newIsApplied && data.isAppliedToAccount !== false && targetAccount2) {
+                         const newBalance = calculateNewBalance(targetAccount2, data.type, data.amount, false);
                          await updateAccount(targetAccount2.id, { balance: newBalance });
                      }
                 }
@@ -294,10 +345,10 @@ export function BudgetClient() {
                             installmentDetails: { current: i + 1, total: totalCount }
                         };
                         
-                        if (isApplied) {
+                        if (isApplied && txData.isAppliedToAccount !== false) {
                             const acc = accounts.find(a => a.id === txData.accountId);
                             if (acc) {
-                                const newBalance = txData.type === 'income' ? acc.balance + txData.amount : acc.balance - txData.amount;
+                                const newBalance = calculateNewBalance(acc, txData.type, txData.amount, false);
                                 await updateAccount(acc.id, { balance: newBalance });
                             }
                         }
@@ -308,10 +359,10 @@ export function BudgetClient() {
                     const isApplied = data.date <= todayStr;
                     data.isApplied = isApplied;
                     
-                    if (isApplied) {
+                    if (isApplied && data.isAppliedToAccount !== false) {
                         const acc = accounts.find(a => a.id === data.accountId);
                         if (acc) {
-                            const newBalance = data.type === 'income' ? acc.balance + data.amount : acc.balance - data.amount;
+                            const newBalance = calculateNewBalance(acc, data.type, data.amount, false);
                             await updateAccount(acc.id, { balance: newBalance });
                         }
                     }
@@ -440,7 +491,7 @@ export function BudgetClient() {
             const spent = allTransactions.filter(tx => 
                 tx.type === 'expense' && 
                 tx.category === cat.name &&
-                tx.date.startsWith(format(currentDate, 'yyyy-MM'))
+                getEffectiveMonth(tx.date, tx.accountId, accounts) === format(currentDate, 'yyyy-MM')
             ).reduce((sum, tx) => sum + tx.amount, 0);
             
             return {
@@ -595,65 +646,204 @@ export function BudgetClient() {
 
                 {/* --- İÇERİK ALANI --- */}
                 <div className="pb-24">
-                    
                     {/* GÜNLÜK GÖRÜNÜM - İşlem Listesi */}
                     {mainTab === 'day' && dailyGroups.length > 0 && (
-                        <div className="space-y-6 px-4">
+                        <div className="space-y-5 px-4">
                             {dailyGroups.map((group, groupIdx) => (
                                 <div key={group.dateISO} className="animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${groupIdx * 100}ms` }}>
-                                    <div className="flex justify-between items-center mb-3">
-                                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">{group.date}</h3>
-                                        <div className="flex gap-2">
-                                            {group.dayTotalIncome > 0 && <span className="text-[11px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded-full font-bold">+{group.dayTotalIncome.toLocaleString('tr-TR')} ₺</span>}
-                                            {group.dayTotalExpense > 0 && <span className="text-[11px] bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 px-2 py-0.5 rounded-full font-bold">-{group.dayTotalExpense.toLocaleString('tr-TR')} ₺</span>}
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="bg-white dark:bg-slate-900 rounded-[24px] shadow-sm border border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800/50">
-                                        {group.transactions.map((tx) => {
-                                            const account = accounts.find(a => a.id === tx.accountId);
-                                            const dynamicCategory = categories.find(c => c.name === tx.category);
-                                            let config = categoryConfig[tx.category];
-                                            if (!config) {
-                                                config = tx.type === 'income' 
-                                                    ? { color: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400', icon: PlusCircle }
-                                                    : { color: 'bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400', icon: CircleEllipsis };
-                                            }
-                                            const CategoryIcon = config.icon;
-                                            const bgClass = config.color.split(' ').find(c => c.startsWith('bg-')) || 'bg-slate-100';
-                                            const textClass = config.color.split(' ').find(c => c.startsWith('text-')) || 'text-slate-800';
+                                     <div className="flex justify-between items-center mb-2.5">
+                                         <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{group.date}</h3>
+                                         <div className="flex gap-1.5">
+                                             {group.dayTotalIncome > 0 && <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 rounded-full font-black tracking-tight">+{group.dayTotalIncome.toLocaleString('tr-TR')} ₺</span>}
+                                             {group.dayTotalExpense > 0 && <span className="text-[10px] bg-rose-500/10 text-rose-600 dark:text-rose-400 px-2.5 py-0.5 rounded-full font-black tracking-tight">-{group.dayTotalExpense.toLocaleString('tr-TR')} ₺</span>}
+                                         </div>
+                                     </div>
+                                     
+                                     <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-100/80 dark:border-slate-800/60 overflow-hidden divide-y divide-slate-100/80 dark:divide-slate-800/40">
+                                         {group.transactions.map((tx) => {
+                                             const account = accounts.find(a => a.id === tx.accountId);
+                                             const dynamicCategory = categories.find(c => c.name === tx.category);
+                                             let config = categoryConfig[tx.category];
+                                             if (!config) {
+                                                 config = tx.type === 'income' 
+                                                     ? { color: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400', icon: PlusCircle }
+                                                     : { color: 'bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400', icon: CircleEllipsis };
+                                             }
+                                             const CategoryIcon = config.icon;
+                                             const bgClass = config.color.split(' ').find(c => c.startsWith('bg-')) || 'bg-slate-100';
+                                             const textClass = config.color.split(' ').find(c => c.startsWith('text-')) || 'text-slate-800';
 
-                                            return (
-                                                <div 
-                                                    key={tx.id} 
-                                                    className="flex items-center justify-between p-4 active:bg-slate-50 dark:active:bg-white/5 transition-colors cursor-pointer first:rounded-t-[24px] last:rounded-b-[24px]"
-                                                    onClick={() => openTransactionForm(tx)}
-                                                >
-                                                    <div className="flex items-center gap-3.5 min-w-0">
-                                                        <div className={cn("w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-sm border border-black/5 dark:border-white/5", bgClass, textClass)}>
-                                                            {dynamicCategory ? <span className="text-2xl">{dynamicCategory.icon}</span> : <CategoryIcon className="w-5 h-5" />}
-                                                        </div>
-                                                        <div className="min-w-0">
-                                                            <p className="text-[15px] font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">
-                                                                {tx.category}
-                                                            </p>
-                                                            <p className="text-[12px] text-slate-500 font-semibold truncate mt-0.5">
-                                                                {account?.name || 'Hesap Yok'}
-                                                                {tx.description && <span className="font-medium"> • {tx.description}</span>}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <p className={cn("font-black text-[16px] shrink-0", tx.type === 'expense' ? 'text-slate-800 dark:text-slate-200' : 'text-emerald-500')}>
-                                                        {tx.type === 'expense' ? '-' : '+'}{tx.amount.toLocaleString('tr-TR')} ₺
-                                                    </p>
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                                             return (
+                                                 <div 
+                                                     key={tx.id} 
+                                                     className="flex items-center justify-between px-4 py-3.5 active:bg-slate-50/80 dark:active:bg-white/5 transition-colors cursor-pointer group"
+                                                     onClick={() => openTransactionForm(tx)}
+                                                 >
+                                                     <div className="flex items-center gap-3 min-w-0">
+                                                         <div className={cn("w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm", bgClass, textClass)}>
+                                                             {dynamicCategory ? <span className="text-xl">{dynamicCategory.icon}</span> : <CategoryIcon className="w-5 h-5" />}
+                                                         </div>
+                                                         <div className="min-w-0">
+                                                             <p className="text-[14px] font-bold text-slate-800 dark:text-slate-100 truncate leading-tight">
+                                                                 {tx.category}
+                                                             </p>
+                                                             <p className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold truncate mt-0.5">
+                                                                 {account?.name || '—'}
+                                                                 {tx.description && <span> · {tx.description}</span>}
+                                                             </p>
+                                                         </div>
+                                                     </div>
+                                                     <div className="flex flex-col items-end shrink-0 ml-2">
+                                                         <p className={cn("font-black text-[15px]", tx.type === 'expense' ? 'text-slate-800 dark:text-slate-100' : 'text-emerald-500')}>
+                                                             {tx.type === 'expense' ? '-' : '+'}{tx.amount.toLocaleString('tr-TR')} ₺
+                                                         </p>
+                                                         <ArrowUpRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 group-hover:text-slate-400 transition-colors mt-0.5" />
+                                                     </div>
+                                                 </div>
+                                             )
+                                         })}
+                                     </div>
+                                 </div>
+                             ))}
+                         </div>
+                     )}
+                     
+                    {/* Kredi Kartları Alanı */}
+                     {mainTab === 'day' && (
+                         <div className="px-4 mb-8 mt-6">
+                             <div className="flex justify-between items-center mb-4">
+                                 <div>
+                                     <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Kredi Kartları</h3>
+                                 </div>
+                                 <button onClick={() => openAccountForm(null, 'credit-card')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-colors text-[11px] font-bold">
+                                     <Plus className="w-3.5 h-3.5"/> Kart Ekle
+                                 </button>
+                             </div>
+                             <div className="flex flex-col gap-5">
+                                 {creditCardStatements.map((account, idx) => {
+                                     const Icon = accountIcons[account.type] || Wallet;
+                                     const pct = account.targetLimit && account.targetLimit > 0 ? Math.min((account.monthSpent / account.targetLimit) * 100, 100) : 0;
+                                     const gradients = [
+                                         'from-violet-600 via-purple-600 to-indigo-700',
+                                         'from-rose-600 via-pink-600 to-red-700',
+                                         'from-slate-700 via-slate-800 to-slate-900',
+                                         'from-blue-600 via-indigo-600 to-blue-800',
+                                     ];
+                                     const grad = gradients[idx % gradients.length];
+                                     return (
+                                         <div key={account.id} className="relative">
+                                             {/* Premium Card */}
+                                             <div
+                                                 onClick={() => handleOpenAccountDetails(account)}
+                                                 className={`w-full rounded-3xl p-5 text-white bg-gradient-to-br ${grad} shadow-2xl relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all duration-300 border border-white/10`}
+                                                 style={{ boxShadow: '0 20px 60px -15px rgba(0,0,0,0.4)' }}
+                                             >
+                                                 {/* Shimmer overlay */}
+                                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/10 pointer-events-none" />
+                                                 {/* Watermark Icon */}
+                                                 <div className="absolute -bottom-6 -right-6 opacity-[0.07]">
+                                                     <Icon className="w-40 h-40" />
+                                                 </div>
+
+                                                 {/* Top row */}
+                                                 <div className="flex items-start justify-between mb-5">
+                                                     <div className="flex items-center gap-3">
+                                                         <div className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/20">
+                                                             <Icon className="w-5 h-5 text-white" />
+                                                         </div>
+                                                         <div>
+                                                             <p className="text-white/60 text-[9px] font-bold uppercase tracking-widest">Kredi Kartı</p>
+                                                             <p className="text-white font-bold text-[15px] leading-tight">{account.name}</p>
+                                                         </div>
+                                                     </div>
+                                                     <div className="text-right">
+                                                         <p className="text-white/60 text-[9px] font-bold uppercase tracking-widest mb-0.5">Bu Ay Harcama</p>
+                                                         <p className="text-white font-black text-2xl tracking-tight">{account.monthSpent.toLocaleString('tr-TR')} ₺</p>
+                                                     </div>
+                                                 </div>
+
+                                                 {/* Progress bar */}
+                                                 {account.targetLimit && account.targetLimit > 0 && (
+                                                     <div className="mb-4">
+                                                         <div className="flex justify-between items-center mb-1.5">
+                                                             <span className="text-white/70 text-[10px] font-bold uppercase tracking-wider">Aylık Limit</span>
+                                                             <span className="text-white text-[11px] font-black">{account.targetLimit.toLocaleString('tr-TR')} ₺</span>
+                                                         </div>
+                                                         <div className="h-2 w-full bg-black/25 rounded-full overflow-hidden">
+                                                             <div
+                                                                 className={`h-full rounded-full transition-all duration-1000 ease-out ${pct >= 90 ? 'bg-red-400' : pct >= 70 ? 'bg-amber-400' : 'bg-white'}`}
+                                                                 style={{ width: `${pct}%` }}
+                                                             />
+                                                         </div>
+                                                         <div className="flex justify-between items-center mt-1.5">
+                                                             <span className="text-white/60 text-[10px] font-semibold">%{Math.round(pct)} kullanıldı</span>
+                                                             <span className="text-white text-[10px] font-black">{Math.max(account.targetLimit - account.monthSpent, 0).toLocaleString('tr-TR')} ₺ kaldı</span>
+                                                         </div>
+                                                     </div>
+                                                 )}
+
+                                                 {/* Bottom chip stripe */}
+                                                 <div className="flex items-center gap-1 mt-1">
+                                                     {[...Array(4)].map((_,i) => <div key={i} className="h-0.5 flex-1 bg-white/20 rounded-full" />)}
+                                                 </div>
+                                             </div>
+
+                                             {/* Transactions below card */}
+                                             {account.transactions && account.transactions.length > 0 && (
+                                                 <div className="mt-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-100/80 dark:border-slate-800/60 overflow-hidden divide-y divide-slate-100/80 dark:divide-slate-800/40">
+                                                     {account.transactions.map(tx => {
+                                                         let txConfig = categoryConfig[tx.category];
+                                                         if (!txConfig) txConfig = tx.type === 'income'
+                                                             ? { color: 'bg-emerald-500/10 text-emerald-600', icon: PlusCircle }
+                                                             : { color: 'bg-rose-500/10 text-rose-600', icon: CircleEllipsis };
+                                                         const TxIcon = txConfig.icon;
+                                                         const txBg = txConfig.color.split(' ').find(c => c.startsWith('bg-')) || 'bg-slate-100';
+                                                         const txTxt = txConfig.color.split(' ').find(c => c.startsWith('text-')) || 'text-slate-600';
+                                                         return (
+                                                             <div
+                                                                 key={tx.id}
+                                                                 className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-slate-50 dark:active:bg-white/5 transition-colors group"
+                                                                 onClick={(e) => { e.stopPropagation(); openTransactionForm(tx); }}
+                                                             >
+                                                                 <div className="flex items-center gap-3 min-w-0">
+                                                                     <div className={cn('w-8 h-8 rounded-xl flex items-center justify-center shrink-0', txBg, txTxt)}>
+                                                                         <TxIcon className="w-3.5 h-3.5" />
+                                                                     </div>
+                                                                     <div className="min-w-0">
+                                                                         <p className="text-[13px] font-bold text-slate-800 dark:text-slate-100 truncate">{tx.description || tx.category}</p>
+                                                                         <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">{format(parseISO(tx.date), 'dd MMM', {locale:tr})}</p>
+                                                                     </div>
+                                                                 </div>
+                                                                 <div className="flex items-center gap-1.5 shrink-0">
+                                                                     <p className={"text-[13px] font-black " + (tx.type === 'expense' ? 'text-slate-700 dark:text-slate-200' : 'text-emerald-500')}>
+                                                                         {tx.type === 'expense' ? '-' : '+'}₺{tx.amount.toLocaleString('tr-TR')}
+                                                                     </p>
+                                                                     <ArrowUpRight className="w-3 h-3 text-slate-300 dark:text-slate-600 group-hover:text-slate-400 transition-colors" />
+                                                                 </div>
+                                                             </div>
+                                                         );
+                                                     })}
+                                                 </div>
+                                             )}
+                                         </div>
+                                     );
+                                 })}
+                                 {creditCardStatements.length === 0 && (
+                                     <div
+                                         className="w-full rounded-3xl p-8 border-2 border-dashed border-slate-200 dark:border-slate-700/50 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:border-rose-300 hover:text-rose-400 dark:hover:border-rose-700 transition-all duration-300 group"
+                                         onClick={() => openAccountForm(null, 'credit-card')}
+                                     >
+                                         <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                             <CreditCard className="w-6 h-6 text-rose-400" />
+                                         </div>
+                                         <p className="font-black text-sm">Kredi Kartı Ekle</p>
+                                         <p className="text-xs mt-1 opacity-70">Harcamalarını takip et</p>
+                                     </div>
+                                 )}
+                             </div>
+                         </div>
+                     )}
+                     
                     {mainTab === 'day' && dailyGroups.length === 0 && (
                         <div className="text-center py-20 px-4 text-slate-500">
                             <Wallet className="w-16 h-16 mx-auto mb-4 opacity-20" />
@@ -755,7 +945,7 @@ export function BudgetClient() {
                                     {accountStats.assets.map((account) => {
                                         const Icon = accountIcons[account.type] || Wallet;
                                         return (
-                                            <div key={account.id} onClick={() => openAccountForm(account)} className="w-full rounded-2xl sm:rounded-[32px] p-4 sm:p-6 text-white bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg relative overflow-hidden cursor-pointer active:scale-95 transition-transform border border-white/20">
+                                            <div key={account.id} onClick={() => handleOpenAccountDetails(account)} className="w-full rounded-2xl sm:rounded-[32px] p-4 sm:p-6 text-white bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg relative overflow-hidden cursor-pointer active:scale-95 transition-transform border border-white/20">
                                                 <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-6 p-4 opacity-10">
                                                     <Icon className="w-24 h-24 sm:w-32 sm:h-32" />
                                                 </div>
@@ -785,47 +975,132 @@ export function BudgetClient() {
                                 </div>
                             </div>
 
-                            {/* Borçlar */}
-                            <div>
-                                <div className="flex justify-between items-center pr-4 mb-3">
-                                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Borçlar & Kartlar</h3>
-                                    <button onClick={() => openAccountForm(null, 'credit-card')} className="w-8 h-8 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center hover:bg-rose-200 transition-colors">
-                                        <Plus className="w-5 h-5"/>
-                                    </button>
-                                </div>
-                                <div className="flex flex-col gap-4 pb-4 pr-4">
-                                    {accountStats.debts.map((account) => {
-                                        const Icon = accountIcons[account.type] || Wallet;
+                            {/* Account Details Dialog - Premium */}
+                            <Dialog open={isAccountDetailsOpen} onOpenChange={setIsAccountDetailsOpen}>
+                                <DialogContent className="max-w-md h-[88vh] flex flex-col p-0 overflow-hidden rounded-3xl bg-slate-50 dark:bg-[#111113] border border-slate-200/60 dark:border-slate-800/60 shadow-2xl">
+                                    {selectedAccountDetails && (() => {
+                                        const isCreditCard = selectedAccountDetails.type === 'credit-card';
+                                        const bannerGrad = isCreditCard ? 'from-violet-600 via-purple-700 to-indigo-800' : 'from-emerald-500 via-teal-600 to-cyan-700';
+                                        const AccIcon = accountIcons[selectedAccountDetails.type] || Wallet;
                                         return (
-                                            <div key={account.id} onClick={() => openAccountForm(account)} className="w-full rounded-2xl sm:rounded-[32px] p-4 sm:p-6 text-white bg-gradient-to-br from-rose-500 to-pink-600 shadow-lg relative overflow-hidden cursor-pointer active:scale-95 transition-transform border border-white/20">
-                                                <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-6 p-4 opacity-10">
-                                                    <Icon className="w-24 h-24 sm:w-32 sm:h-32" />
+                                            <div className={`bg-gradient-to-br ${bannerGrad} px-6 pt-6 pb-8 relative overflow-hidden flex-shrink-0`}>
+                                                <div className="absolute -bottom-8 -right-8 opacity-[0.08]">
+                                                    <AccIcon className="w-40 h-40" />
                                                 </div>
-                                                <div className="relative z-10 flex items-center justify-between sm:block">
-                                                    <div>
-                                                        <div className="flex items-center gap-3 sm:block">
-                                                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center sm:mb-6 backdrop-blur-md shadow-sm">
-                                                                <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                                                            </div>
-                                                            <div className="sm:mt-0">
-                                                                <p className="text-rose-100 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest mb-0.5 sm:mb-1">{account.type === 'credit-card' ? 'Kredi Kartı' : 'Borç'}</p>
-                                                                <p className="text-base sm:text-lg font-bold mb-0 sm:mb-1 truncate">{account.name}</p>
-                                                            </div>
-                                                        </div>
+                                                <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-white/10 pointer-events-none" />
+                                                <div className="relative z-10">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <button onClick={() => setIsAccountDetailsOpen(false)} className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors">
+                                                            <ChevronLeft className="w-4 h-4 text-white" />
+                                                        </button>
+                                                        <button onClick={() => { setIsAccountDetailsOpen(false); if(selectedAccountDetails) openAccountForm(selectedAccountDetails); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 transition-colors text-white text-[11px] font-bold">
+                                                            <Pencil className="w-3 h-3" /> Düzenle
+                                                        </button>
                                                     </div>
-                                                    <p className="text-2xl sm:text-3xl font-black sm:mt-2 tracking-tight text-right sm:text-left">{account.balance.toLocaleString()} ₺</p>
+                                                    <div>
+                                                        <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">{selectedAccountDetails.name}</p>
+                                                        {isEditingAccountDetailsBalance ? (
+                                                            <div className="flex items-center gap-3">
+                                                                <input
+                                                                    type="number"
+                                                                    className="text-3xl font-black bg-transparent border-b-2 border-white/40 text-white text-center w-40 focus:outline-none placeholder-white/40"
+                                                                    value={accountDetailsBalanceEdit}
+                                                                    onChange={e => setAccountDetailsBalanceEdit(e.target.value)}
+                                                                    autoFocus
+                                                                />
+                                                                <button onClick={handleSaveAccountDetailsBalance} className="px-3 py-1.5 rounded-full bg-white text-slate-800 text-xs font-black">Kaydet</button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-end gap-2">
+                                                                <h2 className="text-4xl font-black text-white tracking-tight">
+                                                                    {selectedAccountDetails.balance.toLocaleString('tr-TR')} ₺
+                                                                </h2>
+                                                                <button onClick={() => setIsEditingAccountDetailsBalance(true)} className="mb-1 w-7 h-7 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors">
+                                                                    <Pencil className="w-3 h-3 text-white" />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                        <p className="text-white/50 text-[11px] font-semibold mt-1">{isCreditCard ? 'Güncel Borç' : 'Güncel Bakiye'}</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        )
-                                    })}
-                                    {accountStats.debts.length === 0 && (
-                                        <div className="w-full rounded-2xl sm:rounded-[32px] p-4 sm:p-6 border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-500 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800" onClick={() => openAccountForm(null, 'credit-card')}>
-                                            <Plus className="w-6 h-6 sm:w-8 sm:h-8 mb-2 opacity-50" />
-                                            <p className="font-bold text-sm sm:text-base">Kart/Borç Ekle</p>
+                                        );
+                                    })()}
+
+                                    {selectedAccountDetails && (
+                                        <div className="flex flex-col flex-1 overflow-hidden">
+                                            <div className="px-6 pt-4 pb-2 flex-shrink-0">
+                                                <p className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Hesap Hareketleri</p>
+                                            </div>
+                                            <div className="flex-1 overflow-y-auto px-6 pb-8">
+                                                {(() => {
+                                                    const accountTxs = allTransactions.filter(t => t.accountId === selectedAccountDetails.id).sort((a,b) => b.date.localeCompare(a.date));
+                                                    if (accountTxs.length === 0) return (
+                                                        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                                                            <Wallet className="w-12 h-12 mb-3 opacity-30" />
+                                                            <p className="font-bold text-sm">Henüz işlem yok</p>
+                                                            <p className="text-xs mt-1 opacity-70">Bu hesaba ait kayıt bulunamadı.</p>
+                                                        </div>
+                                                    );
+
+                                                    const grouped: Record<string, typeof accountTxs> = {};
+                                                    accountTxs.forEach(tx => {
+                                                        const month = tx.date.substring(0, 7);
+                                                        if (!grouped[month]) grouped[month] = [];
+                                                        grouped[month].push(tx);
+                                                    });
+
+                                                    return Object.entries(grouped).map(([month, txs]) => {
+                                                        const monthTotal = txs.reduce((sum, tx) => sum + (tx.type === 'income' ? tx.amount : -tx.amount), 0);
+                                                        return (
+                                                        <div key={month} className="mb-5">
+                                                            <div className="flex justify-between items-center mb-2.5">
+                                                                <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{format(parseISO(month + '-01'), 'MMMM yyyy', { locale: tr })}</h4>
+                                                                <span className={cn("text-[10px] font-black px-2.5 py-0.5 rounded-full", monthTotal >= 0 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400')}>
+                                                                    {monthTotal >= 0 ? '+' : ''}{monthTotal.toLocaleString('tr-TR')} ₺
+                                                                </span>
+                                                            </div>
+                                                            <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-100/80 dark:border-slate-800/60 overflow-hidden divide-y divide-slate-100/80 dark:divide-slate-800/40">
+                                                                {txs.map(tx => {
+                                                                    let txConfig = categoryConfig[tx.category];
+                                                                    if (!txConfig) txConfig = tx.type === 'income'
+                                                                        ? { color: 'bg-emerald-500/10 text-emerald-600', icon: PlusCircle }
+                                                                        : { color: 'bg-rose-500/10 text-rose-600', icon: CircleEllipsis };
+                                                                    const TxIcon = txConfig.icon;
+                                                                    const txBg = txConfig.color.split(' ').find(c => c.startsWith('bg-')) || 'bg-slate-100';
+                                                                    const txTxt = txConfig.color.split(' ').find(c => c.startsWith('text-')) || 'text-slate-600';
+                                                                    return (
+                                                                        <div key={tx.id} className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-slate-50 dark:active:bg-white/5 transition-colors group" onClick={() => { setIsAccountDetailsOpen(false); openTransactionForm(tx); }}>
+                                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                                <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center shrink-0', txBg, txTxt)}>
+                                                                                    <TxIcon className="w-4 h-4" />
+                                                                                </div>
+                                                                                <div className="min-w-0">
+                                                                                    <p className="text-[13px] font-bold text-slate-800 dark:text-slate-100 truncate">{tx.description || tx.category}</p>
+                                                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">{format(parseISO(tx.date), 'dd MMM yyyy', {locale:tr})}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                                                <p className={cn('text-[13px] font-black', tx.type === 'income' ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-200')}>
+                                                                                    {tx.type === 'income' ? '+' : '-'}{tx.amount.toLocaleString('tr-TR')} ₺
+                                                                                </p>
+                                                                                <ArrowUpRight className="w-3 h-3 text-slate-300 dark:text-slate-600 group-hover:text-slate-400 transition-colors" />
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                        );
+                                                    });
+                                                })()}
+                                            </div>
                                         </div>
                                     )}
-                                </div>
-                            </div>
+                                </DialogContent>
+                            </Dialog>
+
+                            {/* Dialogs */}
                         </div>
                     )}
 
