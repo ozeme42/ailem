@@ -769,6 +769,7 @@ export function BudgetClient() {
     const recurringExpenses = React.useMemo(() => {
         return allTransactions.filter((tx: any) => tx.isRecurring && tx.type === 'expense');
     }, [allTransactions]);
+    const recurringExpensesTotal = recurringExpenses.reduce((sum, tx) => sum + tx.amount, 0);
 
     const dateDisplayFormat = mainTab === 'month' ? 'yyyy' : 'MMMM yyyy';
     const { dailyGroups, monthlySummaries, creditCardStatements } = financialCalculations;
