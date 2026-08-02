@@ -44,7 +44,7 @@ export function StudyPlansClient() {
                 await updateStudyPlan(editingPlan.id, data);
                 toast({ title: "Plan Güncellendi ✨" });
             } else {
-                await addStudyPlan(data);
+                await addStudyPlan(data, familyId || undefined);
                 toast({ title: "Yeni Plan Oluşturuldu ✅" });
             }
             setIsFormOpen(false);

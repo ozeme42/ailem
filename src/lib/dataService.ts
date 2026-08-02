@@ -375,15 +375,21 @@ export const deleteTrackedBookSubject = async (bid: string, sid: string) => {
 // --- STUDY PLANS & ASSIGNMENTS ---
 export const onStudyPlansUpdate = (callback: (plans: StudyPlan[]) => void) => onFamilyDataUpdate<StudyPlan>('studyPlans', callback);
 export const onStudyAssignmentsUpdate = (callback: (assignments: StudyAssignment[]) => void) => onFamilyDataUpdate<StudyAssignment>('studyAssignments', callback);
-export const addStudyAssignment = async (data: Omit<StudyAssignment, 'id' | 'familyId' | 'status'>) => {
-    const familyId = await getCurrentFamilyId();
-    if (!familyId) throw new Error("Unauthorized");
-    return addDoc(collection(db, 'studyAssignments'), { ...data, status: 'assigned', familyId });
+export const addStudyAssignment = async (data: Omit<StudyAssignment, 'id' | 'familyId' | 'status'>, familyIdOverride?: string) => {
+    let familyId = familyIdOverride || (await getCurrentFamilyId());
+    if (!familyId) {
+        const auth = getAuth();
+        familyId = auth.currentUser?.uid || "default_family";
+    }
+    return addDoc(collection(db, 'studyAssignments'), removeUndefined({ ...data, status: 'assigned', familyId }));
 };
 export const updateStudyAssignment = (id: string, data: Partial<Omit<StudyAssignment, 'id' | 'familyId'>>) => updateDoc(doc(db, 'studyAssignments', id), removeUndefined(data));
-export const addStudyPlan = async (data: Omit<StudyPlan, 'id' | 'familyId'>) => {
-    const familyId = await getCurrentFamilyId();
-    if (!familyId) throw new Error("Unauthorized");
+export const addStudyPlan = async (data: Omit<StudyPlan, 'id' | 'familyId'>, familyIdOverride?: string) => {
+    let familyId = familyIdOverride || (await getCurrentFamilyId());
+    if (!familyId) {
+        const auth = getAuth();
+        familyId = auth.currentUser?.uid || "default_family";
+    }
     return addDoc(collection(db, 'studyPlans'), removeUndefined({ ...data, familyId, createdAt: new Date().toISOString() }));
 };
 export const updateStudyPlan = (id: string, data: any) => updateDoc(doc(db, 'studyPlans', id), removeUndefined(data));
