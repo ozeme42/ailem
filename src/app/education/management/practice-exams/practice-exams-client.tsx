@@ -88,19 +88,51 @@ export function PracticeExamsClient() {
         try {
             const parsedData = JSON.parse(jsonInput);
             
-            // Temel Format Doğrulaması
-            if (!parsedData.subjects || !Array.isArray(parsedData.subjects)) {
-                throw new Error("Geçersiz format: JSON verisi bir 'subjects' dizisi içermelidir.");
+            let rawSubjects: any[] = [];
+            if (Array.isArray(parsedData)) {
+                rawSubjects = parsedData;
+            } else if (parsedData.subjects && Array.isArray(parsedData.subjects)) {
+                rawSubjects = parsedData.subjects;
+            } else {
+                throw new Error("Geçersiz format: JSON verisi ders listesi içermelidir.");
             }
+
+            const formattedSubjects = rawSubjects.map((sub: any, idx: number) => {
+                let formattedKey: Record<string, string> = {};
+                if (sub.answerKey) {
+                    if (Array.isArray(sub.answerKey)) {
+                        sub.answerKey.forEach((ans: any, qIdx: number) => {
+                            if (ans !== undefined && ans !== null && String(ans).trim() !== "") {
+                                formattedKey[String(qIdx + 1)] = String(ans).toUpperCase().trim();
+                            }
+                        });
+                    } else if (typeof sub.answerKey === 'object') {
+                        Object.entries(sub.answerKey).forEach(([k, v]) => {
+                            if (v !== undefined && v !== null && String(v).trim() !== "") {
+                                formattedKey[String(k).trim()] = String(v).toUpperCase().trim();
+                            }
+                        });
+                    }
+                }
+
+                const questionCount = Number(sub.questionCount) || Object.keys(formattedKey).length || 0;
+
+                return {
+                    id: sub.id || `sub_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 7)}`,
+                    name: String(sub.name || `Ders ${idx + 1}`).trim(),
+                    questionCount: questionCount,
+                    answerKey: formattedKey
+                };
+            });
 
             // Sınavı Güncelle
             await updatePracticeExam(importModal.exam.id, { 
-                subjects: parsedData.subjects 
+                subjects: formattedSubjects 
             });
             
             toast({ 
                 title: "Toplu Veri Aktarıldı ✅", 
-                description: `${importModal.exam.name} başarıyla güncellendi.` 
+                description: `${importModal.exam.name} denemesine ${formattedSubjects.length} ders aktarıldı.` 
             });
             
             setImportModal({ isOpen: false, exam: null });
