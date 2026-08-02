@@ -81,6 +81,17 @@ export function AnswerKeyForm({ totalQuestions, sections, answerKey, onSave }: A
 
 
   const buildDefaultAnswers = React.useCallback(() => {
+      let normalizedKey: Record<string, string> = {};
+      if (Array.isArray(answerKey)) {
+          (answerKey as any[]).forEach((val, idx) => {
+              if (val) normalizedKey[String(idx + 1)] = String(val).toUpperCase();
+          });
+      } else if (answerKey && typeof answerKey === 'object') {
+          Object.entries(answerKey).forEach(([k, v]) => {
+              if (v) normalizedKey[String(k)] = String(v).toUpperCase();
+          });
+      }
+
       let defaultAnswers: any[] = [];
       if (sections && sections.length > 0) {
           sections.forEach((sec, sIdx) => {
@@ -89,7 +100,7 @@ export function AnswerKeyForm({ totalQuestions, sections, answerKey, onSave }: A
                   const key = `${effectiveName}-${i}`;
                   defaultAnswers.push({
                       questionNumber: key,
-                      value: answerKey[key] || null,
+                      value: normalizedKey[key] || normalizedKey[String(i)] || null,
                       sectionName: effectiveName,
                       displayNumber: i,
                   });
@@ -98,7 +109,7 @@ export function AnswerKeyForm({ totalQuestions, sections, answerKey, onSave }: A
       } else {
           defaultAnswers = Array.from({ length: totalQuestions }, (_, i) => ({
               questionNumber: String(i + 1),
-              value: answerKey[i + 1] || null,
+              value: normalizedKey[String(i + 1)] || null,
               sectionName: "Genel",
               displayNumber: i + 1,
           }));

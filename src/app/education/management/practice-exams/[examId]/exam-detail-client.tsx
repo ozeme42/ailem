@@ -95,12 +95,14 @@ export function ExamDetailClient() {
     toast({ title: "Ders Silindi", variant: "destructive" });
   };
   
-  const handleAnswerKeySave = async (subjectId: string, newAnswerKey: { [key: string]: string }) => {
+  const handleAnswerKeySave = async (targetSubject: PracticeExamSubject, newAnswerKey: { [key: string]: string }) => {
     if (!exam) return;
-    const updatedSubjects = (exam.subjects || []).map(s => 
-      s.id === subjectId ? { ...s, answerKey: newAnswerKey } : s
-    );
+    const updatedSubjects = (exam.subjects || []).map(s => {
+      const isMatch = s.id ? (s.id === targetSubject.id) : (s.name === targetSubject.name);
+      return isMatch ? { ...s, id: s.id || targetSubject.id || Date.now().toString(), answerKey: newAnswerKey } : s;
+    });
     await updatePracticeExam(exam.id, { subjects: updatedSubjects });
+    toast({ title: "Cevap Anahtarı Güncellendi ✨" });
     setIsAnswerKeyDialogOpen(false);
     setCurrentSubject(null);
   };
@@ -273,10 +275,10 @@ export function ExamDetailClient() {
                   </DialogHeader>
                   <div className="flex-1 overflow-hidden p-6 pt-2">
                        <AnswerKeyForm 
-                        key={currentSubject.id} // Add a key to force re-mount
+                        key={currentSubject.id || currentSubject.name} 
                         totalQuestions={currentSubject.questionCount} 
                         answerKey={currentSubject.answerKey || {}}
-                        onSave={(newKey) => handleAnswerKeySave(currentSubject.id, newKey)}
+                        onSave={(newKey) => handleAnswerKeySave(currentSubject, newKey)}
                       />
                   </div>
               </DialogContent>
