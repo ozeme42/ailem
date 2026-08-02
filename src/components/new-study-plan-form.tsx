@@ -24,18 +24,18 @@ const generateSafeId = () => {
 // --- SCHEMAS ---
 const topicSchema = z.object({
     id: z.string().optional(),
-    name: z.string().min(1, "Konu adı boş bırakılamaz"),
+    name: z.string().optional(),
     sources: z.array(z.string()).optional(),
 });
   
 const subjectSchema = z.object({
     id: z.string().optional(),
-    name: z.string().min(1, "Ders adı boş bırakılamaz"),
-    topics: z.array(topicSchema).min(1, "En az 1 konu eklemelisiniz"),
+    name: z.string().optional(),
+    topics: z.array(topicSchema).optional(),
 });
 
 const planInfoSchema = z.object({
-  title: z.string().min(3, "Plan adı en az 3 karakter olmalıdır."),
+  title: z.string().min(1, "Plan başlığı boş bırakılamaz."),
   link: z.string().optional(),
 });
 
@@ -116,13 +116,9 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
   };
 
   const handleFormError = (errors: any) => {
-    console.error("Subject Editor Validation Errors:", errors);
-    
-    // Manuel kontrol
-    const name = form.getValues("name");
-
-    let message = "Lütfen tüm zorunlu alanları doldurun.";
-    if (!name?.trim()) message = "Lütfen plan başlığını yazın.";
+    console.error("Form Validation Errors:", errors);
+    const titleError = errors.title?.message;
+    const message = titleError || "Lütfen plan başlığını yazın.";
 
     toast({
         title: "Eksik Bilgi ⚠️",
@@ -312,27 +308,50 @@ function SubjectEditor({ initialData, onSave, onCancel }: { initialData: Subject
     }, [initialData, form]);
 
     const handleInternalSubmit = (data: SubjectType) => {
-        onSave(data);
+        const cleanedName = (data.name || "").trim();
+        if (!cleanedName) {
+            toast({
+                title: "Ders Adı Eksik ⚠️",
+                description: "Lütfen bir ders adı giriniz (ör. Matematik, Türkçe).",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        const validTopics = (data.topics || [])
+            .map(t => ({
+                ...t,
+                name: (t.name || "").trim(),
+                sources: (t.sources || []).map(s => typeof s === 'string' ? s.trim() : '').filter(Boolean)
+            }))
+            .filter(t => t.name.length > 0);
+
+        if (validTopics.length === 0) {
+            toast({
+                title: "Konu Eksik ⚠️",
+                description: "Bu ders için en az bir konu başlığı girmelisiniz.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        onSave({
+            ...data,
+            name: cleanedName,
+            topics: validTopics
+        });
     };
 
     const handleInternalError = (errors: any) => {
         console.error("Subject Editor Validation Errors:", errors);
-        
-        // Manuel kontrol
         const name = form.getValues("name");
-        const topics = form.getValues("topics");
-        const hasEmptyTopic = topics.some(t => !t.name.trim());
-
-        let message = "Lütfen tüm zorunlu alanları doldurun.";
-        if (!name?.trim()) message = "Lütfen ders adını yazın.";
-        else if (topics.length === 0) message = "En az bir konu eklemelisiniz.";
-        else if (hasEmptyTopic) message = "Lütfen tüm konu başlıklarını doldurun.";
-
-        toast({
-            title: "Eksik Bilgi ⚠️",
-            description: message,
-            variant: "destructive"
-        });
+        if (!name?.trim()) {
+            toast({
+                title: "Ders Adı Eksik ⚠️",
+                description: "Lütfen ders adını yazın.",
+                variant: "destructive"
+            });
+        }
     };
 
     const handleBulkAdd = () => {
