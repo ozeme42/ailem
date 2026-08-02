@@ -375,7 +375,7 @@ function SubjectEditor({ initialData, onSave, onCancel }: { initialData: Subject
                                     <FormItem>
                                         <FormLabel className="text-xs font-black text-indigo-500 uppercase tracking-widest pl-1">Ders Adı</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Matematik, Türkçe..." {...field} autoFocus className="h-12 rounded-xl text-base font-bold bg-slate-50 dark:bg-slate-900 border-indigo-100 dark:border-indigo-900/50" />
+                                            <Input placeholder="Matematik, Türkçe..." {...field} className="h-12 rounded-xl text-base font-bold bg-slate-50 dark:bg-slate-900 border-indigo-100 dark:border-indigo-900/50" />
                                         </FormControl>
                                         <FormMessage className="text-rose-500" />
                                     </FormItem>
