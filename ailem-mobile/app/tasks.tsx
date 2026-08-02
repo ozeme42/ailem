@@ -20,6 +20,9 @@ import { useColorScheme } from 'nativewind';
 import { 
   onTasksUpdate, 
   onStudyAssignmentsUpdate, 
+  onStudyPlansUpdate,
+  onTestsUpdate,
+  updateTest,
   updateStudyAssignment,
   onMemorizationItemsUpdate, 
   onMemorizationProgressUpdate, 
@@ -29,9 +32,10 @@ import {
   updateHabitCompletion,
   deleteTask,
   addTask,
-  updateTask
+  updateTask,
+  addBehaviorRecord
 } from '../lib/dataService';
-import { Task, StudyAssignment, MemorizationItem, MemorizationProgress, PrayerProgress } from '../lib/data';
+import { Task, StudyAssignment, StudyPlan, Test, MemorizationItem, MemorizationProgress, PrayerProgress } from '../lib/data';
 import { useAuth } from '../context/auth-context';
 import { 
   Check, 
@@ -92,18 +96,28 @@ const MOD_PALETTES: Record<string, typeof CARD_PALETTES[0]> = {
   'Ezber': CARD_PALETTES[3],
   'Namaz': CARD_PALETTES[4],
 };
+const MEMBER_CARD_GRADIENTS: [string, string][] = [
+  ['#8b5cf6', '#6d28d9'],
+  ['#ec4899', '#be185d'],
+  ['#06b6d4', '#0284c7'],
+  ['#10b981', '#047857'],
+  ['#f59e0b', '#b45309'],
+  ['#f97316', '#c2410c'],
+];
 
 export default function TasksScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = () => { setRefreshing(true); setTimeout(() => setRefreshing(false), 1200); };
   const router = useRouter();
-  const { user, familyMembers, loading: authLoading } = useAuth();
+  const { user, familyMembers, familyId, loading: authLoading } = useAuth();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
 
   // Data States
   const [tasks, setTasks] = useState<Task[]>([]);
   const [studyAssignments, setStudyAssignments] = useState<StudyAssignment[]>([]);
+  const [assignedTests, setAssignedTests] = useState<Test[]>([]);
+  const [studyPlans, setStudyPlans] = useState<StudyPlan[]>([]);
   const [memorizationItems, setMemorizationItems] = useState<MemorizationItem[]>([]);
   const [memorizationProgress, setMemorizationProgress] = useState<MemorizationProgress[]>([]);
   const [prayerProgress, setPrayerProgress] = useState<PrayerProgress[]>([]);
@@ -114,6 +128,14 @@ export default function TasksScreen() {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [openGroups, setOpenGroups] = useState({ personal: true, education: true, memorization: true, namaz: true });
+
+  const [expandedMemberIds, setExpandedMemberIds] = useState<Record<string, boolean>>({});
+  const toggleMemberExpand = (memberId: string) => {
+    setExpandedMemberIds((prev) => ({
+      ...prev,
+      [memberId]: !prev[memberId],
+    }));
+  };
 
   const [formOpen, setFormOpen] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
@@ -131,10 +153,12 @@ export default function TasksScreen() {
   const [formTotalOccurrences, setFormTotalOccurrences] = useState('');
 
   useEffect(() => {
-    let unsubTasks: any, unsubSA: any, unsubMI: any, unsubMP: any, unsubPP: any;
+    let unsubTasks: any, unsubSA: any, unsubTests: any, unsubSP: any, unsubMI: any, unsubMP: any, unsubPP: any;
     try {
       unsubTasks = onTasksUpdate((data) => { setTasks(data); setLoading(false); });
       unsubSA = onStudyAssignmentsUpdate(setStudyAssignments);
+      unsubTests = onTestsUpdate(setAssignedTests);
+      unsubSP = onStudyPlansUpdate(setStudyPlans);
       unsubMI = onMemorizationItemsUpdate(setMemorizationItems);
       unsubMP = onMemorizationProgressUpdate(setMemorizationProgress);
       unsubPP = onPrayerProgressUpdate(setPrayerProgress);
@@ -142,6 +166,8 @@ export default function TasksScreen() {
     return () => {
       if (typeof unsubTasks === 'function') unsubTasks();
       if (typeof unsubSA === 'function') unsubSA();
+      if (typeof unsubTests === 'function') unsubTests();
+      if (typeof unsubSP === 'function') unsubSP();
       if (typeof unsubMI === 'function') unsubMI();
       if (typeof unsubMP === 'function') unsubMP();
       if (typeof unsubPP === 'function') unsubPP();
@@ -154,21 +180,107 @@ export default function TasksScreen() {
   const modTasks = useMemo(() => {
     const list: any[] = [];
     const q = searchQuery.toLowerCase();
-    studyAssignments.forEach(x => {
-      if (!x.studentId || (selectedMemberId && x.studentId !== selectedMemberId)) return;
-      const assignee = getMember(x.studentId);
-      if (!x.topic.toLowerCase().includes(q) && !assignee?.name.toLowerCase().includes(q)) return;
-      list.push({ id: `edu-${x.id}`, title: `${x.subject} - ${x.topic}`, module: 'Egitim', assigneeId: x.studentId, isCompleted: x.status === 'completed', icon: BookOpen, onToggle: async (c: boolean) => { await updateStudyAssignment(x.id, { status: c ? 'completed' : 'assigned' }); } });
+
+    // 1. Atanmış Test Ödevleri (onTestsUpdate)
+    assignedTests.forEach(t => {
+      if (!t.studentId || t.status === 'Sonuçlandı' || t.isArchived) return;
+      if (selectedMemberId && t.studentId !== selectedMemberId) return;
+
+      const assignee = getMember(t.studentId);
+      if (!assignee) return;
+
+      const displayTitle = `${t.subject || 'Ders'} - ${t.title || 'Test Ödevi'}`;
+      if (q && !displayTitle.toLowerCase().includes(q) && !assignee.name.toLowerCase().includes(q)) return;
+
+      list.push({
+        id: `test-${t.id}`,
+        title: displayTitle,
+        module: 'Egitim',
+        assigneeId: t.studentId,
+        isCompleted: false,
+        icon: BookOpen,
+        onToggle: async (c: boolean) => {
+          await updateTest(t.id, { status: c ? 'Sonuçlandı' : 'Atandı', completedDate: c ? new Date().toISOString() : undefined });
+          if (c && familyId && t.studentId) {
+            addBehaviorRecord(familyId, t.studentId, {
+              type: 'positive',
+              title: `Test Ödevi: ${t.subject || 'Ders'} - ${t.title}`,
+              stars: 1,
+              createdBy: user?.displayName || user?.email || 'Sistem',
+              memberName: assignee.name,
+            }).catch(() => {});
+          }
+        }
+      });
     });
+
+    // 2. Çözülmesi Gereken Atanmış Ödevler (studyAssignments)
+    studyAssignments.forEach(x => {
+      const studentId = x.studentId || (x as any).memberId || (x as any).userId || (x as any).assigneeId;
+      if (!studentId || x.status === 'completed') return;
+      if (selectedMemberId && studentId !== selectedMemberId) return;
+
+      const assignee = getMember(studentId);
+      if (!assignee) return;
+
+      const sourceText = x.sources && x.sources.length > 0 ? ` (${x.sources.join(', ')})` : '';
+      const displayTitle = `${x.subject || 'Ders'} - ${x.topic || 'Konu'}${sourceText}`;
+
+      if (q && !displayTitle.toLowerCase().includes(q) && !assignee.name.toLowerCase().includes(q)) return;
+
+      list.push({
+        id: `edu-${x.id}`,
+        title: displayTitle,
+        module: 'Egitim',
+        assigneeId: studentId,
+        isCompleted: false,
+        icon: BookOpen,
+        onToggle: async (c: boolean) => {
+          await updateStudyAssignment(x.id, { status: c ? 'completed' : 'assigned' });
+          if (c && familyId && studentId) {
+            addBehaviorRecord(familyId, studentId, {
+              type: 'positive',
+              title: `Ders Ödevi: ${x.subject} - ${x.topic}`,
+              stars: 1,
+              createdBy: user?.displayName || user?.email || 'Sistem',
+              memberName: assignee.name,
+            }).catch(() => {});
+          }
+        }
+      });
+    });
+
+    // 2. Ezberler (Bekleyenler)
     memorizationItems.forEach(item => {
       familyMembers.forEach(m => {
         if (selectedMemberId && m.id !== selectedMemberId) return;
         const prog = memorizationProgress.find(p => p.itemId === item.id && p.memberId === m.id);
-        if (!prog) return;
-        if (!item.title.toLowerCase().includes(q) && !m.name.toLowerCase().includes(q)) return;
-        list.push({ id: `mem-${item.id}-${m.id}`, title: item.title, module: 'Ezber', assigneeId: m.id, isCompleted: prog.completed, icon: BookOpen, onToggle: async (c: boolean) => { await updateMemorizationProgress(item.id, m.id, c); } });
+        if (!prog || prog.completed) return;
+        if (q && !item.title.toLowerCase().includes(q) && !m.name.toLowerCase().includes(q)) return;
+        list.push({
+          id: `mem-${item.id}-${m.id}`,
+          title: item.title,
+          module: 'Ezber',
+          assigneeId: m.id,
+          isCompleted: false,
+          icon: BookOpen,
+          onToggle: async (c: boolean) => {
+            await updateMemorizationProgress(item.id, m.id, c);
+            if (c && familyId && m.id) {
+              addBehaviorRecord(familyId, m.id, {
+                type: 'positive',
+                title: `Ezber: ${item.title}`,
+                stars: 1,
+                createdBy: user?.displayName || user?.email || 'Sistem',
+                memberName: m.name,
+              }).catch(() => {});
+            }
+          }
+        });
       });
     });
+
+    // 3. Namazlar (Sadece bugün henüz kılınmamış olanlar)
     const PRAYERS = ['Sabah', 'Ogle', 'Ikindi', 'Aksam', 'Yatsi'];
     familyMembers.forEach(m => {
       if (!m.role.includes('Çocuk') && !m.role.includes('Cocuk')) return;
@@ -176,11 +288,33 @@ export default function TasksScreen() {
       const pdata = prayerProgress.find(p => p.memberId === m.id);
       const completedList: string[] = pdata?.completions?.[todayStr] || [];
       PRAYERS.forEach(pr => {
-        list.push({ id: `pr-${m.id}-${pr}`, title: `${pr} Namazı`, module: 'Namaz', assigneeId: m.id, isCompleted: completedList.includes(pr), icon: Target, onToggle: async (c: boolean) => { const nextList = c ? [...completedList, pr] : completedList.filter(x => x !== pr); await updatePrayerProgress(m.id, { ...(pdata?.completions || {}), [todayStr]: nextList }); } });
+        if (completedList.includes(pr)) return;
+        list.push({
+          id: `pr-${m.id}-${pr}`,
+          title: `${pr} Namazı`,
+          module: 'Namaz',
+          assigneeId: m.id,
+          isCompleted: false,
+          icon: Target,
+          onToggle: async (c: boolean) => {
+            const nextList = c ? [...completedList, pr] : completedList.filter(x => x !== pr);
+            await updatePrayerProgress(m.id, { ...(pdata?.completions || {}), [todayStr]: nextList });
+            if (c && familyId && m.id) {
+              addBehaviorRecord(familyId, m.id, {
+                type: 'positive',
+                title: `${pr} Namazı Kılındı`,
+                stars: 1,
+                createdBy: user?.displayName || user?.email || 'Sistem',
+                memberName: m.name,
+              }).catch(() => {});
+            }
+          }
+        });
       });
     });
+
     return list;
-  }, [studyAssignments, memorizationItems, memorizationProgress, prayerProgress, familyMembers, searchQuery, selectedMemberId]);
+  }, [assignedTests, studyAssignments, memorizationItems, memorizationProgress, prayerProgress, familyMembers, searchQuery, selectedMemberId]);
 
   const { pt, ct, habitsList, stats } = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -234,7 +368,22 @@ export default function TasksScreen() {
   };
 
   const handleToggleTaskCompletion = async (task: Task) => {
-    try { await updateTask(task.id, { completed: !task.completed }); } catch (e) {}
+    const willBeCompleted = !task.completed;
+    try {
+      await updateTask(task.id, { completed: willBeCompleted });
+      if (willBeCompleted && familyId && task.assigneeId) {
+        const m = getMember(task.assigneeId);
+        if (m) {
+          await addBehaviorRecord(familyId, task.assigneeId, {
+            type: 'positive',
+            title: `Görev: ${task.title}`,
+            stars: 1,
+            createdBy: user?.displayName || user?.email || 'Sistem',
+            memberName: m.name,
+          });
+        }
+      }
+    } catch (e) {}
   };
 
   const handleToggleSubtask = async (task: Task, subtaskId: string) => {
@@ -264,7 +413,22 @@ export default function TasksScreen() {
 
   const handleToggleHabitDay = async (habit: Task, day: Date) => {
     const isCompleted = isHabitCompletedOnDay(habit, day);
-    try { await updateHabitCompletion(habit.id, day, !isCompleted); } catch (e) {}
+    const willBeCompleted = !isCompleted;
+    try {
+      await updateHabitCompletion(habit.id, day, willBeCompleted);
+      if (willBeCompleted && familyId && habit.assigneeId) {
+        const m = getMember(habit.assigneeId);
+        if (m) {
+          await addBehaviorRecord(familyId, habit.assigneeId, {
+            type: 'positive',
+            title: `Alışkanlık: ${habit.title}`,
+            stars: 1,
+            createdBy: user?.displayName || user?.email || 'Sistem',
+            memberName: m.name,
+          });
+        }
+      }
+    } catch (e) {}
   };
 
   // Colors
@@ -385,272 +549,337 @@ export default function TasksScreen() {
           )}
         </View>
 
-        {/* ── MEMBER FILTER ── */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 14 }}>
-          <TouchableOpacity
-            onPress={() => setSelectedMemberId(null)}
-            style={{
-              paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5,
-              borderColor: selectedMemberId === null ? '#a855f7' : (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'),
-              backgroundColor: selectedMemberId === null
-                ? (isDark ? 'rgba(168,85,247,0.2)' : 'rgba(168,85,247,0.1)')
-                : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.8)'),
-            }}
-          >
-            <Text style={{ color: selectedMemberId === null ? '#a855f7' : textSecondary, fontWeight: '800', fontSize: 12 }}>Tümü</Text>
-          </TouchableOpacity>
-          {familyMembers.map((member) => {
-            const isSelected = selectedMemberId === member.id;
+        {/* ── KİŞİ KARTLARI (HER AİLE ÜYESİ İÇİN GÖREV & ALIŞKANLIK KARTI) ── */}
+        <View style={{ gap: 16 }}>
+          {familyMembers.map((member, index) => {
+            const isExpanded = !!expandedMemberIds[member.id]; // default collapsed
+            const gradient = MEMBER_CARD_GRADIENTS[index % MEMBER_CARD_GRADIENTS.length];
+            const memberXp = member.xp || 0;
+
+            // Member-specific tasks
+            const memberPendingTasks = pt.filter(t => t.assigneeId === member.id);
+            const memberCompletedTasks = ct.filter(t => t.assigneeId === member.id);
+            const memberModTasksPending = modTasks.filter(t => t.assigneeId === member.id && !t.isCompleted);
+            const memberModTasksCompleted = modTasks.filter(t => t.assigneeId === member.id && t.isCompleted);
+            const totalPendingForMember = memberPendingTasks.length + memberModTasksPending.length;
+
+            // Member-specific habits
+            const memberHabits = habitsList.filter(t => t.assigneeId === member.id);
+
             return (
-              <TouchableOpacity
+              <View
                 key={member.id}
-                onPress={() => setSelectedMemberId(member.id)}
                 style={{
-                  flexDirection: 'row', alignItems: 'center', gap: 6,
-                  paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5,
-                  borderColor: isSelected ? member.color : (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'),
-                  backgroundColor: isSelected ? `${member.color}20` : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.8)'),
+                  borderRadius: 26,
+                  overflow: 'hidden',
+                  borderWidth: 1.5,
+                  borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#ffffff',
+                  shadowColor: gradient[0],
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 10,
+                  elevation: 5,
                 }}
               >
-                <View style={{ width: 18, height: 18, borderRadius: 6, backgroundColor: member.color, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 9, fontWeight: '900', color: 'white' }}>{member.name[0]}</Text>
-                </View>
-                <Text style={{ color: isSelected ? member.color : textSecondary, fontWeight: '800', fontSize: 12 }}>{member.name.split(' ')[0]}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {/* ── MAIN TABS ── */}
-        <View style={{
-          flexDirection: 'row', marginBottom: 16, padding: 4,
-          backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-          borderRadius: 22, borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-        }}>
-          {[
-            { key: 'tasks', label: `📋 Görevler`, count: stats.pending, colors: ['#f59e0b', '#ef4444'] as [string,string] },
-            { key: 'habits', label: `🔥 Alışkanlıklar`, count: stats.habits, colors: ['#a855f7', '#ec4899'] as [string,string] },
-          ].map((t) => (
-            <TouchableOpacity
-              key={t.key}
-              onPress={() => setTab(t.key as any)}
-              activeOpacity={0.8}
-              style={{ flex: 1, borderRadius: 18, overflow: 'hidden' }}
-            >
-              {tab === t.key ? (
-                <LinearGradient
-                  colors={t.colors}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={{ paddingVertical: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
-                >
-                  <Text style={{ color: 'white', fontWeight: '900', fontSize: 12 }}>{t.label}</Text>
-                  <View style={{ backgroundColor: 'rgba(255,255,255,0.25)', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10 }}>
-                    <Text style={{ color: 'white', fontWeight: '900', fontSize: 10 }}>{t.count}</Text>
-                  </View>
-                </LinearGradient>
-              ) : (
-                <View style={{ paddingVertical: 10, alignItems: 'center' }}>
-                  <Text style={{ color: textSecondary, fontWeight: '700', fontSize: 12 }}>{t.label} ({t.count})</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* ── TAB 1: TASKS ── */}
-        {tab === 'tasks' && (
-          <View style={{ gap: 4 }}>
-            {/* Sub-filter */}
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-              {[
-                { key: 'pending', label: `Yapılacaklar`, count: pt.length + modTasks.filter(t => !t.isCompleted).length, colors: ['#f59e0b', '#ef4444'] as [string,string] },
-                { key: 'completed', label: `Tamamlananlar`, count: ct.length + modTasks.filter(t => t.isCompleted).length, colors: ['#10b981', '#059669'] as [string,string] },
-              ].map((f) => (
+                {/* ── KART BAŞLIĞI (Üstte Görev, Alışkanlık ve Puan) ── */}
                 <TouchableOpacity
-                  key={f.key}
-                  onPress={() => setFilter(f.key as any)}
-                  activeOpacity={0.8}
-                  style={{ flex: 1, borderRadius: 16, overflow: 'hidden' }}
+                  activeOpacity={0.88}
+                  onPress={() => toggleMemberExpand(member.id)}
                 >
-                  {filter === f.key ? (
-                    <LinearGradient colors={f.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
-                      <Text style={{ color: 'white', fontWeight: '800', fontSize: 11 }}>{f.label}</Text>
-                      <View style={{ backgroundColor: 'rgba(255,255,255,0.25)', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 8 }}>
-                        <Text style={{ color: 'white', fontWeight: '900', fontSize: 10 }}>{f.count}</Text>
-                      </View>
-                    </LinearGradient>
-                  ) : (
-                    <View style={{ paddingVertical: 10, alignItems: 'center', backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.8)', borderRadius: 16, borderWidth: 1.5, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }}>
-                      <Text style={{ color: textSecondary, fontWeight: '700', fontSize: 11 }}>{f.label} ({f.count})</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {filter === 'pending' ? (
-              <View style={{ gap: 12 }}>
-                {pt.length > 0 && (
-                  <PremiumAccordion emoji="📌" title="Kişisel Görevler" count={pt.length} isOpen={openGroups.personal} onToggle={() => toggleGroup('personal')} gradColors={['#a855f7', '#7c3aed']} isDark={isDark} textPrimary={textPrimary} textMuted={textMuted}>
-                    <View style={{ gap: 8 }}>{pt.map((t, idx) => renderTaskRow(t, idx, false))}</View>
-                  </PremiumAccordion>
-                )}
-
-                {modTasks.filter(t => t.module === 'Egitim' && !t.isCompleted).length > 0 && (
-                  <PremiumAccordion emoji="📚" title="Eğitim" count={modTasks.filter(t => t.module === 'Egitim' && !t.isCompleted).length} isOpen={openGroups.education} onToggle={() => toggleGroup('education')} gradColors={['#06b6d4', '#3b82f6']} isDark={isDark} textPrimary={textPrimary} textMuted={textMuted}>
-                    <View style={{ gap: 8 }}>{modTasks.filter(t => t.module === 'Egitim' && !t.isCompleted).map((mt) => renderModRow(mt))}</View>
-                  </PremiumAccordion>
-                )}
-
-                {modTasks.filter(t => t.module === 'Ezber' && !t.isCompleted).length > 0 && (
-                  <PremiumAccordion emoji="🧠" title="Ezber" count={modTasks.filter(t => t.module === 'Ezber' && !t.isCompleted).length} isOpen={openGroups.memorization} onToggle={() => toggleGroup('memorization')} gradColors={['#10b981', '#059669']} isDark={isDark} textPrimary={textPrimary} textMuted={textMuted}>
-                    <View style={{ gap: 8 }}>{modTasks.filter(t => t.module === 'Ezber' && !t.isCompleted).map((mt) => renderModRow(mt))}</View>
-                  </PremiumAccordion>
-                )}
-
-                {modTasks.filter(t => t.module === 'Namaz' && !t.isCompleted).length > 0 && (
-                  <PremiumAccordion emoji="🕌" title="Namaz" count={modTasks.filter(t => t.module === 'Namaz' && !t.isCompleted).length} isOpen={openGroups.namaz} onToggle={() => toggleGroup('namaz')} gradColors={['#f59e0b', '#d97706']} isDark={isDark} textPrimary={textPrimary} textMuted={textMuted}>
-                    <View style={{ gap: 8 }}>{modTasks.filter(t => t.module === 'Namaz' && !t.isCompleted).map((mt) => renderModRow(mt))}</View>
-                  </PremiumAccordion>
-                )}
-
-                {pt.length === 0 && modTasks.filter(t => !t.isCompleted).length === 0 && (
-                  <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                    <LinearGradient colors={['#10b981', '#059669']} style={{ width: 72, height: 72, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 16, shadowColor: '#10b981', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 }}>
-                      <Text style={{ fontSize: 32 }}>🎉</Text>
-                    </LinearGradient>
-                    <Text style={{ color: textPrimary, fontWeight: '900', fontSize: 18, marginBottom: 6 }}>Süpersin!</Text>
-                    <Text style={{ color: textMuted, fontWeight: '600', fontSize: 13 }}>Yapılacak hiçbir görev kalmadı.</Text>
-                  </View>
-                )}
-              </View>
-            ) : (
-              <View style={{ gap: 12 }}>
-                {ct.length > 0 && (
-                  <PremiumAccordion emoji="✅" title="Tamamlanan Görevler" count={ct.length} isOpen={openGroups.personal} onToggle={() => toggleGroup('personal')} gradColors={['#10b981', '#059669']} isDark={isDark} textPrimary={textPrimary} textMuted={textMuted}>
-                    <View style={{ gap: 8 }}>{ct.map((t, idx) => renderTaskRow(t, idx, true))}</View>
-                  </PremiumAccordion>
-                )}
-
-                {modTasks.filter(t => t.isCompleted).length > 0 && (
-                  <PremiumAccordion emoji="📖" title="Diğer Tamamlananlar" count={modTasks.filter(t => t.isCompleted).length} isOpen={openGroups.education} onToggle={() => toggleGroup('education')} gradColors={['#06b6d4', '#3b82f6']} isDark={isDark} textPrimary={textPrimary} textMuted={textMuted}>
-                    <View style={{ gap: 8 }}>{modTasks.filter(t => t.isCompleted).map((mt) => renderModRow(mt))}</View>
-                  </PremiumAccordion>
-                )}
-
-                {ct.length === 0 && modTasks.filter(t => t.isCompleted).length === 0 && (
-                  <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                    <LinearGradient colors={['#94a3b8', '#64748b']} style={{ width: 72, height: 72, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 16, shadowColor: '#64748b', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 }}>
-                      <CheckSquare size={32} color="white" />
-                    </LinearGradient>
-                    <Text style={{ color: textPrimary, fontWeight: '900', fontSize: 18, marginBottom: 6 }}>Henüz Yok</Text>
-                    <Text style={{ color: textMuted, fontWeight: '600', fontSize: 13 }}>Hiç tamamlanmış görev bulunmuyor.</Text>
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* ── TAB 2: HABITS ── */}
-        {tab === 'habits' && (
-          <View style={{ gap: 10 }}>
-            {habitsList.length === 0 ? (
-              <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-                <LinearGradient colors={['#f59e0b', '#ef4444']} style={{ width: 72, height: 72, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                  <Flame size={32} color="white" />
-                </LinearGradient>
-                <Text style={{ color: textPrimary, fontWeight: '900', fontSize: 18, marginBottom: 6 }}>Alışkanlık Edin</Text>
-                <Text style={{ color: textMuted, fontWeight: '600', fontSize: 13 }}>Zinciri kırmadan devam edecek hedefler ekle.</Text>
-              </View>
-            ) : (
-              habitsList.map((h, idx) => {
-                const assignee = getMember(h.assigneeId);
-                const hStats = calculateHabitStats(h);
-                const palette = CARD_PALETTES[idx % CARD_PALETTES.length];
-                const isTodayDone = isHabitCompletedOnDay(h, new Date());
-
-                return (
-                  <TouchableOpacity
-                    key={h.id}
-                    onPress={() => { setSelectedHabit(h); setIsHabitDetailOpen(true); }}
-                    activeOpacity={0.85}
-                    style={{
-                      borderRadius: 24, overflow: 'hidden',
-                      borderWidth: 1.5,
-                      borderColor: isTodayDone ? 'rgba(74,222,128,0.35)' : palette.border,
-                      backgroundColor: isTodayDone
-                        ? (isDark ? 'rgba(74,222,128,0.08)' : 'rgba(74,222,128,0.07)')
-                        : (isDark ? palette.light : palette.light),
-                    }}
+                  <LinearGradient
+                    colors={gradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{ padding: 16 }}
                   >
-                    {/* Color top bar */}
-                    <View style={{ height: 3, overflow: 'hidden' }}>
-                      <LinearGradient colors={isTodayDone ? ['#4ade80', '#10b981'] : palette.grad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ flex: 1 }} />
-                    </View>
-
-                    <View style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                      {/* Icon */}
-                      <LinearGradient
-                        colors={isTodayDone ? ['#4ade80', '#10b981'] : palette.grad}
-                        style={{ width: 46, height: 46, borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: palette.grad[0], shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 4 }}
-                      >
-                        {isTodayDone ? <Check size={22} color="white" strokeWidth={3} /> : <Flame size={22} color="white" />}
-                      </LinearGradient>
-
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ color: textPrimary, fontWeight: '800', fontSize: 14 }} numberOfLines={1}>{h.title}</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                          {assignee && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                              <View style={{ width: 16, height: 16, borderRadius: 5, backgroundColor: assignee.color, alignItems: 'center', justifyContent: 'center' }}>
-                                <Text style={{ color: 'white', fontSize: 8, fontWeight: '900' }}>{assignee.name[0]}</Text>
-                              </View>
-                              <Text style={{ color: textSecondary, fontSize: 11, fontWeight: '600' }}>{assignee.name.split(' ')[0]}</Text>
-                            </View>
-                          )}
-                          {hStats.streak > 0 && (
-                            <View style={{ backgroundColor: isDark ? 'rgba(251,146,60,0.2)' : 'rgba(251,146,60,0.15)', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                              <Text style={{ color: '#fb923c', fontSize: 10, fontWeight: '900' }}>🔥 {hStats.streak} gün</Text>
-                            </View>
-                          )}
+                    {/* Üst Satır: Avatar + İsim + Puan (XP) */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                        <View
+                          style={{
+                            width: 46,
+                            height: 46,
+                            borderRadius: 16,
+                            backgroundColor: 'rgba(255,255,255,0.25)',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderWidth: 1.5,
+                            borderColor: 'rgba(255,255,255,0.4)',
+                          }}
+                        >
+                          <Text style={{ fontSize: 20, fontWeight: '900', color: 'white' }}>{member.name[0]}</Text>
+                        </View>
+                        <View>
+                          <Text style={{ color: 'white', fontWeight: '900', fontSize: 17 }}>{member.name}</Text>
+                          <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '700', marginTop: 1 }}>
+                            {member.role || 'Aile Üyesi'}
+                          </Text>
                         </View>
                       </View>
 
-                      {/* 4-day check bubbles */}
-                      <View style={{ flexDirection: 'row', gap: 6 }}>
-                        {recentDays.map((day) => {
-                          const completed = isHabitCompletedOnDay(h, day);
-                          const isToday = isSameDay(day, new Date());
-                          return (
-                            <View key={day.toISOString()} style={{ alignItems: 'center', gap: 2 }}>
-                              <Text style={{ fontSize: 9, fontWeight: '800', color: isToday ? palette.text : textMuted }}>
-                                {format(day, 'E', { locale: tr }).slice(0, 1)}
-                              </Text>
-                              <TouchableOpacity
-                                onPress={() => handleToggleHabitDay(h, day)}
-                                style={{
-                                  width: 28, height: 28, borderRadius: 9,
-                                  borderWidth: 2,
-                                  borderColor: completed ? palette.grad[0] : (isToday ? palette.grad[0] : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)')),
-                                  backgroundColor: completed ? palette.grad[0] : 'transparent',
-                                  alignItems: 'center', justifyContent: 'center',
-                                }}
-                              >
-                                {completed && <Check size={13} color="white" strokeWidth={3.5} />}
-                              </TouchableOpacity>
-                            </View>
-                          );
-                        })}
+                      {/* Yıldız & XP / Puan Rozetleri */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        {/* Yıldız Bakiye Rozeti */}
+                        <LinearGradient
+                          colors={['rgba(255,215,0,0.35)', 'rgba(255,215,0,0.18)']}
+                          style={{
+                            paddingHorizontal: 10,
+                            paddingVertical: 5,
+                            borderRadius: 14,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 4,
+                            borderWidth: 1,
+                            borderColor: 'rgba(255,215,0,0.6)',
+                          }}
+                        >
+                          <Star size={13} color="#FFD700" fill="#FFD700" />
+                          <Text style={{ color: 'white', fontWeight: '900', fontSize: 13 }}>
+                            {member.starBalance ?? 0}
+                          </Text>
+                        </LinearGradient>
+
+                        {/* XP Rozeti */}
+                        <LinearGradient
+                          colors={['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.15)']}
+                          style={{
+                            paddingHorizontal: 10,
+                            paddingVertical: 5,
+                            borderRadius: 14,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 4,
+                            borderWidth: 1,
+                            borderColor: 'rgba(255,255,255,0.4)',
+                          }}
+                        >
+                          <Zap size={13} color="white" />
+                          <Text style={{ color: 'white', fontWeight: '900', fontSize: 13 }}>
+                            {memberXp.toLocaleString()} <Text style={{ fontSize: 9, fontWeight: '700' }}>XP</Text>
+                          </Text>
+                        </LinearGradient>
                       </View>
                     </View>
-                  </TouchableOpacity>
-                );
-              })
-            )}
-          </View>
-        )}
+
+                    {/* İkinci Satır: Görev Sayısı, Alışkanlık Sayısı ve Açma/Kapama İkonu */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
+                      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                        {/* Görev Sayısı Rozeti */}
+                        <View
+                          style={{
+                            backgroundColor: 'rgba(0,0,0,0.2)',
+                            paddingHorizontal: 10,
+                            paddingVertical: 5,
+                            borderRadius: 12,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 5,
+                            borderWidth: 1,
+                            borderColor: 'rgba(255,255,255,0.2)',
+                          }}
+                        >
+                          <CheckSquare size={13} color="white" />
+                          <Text style={{ color: 'white', fontWeight: '800', fontSize: 11 }}>
+                            {totalPendingForMember} Bekleyen Görev
+                          </Text>
+                        </View>
+
+                        {/* Alışkanlık Sayısı Rozeti */}
+                        <View
+                          style={{
+                            backgroundColor: 'rgba(0,0,0,0.2)',
+                            paddingHorizontal: 10,
+                            paddingVertical: 5,
+                            borderRadius: 12,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 5,
+                            borderWidth: 1,
+                            borderColor: 'rgba(255,255,255,0.2)',
+                          }}
+                        >
+                          <Flame size={13} color="white" />
+                          <Text style={{ color: 'white', fontWeight: '800', fontSize: 11 }}>
+                            {memberHabits.length} Alışkanlık
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Açılır / Kapanır İkonu */}
+                      <View
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 10,
+                          backgroundColor: 'rgba(255,255,255,0.2)',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {isExpanded ? (
+                          <ChevronUp size={18} color="white" />
+                        ) : (
+                          <ChevronDown size={18} color="white" />
+                        )}
+                      </View>
+                    </View>
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                {/* ── KART İÇERİĞİ (AÇILINCA GÖRÜNEN GÖREVLER VE ALIŞKANLIKLAR) ── */}
+                {isExpanded && (
+                  <View style={{ padding: 14, gap: 14 }}>
+
+                    {/* 1. KİŞİSEL GÖREVLER */}
+                    {memberPendingTasks.length > 0 && (
+                      <View style={{ gap: 8 }}>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: textMuted, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                          📌 Kişisel Görevler ({memberPendingTasks.length})
+                        </Text>
+                        <View style={{ gap: 8 }}>
+                          {memberPendingTasks.map((t, idx) => renderTaskRow(t, idx, false))}
+                        </View>
+                      </View>
+                    )}
+
+                    {/* 2. EĞİTİM ÖDEVLERİ & DERSLER */}
+                    {memberModTasksPending.filter(mt => mt.module === 'Egitim').length > 0 && (
+                      <View style={{ gap: 8 }}>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#06b6d4', textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                          📚 Eğitim Ödevleri ({memberModTasksPending.filter(mt => mt.module === 'Egitim').length})
+                        </Text>
+                        <View style={{ gap: 8 }}>
+                          {memberModTasksPending.filter(mt => mt.module === 'Egitim').map((mt) => renderModRow(mt))}
+                        </View>
+                      </View>
+                    )}
+
+                    {/* 3. EZBER VE NAMAZ DİĞER GÖREVLER */}
+                    {memberModTasksPending.filter(mt => mt.module !== 'Egitim').length > 0 && (
+                      <View style={{ gap: 8 }}>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: textMuted, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                          🧠 Ezber & 🕌 Namaz ({memberModTasksPending.filter(mt => mt.module !== 'Egitim').length})
+                        </Text>
+                        <View style={{ gap: 8 }}>
+                          {memberModTasksPending.filter(mt => mt.module !== 'Egitim').map((mt) => renderModRow(mt))}
+                        </View>
+                      </View>
+                    )}
+
+                    {/* HİÇ GÖREV YOKSA */}
+                    {totalPendingForMember === 0 && (
+                      <View
+                        style={{
+                          padding: 14,
+                          borderRadius: 16,
+                          backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={{ color: textMuted, fontWeight: '600', fontSize: 12 }}>
+                          {member.name} için bekleyen görev veya eğitim ödevi yok 🎉
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* 2. ALIŞKANLIKLAR */}
+                    <View style={{ gap: 8, marginTop: 6 }}>
+                      <Text style={{ fontSize: 12, fontWeight: '800', color: textMuted, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                        🔥 Alışkanlık Takibi ({memberHabits.length})
+                      </Text>
+
+                      {memberHabits.length === 0 ? (
+                        <View
+                          style={{
+                            padding: 14,
+                            borderRadius: 16,
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Text style={{ color: textMuted, fontWeight: '600', fontSize: 12 }}>
+                            {member.name} için henüz kayıtlı alışkanlık yok
+                          </Text>
+                        </View>
+                      ) : (
+                        <View style={{ gap: 8 }}>
+                          {memberHabits.map((h, idx) => {
+                            const hStats = calculateHabitStats(h);
+                            const palette = CARD_PALETTES[idx % CARD_PALETTES.length];
+                            const isTodayDone = isHabitCompletedOnDay(h, new Date());
+
+                            return (
+                              <TouchableOpacity
+                                key={h.id}
+                                onPress={() => { setSelectedHabit(h); setIsHabitDetailOpen(true); }}
+                                activeOpacity={0.85}
+                                style={{
+                                  borderRadius: 18,
+                                  overflow: 'hidden',
+                                  borderWidth: 1.5,
+                                  borderColor: isTodayDone ? 'rgba(74,222,128,0.35)' : palette.border,
+                                  backgroundColor: isTodayDone
+                                    ? (isDark ? 'rgba(74,222,128,0.08)' : 'rgba(74,222,128,0.07)')
+                                    : palette.light,
+                                  padding: 12,
+                                }}
+                              >
+                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                                  <View style={{ flex: 1 }}>
+                                    <Text style={{ color: textPrimary, fontWeight: '800', fontSize: 13 }} numberOfLines={1}>
+                                      {h.title}
+                                    </Text>
+                                    {hStats.streak > 0 && (
+                                      <Text style={{ color: '#fb923c', fontSize: 10, fontWeight: '900', marginTop: 2 }}>
+                                        🔥 {hStats.streak} gün seri
+                                      </Text>
+                                    )}
+                                  </View>
+
+                                  {/* Son Günler Onay Kabarcıkları */}
+                                  <View style={{ flexDirection: 'row', gap: 5 }}>
+                                    {recentDays.map((day) => {
+                                      const completed = isHabitCompletedOnDay(h, day);
+                                      const isToday = isSameDay(day, new Date());
+                                      return (
+                                        <View key={day.toISOString()} style={{ alignItems: 'center', gap: 2 }}>
+                                          <Text style={{ fontSize: 8, fontWeight: '800', color: isToday ? palette.text : textMuted }}>
+                                            {format(day, 'E', { locale: tr }).slice(0, 1)}
+                                          </Text>
+                                          <TouchableOpacity
+                                            onPress={() => handleToggleHabitDay(h, day)}
+                                            style={{
+                                              width: 26,
+                                              height: 26,
+                                              borderRadius: 8,
+                                              borderWidth: 2,
+                                              borderColor: completed ? palette.grad[0] : (isToday ? palette.grad[0] : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)')),
+                                              backgroundColor: completed ? palette.grad[0] : 'transparent',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                            }}
+                                          >
+                                            {completed && <Check size={12} color="white" strokeWidth={3.5} />}
+                                          </TouchableOpacity>
+                                        </View>
+                                      );
+                                    })}
+                                  </View>
+                                </View>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      )}
+                    </View>
+
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </View>
 
         {/* ── LEADERBOARD ── */}
         <View style={{ marginTop: 24 }}>
@@ -1126,7 +1355,9 @@ export default function TasksScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <View style={{ backgroundColor: `${palette.grad[0]}18`, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 3, borderWidth: 1, borderColor: palette.border }}>
               <Icon size={9} color={palette.text} />
-              <Text style={{ color: palette.text, fontSize: 9, fontWeight: '800' }}>{mt.module}</Text>
+              <Text style={{ color: palette.text, fontSize: 9, fontWeight: '800' }}>
+                {mt.module === 'Egitim' ? 'Eğitim Ödevi' : mt.module}
+              </Text>
             </View>
             {assignee && (
               <View style={{ width: 24, height: 24, borderRadius: 8, backgroundColor: assignee.color, alignItems: 'center', justifyContent: 'center' }}>

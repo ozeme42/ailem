@@ -90,19 +90,27 @@ export function NewStudyPlanForm({ onSubmit, initialData }: NewStudyPlanFormProp
     }
     
     // Process data for submission
-    const finalData = {
-        title: values.title,
-        link: values.link || undefined,
+    const finalData: any = {
+        title: values.title.trim(),
         subjects: subjects.map(s => ({
-            ...s,
             id: s.id || generateSafeId(),
-            topics: s.topics.map(t => ({
-                ...t,
-                id: t.id || generateSafeId(),
-                sources: t.sources?.filter(src => src.trim() !== '') || []
-            }))
+            name: s.name.trim(),
+            topics: (s.topics || []).map(t => {
+                const cleanedSources = (t.sources || [])
+                    .map(src => typeof src === 'string' ? src.trim() : '')
+                    .filter(Boolean);
+                return {
+                    id: t.id || generateSafeId(),
+                    name: t.name.trim(),
+                    sources: cleanedSources
+                };
+            })
         }))
     };
+
+    if (values.link && values.link.trim()) {
+        finalData.link = values.link.trim();
+    }
     
     onSubmit(finalData);
   };

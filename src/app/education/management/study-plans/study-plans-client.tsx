@@ -49,8 +49,13 @@ export function StudyPlansClient() {
             }
             setIsFormOpen(false);
             setEditingPlan(null);
-        } catch (error) {
-            toast({ title: "Hata", variant: "destructive" });
+        } catch (error: any) {
+            console.error("Yol haritası kaydetme hatası:", error);
+            toast({ 
+                title: "Hata ⚠️", 
+                description: error?.message || "Plan kaydedilirken bir hata oluştu.", 
+                variant: "destructive" 
+            });
         }
     };
 
@@ -58,8 +63,9 @@ export function StudyPlansClient() {
         try {
             await deleteStudyPlan(id);
             toast({ title: "Plan Silindi 🗑️" });
-        } catch (error) {
-            toast({ title: "Hata", variant: "destructive" });
+        } catch (error: any) {
+            console.error("Plan silme hatası:", error);
+            toast({ title: "Hata", description: error?.message || "Silinirken hata oluştu.", variant: "destructive" });
         }
     };
 

@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect, useState, useMemo } from 'react';
 import { onGoalsUpdate, addGoal, updateGoal, deleteGoal } from '../lib/dataService';
 import { Goal, FamilyMember } from '../lib/data';
-import { Target, ChevronLeft, Plus, Check, MoreVertical, Sparkles, Map, User, BookOpen, PlayCircle, AlignLeft } from 'lucide-react-native';
+import { Target, ChevronLeft, Plus, Check, MoreVertical, Sparkles, Map, User, BookOpen, PlayCircle, AlignLeft, ChevronRight, CheckCircle2, Link2, Layers } from 'lucide-react-native';
 import { useRouter, Stack } from 'expo-router';
 import { useAuth } from '../context/auth-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -182,6 +182,52 @@ export default function GoalsScreen() {
       }
       return next;
     });
+  };
+
+  const handleCreateHatimGoal = async (targetMemberId?: string) => {
+    const assigneeId = targetMemberId || (selectedMemberId !== 'all' ? selectedMemberId : (familyMembers && familyMembers.length > 0 ? familyMembers[0].id : ''));
+    if (!assigneeId) {
+      Alert.alert('Hata', 'Lütfen hatim yapacak aile üyesini seçin.');
+      return;
+    }
+    const assignee = familyMembers.find(m => m.id === assigneeId);
+
+    const sectionsData = Array.from({ length: 30 }, (_, idx) => ({
+      id: Date.now().toString() + idx,
+      title: `${idx + 1}. Cüz`,
+      order: idx + 1,
+      sectionTotalUnits: 20,
+      completedUnits: 0,
+      status: 'unlocked' as const,
+    }));
+
+    const goalData = {
+      title: '📖 Kutsal Kuran-ı Kerim Hatmi',
+      description: '30 Cüzlük (Her Cüz 20 sayfa, Toplam 600 sayfa) Kuran-ı Kerim Hatmi Yol Haritası.',
+      assigneeId,
+      sections: sectionsData,
+      totalUnits: 600,
+      unitName: 'Sayfa',
+      sectionCount: 30,
+      status: 'in-progress' as const,
+    };
+
+    try {
+      await addGoal(goalData as any);
+      Alert.alert('Hayırlı Olsun ✨ 📖', `${assignee?.name || 'Seçilen üye'} için 30 Cüz (600 Sayfa) Kuran-ı Kerim Hatmi yol haritası başarıyla oluşturuldu!`);
+    } catch (e: any) {
+      Alert.alert('Hata', 'Hatim yol haritası oluşturulamadı: ' + e.message);
+    }
+  };
+
+  const handleApplyHatimTemplate = () => {
+    setFormType('book');
+    setFormTitle('📖 Kutsal Kuran-ı Kerim Hatmi');
+    setFormDescription('30 Cüz (Her Cüz 20 sayfa, Toplam 600 sayfa) Kuran-ı Kerim Hatmi Yol Haritası.');
+    setFormTotalUnits(600);
+    setFormUnitName('Sayfa');
+    setFormSectionCount(30);
+    setFormSections(Array.from({ length: 30 }, (_, i) => ({ title: `${i + 1}. Cüz` })));
   };
 
   const handleSaveGoal = async () => {
@@ -389,125 +435,235 @@ export default function GoalsScreen() {
 
       {/* CONTENT LIST */}
       <ScrollView contentContainerClassName="p-4 pb-8" showsVerticalScrollIndicator={false}>
-         {filteredGoals.length === 0 ? (
-           <View className="items-center justify-center py-20 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-slate-800 mt-6">
-             <View className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full items-center justify-center mb-4">
-                <Target size={40} color="#cbd5e1" />
-             </View>
-             <Text className="text-slate-800 dark:text-slate-200 text-lg font-bold">Hedef Bulunamadı</Text>
-             <Text className="text-slate-400 text-sm mt-1 text-center px-6 font-medium">Bu filtreye uygun bir hedef bulunmuyor. Kendinize yeni bir hedef oluşturarak başlayabilirsiniz.</Text>
-             <TouchableOpacity 
-               onPress={() => { setEditingGoal(null); setIsFormOpen(true); }}
-               className="mt-6 bg-indigo-600 py-3 px-6 rounded-full shadow-lg shadow-indigo-500/20"
-             >
-               <Text className="text-white font-bold text-sm">İlk Hedefi Oluştur</Text>
-             </TouchableOpacity>
-           </View>
-         ) : (
-           filteredGoals.map((goal, idx) => {
-             const progress = calculateOverallProgress(goal);
-             const assignee = familyMembers.find(m => m.id === goal.assigneeId);
-             const isVideoGoal = goal.platform === 'YouTube';
-             const totalCompletedUnits = goal.sections ? goal.sections.reduce((acc, s) => acc + (s.completedUnits || 0), 0) : 0;
-             const totalSections = goal.sections ? goal.sections.length : 0;
-             const completedSections = goal.sections ? goal.sections.filter(s => s.status === 'completed').length : 0;
-             
-             const theme = goalThemes[idx % goalThemes.length];
-             const gradientColors = isDark ? theme.darkGradient : theme.lightGradient;
 
-             return (
-               <TouchableOpacity 
-                 key={goal.id} 
-                 onPress={() => router.push({ pathname: '/goal-detail', params: { id: goal.id } })}
-                 className="mb-4 rounded-[2rem] overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800/10"
-               >
-                 <LinearGradient
-                   colors={gradientColors as [string, string, ...string[]]}
-                   start={{ x: 0, y: 0 }}
-                   end={{ x: 1, y: 1 }}
-                   className="p-5"
-                 >
-                   {/* Card Header */}
-                   <View className="flex-row justify-between items-start mb-3">
-                     <View className="flex-row items-center gap-2.5">
-                       <View 
-                         className="w-11 h-11 rounded-2xl items-center justify-center"
-                         style={{ backgroundColor: isDark ? theme.iconBgDark : theme.iconBgLight }}
-                       >
-                         {isVideoGoal ? <PlayCircle size={22} color={theme.iconColor} /> : <Target size={22} color={theme.iconColor} />}
-                       </View>
-                       {assignee && (
-                         <View 
-                           className="w-8 h-8 rounded-full items-center justify-center shadow-sm border-2 border-white dark:border-slate-900" 
-                           style={{ backgroundColor: assignee.color }}
-                         >
-                           <Text className="text-white text-xs font-black">{assignee.name.charAt(0)}</Text>
-                         </View>
-                       )}
-                     </View>
-                     
-                     <TouchableOpacity 
-                       onPress={() => handleOpenOptions(goal)}
-                       className="w-8 h-8 items-center justify-center rounded-full bg-white/40 dark:bg-slate-800/40"
-                     >
-                       <MoreVertical size={18} color={isDark ? '#cbd5e1' : '#475569'} />
-                     </TouchableOpacity>
-                   </View>
+        {/* ── KURAN HATMI HIZLI OLUŞTUR BANNER ── */}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => handleCreateHatimGoal()}
+          className="mb-5 rounded-2xl bg-white dark:bg-slate-900 border-l-4 border-l-emerald-500 border border-slate-200/80 dark:border-slate-800 p-4 shadow-sm"
+        >
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center gap-3.5 flex-1 pr-2">
+              <View className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-800/40 items-center justify-center">
+                <BookOpen size={22} color={isDark ? '#34d399' : '#059669'} />
+              </View>
+              <View className="flex-1">
+                <View className="flex-row items-center gap-2 mb-0.5">
+                  <Text className="text-xs font-black text-emerald-600 dark:text-emerald-400 tracking-wider uppercase">📖 KURAN HATMİ</Text>
+                  <View className="bg-amber-100 dark:bg-amber-950/60 border border-amber-300/40 px-2 py-0.5 rounded-md">
+                    <Text className="text-[9px] font-black text-amber-700 dark:text-amber-300">⭐ 30 CÜZ • 600 SAYFA</Text>
+                  </View>
+                </View>
+                <Text className="text-base font-extrabold text-slate-900 dark:text-white">
+                  Kutsal Kuran-ı Kerim Hatmi
+                </Text>
+                <Text className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5" numberOfLines={1}>
+                  Sayfa sayfa okuma ve ailece cüz hatim takibi
+                </Text>
+              </View>
+            </View>
 
-                   {/* Card Content */}
-                   <View className="mb-4">
-                     <Text className="text-lg font-black" style={{ color: isDark ? theme.titleDark : theme.titleLight }} numberOfLines={1}>
-                       {goal.title}
-                     </Text>
-                     {goal.description ? (
-                       <Text className="text-xs mt-0.5 leading-relaxed font-medium" style={{ color: isDark ? theme.descDark : theme.descLight }} numberOfLines={2}>
-                         {goal.description}
-                       </Text>
-                     ) : null}
-                   </View>
+            <View className="bg-emerald-600 dark:bg-emerald-500 px-3.5 py-2 rounded-xl flex-row items-center gap-1 shadow-sm">
+              <Text className="text-white font-bold text-xs">Başlat</Text>
+              <ChevronRight size={14} color="white" />
+            </View>
+          </View>
+        </TouchableOpacity>
 
-                   {/* Next Step Banner */}
-                   <View className="bg-white/50 dark:bg-slate-950/30 rounded-2xl p-2.5 mb-4 flex-row items-center gap-2 border border-white/20 dark:border-slate-800/10">
-                     <Sparkles size={16} color="#f59e0b" />
-                     <View className="flex-1">
-                       <Text className="text-[9px] font-black uppercase tracking-wider" style={{ color: isDark ? theme.descDark : theme.descLight }}>SIRADAKİ</Text>
-                       <Text className="text-xs font-bold truncate" style={{ color: isDark ? theme.titleDark : theme.titleLight }} numberOfLines={1}>
-                         {getNextStepTitle(goal)}
-                       </Text>
-                     </View>
-                   </View>
+        {filteredGoals.length === 0 ? (
+          <View className="items-center justify-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 mt-4">
+            <View className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-2xl items-center justify-center mb-3">
+              <Target size={32} color="#cbd5e1" />
+            </View>
+            <Text className="text-slate-800 dark:text-slate-200 text-base font-bold">Hedef Bulunamadı</Text>
+            <Text className="text-slate-400 text-xs mt-1 text-center px-6 font-medium">Bu filtreye uygun bir hedef bulunmuyor. Yeni bir hedef oluşturarak başlayabilirsiniz.</Text>
+            <TouchableOpacity 
+              onPress={() => { setEditingGoal(null); setIsFormOpen(true); }}
+              className="mt-5 bg-indigo-600 py-2.5 px-5 rounded-xl shadow-sm"
+            >
+              <Text className="text-white font-bold text-xs">İlk Hedefi Oluştur</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          filteredGoals.map((goal, idx) => {
+            const isHatmiGoal = goal.unitName === 'Cüz' || goal.unitName === 'Sayfa' || (goal.title && (goal.title.toLowerCase().includes('hatm') || goal.title.toLowerCase().includes('kuran')));
+            const assignee = familyMembers.find(m => m.id === goal.assigneeId);
+            const isVideoGoal = goal.platform === 'YouTube';
+            const totalCompletedUnits = goal.sections ? goal.sections.reduce((acc, s) => acc + (s.completedUnits || 0), 0) : 0;
+            const totalGoalUnits = isHatmiGoal ? 600 : (goal.totalUnits || 1);
+            const progress = Math.min(100, Math.max(0, (totalCompletedUnits / totalGoalUnits) * 100));
+            const totalSections = goal.sections ? goal.sections.length : 0;
+            const completedSections = goal.sections ? goal.sections.filter(s => s.status === 'completed').length : 0;
+            
+            const completedSectionsCount = goal.sections ? goal.sections.filter(s => s.status === 'completed' || (isHatmiGoal ? (s.completedUnits || 0) >= 20 : (s.completedUnits || 0) >= (s.sectionTotalUnits || 1))).length : 0;
+            const currentJuzNum = Math.min(30, Math.floor(totalCompletedUnits / 20) + 1);
+            const currentJuzPage = totalCompletedUnits % 20;
 
-                   {/* Progress Info */}
-                   <View className="flex-row justify-between items-end mb-1.5">
-                     <View>
-                       <Text className="text-[9px] font-bold uppercase tracking-widest" style={{ color: isDark ? theme.descDark : theme.descLight }}>İlerleme</Text>
-                       <Text className="text-xl font-black leading-none mt-0.5" style={{ color: isDark ? theme.titleDark : theme.titleLight }}>
-                         %{Math.round(progress)}
-                       </Text>
-                     </View>
-                     <Text className="text-xs font-black" style={{ color: isDark ? theme.titleDark : theme.titleLight }}>
-                       {isVideoGoal 
-                         ? `${totalCompletedUnits}/${goal.totalUnits}` 
-                         : `${completedSections}/${totalSections}`
-                       } <Text className="text-[9px] font-bold uppercase" style={{ color: isDark ? theme.descDark : theme.descLight }}>{isVideoGoal ? 'Video' : 'Bölüm'}</Text>
-                     </Text>
-                   </View>
+            const accentBorderColor = isHatmiGoal ? 'border-l-emerald-500' : isVideoGoal ? 'border-l-rose-500' : 'border-l-indigo-500';
+            const accentTextColor = isHatmiGoal ? 'text-emerald-600 dark:text-emerald-400' : isVideoGoal ? 'text-rose-600 dark:text-rose-400' : 'text-indigo-600 dark:text-indigo-400';
+            const accentBgColor = isHatmiGoal ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/40' : isVideoGoal ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200/60 dark:border-rose-800/40' : 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200/60 dark:border-indigo-800/40';
+            const progressFillColor = isHatmiGoal ? 'bg-emerald-500' : isVideoGoal ? 'bg-rose-500' : 'bg-indigo-600';
 
-                   {/* Progress Bar */}
-                   <View 
-                     className="h-3 w-full rounded-full overflow-hidden border border-white/20 dark:border-slate-800/10 shadow-inner"
-                     style={{ backgroundColor: isDark ? theme.progressBgDark : theme.progressBgLight }}
-                   >
-                     <View 
-                       className="h-full rounded-full" 
-                       style={{ width: `${progress}%`, backgroundColor: theme.progressFill }} 
-                     />
-                   </View>
-                 </LinearGradient>
-               </TouchableOpacity>
-             );
-           })
-         )}
+            return (
+              <TouchableOpacity 
+                key={goal.id} 
+                activeOpacity={0.9}
+                onPress={() => router.push({ pathname: '/goal-detail', params: { id: goal.id } })}
+                className={`mb-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 border-l-4 ${accentBorderColor} p-5 shadow-sm`}
+              >
+                {/* Top Header Row */}
+                <View className="flex-row justify-between items-center mb-3">
+                  <View className="flex-row items-center gap-2 flex-wrap flex-1 pr-2">
+                    <View className={`px-2.5 py-1 rounded-lg border flex-row items-center gap-1.5 ${accentBgColor}`}>
+                      {isHatmiGoal ? (
+                        <BookOpen size={13} color={isDark ? '#34d399' : '#059669'} />
+                      ) : isVideoGoal ? (
+                        <PlayCircle size={13} color={isDark ? '#fb7185' : '#e11d48'} />
+                      ) : (
+                        <Target size={13} color={isDark ? '#818cf8' : '#4f46e5'} />
+                      )}
+                      <Text className={`text-[10px] font-black tracking-wider uppercase ${accentTextColor}`}>
+                        {isHatmiGoal ? 'KURAN HATMİ' : isVideoGoal ? 'VİDEO SERİSİ' : 'YOL HARİTASI'}
+                      </Text>
+                    </View>
+
+                    {assignee && (
+                      <View className="bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 px-2.5 py-1 rounded-lg flex-row items-center gap-1.5">
+                        <View 
+                          className="w-3.5 h-3.5 rounded-full items-center justify-center" 
+                          style={{ backgroundColor: assignee.color }}
+                        >
+                          <Text className="text-white text-[8px] font-black">{assignee.name.charAt(0)}</Text>
+                        </View>
+                        <Text className="text-slate-700 dark:text-slate-300 text-xs font-bold">{assignee.name}</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <TouchableOpacity 
+                    onPress={() => handleOpenOptions(goal)}
+                    className="w-8 h-8 items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60"
+                  >
+                    <MoreVertical size={16} color={isDark ? '#cbd5e1' : '#64748b'} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Title & Description */}
+                <View className="mb-3">
+                  <Text className="text-lg font-black text-slate-900 dark:text-white leading-snug" numberOfLines={1}>
+                    {goal.title}
+                  </Text>
+                  {goal.description ? (
+                    <Text className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed font-medium" numberOfLines={2}>
+                      {goal.description}
+                    </Text>
+                  ) : null}
+                </View>
+
+                {/* Next Step Banner Row */}
+                <View className="bg-slate-50 dark:bg-slate-950/80 border border-slate-200/60 dark:border-slate-800/60 rounded-xl p-3 mb-3 flex-row items-center justify-between gap-2">
+                  <View className="flex-row items-center gap-2 flex-1">
+                    <Sparkles size={14} color="#f59e0b" />
+                    <Text className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate" numberOfLines={1}>
+                      <Text className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">SIRADAKİ: </Text>
+                      {isHatmiGoal 
+                        ? `${currentJuzNum}. Cüz (${currentJuzPage} / 20 Sayfa)`
+                        : getNextStepTitle(goal)
+                      }
+                    </Text>
+                  </View>
+                  {isHatmiGoal && (
+                    <Text className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-md border border-emerald-300/40">
+                      600 SAYFA
+                    </Text>
+                  )}
+                </View>
+
+                {/* Metric & Progress Row */}
+                <View className="flex-row justify-between items-end mb-2">
+                  <View className="flex-row items-baseline gap-1.5">
+                    <Text className={`text-2xl font-black ${accentTextColor}`}>
+                      %{Math.round(progress)}
+                    </Text>
+                    <Text className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">TAMAMLANDI</Text>
+                  </View>
+
+                  <Text className="text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                    {isHatmiGoal 
+                      ? `${totalCompletedUnits} / 600 Sayfa`
+                      : isVideoGoal 
+                        ? `${totalCompletedUnits} / ${goal.totalUnits} Video`
+                        : `${completedSectionsCount} / ${totalSections} Bölüm`
+                    }
+                  </Text>
+                </View>
+
+                {/* Sleek Slim Progress Bar */}
+                <View className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <View 
+                    className={`h-full rounded-full ${progressFillColor}`}
+                    style={{ width: `${progress}%` }}
+                  />
+                </View>
+
+                {/* Tamamlanan Cüzler / Bölümler Şeridi */}
+                <View className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex-row items-center justify-between">
+                  <View className="flex-row items-center gap-1.5">
+                    <CheckCircle2 size={14} color={isDark ? '#34d399' : '#059669'} />
+                    <Text className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      {isHatmiGoal 
+                        ? `${completedSectionsCount} / 30 Cüz Tamamlandı`
+                        : isVideoGoal
+                          ? `${totalCompletedUnits} / ${goal.totalUnits} Video İzlendi`
+                          : `${completedSectionsCount} / ${totalSections} Bölüm Bitti`
+                      }
+                    </Text>
+                  </View>
+                  <Text className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    {isHatmiGoal 
+                      ? `${30 - completedSectionsCount} CÜZ KALDI`
+                      : isVideoGoal
+                        ? `${goal.totalUnits - totalCompletedUnits} VİDEO KALDI`
+                        : `${totalSections - completedSectionsCount} BÖLÜM KALDI`
+                    }
+                  </Text>
+                </View>
+
+                {/* Küçük Bölüm / Cüz Zinciri Görünümü (Section Chain Strip) */}
+                <View className="mt-2.5 pt-2 border-t border-slate-100/60 dark:border-slate-800/50">
+                  <View className="flex-row items-center gap-1 flex-wrap">
+                    {Array.from({ length: isHatmiGoal ? 30 : Math.max(1, totalSections) }).map((_, secIdx) => {
+                      const isSecDone = isHatmiGoal 
+                        ? (goal.sections && goal.sections[secIdx] ? (goal.sections[secIdx].completedUnits || 0) >= 20 : secIdx < completedSectionsCount)
+                        : (goal.sections && goal.sections[secIdx] ? goal.sections[secIdx].status === 'completed' : secIdx < completedSectionsCount);
+                      
+                      const isCurrentSec = !isSecDone && (isHatmiGoal ? secIdx === Math.min(29, completedSectionsCount) : secIdx === completedSectionsCount);
+
+                      return (
+                        <View 
+                          key={secIdx} 
+                          className={`h-2 rounded-full ${
+                            isHatmiGoal 
+                              ? (isSecDone 
+                                  ? 'bg-emerald-500 flex-1 min-w-[7px]' 
+                                  : isCurrentSec 
+                                    ? 'bg-amber-400 flex-1 min-w-[7px] border border-amber-500' 
+                                    : 'bg-slate-200 dark:bg-slate-800 flex-1 min-w-[7px]')
+                              : (isSecDone 
+                                  ? `${progressFillColor} flex-1 min-w-[14px]` 
+                                  : isCurrentSec 
+                                    ? 'bg-amber-400 flex-1 min-w-[14px] border border-amber-500' 
+                                    : 'bg-slate-200 dark:bg-slate-800 flex-1 min-w-[14px]')
+                          }`}
+                        />
+                      );
+                    })}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            );
+          })
+        )}
       </ScrollView>
 
       {/* CREATE / EDIT GOAL INLINE MODAL */}
@@ -563,6 +719,18 @@ export default function GoalsScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
+
+              {/* HIZLI ŞABLON BUTONU */}
+              <TouchableOpacity
+                onPress={handleApplyHatimTemplate}
+                className="mb-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 p-3 rounded-2xl flex-row items-center justify-between"
+              >
+                <View className="flex-row items-center gap-2.5">
+                  <BookOpen size={18} color="#10b981" />
+                  <Text className="text-xs font-black text-emerald-800 dark:text-emerald-300">📖 30 Cüz (600 Sayfa) Kuran Hatmi Şablonunu Yükle</Text>
+                </View>
+                <Sparkles size={14} color="#10b981" />
+              </TouchableOpacity>
 
               {/* Title */}
               <View className="mb-4">

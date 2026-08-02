@@ -18,7 +18,7 @@ const getCurrentFamilyId = async (): Promise<string | null> => {
 
 function removeUndefined(obj: any): any {
   if (obj === null || obj === undefined) return undefined;
-  if (Array.isArray(obj)) return obj.map(removeUndefined);
+  if (Array.isArray(obj)) return obj.map(removeUndefined).filter(item => item !== undefined);
   if (typeof obj === 'object') {
     const newObj: { [key: string]: any } = {};
     for (const key in obj) {
@@ -384,7 +384,7 @@ export const updateStudyAssignment = (id: string, data: Partial<Omit<StudyAssign
 export const addStudyPlan = async (data: Omit<StudyPlan, 'id' | 'familyId'>) => {
     const familyId = await getCurrentFamilyId();
     if (!familyId) throw new Error("Unauthorized");
-    return addDoc(collection(db, 'studyPlans'), { ...data, familyId, createdAt: new Date().toISOString() });
+    return addDoc(collection(db, 'studyPlans'), removeUndefined({ ...data, familyId, createdAt: new Date().toISOString() }));
 };
 export const updateStudyPlan = (id: string, data: any) => updateDoc(doc(db, 'studyPlans', id), removeUndefined(data));
 export const deleteStudyPlan = (id: string) => deleteDoc(doc(db, "studyPlans", id));

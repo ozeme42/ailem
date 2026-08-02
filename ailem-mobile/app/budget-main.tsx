@@ -25,6 +25,8 @@ import {
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
+    ChevronDown,
+    ChevronUp,
     CircleEllipsis,
     Clock,
     CreditCard,
@@ -54,7 +56,7 @@ import {
     Wifi,
     X,
 } from "lucide-react-native";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -75,9 +77,8 @@ import {
     NativeModules,
     Keyboard,
 } from "react-native";
-import { LineChart } from "react-native-chart-kit";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Circle } from "react-native-svg";
+import Svg, { Circle, Rect, Path, Text as SvgText, Defs, LinearGradient as SvgGradient, Stop } from "react-native-svg";
 import {
     Account,
     Bill,
@@ -284,12 +285,20 @@ export default function BudgetMainScreen() {
   };
 
   const [refreshing, setRefreshing] = useState(false);
+  const [trendTab, setTrendTab] = useState<'all' | 'income' | 'expense'>('all');
+  const [expandedAccDetailsMonth, setExpandedAccDetailsMonth] = useState<string | null>(null);
   const onRefresh = () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1000);
   };
 
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(() => {
+    const now = new Date();
+    if (now.getDate() > 15) {
+      return addMonths(now, 1);
+    }
+    return now;
+  });
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<BudgetCategory[]>([]);
@@ -586,14 +595,20 @@ export default function BudgetMainScreen() {
     );
     const totalAssets = assets.reduce((sum, a) => sum + a.balance, 0);
     const totalDebts = debts.reduce((sum, a) => sum + a.balance, 0);
+
+    // Tüm aylık net tutarların (Gelir - Gider) toplamı
+    const totalNetFromTransactions = allTransactions.reduce((sum, t) => {
+      return sum + (t.type === "income" ? t.amount : -t.amount);
+    }, 0);
+
     return {
       assets,
       debts,
       totalAssets,
       totalDebts,
-      netWorth: totalAssets - totalDebts,
+      netWorth: totalNetFromTransactions,
     };
-  }, [accounts]);
+  }, [accounts, allTransactions]);
 
   const financialCalculations = useMemo(() => {
     const currentMonthStr = format(currentDate, "yyyy-MM");
@@ -846,6 +861,55 @@ export default function BudgetMainScreen() {
       ) || null
     );
   }, [financialCalculations, statementAccountId]);
+
+  const accountMonthlyStatements = useMemo(() => {
+    if (!statementAccountId) return [];
+    const accTxs = allTransactions.filter((t) => t.accountId === statementAccountId);
+    if (accTxs.length === 0) return [];
+
+    const grouped: Record<
+      string,
+      {
+        monthKey: string;
+        monthLabel: string;
+        totalSpent: number;
+        totalIncome: number;
+        netTotal: number;
+        transactions: Transaction[];
+      }
+    > = {};
+
+    accTxs.forEach((tx) => {
+      const monthKey = tx.date.substring(0, 7);
+      if (!grouped[monthKey]) {
+        let label = monthKey;
+        try {
+          label = format(parseISO(tx.date), "MMMM yyyy", { locale: tr });
+        } catch {}
+        grouped[monthKey] = {
+          monthKey,
+          monthLabel: label,
+          totalSpent: 0,
+          totalIncome: 0,
+          netTotal: 0,
+          transactions: [],
+        };
+      }
+      if (tx.type === "expense") {
+        grouped[monthKey].totalSpent += tx.amount;
+      } else {
+        grouped[monthKey].totalIncome += tx.amount;
+      }
+      grouped[monthKey].transactions.push(tx);
+    });
+
+    Object.values(grouped).forEach((g) => {
+      g.netTotal = g.totalSpent - g.totalIncome;
+      g.transactions.sort((a, b) => b.date.localeCompare(a.date));
+    });
+
+    return Object.values(grouped).sort((a, b) => b.monthKey.localeCompare(a.monthKey));
+  }, [allTransactions, statementAccountId]);
 
   let headerTitle = "Net Durum";
   let headerIncome = 0;
@@ -1867,49 +1931,173 @@ export default function BudgetMainScreen() {
                   <Text style={styles.sectionLabel}>
                     Finansal Trend (Gelir / Gider)
                   </Text>
-                  <LineChart
-                    data={{
-                      labels,
-                      datasets: [
-                        {
-                          data: incomeData,
-                          color: (o = 1) => `rgba(63,125,83,${o})`,
-                          strokeWidth: 3,
-                        },
-                        {
-                          data: expenseData,
-                          color: (o = 1) => `rgba(181,83,58,${o})`,
-                          strokeWidth: 3,
-                        },
-                      ],
-                      legend: ["Gelir", "Gider"],
-                    }}
-                    width={Dimensions.get("window").width - 64}
-                    height={180}
-                    chartConfig={{
-                      backgroundColor: theme.surface,
-                      backgroundGradientFrom: theme.surface,
-                      backgroundGradientTo: theme.surface,
-                      decimalPlaces: 0,
-                      color: (o = 1) => `rgba(62,124,116,${o})`,
-                      labelColor: (o = 1) => `rgba(117,105,92,${o})`,
-                      style: { borderRadius: 16 },
-                      propsForDots: {
-                        r: "3",
-                        strokeWidth: "1",
-                        stroke: theme.surface,
-                      },
-                      propsForBackgroundLines: {
-                        stroke: "rgba(43,36,28,0.06)",
-                      },
-                    }}
-                    bezier
-                    style={{
-                      marginVertical: 8,
-                      borderRadius: 16,
-                      marginLeft: -16,
-                    }}
-                  />
+                  {(() => {
+                    const chartWidth = Dimensions.get('window').width - 64;
+                    const chartHeight = 160;
+                    const paddingX = 24;
+                    const paddingY = 24;
+                    const plotW = chartWidth - paddingX * 2;
+                    const plotH = chartHeight - paddingY * 2 - 20;
+
+                    const allVals = [...incomeData, ...expenseData].filter(v => v > 0);
+                    const maxVal = allVals.length ? Math.max(...allVals) : 1;
+                    const formatAmt = (v: number) => v >= 1000 ? `${(v/1000).toFixed(1)}K` : String(Math.round(v));
+
+                    // Points calculation
+                    const getPoints = (data: number[]) => {
+                      const count = data.length;
+                      if (count <= 1) return [{ x: paddingX, y: chartHeight - paddingY - 20 }];
+                      const stepX = plotW / (count - 1);
+                      return data.map((v, i) => {
+                        const x = paddingX + i * stepX;
+                        const y = chartHeight - paddingY - 20 - (v / maxVal) * plotH;
+                        return { x, y, val: v };
+                      });
+                    };
+
+                    const incPoints = getPoints(incomeData);
+                    const expPoints = getPoints(expenseData);
+
+                    // Smooth path generator
+                    const createSmoothPath = (pts: { x: number; y: number }[]) => {
+                      if (pts.length === 0) return '';
+                      if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
+                      let d = `M ${pts[0].x} ${pts[0].y}`;
+                      for (let i = 0; i < pts.length - 1; i++) {
+                        const p0 = pts[i];
+                        const p1 = pts[i + 1];
+                        const cx = (p0.x + p1.x) / 2;
+                        d += ` C ${cx} ${p0.y}, ${cx} ${p1.y}, ${p1.x} ${p1.y}`;
+                      }
+                      return d;
+                    };
+
+                    const createAreaPath = (pts: { x: number; y: number }[]) => {
+                      if (pts.length === 0) return '';
+                      const lineD = createSmoothPath(pts);
+                      const lastX = pts[pts.length - 1].x;
+                      const firstX = pts[0].x;
+                      const bottomY = chartHeight - paddingY - 20;
+                      return `${lineD} L ${lastX} ${bottomY} L ${firstX} ${bottomY} Z`;
+                    };
+
+                    // Trend momentum calculation (last 2 months)
+                    const getMomentum = (data: number[]) => {
+                      if (data.length < 2) return null;
+                      const prev = data[data.length - 2] || 0;
+                      const curr = data[data.length - 1] || 0;
+                      if (prev === 0) return null;
+                      const diff = curr - prev;
+                      const pct = Math.round((diff / prev) * 100);
+                      return { diff, pct };
+                    };
+
+                    const incMom = getMomentum(incomeData);
+                    const expMom = getMomentum(expenseData);
+
+                    return (
+                      <View>
+                        {/* Trend Mod Seçici Tablar */}
+                        <View style={{ flexDirection: 'row', backgroundColor: theme.surface, borderRadius: 10, padding: 3, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(150,150,150,0.15)' }}>
+                          <TouchableOpacity
+                            onPress={() => setTrendTab('all')}
+                            style={{ flex: 1, paddingVertical: 6, borderRadius: 8, backgroundColor: trendTab === 'all' ? theme.cardBg || '#3f7d53' : 'transparent', alignItems: 'center' }}
+                          >
+                            <Text style={{ fontSize: 10, fontWeight: '800', color: trendTab === 'all' ? '#fff' : theme.textSecondary }}>Gelir + Gider</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => setTrendTab('income')}
+                            style={{ flex: 1, paddingVertical: 6, borderRadius: 8, backgroundColor: trendTab === 'income' ? '#22c55e' : 'transparent', alignItems: 'center' }}
+                          >
+                            <Text style={{ fontSize: 10, fontWeight: '800', color: trendTab === 'income' ? '#fff' : theme.textSecondary }}>📈 Gelir Trendi</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => setTrendTab('expense')}
+                            style={{ flex: 1, paddingVertical: 6, borderRadius: 8, backgroundColor: trendTab === 'expense' ? '#dc2626' : 'transparent', alignItems: 'center' }}
+                          >
+                            <Text style={{ fontSize: 10, fontWeight: '800', color: trendTab === 'expense' ? '#fff' : theme.textSecondary }}>📉 Gider Trendi</Text>
+                          </TouchableOpacity>
+                        </View>
+
+                        {/* Trend Momentum Rozetleri */}
+                        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                          {(trendTab === 'all' || trendTab === 'income') && incMom && (
+                            <View style={{ flex: 1, backgroundColor: 'rgba(34,197,94,0.1)', padding: 8, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: '#22c55e' }}>
+                              <Text style={{ fontSize: 9, color: theme.textSecondary, fontWeight: '700' }}>Gelir Trendi</Text>
+                              <Text style={{ fontSize: 11, fontWeight: '900', color: incMom.pct >= 0 ? '#16a34a' : '#dc2626', marginTop: 1 }}>
+                                {incMom.pct >= 0 ? `↗ %${incMom.pct} Yükselişte` : `↘ %${Math.abs(incMom.pct)} Düşüşte`}
+                              </Text>
+                            </View>
+                          )}
+                          {(trendTab === 'all' || trendTab === 'expense') && expMom && (
+                            <View style={{ flex: 1, backgroundColor: 'rgba(220,38,38,0.1)', padding: 8, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: '#dc2626' }}>
+                              <Text style={{ fontSize: 9, color: theme.textSecondary, fontWeight: '700' }}>Gider Trendi</Text>
+                              <Text style={{ fontSize: 11, fontWeight: '900', color: expMom.pct <= 0 ? '#16a34a' : '#dc2626', marginTop: 1 }}>
+                                {expMom.pct <= 0 ? `↘ %${Math.abs(expMom.pct)} Azaldı (İyi)` : `↗ %${expMom.pct} Artışta (Dikkat)`}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+
+                        {/* Pürüzsüz Dalga SVG Grafiği */}
+                        <Svg width={chartWidth} height={chartHeight}>
+                          <Defs>
+                            <SvgGradient id="incAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                              <Stop offset="0" stopColor="#22c55e" stopOpacity="0.25" />
+                              <Stop offset="1" stopColor="#22c55e" stopOpacity="0.0" />
+                            </SvgGradient>
+                            <SvgGradient id="expAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                              <Stop offset="0" stopColor="#dc2626" stopOpacity="0.2" />
+                              <Stop offset="1" stopColor="#dc2626" stopOpacity="0.0" />
+                            </SvgGradient>
+                          </Defs>
+
+                          {/* Gelir Alan & Çizgi */}
+                          {(trendTab === 'all' || trendTab === 'income') && (
+                            <>
+                              <Path d={createAreaPath(incPoints)} fill="url(#incAreaGrad)" />
+                              <Path d={createSmoothPath(incPoints)} stroke="#22c55e" strokeWidth={3} fill="none" />
+                              {incPoints.map((pt, idx) => (
+                                <React.Fragment key={`inc-${idx}`}>
+                                  <Circle cx={pt.x} cy={pt.y} r={4} fill="#22c55e" stroke="#fff" strokeWidth={1.5} />
+                                  <SvgText x={pt.x} y={Math.max(pt.y - 7, 10)} textAnchor="middle" fontSize={8} fontWeight="800" fill="#16a34a">
+                                    {formatAmt(pt.val)}
+                                  </SvgText>
+                                </React.Fragment>
+                              ))}
+                            </>
+                          )}
+
+                          {/* Gider Alan & Çizgi */}
+                          {(trendTab === 'all' || trendTab === 'expense') && (
+                            <>
+                              <Path d={createAreaPath(expPoints)} fill="url(#expAreaGrad)" />
+                              <Path d={createSmoothPath(expPoints)} stroke="#dc2626" strokeWidth={3} fill="none" />
+                              {expPoints.map((pt, idx) => (
+                                <React.Fragment key={`exp-${idx}`}>
+                                  <Circle cx={pt.x} cy={pt.y} r={4} fill="#dc2626" stroke="#fff" strokeWidth={1.5} />
+                                  <SvgText x={pt.x} y={Math.min(pt.y + 12, chartHeight - 25)} textAnchor="middle" fontSize={8} fontWeight="800" fill="#dc2626">
+                                    {formatAmt(pt.val)}
+                                  </SvgText>
+                                </React.Fragment>
+                              ))}
+                            </>
+                          )}
+
+                          {/* Eksen Ay Etiketleri */}
+                          {summaries.map((s, i) => {
+                            const stepX = plotW / Math.max(summaries.length - 1, 1);
+                            const x = paddingX + i * stepX;
+                            return (
+                              <SvgText key={i} x={x} y={chartHeight - 4} textAnchor="middle" fontSize={9} fontWeight="800" fill={theme.textSecondary}>
+                                {s.monthName.substring(0, 3).toUpperCase()}
+                              </SvgText>
+                            );
+                          })}
+                        </Svg>
+                      </View>
+                    );
+                  })()}
                 </View>
               );
             })()}
@@ -3700,28 +3888,58 @@ export default function BudgetMainScreen() {
                                 (tx.type === "income" ? tx.amount : -tx.amount),
                               0,
                             );
+                            const isExpanded = expandedAccDetailsMonth === month;
                             return (
-                              <View key={month} style={{ marginBottom: 18 }}>
-                                <View style={styles.dayHeaderRow}>
-                                  <Text style={styles.dayHeaderText}>
-                                    {format(
-                                      parseISO(month + "-01"),
-                                      "MMMM yyyy",
-                                      { locale: tr },
+                              <View key={month} style={{ marginBottom: 12, backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderColor: "rgba(150,150,150,0.15)", overflow: "hidden" }}>
+                                <TouchableOpacity
+                                  activeOpacity={0.8}
+                                  onPress={() =>
+                                    setExpandedAccDetailsMonth(
+                                      isExpanded ? null : month,
+                                    )
+                                  }
+                                  style={{
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    padding: 14,
+                                    backgroundColor: isExpanded ? "rgba(63,125,83,0.06)" : "transparent",
+                                  }}
+                                >
+                                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                                    <CalendarIcon size={18} color={theme.accent} />
+                                    <Text style={{ fontSize: 14, fontWeight: "800", color: theme.textPrimary }}>
+                                      {format(
+                                        parseISO(month + "-01"),
+                                        "MMMM yyyy",
+                                        { locale: tr },
+                                      )}
+                                    </Text>
+                                  </View>
+                                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                                    <Text
+                                      style={{
+                                        fontSize: 14,
+                                        fontWeight: "900",
+                                        color:
+                                          monthTotal >= 0
+                                            ? theme.income
+                                            : theme.expense,
+                                      }}
+                                    >
+                                      {monthTotal >= 0 ? "+" : ""}
+                                      {monthTotal.toLocaleString("tr-TR")} ₺
+                                    </Text>
+                                    {isExpanded ? (
+                                      <ChevronUp size={16} color={theme.textMuted} />
+                                    ) : (
+                                      <ChevronDown size={16} color={theme.textMuted} />
                                     )}
-                                  </Text>
-                                  <Text
-                                    style={
-                                      monthTotal >= 0
-                                        ? styles.pillIncome
-                                        : styles.pillExpense
-                                    }
-                                  >
-                                    {monthTotal >= 0 ? "+" : ""}
-                                    {monthTotal.toLocaleString("tr-TR")} ₺
-                                  </Text>
-                                </View>
-                                <View style={styles.groupPanel}>
+                                  </View>
+                                </TouchableOpacity>
+
+                                {isExpanded && (
+                                  <View style={[styles.groupPanel, { borderTopWidth: 1, borderTopColor: "rgba(150,150,150,0.1)" }]}>
                                   {txs.map((tx, tIdx) => {
                                     const conf = getCategoryConfig(
                                       tx.category,
@@ -3800,6 +4018,7 @@ export default function BudgetMainScreen() {
                                     );
                                   })}
                                 </View>
+                              )}
                               </View>
                             );
                           });
